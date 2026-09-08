@@ -1,0 +1,16 @@
+node_modules/
+.next/
+
+# runtime state (per-sandbox) — never commit
+scripts/browser-profile/
+scripts/flags/
+scripts/logs/
+scripts/env.sh
+scripts/python_bin.txt
+scripts/*.pid
+scripts/*.log
+scripts/watcher.out
+
+next-env.d.ts
+*.tsbuildinfo
+.DS_Store
