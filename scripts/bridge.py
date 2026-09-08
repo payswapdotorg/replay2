@@ -319,10 +319,10 @@ def _login_state(tab):
         has_composer = cdp.eval(
             "!!document.querySelector('textarea, #chat-input, div[contenteditable=true]')",
             timeout=6)
-        if has_composer:
-            return "logged-in"
         if "Sign in" in body or "Log in" in body:
             return "logged-out"
+        if has_composer:
+            return "logged-in"
         return "page:" + str(len(body))
     finally:
         cdp.close()

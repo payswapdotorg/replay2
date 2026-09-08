@@ -76,10 +76,10 @@ def check_login():
             body = cdp.eval("document.body.innerText || ''", timeout=8) or ""
         finally:
             cdp.close()
-        if has_composer:
-            return "logged-in"
         if "Sign in" in body or "Log in" in body:
             return "logged-out"
+        if has_composer:
+            return "logged-in"
         return "page:" + str(len(body))
     except Exception:
         return STATE["login"]
