@@ -38,25 +38,48 @@ operator's credentials yourself.
 supervisor restart each other and every component; you only intervene if
 health checks stay red after a re-deploy.
 
-## 2. Start new chat sessions (worker dispatch)
+## 2. Start new agent sessions (worker dispatch) — AGENTS TAB ONLY
+
+> **HARD RULE**: worker sessions are created in the **agents tab** of the chat
+> site, with model **GLM-5.3** and skill **Full-Stack**. A session started in
+> the plain chat tab is NULL AND VOID — it never counts as a real session, real
+> work, or progress, and only wastes resources. The dispatcher enforces this by
+> construction; do not bypass it.
 
 ```bash
 # write the full prompt for the session into a file, then:
 python3 scripts/dispatch_worker.py create <session-name> <prompt-file.md>
 python3 scripts/dispatch_worker.py list
 python3 scripts/dispatch_worker.py check <session-name>
+python3 scripts/dispatch_worker.py void <name> <reason>     # nullify a bad session
+python3 scripts/dispatch_worker.py sandboxes               # sandbox concurrency state
 ```
 
 `create` opens a new tab in the replay browser, navigates to the chat site,
-focuses the composer, inserts the prompt, presses Enter, then **verifies the
-prompt text landed in the DOM** and records the session in
-`scripts/flags/session_registry.jsonl`.
+then — with every step **hard-verified** (it refuses to send if any selection
+fails to stick):
+1. clicks the sidebar **Agent** nav (agent mode = "New Task" marker),
+2. selects model **GLM-5.3** (exact — NOT `GLM-5.3-Flash`) in the model menu,
+3. selects skill **Full-Stack** (chip activates in the composer bar),
+4. inserts the prompt into `#chat-input` and verifies >=97% landed in the
+   composer value (never sends a partial prompt),
+5. sends (Enter, send-button fallback) and verifies the composer cleared +
+   body/URL proof,
+6. handles the **sandbox concurrency limit**: if the "Limit Sandbox
+   Concurrency" modal blocks, it releases sandboxes that have **no active
+   job** (your registry's live sessions are kept by name keyword; idle/stale
+   holders are released) — before sending and right after (when the new job
+   provisions its sandbox),
+7. records the session (mode/model/skill) in
+   `scripts/flags/session_registry.jsonl`.
 
 Prompt-writing rules:
 - The prompt file must be fully self-contained: the session cannot see your
   context. Include role, setup steps, the task packet, verification commands,
   and the exact format of the final report.
-- One session = one task. Cap concurrent sessions (≤3 unless told otherwise).
+- One session = one task. Cap concurrent sessions (<=3 unless told otherwise)
+  — the site's sandbox limit is real; idle sandboxes are released by the
+  dispatcher, active ones never are.
 
 ## 3. Handling prompt-send failures
 
@@ -80,6 +103,16 @@ prompt did not land. Failure ladder — climb it in order:
    to log in again via the replay, then recreate pending sessions.
 6. **Captcha/slider on send**: send via CDP is unaffected by captchas; but if
    the site challenges, have the operator solve it in the replay.
+7. **Sandbox limit modal ("Limit Sandbox Concurrency")**: the dispatcher
+   releases idle sandboxes automatically. If it reports "all sandboxes have
+   active jobs — NOT releasing", you are at the cap with real work running:
+   wait for a session to finish, or void a session you no longer need
+   (`void <name> <reason>` closes its tab), then re-check with `sandboxes`.
+8. **Tab wedged** (a huge-prompt session tab stops responding to CDP — even
+   `1+1` times out): the renderer is stuck, the SERVER-side session survives.
+   Close the tab and open a fresh one at the SAME session URL (the
+   conversation persists server-side); the session keeps generating. Record
+   the tab change in the registry (`tab-reopen` record) and keep monitoring.
 
 Always record what you did in the registry/worklog so retries are traceable,
 and tell the operator when manual action (login/captcha) is needed.
