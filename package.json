@@ -25,6 +25,7 @@
     "@tailwindcss/postcss": "^4.3.3",
     "@types/node": "^22",
     "@types/react": "^19",
+    "@types/ws": "^8.18.1",
     "eslint": "^10.10.0",
     "eslint-config-next": "^16.3.4",
     "postcss": "^8.5.28",
