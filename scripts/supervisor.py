@@ -175,10 +175,55 @@ def ensure_browser():
     return True
 
 
+
+DEV_PATIENCE = 240  # s: a non-listening dev process gets this long before forced restart
+
+
+def _dev_down_since():
+    """First-sighting timestamp for 'port down but process alive' (or None)."""
+    p = os.path.join(FLAGS, "dev_down_since")
+    try:
+        return float(open(p).read().strip())
+    except Exception:
+        try:
+            now = time.time()
+            open(p, "w").write(str(now))
+        except Exception:
+            pass
+        return None
+
+
+def _rm_devstate():
+    try:
+        os.remove(os.path.join(FLAGS, "dev_down_since"))
+    except Exception:
+        pass
+
 def ensure_dev():
     if http_ok(f"http://127.0.0.1:{CONSOLE_PORT}"):
+        _rm_devstate()
         return False
-    log(f"dev server :{CONSOLE_PORT} DEAD — restarting")
+    # Port down does NOT mean the process is dead: a cold compile (empty or
+    # corrupted .next cache) can take a minute before the port binds. Spawning
+    # a second dev server during that window creates a stampede (concurrent
+    # next-server compiles -> OOM kills -> EADDRINUSE zombies). Guard on
+    # process liveness first; force-restart only after DEV_PATIENCE seconds.
+    r = subprocess.run(["pgrep", "-f", "next dev|bun run dev|next-server"],
+                       capture_output=True, text=True)
+    pids = [p for p in r.stdout.strip().split("\n") if p.strip()]
+    if pids:
+        first = _dev_down_since()
+        if first and time.time() - first > DEV_PATIENCE:
+            log("dev server :{CONSOLE_PORT} not up for " + str(int(time.time() - first)) + "s with process alive — killing wedged dev, restarting")
+            for p in pids:
+                subprocess.run(["kill", p], capture_output=True)
+            _rm_devstate()
+            subprocess.Popen([PY, os.path.join(BASE, "launch_dev.py")],
+                             stdout=open(os.path.join(LOGDIR, "dev_launch.log"), "a"),
+                             stderr=subprocess.STDOUT)
+            return True
+        return False  # still starting — be patient, do NOT stampede
+    log("dev server :{CONSOLE_PORT} DEAD — restarting")
     subprocess.Popen([PY, os.path.join(BASE, "launch_dev.py")],
                      stdout=open(os.path.join(LOGDIR, "dev_launch.log"), "a"),
                      stderr=subprocess.STDOUT)
