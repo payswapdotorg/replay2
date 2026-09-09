@@ -95,8 +95,15 @@ def state(tab_prefix):
         body))
     gen = bool(re.search(r"\b(Stop|Pause|Halt)\b", body[-1500:]))
     cap = "currently at capacity" in body or "peak hours" in body
+    # RATE-LIMITED (wave-4 forensics 21:07): 'usage exceeds the personal
+    # limit — try again 1 hour later' — the account itself is cooling down.
+    # Assaulting now burns MORE allowance and churns sessions for nothing:
+    # the only correct action is to wait out the explicit cooldown.
+    limited = "exceeds the personal limit" in body or "try again 1 hour later" in body
     if "/c/" not in url:
         return "home", len(body), (1000 if filled else hits), url
+    if limited:
+        return "rate-limited", len(body), (1000 if filled else hits), url
     if gen:
         return "generating", len(body), (1000 if filled else hits), url
     return ("queued-capacity" if cap else "queued"), len(body), (1000 if filled else hits), url
@@ -169,14 +176,17 @@ def main():
                 last_len = ln
             else:
                 rounds_since_progress += 1
-            if st == "queued-capacity":
+            if st in ("queued-capacity", "rate-limited"):
                 if rounds_since_progress == 0:
                     stuck_since = 0            # body still changing — not stuck
                 elif rounds_since_progress >= 2 and not stuck_since:
                     stuck_since = time.time()
-                    print(f"{stamp} stuck-clock started (queued-capacity, no progress)", flush=True)
+                    print(f"[{name}] {stamp} stuck-clock started ({st}, no progress)", flush=True)
             else:
                 stuck_since = 0                # generating/queued/home all reset the clock
+            # rate-limited: the account itself is cooling down (explicit
+            # 'try again 1 hour later') — assaulting burns allowance and
+            # churns sessions; only queued-capacity zombies get assaulted.
             if (st == "queued-capacity" and stuck_since
                     and time.time() - stuck_since > STUCK_ASSAULT_AFTER
                     and stuck_assaults < STUCK_ASSAULT_MAX):
