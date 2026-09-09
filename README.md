@@ -91,11 +91,22 @@ REAL code execution (a persistent cloud sandbox), not just the cloud tools:
      `https://api.z.ai/api/paas/v4`) — a second Z.ai credential tried when
      the primary is rate-limited (429), before an automatic flash-model
      downgrade.
+   - `SELF_HOSTED_MODEL_URL` + `SELF_HOSTED_MODEL_KEY` (optional) — your own
+     OpenAI-compatible model endpoint (e.g. a Modal vLLM deployment of the
+     open-weights GLM-5.3-Flash; see `scripts/modal_glm.py` in the agent
+     workspace). Tried FIRST, entirely independent of Z.ai quotas; serves one
+     model id (typically `glm-5.3-flash`) — other ids fall through to the
+     standard chain. URL must end in `/v1`.
    - `AGENT_MODEL` (optional, default `glm-5.3`).
 3. Deploy. The console shows the replay pane offline, the chat badge reads
    "serverless · cloud + remote tools", and web search / page reader / image
    generation / image search / edit / vision / skills / remote execution
-   all work.
+   all work — **and with `E2B_API_KEY` the `browser_remote` tool gives the
+   agent a REAL browser** (a persistent E2B desktop sandbox: Xfce + Chrome
+   driven via CDP through an nginx Host-rewrite proxy — the agent can open
+   sites, click, type, read, screenshot; cookies/session persist while the
+   sandbox lives; first call after idle boots it in ~2-5 min, subsequent
+   calls ~1-2s).
 4. Optional: point `REPLAYD_URL` at an exposed replayd (e.g. the sandbox
    daemon behind a tunnel) to re-enable the browser + dispatch tools
    remotely.
@@ -114,7 +125,8 @@ you want to own the capacity instead of renting it, the realistic ladder:
    `ZAI_API_KEY_FALLBACK` (a second, separately-metered key — note it must
    carry balance; an empty open-platform key answers 429 "insufficient
    balance") → automatic downgrade to `glm-5.3-flash`. Covers bursts, not
-   sustained heavy use.
+   sustained heavy use. With `SELF_HOSTED_MODEL_URL/KEY` set, a self-hosted
+   endpoint is tried before all of these (own capacity, zero Z.ai quota).
 2. **Rent a GPU host and serve open GLM weights yourself** (the real
    "host my own models" option). vLLM on a single 24–48 GB GPU
    (RTX 4090 / A6000) comfortably serves GLM-4.5-Air-class MoE quantized;

@@ -125,6 +125,51 @@ let fallbackError: string | null = null;
 let fallbackFailAt = 0;
 const FALLBACK_COOLDOWN_MS = 60000;
 
+// ---------------------------------------------------------------------------
+// Self-hosted model backend (operator's Modal vLLM deployment — OpenAI-
+// compatible, Bearer-gated). Tried FIRST when configured: independent of the
+// Z.ai quotas entirely. Serves one model id (e.g. glm-5.3-flash); requests
+// for other ids fall through to the normal chain.
+// Env: SELF_HOSTED_MODEL_URL (…/v1) + SELF_HOSTED_MODEL_KEY.
+// ---------------------------------------------------------------------------
+
+let selfHostedCached: ZAI | null = null;
+let selfHostedError: string | null = null;
+let selfHostedFailAt = 0;
+const SELF_HOSTED_COOLDOWN_MS = 60000;
+
+export function selfHostedConfigured(): boolean {
+  return Boolean(process.env.SELF_HOSTED_MODEL_URL && process.env.SELF_HOSTED_MODEL_KEY);
+}
+
+export async function getZaiSelfHosted(): Promise<ZAI | null> {
+  if (!selfHostedConfigured()) return null;
+  if (selfHostedCached) return selfHostedCached;
+  if (selfHostedError && Date.now() - selfHostedFailAt < SELF_HOSTED_COOLDOWN_MS) return null;
+  const baseUrl = process.env.SELF_HOSTED_MODEL_URL as string;
+  const apiKey = process.env.SELF_HOSTED_MODEL_KEY as string;
+  try {
+    const serverless = Boolean(process.env.VERCEL || process.env.AWS_LAMBDA_FUNCTION_NAME);
+    const dir = serverless ? join("/tmp", "zai-selfhosted") : join(process.cwd(), ".data", "zai-selfhosted");
+    await fsp.mkdir(dir, { recursive: true });
+    await fsp.writeFile(join(dir, ".z-ai-config"), JSON.stringify({ baseUrl, apiKey }), { mode: 0o600 });
+    const savedHome = process.env.HOME;
+    process.env.HOME = dir;
+    try {
+      selfHostedCached = await ZAI.create();
+    } finally {
+      if (savedHome === undefined) delete process.env.HOME;
+      else process.env.HOME = savedHome;
+    }
+    selfHostedError = null;
+    return selfHostedCached;
+  } catch (e) {
+    selfHostedError = String(e);
+    selfHostedFailAt = Date.now();
+    return null;
+  }
+}
+
 export function fallbackConfigured(): boolean {
   return Boolean(process.env.ZAI_API_KEY_FALLBACK);
 }

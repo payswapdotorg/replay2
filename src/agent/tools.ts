@@ -18,6 +18,7 @@ import { getZai, VISION_MODEL } from "./config";
 import { getSkill } from "./skills";
 import { composioAvailable, composioCall } from "./composio";
 import { e2bAvailable, e2bRunCommand, e2bRunPython } from "./e2b";
+import { browserRemoteAvailable, browserRemoteAction } from "./browserRemote";
 import { REPLAYD_URL } from "@/lib/replay";
 
 // ------------------------------------------------------------------ types
@@ -103,6 +104,7 @@ export async function toolAvailability(): Promise<Record<string, boolean>> {
     load_skill: true,
     remote_bash: e2bAvailable() || comp,
     remote_python: e2bAvailable() || comp,
+    browser_remote: e2bAvailable(),
   };
 }
 
@@ -311,6 +313,33 @@ export const TOOL_DEFS: ToolDef[] = [
         code: { type: "string", description: "Python code to execute (state persists between calls)" },
       },
       required: ["code"],
+    },
+  },
+  {
+    name: "browser_remote",
+    availability: "cloud",
+    description:
+      "A real browser in a persistent E2B desktop sandbox (Xfce + Chrome driven via CDP) — your browser hands on ANY deployment, including serverless. First call boots the desktop + Chrome (~2-5 min once per sandbox; later calls ~1-2s). State (cookies, session, tabs, scroll) persists while the sandbox lives. Actions: status, open (url), read (page text), elements (interactive elements with fx/fy coordinates), screenshot, click (fx/fy), dblclick, type (text — types into the focused field), press (key: enter/tab/escape/backspace/arrow... or ctrl+c combos), scroll (deltaY px), drag (fx/fy -> toFx/toFy), eval (JS expr), reload, back, tabs, new_tab (url), select_tab (index), close_tab (index). Coordinates are FRACTIONS 0..1 of the viewport — get them from 'elements' (text-grounded, no vision needed) or 'screenshot'. Workflow: open -> elements -> click fx/fy -> type -> press enter -> read. Captchas and logins are always the operator's.",
+    parameters: {
+      type: "object",
+      properties: {
+        action: {
+          type: "string",
+          enum: ["status", "open", "nav", "read", "elements", "screenshot", "click", "dblclick", "type", "press", "scroll", "drag", "eval", "reload", "back", "tabs", "new_tab", "select_tab", "close_tab"],
+          description: "what to do",
+        },
+        url: { type: "string", description: "url for open/new_tab (https:// prepended if missing)" },
+        fx: { type: "number", description: "x fraction 0..1 (click/drag/scroll anchor)" },
+        fy: { type: "number", description: "y fraction 0..1" },
+        toFx: { type: "number", description: "drag target x fraction" },
+        toFy: { type: "number", description: "drag target y fraction" },
+        text: { type: "string", description: "text for type action" },
+        key: { type: "string", description: "key for press: enter, tab, escape, backspace, space, arrows, or ctrl+c style combos" },
+        deltaY: { type: "number", description: "scroll px (positive = down), default 300" },
+        expr: { type: "string", description: "JS expression for eval (returnByValue)" },
+        index: { type: "number", description: "tab index for select_tab/close_tab" },
+      },
+      required: ["action"],
     },
   },
 ];
@@ -681,6 +710,20 @@ export async function executeTool(
         if (!code.trim()) return { content: "empty code" };
         if (ctx.abort.aborted) return { content: "aborted before start" };
         return execRemote("python", code);
+      }
+      case "browser_remote": {
+        if (!browserRemoteAvailable()) return { content: UNAVAILABLE("browser_remote needs E2B_API_KEY (desktop sandbox + Chrome)") };
+        if (ctx.abort.aborted) return { content: "aborted before start" };
+        const r = await browserRemoteAction(args);
+        // register screenshots as shot://N for the vision tool + UI display
+        const images = r.images || [];
+        let extra = "";
+        for (const img of images) {
+          const n = ctx.shots.size + 1;
+          ctx.shots.set(`shot://${n}`, img);
+          extra += `\n[stored as shot://${n}]`;
+        }
+        return { content: (r.content + extra).slice(0, 20000), display: images.length ? { images, text: r.content.slice(0, 2000) } : undefined };
       }
       case "dispatch_session": {
         if (!fsAvailable() || !(await replaydAvailable())) {
