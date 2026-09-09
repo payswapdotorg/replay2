@@ -8,15 +8,18 @@ automatically restarts:
   3. dev server :3000  (operator console; REPLAY_PORT to override)
   4. replayd    :3100  (persistent CDP daemon — realtime frames + drags)
 
-Also rotates logs so nothing grows unbounded, and touches
-flags/supervisor_heartbeat. This process is launched detached (setsid) so it
-survives CLI session resets; if IT is ever killed, watcher.py resurrects it
-(mutual watchdog), and any later launch simply adopts the flock.
+Also keeps the GLM-5.3 capacity-recovery poller alive while its flag exists
+(dispatch sessions that are waiting out model capacity), rotates logs so
+nothing grows unbounded, and touches flags/supervisor_heartbeat. This process
+is launched detached (setsid) so it survives CLI session resets; if IT is
+ever killed, watcher.py resurrects it (mutual watchdog), and any later launch
+simply adopts the flock.
 
 Run: setsid python3 scripts/supervisor.py >> scripts/logs/supervisor.log 2>&1 &
 (deploy.sh does this for you)
 """
 import fcntl
+import json
 import os
 import subprocess
 import sys
@@ -108,6 +111,37 @@ def _rotate(path):
         pass
 
 
+def ensure_capacity_recovery():
+    """Keep the GLM-5.3 capacity-recovery poller alive while its flag exists.
+
+    The flag (flags/capacity_recover.json) is written when a session needs
+    send-recovery; recover_capacity.py removes it when done (or the session
+    died). While the flag exists, a dead poller is relaunched automatically.
+    """
+    flag = os.path.join(FLAGS, "capacity_recover.json")
+    pidf = os.path.join(FLAGS, "capacity_recover.pid")
+    if not os.path.exists(flag):
+        return
+    pid = read_pid(pidf)
+    if pid and pid_alive(pid, "recover_capacity"):
+        return  # alive
+    log("capacity recovery poller dead but flag present — relaunching")
+    try:
+        with open(flag) as f:
+            uuid = json.load(f).get("uuid", "")
+    except Exception:
+        return
+    if not uuid:
+        return
+    out = open(os.path.join(LOGDIR, "recover.log"), "a")
+    subprocess.Popen(
+        [PY, os.path.join(BASE, "recover_capacity.py"), uuid],
+        stdout=out, stderr=out, stdin=subprocess.DEVNULL,
+        start_new_session=True,
+    )
+    out.close()
+
+
 def ensure_watcher():
     pid = read_pid(os.path.join(BASE, "watcher.pid"))
     if pid_alive(pid, "watcher.py"):
@@ -186,6 +220,7 @@ def main():
         try:
             ensure_watcher()
             ensure_replayd()
+            ensure_capacity_recovery()
             if cycle % 3 == 0:          # browser + console checks every ~30s
                 ensure_browser()
                 ensure_dev()

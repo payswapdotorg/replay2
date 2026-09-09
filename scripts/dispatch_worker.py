@@ -8,8 +8,10 @@ AND VOID — they never count as real sessions or real work.
 Usage:
   dispatch_worker.py create <name> <prompt_file>   -> agents-tab session, send prompt
   dispatch_worker.py check <name>                  -> session state (text tail)
+  dispatch_worker.py send <name> <msg | @file>     -> continuation message (stall recovery)
   dispatch_worker.py list                          -> registered sessions
   dispatch_worker.py void <name> <reason>          -> mark a session void + close tab
+  dispatch_worker.py done <name> [note]            -> mark completed + close tab (frees the slot)
   dispatch_worker.py models                        -> inspect model selector options
   dispatch_worker.py sandboxes [url-substr]        -> inspect + release idle sandboxes
 
@@ -18,6 +20,12 @@ blocks, dispatch_worker releases sandboxes that have NO active job (registry
 truth: live sessions + their WO keywords are kept; idle/stale holders are
 released). This runs automatically inside create() (pre-send + post-send) and
 on demand via the sandboxes command.
+
+Capacity protocol (WO-008 lesson): when GLM-5.3 is at capacity right after the
+send, create() NEVER clicks Cancel (that rolls back/destroys the new-task
+session server-side). It writes flags/capacity_recover.json and exits 3; the
+supervisor keeps recover_capacity.py alive to wait out the peak and re-send
+the retained composer draft.
 
 create flow (each step verified, hard-fails if any selection does not stick):
   1. new browser tab -> https://chat.z.ai/
@@ -32,6 +40,7 @@ Sessions registry: scripts/flags/session_registry.jsonl
 """
 import json
 import os
+import re
 import sys
 import time
 
@@ -63,9 +72,17 @@ def _save(s):
 
 
 def _find(name):
+    """Latest create record for `name` that has not been voided/failed since.
+
+    A later void/failed record with the same name invalidates every earlier
+    create record for it (so names can be reused after void)."""
     found = None
     for s in _sessions():
-        if s.get("name") == name and s.get("action") not in ("void", "failed", "tab-reopen"):
+        if s.get("name") != name:
+            continue
+        if s.get("action") in ("void", "failed", "done"):
+            found = None  # invalidated / retired
+        elif s.get("action") != "tab-reopen":
             found = s  # latest create record wins
     return found
 
@@ -185,6 +202,40 @@ JS_COMPOSER = r"""(() => {
   return JSON.stringify({x: Math.round(r.x + r.width/2), y: Math.round(r.y + r.height/2)});
 })()"""
 
+JS_CLEAR_COMPOSER = r"""(() => {
+  // React-native clear: bypass the controlled-component setter, then notify
+  const i = document.querySelector('#chat-input, textarea');
+  if (!i) return 'no-input';
+  const proto = i.tagName === 'TEXTAREA' ? window.HTMLTextAreaElement.prototype
+                                         : window.HTMLInputElement.prototype;
+  Object.getOwnPropertyDescriptor(proto, 'value').set.call(i, '');
+  i.dispatchEvent(new Event('input', {bubbles: true}));
+  return String((i.value || '').length);
+})()"""
+
+JS_INSERT_RATIO = r"""(() => {
+  const i = document.querySelector('#chat-input');
+  return i ? String(Math.round(100 * (i.value||'').length / __PLEN__)) : '0';
+})()"""
+
+JS_CAPACITY_STATE = r"""(() => {
+  const body = document.body.innerText || '';
+  const capacity = body.includes('currently at capacity') || body.includes('try again later');
+  let hasCancel = false;
+  document.querySelectorAll('button').forEach(b => {
+    if ((b.innerText || '').trim() === 'Cancel') hasCancel = true;
+  });
+  return JSON.stringify({capacity: capacity, hasCancel: hasCancel});
+})()"""
+
+JS_CLICK_CANCEL = r"""(() => {
+  const btns = Array.from(document.querySelectorAll('button'));
+  const b = btns.find(x => (x.innerText || '').trim() === 'Cancel');
+  if (!b) return 'no-cancel';
+  b.click();
+  return 'ok';
+})()"""
+
 JS_SEND_BUTTON = r"""(() => {
   const b = document.querySelector('button.sendMessageButton');
   if (!b) return '';
@@ -210,15 +261,23 @@ JS_SANDBOX_ROWS = r"""(() => {
   return JSON.stringify({present: true, rows: rows});
 })()"""
 
-JS_SANDBOX_RELEASE_FIRST = r"""(() => {
+JS_SANDBOX_RELEASE_TARGET = r"""(() => {
+  // locate the Release button of the row whose text contains `name`, and
+  // return its center coordinates (real CDP mouse events are required —
+  // programmatic .click() does not work on this modal)
   const el = Array.from(document.querySelectorAll('div,section,[role=dialog]'))
     .find(e => (e.innerText||'').includes('Limit Sandbox Concurrency'));
   if (!el) return 'modal-gone';
   const btns = Array.from(el.querySelectorAll('button'))
     .filter(b => (b.innerText||'').trim() === 'Release');
-  if (!btns.length) return 'no-buttons';
-  btns[0].click();
-  return 'clicked';
+  for (const b of btns) {
+    const row = b.closest('tr, div');
+    if (row && (row.innerText||'').includes('__TARGET__')) {
+      const r = b.getBoundingClientRect();
+      return JSON.stringify({x: Math.round(r.x + r.width/2), y: Math.round(r.y + r.height/2)});
+    }
+  }
+  return 'no-target';
 })()"""
 
 
@@ -227,11 +286,16 @@ def _active_session_keywords(extra=None):
 
     A sandbox row is KEPT if its name matches any keyword. Keywords come from
     live registry sessions: 'wo-009-agents' -> ['wo-009-agents', 'WO-009'].
+    The modal identifies holders by their session UUID (e.g. '2d8588a4-…') —
+    so every live session's /c/<uuid> id is added as a keyword too.
     """
     kws = []
+    done = {s.get("name") for s in _sessions() if s.get("action") == "done"}
     for s in _sessions():
         if s.get("action") in ("void", "failed"):
             continue
+        if s.get("name") in done:
+            continue  # retired: its sandbox is no longer an active job
         if not s.get("sent"):
             continue
         n = s.get("name") or ""
@@ -241,6 +305,13 @@ def _active_session_keywords(extra=None):
             if wo != n:
                 kws.append(wo)
                 kws.append(wo.upper())  # 'wo-009' -> 'WO-009'
+        # the session UUID from the recorded URL (modal rows use it as name)
+        u = s.get("url") or ""
+        if "/c/" in u:
+            uuid = u.split("/c/")[-1].split("?")[0].split("#")[0].strip("/")
+            if uuid:
+                kws.append(uuid)
+                kws.append(uuid.split("-")[0])  # short-prefix safety
     for e in (extra or []):
         if e:
             kws.append(e)
@@ -251,13 +322,19 @@ def _active_session_keywords(extra=None):
 def _row_is_idle(row, keep_kws):
     """A sandbox row is idle (releasable) when it matches no active session
     and its recent-activity meta doesn't indicate a just-started job."""
+    import re
     name = (row.get("name") or "")
     meta = (row.get("meta") or "")
     for k in keep_kws:
         if k and k.lower() in name.lower():
             return False  # one of our active jobs
-    # a job that started seconds ago may be the session being created right now
-    if "second" in meta.lower() or "just now" in meta.lower():
+    # a job that started seconds/minutes ago may be the session being
+    # created right now (sandbox provisions right after the prompt send)
+    ml = meta.lower()
+    if "second" in ml or "just now" in ml:
+        return False
+    m = re.search(r"(\d+)\s*minute", ml)
+    if m and int(m.group(1)) <= 10:
         return False
     return True
 
@@ -266,7 +343,9 @@ def _handle_sandbox_limit(c, keep_kws, max_rounds=6, log=print):
     """Release idle sandboxes when the 'Limit Sandbox Concurrency' modal blocks.
 
     Operator rule: release the tabs we are not using and have no active job in.
-    Returns the number of sandboxes released.
+    Each release clicks the TARGET row's Release button with real CDP mouse
+    events (programmatic .click() is a no-op on this modal). Returns the
+    number of sandbox releases verified (row disappears from the modal).
     """
     released = 0
     for round_ in range(max_rounds):
@@ -286,14 +365,38 @@ def _handle_sandbox_limit(c, keep_kws, max_rounds=6, log=print):
                 f"active jobs — NOT releasing")
             return released
         target = idle[0]
+        # locate the target row's Release button -> real mouse events
         try:
-            res = _eval(c, JS_SANDBOX_RELEASE_FIRST, timeout=15)
+            js = JS_SANDBOX_RELEASE_TARGET.replace("__TARGET__", target.get("name", "")[:40])
+            res = _eval(c, js, timeout=15)
         except Exception:
             return released
-        if res == "clicked":
+        if res in ("modal-gone", "no-target"):
+            log(f"      [sandbox] target row vanished ({res}) — re-reading")
+            time.sleep(2.0)
+            continue
+        try:
+            pt = json.loads(res)
+        except Exception:
+            log(f"      [sandbox] could not locate Release for {target['name'][:40]}")
+            return released
+        c.call("Input.dispatchMouseEvent", {"type": "mousePressed", "x": pt["x"], "y": pt["y"],
+                                            "button": "left", "clickCount": 1})
+        c.call("Input.dispatchMouseEvent", {"type": "mouseReleased", "x": pt["x"], "y": pt["y"],
+                                            "button": "left", "clickCount": 1})
+        time.sleep(3.0)
+        # verify: the row must be gone from the modal
+        try:
+            st2 = json.loads(_eval(c, JS_SANDBOX_ROWS, timeout=15) or "{}")
+        except Exception:
+            st2 = {}
+        names2 = [r.get("name") for r in (st2.get("rows") or [])]
+        if target.get("name") not in names2:
             released += 1
-            log(f"      [sandbox] released idle sandbox: {target['name'][:50]}")
-        time.sleep(2.5)
+            log(f"      [sandbox] released idle sandbox: {target['name'][:50]} (verified gone)")
+        else:
+            log(f"      [sandbox] release of {target['name'][:40]} did NOT take effect — stopping")
+            return released
     return released
 
 
@@ -428,7 +531,9 @@ def create(name, prompt_file):
         # (operator rule: release tabs we are not using / no active job in)
         _handle_sandbox_limit(c, _active_session_keywords(extra=[name]))
 
-        # 6. insert prompt
+        # 6. insert prompt (idempotent: clear first, verify bounds 97..115,
+        #    one clear+retry if the site doubled the text — seen live on a
+        #    59K insert; a 200% send would poison the session)
         print(f"[6/7] inserting prompt ({len(prompt)} chars) ...")
         comp = _eval(c, JS_COMPOSER)
         if not comp:
@@ -436,24 +541,29 @@ def create(name, prompt_file):
             _save({"name": name, "action": "failed", "stage": "composer", "tab_id": tab["id"],
                    "ts": int(time.time()), "prompt_file": prompt_file})
             return 2
-        pt = json.loads(comp)
-        c.call("Input.dispatchMouseEvent", {"type": "mousePressed", "x": pt["x"], "y": pt["y"],
-                                            "button": "left", "clickCount": 1})
-        c.call("Input.dispatchMouseEvent", {"type": "mouseReleased", "x": pt["x"], "y": pt["y"],
-                                            "button": "left", "clickCount": 1})
-        time.sleep(0.5)
-        c.call("Input.insertText", {"text": prompt})
-        # verify the full text landed in the composer value
-        ok, ratio = _wait(c, r"""(() => {
-          const i = document.querySelector('#chat-input');
-          return i ? String(Math.round(100 * (i.value||'').length / """ + str(len(prompt)) + r""")) : '0';
-        })()""", "100", tries=8, sleep=1.0, desc="insert")
-        try:
-            pct = int(ratio)
-        except Exception:
-            pct = 0
-        if pct < 97:
-            print(f"ERROR: only {pct}% of the prompt landed in the composer; NOT sending")
+        ratio_js = JS_INSERT_RATIO.replace("__PLEN__", str(len(prompt)))
+        pct = 0
+        for attempt in range(3):
+            pt = json.loads(comp)
+            c.call("Input.dispatchMouseEvent", {"type": "mousePressed", "x": pt["x"], "y": pt["y"],
+                                                "button": "left", "clickCount": 1})
+            c.call("Input.dispatchMouseEvent", {"type": "mouseReleased", "x": pt["x"], "y": pt["y"],
+                                                "button": "left", "clickCount": 1})
+            time.sleep(0.5)
+            # clear whatever is in the composer (React-native clear)
+            _eval(c, JS_CLEAR_COMPOSER, timeout=15)
+            time.sleep(0.3)
+            c.call("Input.insertText", {"text": prompt})
+            ok, ratio = _wait(c, ratio_js, "100", tries=8, sleep=1.0, desc="insert")
+            try:
+                pct = int(ratio)
+            except Exception:
+                pct = 0
+            if 97 <= pct <= 115:
+                break
+            print(f"      insert attempt {attempt+1}: ratio {pct}% (want 97-115) — clearing and retrying")
+        if not (97 <= pct <= 115):
+            print(f"ERROR: insert ratio {pct}% outside 97-115 bounds; NOT sending")
             _save({"name": name, "action": "failed", "stage": "insert", "pct": pct,
                    "tab_id": tab["id"], "ts": int(time.time()), "prompt_file": prompt_file})
             return 2
@@ -499,6 +609,35 @@ def create(name, prompt_file):
         url = _eval(c, "location.href", timeout=20)
 
         ok = sent and (body_proof or url != CHAT_URL)
+
+        # 7a. capacity handling: GLM-5.3 at capacity blocks generation with a
+        # 'Switch to GLM-5.3-Flash' dialog. NEVER switch (operator rule:
+        # GLM-5.3 only) and NEVER click Cancel while the block is active —
+        # WO-008 lesson (2026-09-09): the capacity-cancel ROLLS BACK the whole
+        # new-task session server-side (its URL redirects home = destroyed).
+        # Correct protocol: leave the dialog in place, write the recovery flag
+        # and exit 3 — the supervisor relaunches recover_capacity.py, which
+        # waits out the peak and re-sends the retained composer draft.
+        if ok:
+            try:
+                st = json.loads(_eval(c, JS_CAPACITY_STATE, timeout=15) or "{}")
+            except Exception:
+                st = {}
+            if st.get("capacity"):
+                print("      [capacity] GLM-5.3 at capacity — NOT clicking Cancel (it destroys new-task sessions)")
+                m = re.search(r"/c/([0-9a-f]{8})", url or "")
+                uuid = m.group(1) if m else tab["id"]
+                flag = os.path.join(BASE, "flags/capacity_recover.json")
+                os.makedirs(os.path.dirname(flag), exist_ok=True)
+                with open(flag, "w") as f:
+                    f.write(json.dumps({"uuid": uuid}))
+                _save({"name": name, "tab_id": tab["id"], "url": url, "ts": int(time.time()),
+                       "prompt_file": prompt_file, "prompt_chars": len(prompt),
+                       "mode": "agents-tab", "model": WANT_MODEL, "skill": WANT_SKILL,
+                       "insert_pct": pct, "sent": False, "stage": "capacity"})
+                print("      recovery flag written — supervisor will relaunch recover_capacity.py")
+                print(f"      monitor scripts/logs/recover.log; session: dispatch_worker.py check {name}")
+                return 3
         print(f"      send: composer-cleared={sent} body-proof={body_proof} url={url}")
         # 7b. the agent's sandbox provisions AFTER the prompt send — if the
         # sandbox-limit modal now blocks it, release idle sandboxes so the job starts
@@ -512,6 +651,148 @@ def create(name, prompt_file):
                "prompt_file": prompt_file, "prompt_chars": len(prompt),
                "mode": "agents-tab", "model": WANT_MODEL, "skill": WANT_SKILL,
                "insert_pct": pct, "sent": ok})
+        return 0 if ok else 2
+    finally:
+        c.close()
+
+
+# ------------------------------------------------------------------ done --
+
+def done(name, note=""):
+    """Mark a session DONE (completed + harvested) and close its tab.
+
+    A done session is retired: it no longer counts as an active job for
+    sandbox keep/release decisions, and its name is freed for reuse.
+    The session's chat transcript stays on chat.z.ai (the work record).
+    """
+    s = None
+    for rec in _sessions():
+        if rec.get("name") == name:
+            s = rec  # last record wins
+    if not s:
+        print(f"no session named {name}")
+        return 1
+    closed = False
+    for t in channel.list_tabs():
+        if t["id"] == s.get("tab_id"):
+            try:
+                import urllib.request
+                urllib.request.urlopen(
+                    "http://127.0.0.1:9222/json/close/" + t["id"], timeout=6).read()
+                closed = True
+            except Exception:
+                pass
+    _save({"action": "done", "name": name, "tab_id": s.get("tab_id"),
+           "note": note, "ts": int(time.time())})
+    print(f"session {name} marked DONE (tab closed={closed}): {note}")
+    return 0
+
+
+# ------------------------------------------------------------------ send --
+
+def send(name, message):
+    """Send a continuation/follow-up message into an existing session.
+
+    Failure-ladder step 3: a turn stalled mid-work (or the composer kept the
+    text after a failed send) — the recovery is a browser-driven re-send in
+    the SAME session. Uses the proven create() method: click composer ->
+    React-native clear -> insertText -> Enter (send-button fallback).
+    """
+    s = _find(name)
+    if not s:
+        print(f"no session named {name}")
+        return 1
+    tab = _tab_for(s)
+    if not tab:
+        print(f"session tab LOST (was {s.get('tab_id','')[:8]}); url: {s.get('url')}")
+        return 2
+    c = channel.CDP(tab["webSocketDebuggerUrl"], timeout=30)
+    try:
+        # refuse to interrupt an actively-generating turn
+        busy = _eval(c, r"""(() => {
+          const btns = Array.from(document.querySelectorAll('button'))
+            .map(b => (b.innerText||'').trim());
+          return btns.some(b => /^(Stop|Pause|Halt)$/i.test(b)) ? 'busy' : 'idle';
+        })()""", timeout=15)
+        if busy == "busy":
+            print("session is generating right now; not interrupting")
+            return 0
+        comp = _eval(c, JS_COMPOSER)
+        if not comp:
+            print("ERROR: composer not found — login expired?")
+            return 2
+        pt = json.loads(comp)
+        c.call("Input.dispatchMouseEvent", {"type": "mousePressed", "x": pt["x"], "y": pt["y"],
+                                            "button": "left", "clickCount": 1})
+        c.call("Input.dispatchMouseEvent", {"type": "mouseReleased", "x": pt["x"], "y": pt["y"],
+                                            "button": "left", "clickCount": 1})
+        time.sleep(0.5)
+        _eval(c, JS_CLEAR_COMPOSER, timeout=15)
+        time.sleep(0.3)
+        c.call("Input.insertText", {"text": message})
+        ratio_js = JS_INSERT_RATIO.replace("__PLEN__", str(len(message)))
+        ok, ratio = _wait(c, ratio_js, "100", tries=8, sleep=1.0, desc="insert")
+        try:
+            pct = int(ratio)
+        except Exception:
+            pct = 0
+        if not (97 <= pct <= 115):
+            print(f"ERROR: insert ratio {pct}%; message not sent")
+            return 2
+        body_before = int(_eval(c, "(document.body.innerText||'').length", timeout=15) or 0)
+        for typ in ("keyDown", "keyUp"):
+            c.call("Input.dispatchKeyEvent", {
+                "type": typ, "key": "Enter", "code": "Enter",
+                "windowsVirtualKeyCode": 13, "nativeVirtualKeyCode": 13})
+        time.sleep(3)
+        cleared = _eval(c, r"""(() => {
+          const i = document.querySelector('#chat-input');
+          return i ? String((i.value||'').length) : 'gone';
+        })()""", timeout=20)
+        if cleared not in ("0", "gone"):
+            # fallback 1: the page's send button (class differs between the
+            # new-task page and session pages)
+            sb = _eval(c, JS_SEND_BUTTON)
+            spt = None
+            if sb:
+                spt = json.loads(sb)
+            if not spt or spt.get("disabled"):
+                # fallback 2: session pages use an icon-only round button —
+                # the LAST enabled button inside the composer's form
+                try:
+                    alt = _eval(c, r"""(() => {
+                      const i = document.querySelector('#chat-input, textarea');
+                      const form = i ? i.closest('form') : null;
+                      if (!form) return '';
+                      const btns = Array.from(form.querySelectorAll('button'))
+                        .filter(b => !b.disabled && b.getBoundingClientRect().width > 0);
+                      if (!btns.length) return '';
+                      const b = btns[btns.length - 1];
+                      const r = b.getBoundingClientRect();
+                      return JSON.stringify({x: Math.round(r.x + r.width/2),
+                                             y: Math.round(r.y + r.height/2)});
+                    })()""", timeout=15)
+                    if alt:
+                        spt = json.loads(alt)
+                except Exception:
+                    spt = None
+            if spt and not spt.get("disabled"):
+                c.call("Input.dispatchMouseEvent", {"type": "mousePressed", "x": spt["x"],
+                                                    "y": spt["y"], "button": "left", "clickCount": 1})
+                c.call("Input.dispatchMouseEvent", {"type": "mouseReleased", "x": spt["x"],
+                                                    "y": spt["y"], "button": "left", "clickCount": 1})
+                time.sleep(3)
+                cleared = _eval(c, r"""(() => {
+                  const i = document.querySelector('#chat-input');
+                  return i ? String((i.value||'').length) : 'gone';
+                })()""", timeout=20)
+        sent = cleared in ("0", "gone")
+        body_after = int(_eval(c, "(document.body.innerText||'').length", timeout=15) or 0)
+        ok = sent and body_after > body_before
+        print(f"message sent: {'VERIFIED' if ok else 'NOT VERIFIED'} "
+              f"(composer-cleared={sent}, body {body_before}->{body_after})")
+        _save({"action": "send", "name": name, "tab_id": tab["id"], "ts": int(time.time()),
+               "msg_chars": len(message), "sent": ok, "kind": "continuation"})
         return 0 if ok else 2
     finally:
         c.close()
@@ -668,6 +949,17 @@ def main():
         return create(sys.argv[2], sys.argv[3])
     if cmd == "check":
         return check(sys.argv[2])
+    if cmd == "send":
+        if len(sys.argv) < 4:
+            print("usage: send <name> <message | @prompt-file>")
+            return 1
+        arg = sys.argv[3]
+        import os.path as _p
+        if arg.startswith("@") and _p.isfile(arg[1:]):
+            msg = open(arg[1:], encoding="utf-8").read()
+        else:
+            msg = arg
+        return send(sys.argv[2], msg)
     if cmd == "list":
         for s in _sessions():
             if s.get("action") == "void":
@@ -681,6 +973,11 @@ def main():
             print("usage: void <name> <reason>")
             return 1
         return void(sys.argv[2], " ".join(sys.argv[3:]))
+    if cmd == "done":
+        if len(sys.argv) < 3:
+            print("usage: done <name> [note]")
+            return 1
+        return done(sys.argv[2], " ".join(sys.argv[3:]) if len(sys.argv) > 3 else "completed")
     if cmd == "models":
         return models()
     if cmd == "sandboxes":

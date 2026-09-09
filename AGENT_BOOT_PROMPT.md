@@ -51,8 +51,11 @@ health checks stay red after a re-deploy.
 python3 scripts/dispatch_worker.py create <session-name> <prompt-file.md>
 python3 scripts/dispatch_worker.py list
 python3 scripts/dispatch_worker.py check <session-name>
+python3 scripts/dispatch_worker.py send <name> <msg | @file>  # continuation msg
+python3 scripts/dispatch_worker.py done <name> [note]       # complete + free slot
 python3 scripts/dispatch_worker.py void <name> <reason>     # nullify a bad session
 python3 scripts/dispatch_worker.py sandboxes               # sandbox concurrency state
+python3 scripts/dispatch_worker.py models                  # model menu options
 ```
 
 `create` opens a new tab in the replay browser, navigates to the chat site,
@@ -113,6 +116,16 @@ prompt did not land. Failure ladder — climb it in order:
    Close the tab and open a fresh one at the SAME session URL (the
    conversation persists server-side); the session keeps generating. Record
    the tab change in the registry (`tab-reopen` record) and keep monitoring.
+9. **GLM-5.3 capacity** ("Model is currently at capacity" dialog after send):
+   NEVER click Cancel — canceling destroys new-task sessions server-side.
+   The dispatcher stages the send and writes `flags/capacity_recover.json`;
+   `recover_capacity.py` (kept alive by the supervisor) polls once a minute
+   and re-sends from the composer draft when capacity clears. You just wait —
+   verify `scripts/logs/recover.log` advances.
+10. **Turn stall** (session generated, then stops mid-task without finishing):
+   send a continuation message (`send <name> "continue — deliver the remaining
+   files per the report format"`). Sites truncate long turns; continuation
+   recovers the delivery.
 
 Always record what you did in the registry/worklog so retries are traceable,
 and tell the operator when manual action (login/captcha) is needed.
@@ -127,7 +140,13 @@ and tell the operator when manual action (login/captcha) is needed.
   while you work — never block on one thing.
 - **Monitor sessions**: `dispatch_worker.py check <name>` for each active
   session on a slow loop; harvest final reports when they appear (look for
-  the report marker your prompt mandated).
+  the report marker your prompt mandated). Harvest tools:
+  `extract_full.py <name>` (scroll-sweep the whole virtualized transcript,
+  expand "Show full message", parse fenced file blocks) and
+  `harvest_report.py <name>` (registry-aware tab lookup, survives
+  tab-reopen). For work-order programs, generate the prompt files with
+  `build_prompt.py <WO-ID> <repo> <sha>` (verbatim boundary files +
+  signatures for the rest) and `build_audit_prompts.py [repo]`.
 - **Keep the stack alive**: the watchdog pair does this; verify
   `scripts/flags/supervisor_heartbeat` is fresh; re-run `./deploy.sh` only if
   health checks stay red.

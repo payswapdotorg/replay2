@@ -11,6 +11,10 @@ scripts/*.pid
 scripts/*.log
 scripts/watcher.out
 
+# program scratch (generated per-deployment by build_prompt/harvest)
+scripts/worker-prompts/
+scripts/worker-reports/
+
 next-env.d.ts
 *.tsbuildinfo
 .DS_Store
