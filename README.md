@@ -3,7 +3,10 @@
 A deployable **remote-browser-control console** (a "replay"): a web page that
 live-mirrors a headless Chrome and lets a human operate it from anywhere —
 click, **drag (streamed in real time)**, type, scroll, switch tabs, log in —
-including slider-captcha verification.
+including slider-captcha verification. Plus a **full agent chat**: a
+GLM-5.3 conversation section with real tools (bash, the replay browser, web
+search, images, vision, worker dispatch, skills) — the same class of
+assistant you'd talk to on chat.z.ai, embedded in the console.
 
 Deploy the whole stack into a fresh sandbox with one command and a one-line
 login; no rebuilding.
@@ -22,17 +25,68 @@ Xvfb :99 ── Chrome (CDP :9222, persistent profile scripts/browser-profile)
 
 Next.js console :3000  (/) ── frame/event/tabs/status/inbox routes proxy to
                  replayd with a bridge.py spawn fallback.
+                 /api/agent/chat — the agent conversation backend (SSE).
 ```
 
 - Console UI: live replay image (native pointer listeners — React synthetic
   handlers proved unreliable), amber drag guide, click feedback line with the
   probed target element, tab bar with auto-focus of new tabs, keyboard box
-  (no auto-Enter), message thread to the resident agent.
+  (no auto-Enter), and the **Agent chat** column (see below).
 - Clicks are sent as **fractions** (fx/fy 0..1); the daemon maps them with the
   live viewport (`Page.getLayoutMetrics`) — immune to image-size/scale skew.
-- `scripts/dispatch_worker.py` — create named chat sessions in the browser
-  (new tab → navigate → type prompt → Enter → verify in DOM) and check them.
-  Useful for dispatching work to AI chat sessions living inside the replay.
+- `scripts/dispatch_worker.py` — create named **agent** sessions in the
+  browser (agents tab + GLM-5.3 + Full-Stack skill, every step hard-verified,
+  sandbox-concurrency handling) and check/void them. Useful for dispatching
+  long-horizon work to AI sessions living inside the replay.
+
+## Agent chat ("Message the agent")
+
+The console's conversation section is a full agent, not a message box:
+
+- **Model**: GLM-5.3 (picker: GLM-5.3 / -Flash / 5.2 / 4.6), streaming with
+  native tool calling, thinking phase, 429 backoff.
+- **Tools** (13, capability-detected at runtime):
+  - *local tier* (self-hosted): `bash`, `read_file`, `write_file`,
+    `list_dir`, `browser` (the live replay Chrome: look = screenshot + GLM
+    vision, click/domclick/drag/type/eval/tabs…), `dispatch_session`
+    (agents-tab worker dispatch incl. sandbox concurrency)
+  - *cloud tier* (work on Vercel too): `web_search`, `read_web_page`,
+    `generate_image`, `search_images`, `edit_image`, `analyze_image`
+    (GLM-4.6V vision), `load_skill`
+- **Skills**: bundled playbooks (browser-ops, fullstack-dev, web-research,
+  media-tools, resident-ops, chat-playbook) loaded on demand — the system
+  prompt stays small, the agent pulls full guidance when relevant.
+- **UI**: streaming markdown with syntax-highlighted code blocks + copy,
+  tool-call cards with results/durations/inline images, multi-conversation
+  history (localStorage — serverless-safe), image attachments (vision
+  pre-pass), stop / regenerate, model picker, resident-agent notes inline.
+- **Resident bridge**: prompts sent through the chat are mirrored into
+  `scripts/flags/operator_inbox.jsonl` (source-tagged) so a resident CLI
+  agent watching the inbox stays aware; resident replies (agent_outbox)
+  surface inline in the thread.
+- **Hard constraints** (enforced by the system prompt): the agent never
+  solves captchas and never touches credentials — logins are the operator's,
+  driven through the replay image.
+
+### Deploy on Vercel (serverless)
+
+The chat works standalone on Vercel — the cloud tool tier needs no local
+stack:
+
+1. Import the repo in Vercel (framework preset: Next.js).
+2. Set env vars: `ZAI_BASE_URL` + `ZAI_API_KEY` (the z-ai-web-dev-sdk
+   gateway credentials), optionally `AGENT_MODEL` (default `glm-5.3`).
+3. Deploy. The console shows the replay pane offline, the chat badge reads
+   "serverless · cloud tools", and web search / page reader / image
+   generation / image search / edit / vision / skills all work.
+4. Optional: point `REPLAYD_URL` at an exposed replayd (e.g. the sandbox
+   daemon behind a tunnel) to re-enable the browser + dispatch tools
+   remotely.
+
+The local tools (`bash`, files, `browser`, `dispatch_session`) report
+unavailability gracefully on serverless — the agent explains the limitation
+and adapts (authors code, uses cloud tools) instead of failing silently.
+Route config sets `maxDuration = 800` (Vercel clamps per plan).
 
 ## Deploy (fresh sandbox)
 

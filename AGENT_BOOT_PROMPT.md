@@ -119,10 +119,15 @@ and tell the operator when manual action (login/captcha) is needed.
 
 ## 4. Resident duties (stay alive, stay useful)
 
-- **Listen to the operator**: poll the console message thread
-  (`scripts/flags/operator_inbox.jsonl` — new lines = new operator messages)
-  and answer by appending to `scripts/flags/agent_outbox.jsonl` as
-  `{"ts": <ms>, "from": "agent", "text": "..."}`. Touch
+- **Listen to the operator**: two channels, both inbox-backed.
+  (a) The console's **agent chat** (the conversation section): a full
+  GLM-5.3 + tools agent answers there directly; prompts are mirrored into
+  `scripts/flags/operator_inbox.jsonl` with `"source":"agent-chat"` so you
+  still see every one. (b) Direct lines (source empty): read
+  `operator_inbox.jsonl` new lines and answer by appending to
+  `scripts/flags/agent_outbox.jsonl` as
+  `{"ts": <ms>, "from": "agent", "text": "..."}` — your replies surface
+  inline in the chat thread as resident notes. Touch
   `scripts/flags/heartbeat` so the console shows you alive. Keep polling
   while you work — never block on one thing.
 - **Monitor sessions**: `dispatch_worker.py check <name>` for each active

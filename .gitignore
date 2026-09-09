@@ -14,3 +14,9 @@ scripts/watcher.out
 next-env.d.ts
 *.tsbuildinfo
 .DS_Store
+
+# agent chat runtime state — never commit
+.data/
+.z-ai-config
+scripts/browser-profile
+src/app/api/harvest/
