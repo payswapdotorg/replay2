@@ -24,29 +24,45 @@ async function writeEnvConfig(): Promise<boolean> {
   const baseUrl = process.env.ZAI_BASE_URL;
   const apiKey = process.env.ZAI_API_KEY;
   if (!baseUrl || !apiKey) return false;
-  try {
-    const cwdConfig = join(process.cwd(), ".z-ai-config");
-    try {
-      const raw = JSON.parse(await fsp.readFile(cwdConfig, "utf-8"));
-      if (raw?.baseUrl && raw?.apiKey) return true; // already valid
-    } catch {
-      /* write a fresh one below */
-    }
-    const cfg: Record<string, string> = { baseUrl, apiKey };
-    if (process.env.ZAI_CHAT_ID) cfg.chatId = process.env.ZAI_CHAT_ID;
-    if (process.env.ZAI_USER_ID) cfg.userId = process.env.ZAI_USER_ID;
-    if (process.env.ZAI_TOKEN) cfg.token = process.env.ZAI_TOKEN;
-    await fsp.writeFile(cwdConfig, JSON.stringify(cfg), { mode: 0o600 });
-    return true;
-  } catch {
-    return false;
+  const cfg: Record<string, string> = { baseUrl, apiKey };
+  if (process.env.ZAI_CHAT_ID) cfg.chatId = process.env.ZAI_CHAT_ID;
+  if (process.env.ZAI_USER_ID) cfg.userId = process.env.ZAI_USER_ID;
+  if (process.env.ZAI_TOKEN) cfg.token = process.env.ZAI_TOKEN;
+  const payload = JSON.stringify(cfg);
+  // Serverless (Vercel/Lambda): cwd is the read-only bundle and HOME may be
+  // unwritable — redirect HOME to /tmp (the only writable path) and write
+  // there. The SDK resolves <homedir>/.z-ai-config, so it finds it.
+  const serverless = Boolean(process.env.VERCEL || process.env.AWS_LAMBDA_FUNCTION_NAME);
+  const candidates = [
+    join(process.cwd(), ".z-ai-config"),
+    join(os.homedir(), ".z-ai-config"),
+  ];
+  if (serverless) {
+    process.env.HOME = "/tmp";
+    candidates.push("/tmp/.z-ai-config");
   }
+  for (const p of candidates) {
+    try {
+      const raw = JSON.parse(await fsp.readFile(p, "utf-8"));
+      if (raw?.baseUrl === baseUrl && raw?.apiKey === apiKey) return true; // already current
+    } catch {
+      /* write below */
+    }
+    try {
+      await fsp.writeFile(p, payload, { mode: 0o600 });
+      return true;
+    } catch {
+      /* next candidate */
+    }
+  }
+  return false;
 }
 
 async function findFileConfig(): Promise<boolean> {
   const paths = [
     join(process.cwd(), ".z-ai-config"),
     join(os.homedir(), ".z-ai-config"),
+    "/tmp/.z-ai-config",
     "/etc/.z-ai-config",
   ];
   for (const p of paths) {

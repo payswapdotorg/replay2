@@ -16,6 +16,7 @@ import { promises as fsp, accessSync, constants as fsConstants } from "fs";
 import { join, isAbsolute, resolve as resolvePath } from "path";
 import { getZai, VISION_MODEL } from "./config";
 import { getSkill } from "./skills";
+import { composioAvailable, composioCall } from "./composio";
 import { REPLAYD_URL } from "@/lib/replay";
 
 // ------------------------------------------------------------------ types
@@ -84,6 +85,7 @@ async function sdkOk(): Promise<boolean> {
 export async function toolAvailability(): Promise<Record<string, boolean>> {
   const [replayd, sdk] = await Promise.all([replaydAvailable(), sdkOk()]);
   const fs = fsAvailable();
+  const comp = composioAvailable();
   return {
     bash: fs,
     read_file: fs,
@@ -98,6 +100,8 @@ export async function toolAvailability(): Promise<Record<string, boolean>> {
     edit_image: sdk,
     analyze_image: sdk,
     load_skill: true,
+    remote_bash: comp,
+    remote_python: comp,
   };
 }
 
@@ -282,12 +286,42 @@ export const TOOL_DEFS: ToolDef[] = [
       required: ["name"],
     },
   },
+  {
+    name: "remote_bash",
+    availability: "cloud",
+    description:
+      "Run a bash command in the Composio E2B remote sandbox (persistent filesystem across calls, ~1GB RAM, 180s per command limit). Python 3.13 + Node 20 available. Use when local bash is offline (serverless) or for heavy/isolated work. IMPORTANT: this is NOT the repo workspace — clone or create files here explicitly (git is available).",
+    parameters: {
+      type: "object",
+      properties: {
+        command: { type: "string", description: "bash command (hard 180s limit — split long tasks)" },
+      },
+      required: ["command"],
+    },
+  },
+  {
+    name: "remote_python",
+    availability: "cloud",
+    description:
+      "Execute Python code in the persistent remote Jupyter workbench (same E2B sandbox as remote_bash — imports, variables, files persist across calls). Returns stdout. Ideal for data processing, scripting bulk operations, and multi-step analysis with state.",
+    parameters: {
+      type: "object",
+      properties: {
+        code: { type: "string", description: "Python code to execute (state persists between calls)" },
+      },
+      required: ["code"],
+    },
+  },
 ];
 
 // ------------------------------------------------------------- utilities
 
 const UNAVAILABLE = (why: string) =>
-  `TOOL UNAVAILABLE: ${why}. This deployment is serverless (no local execution surface). Explain the limitation to the operator and adapt: author code/content in your reply, use the cloud tools (web_search, read_web_page, images, vision), or ask the operator to run the command themselves and paste the output.`;
+  `TOOL UNAVAILABLE: ${why}. ${
+    composioAvailable()
+      ? "Local surface is offline — use remote_bash / remote_python (the Composio E2B sandbox) for real execution instead."
+      : "This deployment is serverless (no local execution surface). Explain the limitation to the operator and adapt: author code/content in your reply, use the cloud tools (web_search, read_web_page, images, vision), or ask the operator to run the command themselves and paste the output."
+  }`;
 
 function cap(s: string, max = 20000, keep = "middle"): string {
   if (s.length <= max) return s;
@@ -576,6 +610,30 @@ export async function executeTool(
           return { content: UNAVAILABLE("browser control needs the local replayd daemon (CDP bridge to the headless Chrome)") };
         }
         return execBrowser(args, ctx);
+      }
+      case "remote_bash": {
+        if (!composioAvailable()) return { content: UNAVAILABLE("remote_bash needs COMPOSIO_API_KEY (Composio Connect consumer key)") };
+        const command = String(args.command || "");
+        if (!command.trim()) return { content: "empty command" };
+        if (ctx.abort.aborted) return { content: "aborted before start" };
+        const r = await composioCall("COMPOSIO_REMOTE_BASH_TOOL", { command }, 200000);
+        if (!r.ok) return { content: `remote_bash failed: ${r.error}` };
+        const stdout = String(r.data.stdout ?? "");
+        const stderr = String(r.data.stderr ?? "");
+        const out = (stdout + (stderr ? `\n[stderr]\n${stderr}` : "")).trim() || "(no output)";
+        return { content: cap(out, 20000) };
+      }
+      case "remote_python": {
+        if (!composioAvailable()) return { content: UNAVAILABLE("remote_python needs COMPOSIO_API_KEY (Composio Connect consumer key)") };
+        const code = String(args.code || "");
+        if (!code.trim()) return { content: "empty code" };
+        if (ctx.abort.aborted) return { content: "aborted before start" };
+        const r = await composioCall("COMPOSIO_REMOTE_WORKBENCH", { code_to_execute: code }, 200000);
+        if (!r.ok) return { content: `remote_python failed: ${r.error}` };
+        const stdout = String(r.data.stdout ?? "");
+        const stderr = String(r.data.stderr ?? "");
+        const out = (stdout + (stderr ? `\n[stderr]\n${stderr}` : "")).trim() || "(no output)";
+        return { content: cap(out, 20000) };
       }
       case "dispatch_session": {
         if (!fsAvailable() || !(await replaydAvailable())) {
