@@ -12,7 +12,9 @@ Also rotates logs so nothing grows unbounded, and touches
 flags/supervisor_heartbeat (distinct from the agent heartbeat flag).
 This process itself is launched detached (setsid) so it survives CLI session
 resets; if IT is ever killed, any later `launch_supervisor` run will adopt the
-role thanks to the flock.
+role thanks to the flock. The custodian.py (third ring member) additionally
+guards the supervisor+watcher PAIR against simultaneous OOM death, and the
+watcher resurrects the custodian — ring of three, any two heal the third.
 
 Run: nohup setsid /home/z/.venv/bin/python3 scripts/supervisor.py \
         >> scripts/logs/supervisor.log 2>&1 &
@@ -76,6 +78,28 @@ def read_pid(path):
         return ""
 
 
+def hb_age(path):
+    """Age of a heartbeat flag in seconds (huge if missing)."""
+    try:
+        return max(0.0, time.time() - os.path.getmtime(path))
+    except Exception:
+        return 1e9
+
+
+def proc_start_epoch(pid):
+    """Process start time as epoch seconds (0 on failure)."""
+    try:
+        with open(f"/proc/{int(pid)}/stat") as f:
+            st = f.read()
+        after = st[st.rindex(")") + 2:].split()
+        ticks = int(after[19])                       # field 22 (starttime)
+        btime = int(open("/proc/stat").read().split("btime")[1].split()[0])
+        hz = os.sysconf("SC_CLK_TCK") or 100
+        return btime + ticks / hz
+    except Exception:
+        return 0
+
+
 def rotate_logs():
     for name in ("watcher.log", "channel.log"):
         p = os.path.join(BASE, name)
@@ -129,17 +153,32 @@ def ensure_capacity_recovery():
 
 
 def ensure_watcher():
+    # 1. liveness: pidfile, then pgrep fallback (heals stale pidfile)
     pid = read_pid(os.path.join(BASE, "watcher.pid"))
-    if pid_alive(pid, "watcher.py"):
-        return False
-    # pidfile stale or empty — double-check by scanning process list
-    r = subprocess.run(["pgrep", "-f", "scripts/watcher.py"], capture_output=True, text=True)
-    if r.stdout.strip():
+    if not pid_alive(pid, "watcher.py"):
+        r = subprocess.run(["pgrep", "-f", "scripts/watcher.py"], capture_output=True, text=True)
+        pid = r.stdout.strip().split("\n")[0] if r.stdout.strip() else ""
+    if pid:
         try:
-            open(os.path.join(BASE, "watcher.pid"), "w").write(r.stdout.strip().split("\n")[0])
+            open(os.path.join(BASE, "watcher.pid"), "w").write(str(pid))
         except Exception:
             pass
-        return False
+        # 2. HANG detection: alive-but-stuck is NOT alive. The watcher writes
+        # watcher_heartbeat every 10s; its slow checks take <=~60s. Stale
+        # beyond 180s = hung (OOM-thrash / stuck syscall) — SIGKILL so the
+        # restart always yields a fresh process. The PROC_GRACE startup
+        # window prevents killing a watcher that just launched and has not
+        # yet written its first heartbeat (stale flag from predecessor).
+        age = hb_age(os.path.join(FLAGS, "watcher_heartbeat"))
+        if age > 180 and (time.time() - proc_start_epoch(pid)) > 180:
+            log(f"watcher HUNG (pid {pid}, heartbeat {int(age)}s stale) — SIGKILL + restart")
+            try:
+                subprocess.run(["kill", "-9", str(pid)], capture_output=True)
+            except Exception:
+                pass
+            time.sleep(1)
+        else:
+            return False
     log("watcher DEAD — restarting")
     subprocess.Popen([PY, os.path.join(BASE, "launch_watcher.py")],
                      stdout=open(os.path.join(LOGDIR, "watcher_launch.log"), "a"),
@@ -237,7 +276,10 @@ def ensure_queue_watch():
     """Resurrect queue_watch.py while flags/queue_watch.spec exists.
 
     The spec is written by queue_watch.py itself; it removes the spec when
-    the watched session completes, which retires the guard.
+    the watched session completes, which retires the guard. Also SIGKILLs
+    a HUNG instance (queue_watch_heartbeat stale beyond 600s — its loop is
+    ~120s sleep + <=~60s of CDP work; forensic case 2026-09-09: an instance
+    sat hung-but-alive for 40 minutes with nobody noticing).
     """
     spec_path = os.path.join(FLAGS, "queue_watch.spec")
     if not os.path.exists(spec_path):
@@ -248,10 +290,26 @@ def ensure_queue_watch():
         return
     pid = spec.get("pid")
     if pid and pid_alive(pid, "queue_watch"):
-        return
+        age = hb_age(os.path.join(FLAGS, "queue_watch_heartbeat"))
+        if age > 600 and (time.time() - proc_start_epoch(pid)) > 600:
+            log(f"queue_watch HUNG (pid {pid}, heartbeat {int(age)}s stale) — SIGKILL + restart")
+            try:
+                subprocess.run(["kill", "-9", str(pid)], capture_output=True)
+            except Exception:
+                pass
+            time.sleep(1)
+        else:
+            return
     r = subprocess.run(["pgrep", "-f", "scripts/queue_watch.py"], capture_output=True, text=True)
     if r.returncode == 0 and r.stdout.strip():
-        return  # already running under a different pid
+        # alive under a different pid (spec pid stale) — heal spec
+        p = r.stdout.strip().split("\n")[0]
+        try:
+            spec["pid"] = p
+            open(spec_path, "w").write(json.dumps(spec) + "\n")
+        except Exception:
+            pass
+        return
     log("queue_watch DEAD — restarting (spec present)")
     args = [PY, os.path.join(BASE, "queue_watch.py"),
             spec.get("name", ""), spec.get("tab_prefix", ""), spec.get("marker", "")]

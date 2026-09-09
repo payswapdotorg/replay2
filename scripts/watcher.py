@@ -1,23 +1,21 @@
 #!/usr/bin/env python3
-"""watcher.py — resident replay-stack watcher.
+"""watcher.py — the resident program watcher (post-reset rebuild).
 
 Monitors (gentle, low-frequency):
-  1. target-site login state     -> sets flags/LOGIN_READY when a session exists
-  2. JS dialogs on the browser   -> auto-accepts ("Reload site?" popups)
-  3. operator inbox messages     -> surfaces them into watcher.log
-  4. stack processes             -> restarts dead CDP/dev/replayd/supervisor
+  1. browser chat.z.ai login state  -> when login appears: sets login flag file
+  2. worker branches on GitHub      -> new branch push = worker completion event
+  3. operator PAT write access      -> when granted: write-access flag file
 
-Writes log lines to scripts/watcher.log; flag files in scripts/flags/.
-Immortal: top-level restart loop + pidfile; the supervisor relaunches this
-process if it ever dies, and THIS process resurrects the supervisor if IT
-dies (mutual watchdog pair). Run via launch_watcher.py (start_new_session).
+Writes JSON lines to watcher.log; flags as files in scripts/flags/.
+Self-documenting: survives as long as the sandbox; the worklog + repo state
+carry across resets. Run via launch_watcher.py (start_new_session).
 """
 import json
 import os
+import re
 import subprocess
 import sys
 import time
-import urllib.request
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 import channel
@@ -26,19 +24,12 @@ BASE = os.path.dirname(os.path.abspath(__file__))
 LOG = os.path.join(BASE, "watcher.log")
 FLAGS = os.path.join(BASE, "flags")
 os.makedirs(FLAGS, exist_ok=True)
-CONSOLE_PORT = int(os.environ.get("REPLAY_PORT", "3000"))
-CDP_PORT = int(os.environ.get("CDP_PORT", "9222"))
-REPLAYD_PORT = int(os.environ.get("REPLAYD_PORT", "3100"))
 
-STATE = {"login": "unknown"}
-
-
-def py_bin():
-    """Interpreter resolved by deploy.sh (scripts/python_bin.txt)."""
-    try:
-        return open(os.path.join(BASE, "python_bin.txt")).read().strip() or sys.executable
-    except Exception:
-        return sys.executable
+STATE = {
+    "login": "unknown",
+    "branches": set(),
+    "write": False,
+}
 
 
 def log(msg):
@@ -61,28 +52,57 @@ def log(msg):
         pass
 
 
+def get_pat():
+    try:
+        env = open(os.path.join(BASE, "env.sh")).read()
+        m = re.search(r"OPERATOR_PAT=(ghp_\w+)", env)
+        return m.group(1) if m else ""
+    except Exception:
+        return ""
+
+
 def check_login():
-    """Generic: a visible composer = session exists; 'Sign in' link = out."""
     try:
         tabs = channel.list_tabs()
-        tab = next((t for t in tabs if (t.get("url") or "").startswith("http")), None)
+        tab = next((t for t in tabs if "chat.z.ai" in (t.get("url") or "")), None)
         if not tab:
             return STATE["login"]
         cdp = channel.CDP(tab["webSocketDebuggerUrl"], timeout=12)
         try:
-            has_composer = cdp.eval(
-                "!!document.querySelector('textarea, #chat-input, div[contenteditable=true]')",
-                timeout=8)
-            body = cdp.eval("document.body.innerText || ''", timeout=8) or ""
+            body = cdp.eval("document.body.innerText || ''", timeout=10) or ""
         finally:
             cdp.close()
+        if "tepa" in body:
+            return "logged-in(tepa)"
         if "Sign in" in body or "Log in" in body:
             return "logged-out"
-        if has_composer:
-            return "logged-in"
         return "page:" + str(len(body))
     except Exception:
         return STATE["login"]
+
+
+def check_branches(pat):
+    r = subprocess.run(["curl", "-s", "--max-time", "15",
+                        "-H", f"Authorization: token {pat}",
+                        "https://api.github.com/repos/payswapdotorg/codex/branches?per_page=50"],
+                       capture_output=True, text=True)
+    try:
+        bs = json.loads(r.stdout)
+        return {b["name"]: b["commit"]["sha"][:10] for b in bs if isinstance(b, dict)}
+    except Exception:
+        return None
+
+
+def check_write(pat):
+    r = subprocess.run(["curl", "-s", "--max-time", "10",
+                        "-H", f"Authorization: token {pat}",
+                        "https://api.github.com/repos/payswapdotorg/codex"],
+                       capture_output=True, text=True)
+    try:
+        d = json.loads(r.stdout)
+        return bool((d.get("permissions") or {}).get("push"))
+    except Exception:
+        return STATE["write"]
 
 
 def check_dialogs():
@@ -94,9 +114,8 @@ def check_dialogs():
             aid = open(os.path.join(FLAGS, "active_tab.txt")).read().strip()
         except Exception:
             pass
-        tab = next((t for t in tabs if t.get("id") == aid), None)
-        if tab is None and tabs:
-            tab = tabs[0]
+        tab = next((t for t in tabs if t.get("id") == aid), None) or \
+            next((t for t in tabs if "chat.z.ai" in (t.get("url") or "")), None)
         if not tab:
             return False
         cdp = channel.CDP(tab["webSocketDebuggerUrl"], timeout=8)
@@ -113,7 +132,7 @@ def check_dialogs():
 
 
 def check_inbox():
-    """Surface new operator messages into watcher.log so the agent notices."""
+    """Surface new operator messages into watcher.log so the agent notices them."""
     path = os.path.join(FLAGS, "operator_inbox.jsonl")
     try:
         if not os.path.exists(path):
@@ -134,19 +153,26 @@ def check_inbox():
 
 
 def check_procs():
-    """Restart dead infrastructure (Chrome/CDP / dev server / replayd /
-    supervisor). Mutual-watchdog: the supervisor restarts us if we die; we
-    restart the supervisor if IT dies — the pair survives unless both die in
-    the same instant."""
-    py = py_bin()
+    """Restart dead infrastructure (Xvfb / Chrome / dev server / supervisor /
+    custodian).
+    Ring of three (any two members heal the third):
+      - the supervisor restarts us (PID + heartbeat-hang detection, 10s)
+      - we restart the supervisor (PID + heartbeat-hang detection, ~2min)
+      - the custodian (small, OOM-safe) guards the pair against simultaneous
+        death; we resurrect the custodian if IT dies
+    """
+    base = os.path.dirname(os.path.abspath(__file__))
     try:
+        # Chrome dead => CDP endpoint gone
+        import urllib.request
         try:
-            urllib.request.urlopen(f"http://127.0.0.1:{CDP_PORT}/json/version", timeout=3).read()
+            urllib.request.urlopen("http://127.0.0.1:9222/json/version", timeout=3).read()
         except Exception:
             log("CDP dead — restarting Chrome + Xvfb")
-            subprocess.run([py, os.path.join(BASE, "launch_stack.py")], timeout=120)
+            subprocess.run(["/home/z/.venv/bin/python3", os.path.join(base, "launch_stack.py")], timeout=120)
+        # dev server dead => operator console unreachable
         try:
-            urllib.request.urlopen(f"http://127.0.0.1:{CONSOLE_PORT}", timeout=4).read(64)
+            urllib.request.urlopen("http://127.0.0.1:3000", timeout=4).read(64)
         except Exception:
             # liveness-guarded: a cold compile binds the port late; spawning
             # extra dev servers during that window stampedes memory (OOM).
@@ -155,20 +181,26 @@ def check_procs():
             r = subprocess.run(["pgrep", "-f", "next dev|bun run dev|next-server"],
                                capture_output=True, text=True)
             if not r.stdout.strip():
-                log(f"dev server :{CONSOLE_PORT} dead — restarting")
-                subprocess.Popen([py, os.path.join(BASE, "launch_dev.py")],
+                log("dev server :3000 dead — restarting")
+                subprocess.Popen(["/home/z/.venv/bin/python3", os.path.join(base, "launch_dev.py")],
                                  stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
                 time.sleep(5)
+        # replay daemon dead => console loses realtime frames + drags
         try:
-            urllib.request.urlopen(f"http://127.0.0.1:{REPLAYD_PORT}/healthz", timeout=3).read(64)
+            urllib.request.urlopen("http://127.0.0.1:3100/healthz", timeout=3).read(64)
         except Exception:
             log("replayd :3100 dead — restarting")
-            subprocess.Popen([py, os.path.join(BASE, "launch_replayd.py")],
+            subprocess.Popen(["/home/z/.venv/bin/python3", os.path.join(base, "launch_replayd.py")],
                              stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
             time.sleep(2)
+        # supervisor dead OR hung => resurrect it (it holds the flock, so a
+        # fresh launch simply adopts the role). Hung = alive-but-stuck:
+        # supervisor_heartbeat is written every 10s; stale beyond 180s with a
+        # process older than 180s (startup grace) means wedged — SIGKILL
+        # first so the restart always yields a fresh process.
         sup_pid = ""
         try:
-            sup_pid = open(os.path.join(BASE, "supervisor.pid")).read().strip()
+            sup_pid = open(os.path.join(base, "supervisor.pid")).read().strip()
         except Exception:
             pass
         alive = False
@@ -178,11 +210,56 @@ def check_procs():
                 alive = "supervisor.py" in cmd
             except Exception:
                 alive = False
+        if alive:
+            try:
+                age = time.time() - os.path.getmtime(os.path.join(FLAGS, "supervisor_heartbeat"))
+                started = 0
+                try:
+                    with open(f"/proc/{sup_pid}/stat") as f:
+                        st = f.read()
+                    after = st[st.rindex(")") + 2:].split()
+                    ticks = int(after[19])
+                    btime = int(open("/proc/stat").read().split("btime")[1].split()[0])
+                    started = btime + ticks / (os.sysconf("SC_CLK_TCK") or 100)
+                except Exception:
+                    pass
+                if age > 180 and (time.time() - started) > 180:
+                    log(f"supervisor HUNG (hb {int(age)}s stale) — SIGKILL + resurrect")
+                    try:
+                        subprocess.run(["kill", "-9", sup_pid], capture_output=True)
+                    except Exception:
+                        pass
+                    time.sleep(1)
+                    alive = False
+            except Exception:
+                pass
         if not alive:
             log("supervisor dead — resurrecting")
             subprocess.Popen(
-                [py, os.path.join(BASE, "supervisor.py")],
-                stdout=open(os.path.join(BASE, "logs", "supervisor.err"), "a"),
+                ["/home/z/.venv/bin/python3", os.path.join(base, "supervisor.py")],
+                stdout=open(os.path.join(base, "logs", "supervisor.err"), "a"),
+                stderr=subprocess.STDOUT,
+                start_new_session=True)
+        # custodian (third ring member) dead => resurrect it. Tiny loop, no
+        # CDP; it guards the supervisor+watcher pair against simultaneous
+        # OOM death and SIGKILLs hung instances.
+        cus_pid = ""
+        try:
+            cus_pid = open(os.path.join(base, "custodian.pid")).read().strip()
+        except Exception:
+            pass
+        cus_alive = False
+        if cus_pid:
+            try:
+                cmd = open(f"/proc/{cus_pid}/cmdline", "rb").read().decode(errors="replace")
+                cus_alive = "custodian.py" in cmd
+            except Exception:
+                cus_alive = False
+        if not cus_alive:
+            log("custodian dead — resurrecting")
+            subprocess.Popen(
+                ["/home/z/.venv/bin/python3", os.path.join(base, "custodian.py")],
+                stdout=open(os.path.join(base, "logs", "custodian.log"), "a"),
                 stderr=subprocess.STDOUT,
                 start_new_session=True)
     except Exception as e:
@@ -190,9 +267,13 @@ def check_procs():
 
 
 def main():
-    log("watcher online (login + dialogs + operator-inbox + proc watchdog)")
+    log("watcher online (login + branches + write-access + dialogs + operator-inbox)")
+    pat = get_pat()
+    if not pat:
+        log("NO PAT in env.sh — watcher runs in degraded mode")
     while True:
         try:
+            # 1. login state
             login = check_login()
             if login != STATE["login"]:
                 log(f"login: {STATE['login']} -> {login}")
@@ -203,12 +284,44 @@ def main():
                     p = os.path.join(FLAGS, "LOGIN_READY")
                     if os.path.exists(p):
                         os.remove(p)
+
+            # 2. branches (new pushes)
+            if pat:
+                brs = check_branches(pat)
+                if brs is not None:
+                    names = set(brs.keys())
+                    if STATE["branches"] and names != STATE["branches"]:
+                        added = names - STATE["branches"]
+                        removed = STATE["branches"] - names
+                        if added:
+                            log(f"NEW BRANCH(ES): {sorted(added)} — worker completion event")
+                            for n in sorted(added):
+                                open(os.path.join(FLAGS, f"BRANCH_{n.replace('/', '__')}"), "w").write(brs[n])
+                        if removed:
+                            log(f"branch(es) gone: {sorted(removed)}")
+                    elif not STATE["branches"]:
+                        log(f"baseline branches: {sorted(names)}")
+                    STATE["branches"] = names
+
+                # 3. write access
+                w = check_write(pat)
+                if w != STATE["write"]:
+                    log(f"write access: {STATE['write']} -> {w}")
+                    STATE["write"] = w
+                    if w:
+                        open(os.path.join(FLAGS, "WRITE_ACCESS"), "w").write(time.strftime("%H:%M:%S"))
         except Exception as e:
             log(f"loop error {e!r}")
 
+        # 4. dialogs (fast sub-cycle) + operator inbox
         for _ in range(12):
             check_dialogs()
             check_inbox()
+            try:
+                open(os.path.join(FLAGS, "watcher_heartbeat"), "w").write(
+                    time.strftime("%Y-%m-%d %H:%M:%S"))
+            except Exception:
+                pass
             time.sleep(10)
         check_procs()
 
@@ -219,6 +332,7 @@ if __name__ == "__main__":
     except Exception:
         pass
     # IMMORTAL: even if main() somehow raises, restart after a short backoff.
+    # (the supervisor additionally relaunches the whole process if it dies.)
     while True:
         try:
             main()

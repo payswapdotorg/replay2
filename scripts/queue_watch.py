@@ -23,6 +23,30 @@ import dispatch_worker as dw
 BASE = "/home/z/my-project/scripts"
 FLAGS = os.path.join(BASE, "flags")
 
+SPEC_PATH = os.path.join(FLAGS, "queue_watch.spec")
+HB_PATH = os.path.join(FLAGS, "queue_watch_heartbeat")
+
+
+def write_spec(name, tab_prefix, marker):
+    """Keep the supervisor-restart contract fresh: the spec must always name
+    the CURRENTLY-WATCHED tab (it is refreshed after every re-dispatch) so a
+    supervisor restart resumes watching the live session instead of a dead
+    tab and wrongly triggering another assault."""
+    try:
+        open(SPEC_PATH, "w").write(json.dumps(
+            {"name": name, "tab_prefix": tab_prefix, "marker": marker,
+             "pid": os.getpid()}) + "\n")
+    except Exception:
+        pass
+
+
+def heartbeat():
+    try:
+        with open(HB_PATH, "w") as f:
+            f.write(time.strftime("%Y-%m-%d %H:%M:%S"))
+    except Exception:
+        pass
+
 
 def state(tab_prefix):
     try:
@@ -57,9 +81,7 @@ def main():
     marker = sys.argv[3] if len(sys.argv) > 3 else "COMPLETION REPORT"
     # supervisor contract: while this spec exists, the supervisor resurrects
     # this watcher; we remove it when the session completes
-    spec = os.path.join(FLAGS, "queue_watch.spec")
-    open(spec, "w").write(json.dumps({"name": name, "tab_prefix": tab_prefix,
-                                      "marker": marker, "pid": os.getpid()}) + "\n")
+    write_spec(name, tab_prefix, marker)
     rounds_since_progress = 0
     last_len = 0
     while True:
@@ -67,12 +89,14 @@ def main():
             st, ln, hits, url = state(tab_prefix)
             stamp = time.strftime("%H:%M:%S")
             print(f"{stamp} {st} chars={ln} hits={hits} url={url[:60]}", flush=True)
+            heartbeat()
             mk = os.path.join(FLAGS, f"{name}-complete.marker")
             if hits >= 2:
                 open(mk, "w").write(f"{time.time()} {url}\n")
                 print("COMPLETE — marker written", flush=True)
                 try:
-                    os.remove(spec)
+                    os.remove(SPEC_PATH)
+                    os.remove(HB_PATH)
                 except Exception:
                     pass
                 return 0
@@ -91,6 +115,7 @@ def main():
                 if rec:
                     tab_prefix = (rec.get("tab_id") or "")[:8]
                     print(f"{stamp} new session tab={tab_prefix}", flush=True)
+                    write_spec(name, tab_prefix, marker)  # keep supervisor contract fresh
             # progress bookkeeping
             if ln != last_len:
                 rounds_since_progress = 0
@@ -99,6 +124,7 @@ def main():
                 rounds_since_progress += 1
         except Exception as e:
             print(f"{time.strftime('%H:%M:%S')} loop-error {type(e).__name__} — continuing", flush=True)
+        heartbeat()  # also tick after loop errors (busy states are not hangs)
         time.sleep(120)
 
 
