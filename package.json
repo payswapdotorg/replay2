@@ -10,12 +10,14 @@
   },
   "dependencies": {
     "@e2b/code-interpreter": "^2.7.2",
+    "@e2b/desktop": "^2.3.3",
     "next": "^15.1.0",
     "react": "^19.0.0",
     "react-dom": "^19.0.0",
     "react-markdown": "^10.1.0",
     "rehype-highlight": "^7.0.2",
     "remark-gfm": "^4.0.1",
+    "ws": "^8.21.3",
     "z-ai-web-dev-sdk": "^0.0.18"
   },
   "devDependencies": {

@@ -20,3 +20,6 @@ next-env.d.ts
 .z-ai-config
 scripts/browser-profile
 src/app/api/harvest/
+
+# agent runtime state (sandboxes, sessions) — never commit
+.data/

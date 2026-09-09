@@ -14,7 +14,7 @@
  *   error {message}
  *   done {finish}
  */
-import { getZai, getZaiFallback } from "./config";
+import { getZai, getZaiFallback, getZaiSelfHosted, selfHostedConfigured } from "./config";
 import { buildSystemPrompt, toolsForModel } from "./prompt";
 import { TOOL_DEFS, executeTool, toolAvailability, ToolCtx } from "./tools";
 
@@ -33,6 +33,10 @@ const RETRY_DELAYS_MS = [4000, 8000, 15000];
 // shared across requests in the same serverless instance).
 let primaryNetDeadUntil = 0;
 const PRIMARY_NET_DEAD_COOLDOWN_MS = 120_000;
+
+// Circuit breaker for the self-hosted (Modal) backend — independent cooldown.
+let selfHostedDeadUntil = 0;
+const SELF_HOSTED_DEAD_COOLDOWN_MS = 120_000;
 
 type Emit = (ev: Record<string, unknown>) => void;
 
@@ -126,6 +130,26 @@ async function createCompletion(
     }
     throw lastErr;
   };
+
+  // Self-hosted model backend (operator's Modal vLLM endpoint) — tried first
+  // when configured: fully independent of Z.ai quotas. It serves ONE model
+  // id; a request for another id 404s here and falls through to the chain.
+  if (selfHostedConfigured() && Date.now() >= selfHostedDeadUntil) {
+    const sh = await getZaiSelfHosted();
+    if (sh) {
+      try {
+        return await run(sh, body, "self-hosted");
+      } catch (e) {
+        if (signal.aborted) throw e;
+        const msg = String(e);
+        const transient = /429|rate|502|503|504|timeout/i.test(msg);
+        const dead = /fetch failed|ENOTFOUND|ECONNREFUSED|EAI_AGAIN|ECONN|network|timeout|404|not found|no such model/i.test(msg);
+        if (dead) selfHostedDeadUntil = Date.now() + SELF_HOSTED_DEAD_COOLDOWN_MS;
+        if (!dead && !transient) throw e; // auth/validation errors surface directly
+        emit({ type: "status", text: "self-hosted model backend unavailable — continuing on the standard chain" });
+      }
+    }
+  }
 
   // Network-class failure (e.g. the internal gateway being unreachable from
   // Vercel, or no primary config at all) is as fatal to the primary as a rate

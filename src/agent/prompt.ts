@@ -5,7 +5,7 @@
  */
 import { skillIndex } from "./skills";
 import { ToolDef, toolAvailability } from "./tools";
-import { CHAT_MODELS, defaultModel } from "./config";
+import { CHAT_MODELS, defaultModel, selfHostedConfigured } from "./config";
 
 async function envContext(): Promise<string> {
   const t = new Date().toISOString();
@@ -45,6 +45,14 @@ async function envContext(): Promise<string> {
     : avail.remote_bash
       ? "serverless + remote E2B sandbox (remote_bash/remote_python give you real persistent code execution — direct E2B key, Composio fallback)"
       : "serverless (cloud tools only)";
+  const remoteBrowser = avail.browser_remote
+    ? avail.browser
+      ? "- remote browser: ONLINE (browser_remote — E2B desktop + Chrome; use it for work that should survive the operator's replay, or when the replay browser is busy)"
+      : "- remote browser: ONLINE (browser_remote — E2B desktop + Chrome via CDP; on this serverless host THIS is your browser — first call boots it (~2-5 min once), then open/elements/click/type/press/read)"
+    : "";
+  const modelBackend = selfHostedConfigured()
+    ? "- model backend: SELF-HOSTED (operator's Modal vLLM, serves glm-5.3-flash — other model ids fall through to the standard chain; first request after idle may take minutes while the GPU boots)"
+    : "";
   return [
     `# Live environment (refreshed this turn)`,
     `- time: ${t}`,
@@ -52,6 +60,8 @@ async function envContext(): Promise<string> {
     `- tools ONLINE: ${on.join(", ")}`,
     off.length ? `- tools OFFLINE: ${off.join(", ")} — do not call them; explain and adapt instead` : "",
     `- replay browser: ${browser}`,
+    remoteBrowser,
+    modelBackend,
     `- repo deployment: ${process.env.REPO || "replay2 (this console)"}`,
     `- model: ${defaultModel()}`,
   ]
@@ -87,6 +97,7 @@ Call tools directly per their JSON schemas. Highlights:
 - **bash / read_file / write_file / list_dir** — repo-grounded engineering (self-hosted)
 - **remote_bash / remote_python** — the persistent E2B remote sandbox: REAL Linux execution (files + python state persist across calls while the sandbox lives, ~180s/command; direct E2B key with Composio fallback). On serverless this is your execution surface — clone repos, build, test, run scripts. On self-hosted use it for heavy or isolated work.
 - **browser** — the live replay Chrome: look (screenshot+vision), click, drag, type, eval JS, tabs. Coordinates are fx/fy fractions 0..1.
+- **browser_remote** — a REAL browser in a persistent E2B desktop sandbox (Xfce + Chrome via CDP), available on ANY host including serverless. Cookies/session/tabs persist while the sandbox lives. Loop: open -> elements (text-grounded fx/fy coordinates, no vision needed) -> click -> type -> press enter -> read; screenshot when visual state matters. First call after an idle period boots the desktop (~2-5 min); subsequent calls ~1-2s.
 - **dispatch_session** — spawn a chat.z.ai worker session for long-horizon builds (prompt must be fully self-contained; poll with check)
 - **web_search / read_web_page** — live web research
 - **generate_image / search_images / edit_image / analyze_image** — full media surface
