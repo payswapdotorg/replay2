@@ -253,11 +253,15 @@ function feedCdpMessage(raw: string) {
     const p = pending.get(id)!;
     pending.delete(id);
     clearTimeout(p.timer);
-    if (j.error) p.reject(new Error(`CDP ${j.error.message || "error"}`));
-    else p.resolve((j.result ?? {}) as Record<string, unknown>);
+    if (j.error) {
+      const err = j.error as { message?: string };
+      p.reject(new Error(`CDP ${err.message || "error"}`));
+    } else {
+      p.resolve((j.result ?? {}) as Record<string, unknown>);
+    }
     return;
   }
-  if (j.method) notifyHandler?.(j.method, (j.params ?? {}) as Record<string, unknown>);
+  if (j.method) notifyHandler?.(j.method as string, (j.params ?? {}) as Record<string, unknown>);
 }
 
 // --------------------------------------------------------- browser bootstrap
