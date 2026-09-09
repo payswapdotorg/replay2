@@ -17,6 +17,7 @@ import { join, isAbsolute, resolve as resolvePath } from "path";
 import { getZai, VISION_MODEL } from "./config";
 import { getSkill } from "./skills";
 import { composioAvailable, composioCall } from "./composio";
+import { e2bAvailable, e2bRunCommand, e2bRunPython } from "./e2b";
 import { REPLAYD_URL } from "@/lib/replay";
 
 // ------------------------------------------------------------------ types
@@ -100,8 +101,8 @@ export async function toolAvailability(): Promise<Record<string, boolean>> {
     edit_image: sdk,
     analyze_image: sdk,
     load_skill: true,
-    remote_bash: comp,
-    remote_python: comp,
+    remote_bash: e2bAvailable() || comp,
+    remote_python: e2bAvailable() || comp,
   };
 }
 
@@ -290,7 +291,7 @@ export const TOOL_DEFS: ToolDef[] = [
     name: "remote_bash",
     availability: "cloud",
     description:
-      "Run a bash command in the Composio E2B remote sandbox (persistent filesystem across calls, ~1GB RAM, 180s per command limit). Python 3.13 + Node 20 available. Use when local bash is offline (serverless) or for heavy/isolated work. IMPORTANT: this is NOT the repo workspace — clone or create files here explicitly (git is available).",
+      "Run a bash command in the persistent E2B remote sandbox (direct E2B_API_KEY preferred; Composio Connect as fallback). Linux, Python 3 + Node available; files persist across calls while the sandbox lives (~180s per command). Use when local bash is offline (serverless) or for heavy/isolated work. IMPORTANT: this is NOT the repo workspace — clone or create files here explicitly (git is available).",
     parameters: {
       type: "object",
       properties: {
@@ -318,8 +319,8 @@ export const TOOL_DEFS: ToolDef[] = [
 
 const UNAVAILABLE = (why: string) =>
   `TOOL UNAVAILABLE: ${why}. ${
-    composioAvailable()
-      ? "Local surface is offline — use remote_bash / remote_python (the Composio E2B sandbox) for real execution instead."
+    e2bAvailable() || composioAvailable()
+      ? "Local surface is offline — use remote_bash / remote_python (persistent E2B sandbox: direct key or Composio fallback) for real execution instead."
       : "This deployment is serverless (no local execution surface). Explain the limitation to the operator and adapt: author code/content in your reply, use the cloud tools (web_search, read_web_page, images, vision), or ask the operator to run the command themselves and paste the output."
   }`;
 
@@ -550,6 +551,60 @@ function stripHtml(html: string): string {
     .trim();
 }
 
+// ------------------------------------------------------ remote execution
+
+/** Composio Connect fallback for the remote execution tools. */
+async function composioRemote(kind: "bash" | "python", payload: string): Promise<ToolResult | null> {
+  if (!composioAvailable()) return null;
+  const tool = kind === "bash" ? "COMPOSIO_REMOTE_BASH_TOOL" : "COMPOSIO_REMOTE_WORKBENCH";
+  const params = kind === "bash" ? { command: payload } : { code_to_execute: payload };
+  try {
+    const r = await composioCall(tool, params, 200000);
+    if (!r.ok) return { content: `remote_${kind} (composio fallback) failed: ${r.error}` };
+    const stdout = String(r.data.stdout ?? "");
+    const stderr = String(r.data.stderr ?? "");
+    const out = (stdout + (stderr ? `\n[stderr]\n${stderr}` : "")).trim() || "(no output)";
+    return { content: cap(out, 20000) };
+  } catch (e) {
+    return { content: `remote_${kind} (composio fallback) failed: ${String(e).slice(0, 300)}` };
+  }
+}
+
+/**
+ * Dual-backend remote execution: direct E2B (preferred — persistent sandbox
+ * via E2B_API_KEY), Composio Connect (fallback). A NON-ZERO exit code is a
+ * valid result (shown to the model); only transport-level failures fall
+ * through to the composio backend.
+ */
+async function execRemote(kind: "bash" | "python", payload: string): Promise<ToolResult> {
+  const label = `remote_${kind}`;
+  if (e2bAvailable()) {
+    try {
+      const r = kind === "bash" ? await e2bRunCommand(payload) : await e2bRunPython(payload);
+      if (r.exitCode !== null) {
+        // a real command/cell result (even on error) — surface it directly
+        const out = (r.stdout + (r.stderr ? `\n[stderr]\n${r.stderr}` : "")).trim() || "(no output)";
+        const label2 = r.exitCode === 0 ? "" : `(exit ${r.exitCode}) `;
+        return { content: cap(`${label2}${r.error ? `${r.error}\n` : ""}${out}`, 20000) };
+      }
+      // transport-level failure (no exit code) — try the composio fallback
+      const fb = await composioRemote(kind, payload);
+      if (fb && !fb.content.startsWith(`remote_${kind} (composio`)) {
+        return { content: `[E2B direct unavailable: ${String(r.error || "transport failure").slice(0, 150)} — composio fallback used]\n${fb.content}` };
+      }
+      return { content: `${label} failed: ${String(r.error || fb?.content || "E2B transport failure").slice(0, 400)}` };
+    } catch (e) {
+      const fb = await composioRemote(kind, payload);
+      if (fb && !fb.content.startsWith(`remote_${kind} (composio`)) {
+        return { content: `[E2B direct failed: ${String(e).slice(0, 150)} — composio fallback used]\n${fb.content}` };
+      }
+      return { content: `${label} (E2B) failed: ${String(e).slice(0, 400)}` };
+    }
+  }
+  const fb = await composioRemote(kind, payload);
+  return fb ?? { content: `${label}: no remote execution backend available` };
+}
+
 // ----------------------------------------------------------- entry point
 
 export async function executeTool(
@@ -612,28 +667,20 @@ export async function executeTool(
         return execBrowser(args, ctx);
       }
       case "remote_bash": {
-        if (!composioAvailable()) return { content: UNAVAILABLE("remote_bash needs COMPOSIO_API_KEY (Composio Connect consumer key)") };
-        const command = String(args.command || "");
+        if (!e2bAvailable() && !composioAvailable()) return { content: UNAVAILABLE("remote_bash needs E2B_API_KEY (direct E2B) or COMPOSIO_API_KEY (Composio Connect)") };
+        let command = String(args.command ?? "");
+        if (!command.trim()) command = String(args.code ?? ""); // param-slop tolerance
         if (!command.trim()) return { content: "empty command" };
         if (ctx.abort.aborted) return { content: "aborted before start" };
-        const r = await composioCall("COMPOSIO_REMOTE_BASH_TOOL", { command }, 200000);
-        if (!r.ok) return { content: `remote_bash failed: ${r.error}` };
-        const stdout = String(r.data.stdout ?? "");
-        const stderr = String(r.data.stderr ?? "");
-        const out = (stdout + (stderr ? `\n[stderr]\n${stderr}` : "")).trim() || "(no output)";
-        return { content: cap(out, 20000) };
+        return execRemote("bash", command);
       }
       case "remote_python": {
-        if (!composioAvailable()) return { content: UNAVAILABLE("remote_python needs COMPOSIO_API_KEY (Composio Connect consumer key)") };
-        const code = String(args.code || "");
+        if (!e2bAvailable() && !composioAvailable()) return { content: UNAVAILABLE("remote_python needs E2B_API_KEY (direct E2B) or COMPOSIO_API_KEY (Composio Connect)") };
+        let code = String(args.code ?? "");
+        if (!code.trim()) code = String(args.command ?? ""); // param-slop tolerance
         if (!code.trim()) return { content: "empty code" };
         if (ctx.abort.aborted) return { content: "aborted before start" };
-        const r = await composioCall("COMPOSIO_REMOTE_WORKBENCH", { code_to_execute: code }, 200000);
-        if (!r.ok) return { content: `remote_python failed: ${r.error}` };
-        const stdout = String(r.data.stdout ?? "");
-        const stderr = String(r.data.stderr ?? "");
-        const out = (stdout + (stderr ? `\n[stderr]\n${stderr}` : "")).trim() || "(no output)";
-        return { content: cap(out, 20000) };
+        return execRemote("python", code);
       }
       case "dispatch_session": {
         if (!fsAvailable() || !(await replaydAvailable())) {
