@@ -29,6 +29,11 @@ const MAX_STEPS = 16;
 const MAX_MESSAGES = 80;
 const RETRY_DELAYS_MS = [4000, 8000, 15000];
 
+// Circuit-breaker state for a network-dead primary gateway (module scope —
+// shared across requests in the same serverless instance).
+let primaryNetDeadUntil = 0;
+const PRIMARY_NET_DEAD_COOLDOWN_MS = 120_000;
+
 type Emit = (ev: Record<string, unknown>) => void;
 
 function sanitizeHistory(messages: unknown[]): ChatMsg[] {
@@ -87,7 +92,17 @@ async function createCompletion(
   emit: Emit,
   signal: AbortSignal
 ): Promise<AsyncIterable<unknown> | Record<string, unknown>> {
-  const primary = await getZai();
+  // Circuit breaker: after a network-class primary failure (e.g. the
+  // internal gateway being permanently unreachable from Vercel), skip the
+  // doomed ~10s fetch timeout on subsequent turns for a cooldown window.
+  const skipPrimary = Date.now() < primaryNetDeadUntil;
+  const primary = skipPrimary ? null : await getZai().catch((e) => {
+    if (primaryDead(e)) {
+      primaryNetDeadUntil = Date.now() + PRIMARY_NET_DEAD_COOLDOWN_MS;
+      return null;
+    }
+    throw e;
+  });
   let lastErr: unknown = null;
 
   const run = async (
@@ -113,16 +128,20 @@ async function createCompletion(
   };
 
   // Network-class failure (e.g. the internal gateway being unreachable from
-  // Vercel) is as fatal to the primary as a rate limit: fall through to the
-  // fallback credential instead of surfacing fetch errors to the user.
+  // Vercel, or no primary config at all) is as fatal to the primary as a rate
+  // limit: fall through to the fallback credential instead of surfacing fetch
+  // errors to the user.
   const primaryDead = (e: unknown) =>
-    /429|rate|fetch failed|ENOTFOUND|ECONNREFUSED|EAI_AGAIN|ECONN|network|timeout|502|503/i.test(String(e));
+    /429|rate|fetch failed|ENOTFOUND|ECONNREFUSED|EAI_AGAIN|ECONN|network|timeout|502|503|no z-ai config/i.test(String(e));
 
-  try {
-    return await run(primary, body, "gateway");
-  } catch (e) {
-    if (signal.aborted) throw e;
-    if (!primaryDead(e)) throw e; // auth/validation errors surface directly
+  if (primary) {
+    try {
+      return await run(primary, body, "gateway");
+    } catch (e) {
+      if (signal.aborted) throw e;
+      if (primaryDead(e)) primaryNetDeadUntil = Date.now() + PRIMARY_NET_DEAD_COOLDOWN_MS;
+      else throw e; // auth/validation errors surface directly
+    }
   }
 
   // 429/network-class exhaustion — try the operator's fallback credential
@@ -156,11 +175,12 @@ async function createCompletion(
   }
 
   // Last resort: downgrade to the fast lane (separate quota class).
-  if (body.model === "glm-5.3" || body.model === "glm-5.2") {
+  const lane = fb ?? primary;
+  if (lane && (body.model === "glm-5.3" || body.model === "glm-5.2")) {
     emit({ type: "status", text: "rate limits persist — finishing this round on glm-5.3-flash" });
-    return run(fb ?? primary, { ...body, model: "glm-5.3-flash" }, "flash");
+    return run(lane, { ...body, model: "glm-5.3-flash" }, "flash");
   }
-  throw lastErr;
+  throw lastErr ?? new Error("no model backend available (primary unreachable, no fallback credential)");
 }
 
 export async function runAgentTurn(opts: {
