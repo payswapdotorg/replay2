@@ -1,4 +1,4 @@
-import { BRIDGE, PY, REPLAYD_URL, runBridgeJson, timeoutSignal } from "@/lib/replay";
+import { BRIDGE, REPLAYD_URL, runBridgeJson, timeoutSignal } from "@/lib/replay";
 
 export async function POST(req: Request) {
   const payload = await req.json();

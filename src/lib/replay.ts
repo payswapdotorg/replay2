@@ -32,12 +32,18 @@ function resolvePython(): string {
   return "python3";
 }
 
-export const PY = resolvePython();
+/** Lazily resolved interpreter: deploy.sh may write python_bin.txt AFTER the
+ * console is already running (e.g. a platform-managed dev server), so
+ * resolving once at module load can pin a wrong "python3" fallback for the
+ * whole server lifetime. */
+export function pyBin(): string {
+  return resolvePython();
+}
 
 /** Run bridge.py <cmd> and return stdout as Buffer (binary-safe). */
 export function runBridge(cmd: string, arg?: string, timeoutMs = 25000) {
   const args = arg ? [BRIDGE, cmd, arg] : [BRIDGE, cmd];
-  return execFileAsync(PY, args, {
+  return execFileAsync(pyBin(), args, {
     timeout: timeoutMs,
     maxBuffer: 16 * 1024 * 1024,
     encoding: "buffer",
@@ -46,7 +52,7 @@ export function runBridge(cmd: string, arg?: string, timeoutMs = 25000) {
 
 /** Run bridge.py <cmd> and parse the last JSON line from stdout. */
 export async function runBridgeJson(cmd: string, arg?: string, timeoutMs = 25000) {
-  const { stdout } = await execFileAsync(PY, arg ? [BRIDGE, cmd, arg] : [BRIDGE, cmd], {
+  const { stdout } = await execFileAsync(pyBin(), arg ? [BRIDGE, cmd, arg] : [BRIDGE, cmd], {
     timeout: timeoutMs,
     maxBuffer: 4 * 1024 * 1024,
   });

@@ -1,4 +1,4 @@
-import { BRIDGE, PY, REPLAYD_URL, runBridge, timeoutSignal } from "@/lib/replay";
+import { BRIDGE, REPLAYD_URL, runBridge, timeoutSignal } from "@/lib/replay";
 
 export async function GET() {
   // hot path: persistent replay daemon (~90ms frames, persistent CDP conns)
