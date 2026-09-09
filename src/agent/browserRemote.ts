@@ -46,6 +46,7 @@ type DesktopSandbox = {
   kill?: () => Promise<void>;
   getScreenSize?: () => Promise<{ width: number; height: number }>;
   screenshot?: () => Promise<Buffer>;
+  stream?: { start?: (o?: Record<string, unknown>) => Promise<unknown>; getUrl?: (o?: Record<string, unknown>) => string | Promise<string>; getAuthKey?: () => Promise<string> | string; stop?: () => Promise<unknown> };
 };
 
 export type BrowserRemoteResult = {
@@ -511,6 +512,16 @@ export async function browserRemoteAction(args: Record<string, unknown>): Promis
         const info = await pageInfo();
         const vs = await viewportSize();
         const targets = await listTargets(cdp!.base).catch(() => [] as CdpJsonTarget[]);
+        let streamLine = "";
+        try {
+          const st = sbx.stream;
+          if (st?.start && st?.getUrl) {
+            await st.start({ requireAuth: true });
+            const key = st.getAuthKey ? await st.getAuthKey() : "";
+            const url = st.getUrl({ authKey: key });
+            streamLine = `\nlive desktop stream (watch the agent browse): ${url}`;
+          }
+        } catch { /* stream optional */ }
         return {
           content: [
             `sandbox: ${sbx.sandboxId || "?"} (E2B desktop)`,
@@ -519,7 +530,10 @@ export async function browserRemoteAction(args: Record<string, unknown>): Promis
             `title: ${info.title}`,
             `viewport: ${vs.w}x${vs.h} css px (fractions fx/fy 0..1)`,
             `tabs: ${targets.length}`,
-          ].join("\n"),
+            streamLine,
+          ]
+            .filter(Boolean)
+            .join("\n"),
         };
       }
       case "open":
