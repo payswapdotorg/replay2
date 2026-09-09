@@ -78,6 +78,11 @@ def main():
                 return 0
             if st == "tablost" or st == "home":
                 print(f"{stamp} session destroyed ({st}) — re-dispatching (assault)", flush=True)
+                # the dead session's registry record would make create() bail
+                # with "already exists" — void it first
+                subprocess.call([sys.executable, os.path.join(BASE, "dispatch_worker.py"),
+                                 "void", name,
+                                 f"session destroyed while queued ({st}); queue_watch assault re-dispatch"])
                 subprocess.call([sys.executable, os.path.join(BASE, "dispatch_worker.py"),
                                  "create", name,
                                  os.path.join(BASE, "worker-prompts", f"{name.replace('wo-', 'WO-')}.md")])
