@@ -21,11 +21,15 @@ truth: live sessions + their WO keywords are kept; idle/stale holders are
 released). This runs automatically inside create() (pre-send + post-send) and
 on demand via the sandboxes command.
 
-Capacity protocol (WO-008 lesson): when GLM-5.3 is at capacity right after the
-send, create() NEVER clicks Cancel (that rolls back/destroys the new-task
-session server-side). It writes flags/capacity_recover.json and exits 3; the
-supervisor keeps recover_capacity.py alive to wait out the peak and re-send
-the retained composer draft.
+Capacity protocol (OPERATOR POLICY, 2026-09-09): NEVER wait out a capacity
+popup — fight through it. create() cancels the dialog, re-picks the three
+selections (agents tab, GLM-5.3, Full-Stack — a cancel can reset them) and
+re-sends, round after round; a session rolled back by the site is simply
+recreated from scratch (a destroyed session costs nothing, waiting costs
+hours). After CAPACITY_ROUNDS in-process rounds it writes
+flags/capacity_recover.json {name, prompt_file} and exits 3; the supervisor
+relaunches recover_capacity.py, which re-runs this same aggressive dispatch
+loop until the task actually generates. Never wait passively.
 
 create flow (each step verified, hard-fails if any selection does not stick):
   1. new browser tab -> https://chat.z.ai/
@@ -82,6 +86,8 @@ def _find(name):
             continue
         if s.get("action") in ("void", "failed", "done"):
             found = None  # invalidated / retired
+        elif s.get("stage") == "capacity":
+            found = None  # capacity-staged: the aggressive assault re-dispatch owns it
         elif s.get("action") != "tab-reopen":
             found = s  # latest create record wins
     return found
@@ -220,12 +226,16 @@ JS_INSERT_RATIO = r"""(() => {
 
 JS_CAPACITY_STATE = r"""(() => {
   const body = document.body.innerText || '';
-  const capacity = body.includes('currently at capacity') || body.includes('try again later');
+  const capacity = body.includes('currently at capacity') || body.includes('try again later')
+                || body.includes('peak hours');
   let hasCancel = false;
+  let generating = false;
   document.querySelectorAll('button').forEach(b => {
-    if ((b.innerText || '').trim() === 'Cancel') hasCancel = true;
+    const t = (b.innerText || '').trim();
+    if (t === 'Cancel') hasCancel = true;
+    if (/^(Stop|Pause|Halt)$/i.test(t)) generating = true;
   });
-  return JSON.stringify({capacity: capacity, hasCancel: hasCancel});
+  return JSON.stringify({capacity: capacity, hasCancel: hasCancel, generating: generating});
 })()"""
 
 JS_CLICK_CANCEL = r"""(() => {
@@ -455,11 +465,200 @@ def _wait(c, js, want, tries=20, sleep=1.0, desc=""):
 
 # ----------------------------------------------------------------- create --
 
+CAPACITY_ROUNDS = 12  # in-process assault rounds; then flag + exit 3 (the
+                      # supervisor relaunches recover_capacity.py, which re-runs
+                      # the same aggressive loop — never a passive wait)
+
+
+def _close_tab(tid):
+    try:
+        import urllib.request
+        urllib.request.urlopen("http://127.0.0.1:9222/json/close/" + tid, timeout=6).read()
+        return True
+    except Exception:
+        return False
+
+
+def _close_stale_tab(name):
+    """Close the tab left behind by a capacity-staged/failed record for `name`.
+
+    The aggressive re-dispatch owns the task; stale tabs must not accumulate
+    (they hold sandbox slots and clutter the concurrency modal). The latest
+    record for the name decides; live sessions are never touched (the
+    _find() guard already returned for them).
+    """
+    for s in reversed(_sessions()):
+        if s.get("name") != name:
+            continue
+        tid = s.get("tab_id")
+        if tid and (s.get("stage") == "capacity" or s.get("action") == "failed"):
+            if _close_tab(tid):
+                print(f"      closed stale tab {tid[:8]} ({s.get('stage') or s.get('action')})")
+        return
+
+
+def _select_insert_send(c, tab, prompt, name, prompt_file):
+    """Steps [3/7]..[7/7] on an already-navigated tab: pick the agents tab,
+    model GLM-5.3 and skill Full-Stack (each hard-verified — refuses to send
+    if any selection does not stick), release idle sandboxes, insert the
+    full prompt (>=97% verified) and send. Returns (ok, url, pct, c) where
+    the returned `c` is a FRESH connection (the send navigates the page)."""
+
+    # 3. agent mode
+    print("[3/7] selecting AGENTS tab (sidebar 'Agent') ...")
+    already = str(_eval(c, JS_AGENT_MODE_ON, timeout=15)) == "true"
+    if not already:
+        activated = False
+        for _attempt in range(3):  # click may be swallowed during hydration — retry
+            res = _eval(c, JS_AGENT_NAV, timeout=15)
+            if res != "ok":
+                print(f"ERROR: Agent nav click failed ({res})")
+                return False, None, 0, c
+            ok, _ = _wait(c, JS_AGENT_MODE_ON, "true", tries=8, sleep=1.5, desc="agent-mode")
+            if ok:
+                activated = True
+                break
+        if not activated:
+            print("ERROR: agent mode did not activate ('New Task' marker missing)")
+            return False, None, 0, c
+    print("      agent mode ON (New Task marker present)")
+
+    # 4. model GLM-5.3
+    print(f"[4/7] selecting model {WANT_MODEL} ...")
+    cur = _eval(c, JS_MODEL_TEXT)
+    if cur != WANT_MODEL:
+        if cur == "no-button":
+            print("ERROR: model selector button not found")
+            return False, None, 0, c
+        res = _eval(c, JS_OPEN_MODEL_MENU)
+        if res != "ok":
+            print(f"ERROR: could not open model menu ({res})")
+            return False, None, 0, c
+        time.sleep(1.5)
+        ok, _ = _wait(c, JS_CLICK_MODEL, "ok", tries=6, sleep=1.5, desc="model-option")
+        if not ok:
+            print("ERROR: GLM-5.3 option not found in the model menu")
+            return False, None, 0, c
+        time.sleep(1.0)
+        ok, cur = _wait(c, JS_MODEL_TEXT, WANT_MODEL, tries=10, sleep=1.0, desc="model-set")
+        if not ok:
+            print(f"ERROR: model still '{cur}' (wanted {WANT_MODEL})")
+            return False, None, 0, c
+    print(f"      model = {WANT_MODEL} (verified)")
+
+    # 5. skill full-stack
+    print(f"[5/7] selecting skill {WANT_SKILL} ...")
+    state = json.loads(_eval(c, JS_SKILL_STATE) or '{}')
+    if state.get("composerChip"):
+        print("      Full-Stack already active (composer chip present)")
+    elif WANT_SKILL in (state.get("intro") or []):
+        res = _eval(c, JS_CLICK_SKILL)
+        if res != "ok":
+            print(f"ERROR: Full-Stack chip click failed ({res})")
+            return False, None, 0, c
+        time.sleep(1.5)
+        state = json.loads(_eval(c, JS_SKILL_STATE, timeout=15) or '{}')
+        if not state.get("composerChip"):
+            print("ERROR: Full-Stack skill did not activate (composer chip missing)")
+            return False, None, 0, c
+        print("      Full-Stack skill ON (composer chip present)")
+    else:
+        print(f"ERROR: no skill chips found (state={state}); page state unexpected")
+        return False, None, 0, c
+
+    # 5b. sandbox concurrency: release idle sandboxes if the modal is up
+    # (operator rule: release tabs we are not using / no active job in)
+    _handle_sandbox_limit(c, _active_session_keywords(extra=[name]))
+
+    # 6. insert prompt (idempotent: clear first, verify bounds 97..115,
+    #    one clear+retry if the site doubled the text — seen live on a
+    #    59K insert; a 200% send would poison the session)
+    print(f"[6/7] inserting prompt ({len(prompt)} chars) ...")
+    comp = _eval(c, JS_COMPOSER)
+    if not comp:
+        print("ERROR: composer not found (no #chat-input) — login expired?")
+        _save({"name": name, "action": "failed", "stage": "composer", "tab_id": tab["id"],
+               "ts": int(time.time()), "prompt_file": prompt_file})
+        return False, None, 0, c
+    ratio_js = JS_INSERT_RATIO.replace("__PLEN__", str(len(prompt)))
+    pct = 0
+    for attempt in range(3):
+        pt = json.loads(comp)
+        c.call("Input.dispatchMouseEvent", {"type": "mousePressed", "x": pt["x"], "y": pt["y"],
+                                            "button": "left", "clickCount": 1})
+        c.call("Input.dispatchMouseEvent", {"type": "mouseReleased", "x": pt["x"], "y": pt["y"],
+                                            "button": "left", "clickCount": 1})
+        time.sleep(0.5)
+        # clear whatever is in the composer (React-native clear)
+        _eval(c, JS_CLEAR_COMPOSER, timeout=15)
+        time.sleep(0.3)
+        c.call("Input.insertText", {"text": prompt})
+        ok, ratio = _wait(c, ratio_js, "100", tries=8, sleep=1.0, desc="insert")
+        try:
+            pct = int(ratio)
+        except Exception:
+            pct = 0
+        if 97 <= pct <= 115:
+            break
+        print(f"      insert attempt {attempt+1}: ratio {pct}% (want 97-115) — clearing and retrying")
+    if not (97 <= pct <= 115):
+        print(f"ERROR: insert ratio {pct}% outside 97-115 bounds; NOT sending")
+        _save({"name": name, "action": "failed", "stage": "insert", "pct": pct,
+               "tab_id": tab["id"], "ts": int(time.time()), "prompt_file": prompt_file})
+        return False, None, 0, c
+    print(f"      insert verified ({pct}%)")
+
+    # 7. send
+    print("[7/7] sending ...")
+    body_before = int(_eval(c, "(document.body.innerText||'').length", timeout=15) or 0)
+    for typ in ("keyDown", "keyUp"):
+        c.call("Input.dispatchKeyEvent", {
+            "type": typ, "key": "Enter", "code": "Enter",
+            "windowsVirtualKeyCode": 13, "nativeVirtualKeyCode": 13})
+    time.sleep(3)
+    # the send may navigate to the session URL — verify on a FRESH connection
+    c.close()
+    c = _reconnect(tab["id"])
+    cleared = _eval(c, r"""(() => {
+          const i = document.querySelector('#chat-input');
+          return i ? String((i.value||'').length) : 'gone';
+        })()""", timeout=20)
+    if cleared not in ("0", "gone"):
+        # fallback: click the send button
+        sb = _eval(c, JS_SEND_BUTTON)
+        if sb:
+            spt = json.loads(sb)
+            if not spt.get("disabled"):
+                c.call("Input.dispatchMouseEvent", {"type": "mousePressed", "x": spt["x"],
+                                                    "y": spt["y"], "button": "left", "clickCount": 1})
+                c.call("Input.dispatchMouseEvent", {"type": "mouseReleased", "x": spt["x"],
+                                                    "y": spt["y"], "button": "left", "clickCount": 1})
+                time.sleep(3)
+                c.close()
+                c = _reconnect(tab["id"])
+                cleared = _eval(c, r"""(() => {
+                      const i = document.querySelector('#chat-input');
+                      return i ? String((i.value||'').length) : 'gone';
+                    })()""", timeout=20)
+    sent = cleared in ("0", "gone")
+    # proof in the body: the prompt's first line should now appear in the transcript
+    snippet = prompt.strip().split("\n")[0][:60]
+    body = _eval(c, "document.body.innerText || ''", timeout=25) or ""
+    body_proof = snippet[:40] in body and len(body) > body_before
+    url = _eval(c, "location.href", timeout=20)
+    ok = sent and (body_proof or url != CHAT_URL)
+    return ok, url, pct, c
+
+
 def create(name, prompt_file):
     prompt = open(prompt_file, encoding="utf-8").read()
     if _find(name):
         print(f"session {name} already exists")
         return 1
+
+    # the aggressive re-dispatch owns the task: close any tab left behind by
+    # a capacity-staged/failed record for this name (no tab accumulation)
+    _close_stale_tab(name)
 
     print(f"[1/7] new tab -> {CHAT_URL}")
     tab = channel.new_tab()
@@ -470,283 +669,105 @@ def create(name, prompt_file):
     c = channel.CDP(tab["webSocketDebuggerUrl"], timeout=30)
     try:
         c.call("Page.navigate", {"url": CHAT_URL}, timeout=30)
-
-        # wait for the page shell (sidebar Agent nav present)
-        print("[2/7] waiting for page shell ...")
-        ok, last = _wait(c, JS_AGENT_PRESENT, "found", tries=25, sleep=1.5, desc="shell")
-        if not ok:
-            print(f"ERROR: page shell never loaded (last={last}); login may be expired")
-            _save({"name": name, "action": "failed", "stage": "shell", "tab_id": tab["id"],
-                   "ts": int(time.time()), "prompt_file": prompt_file})
-            return 2
-        c.call('Page.bringToFront', {})
-
-        # 3. agent mode
-        print("[3/7] selecting AGENTS tab (sidebar 'Agent') ...")
-        already = str(_eval(c, JS_AGENT_MODE_ON, timeout=15)) == "true"
-        if not already:
-            activated = False
-            for attempt in range(3):  # click may be swallowed during hydration — retry
-                res = _eval(c, JS_AGENT_NAV, timeout=15)
-                if res != "ok":
-                    print(f"ERROR: Agent nav click failed ({res})")
-                    return 2
-                ok, _ = _wait(c, JS_AGENT_MODE_ON, "true", tries=8, sleep=1.5, desc="agent-mode")
-                if ok:
-                    activated = True
-                    break
-            if not activated:
-                print("ERROR: agent mode did not activate ('New Task' marker missing)")
-                return 2
-        print("      agent mode ON (New Task marker present)")
-
-        # 4. model GLM-5.3
-        print(f"[4/7] selecting model {WANT_MODEL} ...")
-        cur = _eval(c, JS_MODEL_TEXT)
-        if cur != WANT_MODEL:
-            if cur == "no-button":
-                print("ERROR: model selector button not found")
-                return 2
-            res = _eval(c, JS_OPEN_MODEL_MENU)
-            if res != "ok":
-                print(f"ERROR: could not open model menu ({res})")
-                return 2
-            time.sleep(1.5)
-            ok, _ = _wait(c, JS_CLICK_MODEL, "ok", tries=6, sleep=1.5, desc="model-option")
-            if not ok:
-                print("ERROR: GLM-5.3 option not found in the model menu")
-                return 2
-            time.sleep(1.0)
-            ok, cur = _wait(c, JS_MODEL_TEXT, WANT_MODEL, tries=10, sleep=1.0, desc="model-set")
-            if not ok:
-                print(f"ERROR: model still '{cur}' (wanted {WANT_MODEL})")
-                return 2
-        print(f"      model = {WANT_MODEL} (verified)")
-
-        # 5. skill full-stack
-        print(f"[5/7] selecting skill {WANT_SKILL} ...")
-        state = json.loads(_eval(c, JS_SKILL_STATE) or '{}')
-        if state.get("composerChip"):
-            print("      Full-Stack already active (composer chip present)")
-        elif WANT_SKILL in (state.get("intro") or []):
-            res = _eval(c, JS_CLICK_SKILL)
-            if res != "ok":
-                print(f"ERROR: Full-Stack chip click failed ({res})")
-                return 2
-            time.sleep(1.5)
-            state = json.loads(_eval(c, JS_SKILL_STATE, timeout=15) or '{}')
-            if not state.get("composerChip"):
-                print("ERROR: Full-Stack skill did not activate (composer chip missing)")
-                return 2
-            print("      Full-Stack skill ON (composer chip present)")
-        else:
-            print(f"ERROR: no skill chips found (state={state}); page state unexpected")
-            return 2
-
-        # 5b. sandbox concurrency: release idle sandboxes if the modal is up
-        # (operator rule: release tabs we are not using / no active job in)
-        _handle_sandbox_limit(c, _active_session_keywords(extra=[name]))
-
-        # 6. insert prompt (idempotent: clear first, verify bounds 97..115,
-        #    one clear+retry if the site doubled the text — seen live on a
-        #    59K insert; a 200% send would poison the session)
-        print(f"[6/7] inserting prompt ({len(prompt)} chars) ...")
-        comp = _eval(c, JS_COMPOSER)
-        if not comp:
-            print("ERROR: composer not found (no #chat-input) — login expired?")
-            _save({"name": name, "action": "failed", "stage": "composer", "tab_id": tab["id"],
-                   "ts": int(time.time()), "prompt_file": prompt_file})
-            return 2
-        ratio_js = JS_INSERT_RATIO.replace("__PLEN__", str(len(prompt)))
-        pct = 0
-        for attempt in range(3):
-            pt = json.loads(comp)
-            c.call("Input.dispatchMouseEvent", {"type": "mousePressed", "x": pt["x"], "y": pt["y"],
-                                                "button": "left", "clickCount": 1})
-            c.call("Input.dispatchMouseEvent", {"type": "mouseReleased", "x": pt["x"], "y": pt["y"],
-                                                "button": "left", "clickCount": 1})
-            time.sleep(0.5)
-            # clear whatever is in the composer (React-native clear)
-            _eval(c, JS_CLEAR_COMPOSER, timeout=15)
-            time.sleep(0.3)
-            c.call("Input.insertText", {"text": prompt})
-            ok, ratio = _wait(c, ratio_js, "100", tries=8, sleep=1.0, desc="insert")
-            try:
-                pct = int(ratio)
-            except Exception:
-                pct = 0
-            if 97 <= pct <= 115:
-                break
-            print(f"      insert attempt {attempt+1}: ratio {pct}% (want 97-115) — clearing and retrying")
-        if not (97 <= pct <= 115):
-            print(f"ERROR: insert ratio {pct}% outside 97-115 bounds; NOT sending")
-            _save({"name": name, "action": "failed", "stage": "insert", "pct": pct,
-                   "tab_id": tab["id"], "ts": int(time.time()), "prompt_file": prompt_file})
-            return 2
-        print(f"      insert verified ({pct}%)")
-
-        # 7. send
-        print("[7/7] sending ...")
-        body_before = int(_eval(c, "(document.body.innerText||'').length", timeout=15) or 0)
-        for typ in ("keyDown", "keyUp"):
-            c.call("Input.dispatchKeyEvent", {
-                "type": typ, "key": "Enter", "code": "Enter",
-                "windowsVirtualKeyCode": 13, "nativeVirtualKeyCode": 13})
-        time.sleep(3)
-        # the send may navigate to the session URL — verify on a FRESH connection
-        c.close()
-        c = _reconnect(tab["id"])
-        cleared = _eval(c, r"""(() => {
-          const i = document.querySelector('#chat-input');
-          return i ? String((i.value||'').length) : 'gone';
-        })()""", timeout=20)
-        if cleared not in ("0", "gone"):
-            # fallback: click the send button
-            sb = _eval(c, JS_SEND_BUTTON)
-            if sb:
-                spt = json.loads(sb)
-                if not spt.get("disabled"):
-                    c.call("Input.dispatchMouseEvent", {"type": "mousePressed", "x": spt["x"],
-                                                        "y": spt["y"], "button": "left", "clickCount": 1})
-                    c.call("Input.dispatchMouseEvent", {"type": "mouseReleased", "x": spt["x"],
-                                                        "y": spt["y"], "button": "left", "clickCount": 1})
-                    time.sleep(3)
+        ok, url, pct = False, CHAT_URL, 0
+        for assault_round in range(CAPACITY_ROUNDS + 1):
+            if assault_round:
+                # OPERATOR POLICY (2026-09-09): NEVER wait out a capacity
+                # popup. Cancel it, re-pick the three selections (agents tab,
+                # GLM-5.3, Full-Stack) and resend. A cancelled session may
+                # roll back server-side (tab -> home): recreate the task from
+                # scratch on the next round — a destroyed session costs
+                # nothing, waiting costs hours.
+                try:
                     c.close()
+                except Exception:
+                    pass
+                try:
                     c = _reconnect(tab["id"])
-                    cleared = _eval(c, r"""(() => {
-                      const i = document.querySelector('#chat-input');
-                      return i ? String((i.value||'').length) : 'gone';
-                    })()""", timeout=20)
-        sent = cleared in ("0", "gone")
-        # proof in the body: the prompt's first line should now appear in the transcript
-        snippet = prompt.strip().split("\n")[0][:60]
-        body = _eval(c, "document.body.innerText || ''", timeout=25) or ""
-        body_proof = snippet[:40] in body and len(body) > body_before
-        url = _eval(c, "location.href", timeout=20)
+                except Exception:
+                    tab = channel.new_tab() or tab
+                    c = channel.CDP(tab["webSocketDebuggerUrl"], timeout=30)
+                c.call("Page.navigate", {"url": CHAT_URL}, timeout=30)
+                print(f"[assault {assault_round}/{CAPACITY_ROUNDS}] popup cancelled — "
+                      f"re-picking selections and re-sending")
 
-        ok = sent and (body_proof or url != CHAT_URL)
+            # wait for the page shell (sidebar Agent nav present)
+            print("[2/7] waiting for page shell ...")
+            ok_shell, last = _wait(c, JS_AGENT_PRESENT, "found", tries=25, sleep=1.5, desc="shell")
+            if not ok_shell:
+                print(f"ERROR: page shell never loaded (last={last}); login may be expired")
+                _save({"name": name, "action": "failed", "stage": "shell", "tab_id": tab["id"],
+                       "ts": int(time.time()), "prompt_file": prompt_file})
+                return 2
+            c.call('Page.bringToFront', {})
 
-        # 7a. capacity handling: GLM-5.3 at capacity blocks generation with a
-        # 'Switch to GLM-5.3-Flash' dialog. NEVER switch (operator rule:
-        # GLM-5.3 only) and NEVER click Cancel while the block is active —
-        # WO-008 lesson (2026-09-09): the capacity-cancel ROLLS BACK the whole
-        # new-task session server-side (its URL redirects home = destroyed).
-        # Correct protocol: leave the dialog in place, write the recovery flag
-        # and exit 3 — the supervisor relaunches recover_capacity.py, which
-        # waits out the peak and re-sends the retained composer draft.
-        # Fires for ANY accepted state: ok=True (send verified) OR a session
-        # URL already assigned (send accepted, composer draft restored,
-        # generation queued server-side).
-        if ok or (url and url != CHAT_URL):
+            ok, url, pct, c = _select_insert_send(c, tab, prompt, name, prompt_file)
+
             try:
                 st = json.loads(_eval(c, JS_CAPACITY_STATE, timeout=15) or "{}")
             except Exception:
                 st = {}
-            if st.get("capacity"):
-                print("      [capacity] GLM-5.3 at capacity — NOT clicking Cancel (it destroys new-task sessions)")
-                m = re.search(r"/c/([0-9a-f]{8})", url or "")
-                uuid = m.group(1) if m else tab["id"]
-                flag = os.path.join(BASE, "flags/capacity_recover.json")
-                os.makedirs(os.path.dirname(flag), exist_ok=True)
-                with open(flag, "w") as f:
-                    f.write(json.dumps({"uuid": uuid}))
+            if st.get("generating"):
+                ok = True  # generation started — the task is live
+            if ok and not st.get("capacity"):
+                # 7b. the agent's sandbox provisions AFTER the prompt send —
+                # if the sandbox-limit modal now blocks it, release idle
+                # sandboxes so the job starts
+                time.sleep(4)
+                released = _handle_sandbox_limit(c, _active_session_keywords(extra=[name]))
+                if released:
+                    print(f"      [sandbox] released {released} idle sandbox(es) so the new job can start")
+                print(f"prompt sent: {'VERIFIED' if ok else 'NOT VERIFIED — retry needed'}")
                 _save({"name": name, "tab_id": tab["id"], "url": url, "ts": int(time.time()),
                        "prompt_file": prompt_file, "prompt_chars": len(prompt),
                        "mode": "agents-tab", "model": WANT_MODEL, "skill": WANT_SKILL,
-                       "insert_pct": pct, "sent": False, "stage": "capacity"})
-                print("      recovery flag written — supervisor will relaunch recover_capacity.py")
-                print(f"      monitor scripts/logs/recover.log; session: dispatch_worker.py check {name}")
-                return 3
-        print(f"      send: composer-cleared={sent} body-proof={body_proof} url={url}")
-        # 7b. the agent's sandbox provisions AFTER the prompt send — if the
-        # sandbox-limit modal now blocks it, release idle sandboxes so the job starts
-        if ok:
+                       "insert_pct": pct, "sent": ok})
+                return 0
+            if not st.get("capacity"):
+                # no capacity dialog: genuine insert/send failure — climb the
+                # failure ladder (check body tail, re-send, or re-create)
+                print(f"prompt sent: NOT VERIFIED — retry needed (url={url})")
+                _save({"name": name, "tab_id": tab["id"], "url": url, "ts": int(time.time()),
+                       "prompt_file": prompt_file, "prompt_chars": len(prompt),
+                       "mode": "agents-tab", "model": WANT_MODEL, "skill": WANT_SKILL,
+                       "insert_pct": pct, "sent": False})
+                return 2
+            # capacity dialog present (send accepted OR rejected) — assault
+            print(f"      [capacity] GLM-5.3 at capacity (round {assault_round}) — "
+                  f"Cancel + re-pick + resend (operator policy: never wait)")
+            try:
+                c.call("Page.bringToFront", {}, timeout=10)
+            except Exception:
+                pass
+            _eval(c, JS_CLICK_CANCEL, timeout=15)
             time.sleep(4)
-            released = _handle_sandbox_limit(c, _active_session_keywords(extra=[name]))
-            if released:
-                print(f"      [sandbox] released {released} idle sandbox(es) so the new job can start")
-        # 7c. operator recovery (2026-09-09): "you recover from peak hours
-        # prompts by doing Enter then trying to send the prompt again" — but
-        # ONLY in the send-REJECTED state: URL still the home page (no /c/
-        # session id = no pending task to roll back) AND the draft retained
-        # in the composer. In that state Cancel is a safe dismissal and the
-        # re-send is a pure retry. If the send was ACCEPTED (URL /c/... +
-        # prompt in transcript), the pending task is server-side queued and
-        # ANY send interaction destroys it — that case is handled by the
-        # guarded recovery poller above (7a) and must not be touched here.
-        if not ok and url == CHAT_URL:
-            try:
-                st = json.loads(_eval(c, JS_CAPACITY_STATE, timeout=15) or "{}")
-            except Exception:
-                st = {}
-            try:
-                comp = _eval(c, r"""(() => {
-                  const i = document.querySelector('#chat-input, textarea');
-                  return i ? String((i.value||'').length) : 'gone';
-                })()""", timeout=15)
-            except Exception:
-                comp = "gone"
-            if st.get("capacity") and comp not in ("0", "gone") and int(comp) > 1000:
-                print("      [capacity] send REJECTED (draft retained, no session yet) — operator retry: Cancel + re-send")
-                for round_ in range(4):
-                    _eval(c, JS_CLICK_CANCEL, timeout=15)
-                    time.sleep(45)
-                    try:
-                        c.close()
-                    except Exception:
-                        pass
-                    c = _reconnect(tab["id"])
-                    # Enter retry (operator method), send-button fallback
-                    try:
-                        c.eval(r"""(() => {
-                          const i = document.querySelector('#chat-input, textarea');
-                          if (i) { i.focus(); return 'focused'; }
-                          return 'no-composer';
-                        })()""", timeout=15)
-                        for typ in ("keyDown", "keyUp"):
-                            c.call("Input.dispatchKeyEvent", {
-                                "type": typ, "key": "Enter", "code": "Enter",
-                                "windowsVirtualKeyCode": 13, "nativeVirtualKeyCode": 13,
-                            }, timeout=15)
-                        time.sleep(3)
-                    except Exception:
-                        pass
-                    try:
-                        sb = _eval(c, JS_SEND_BUTTON, timeout=15)
-                        if sb:
-                            spt = json.loads(sb)
-                            if not spt.get("disabled"):
-                                c.call("Input.dispatchMouseEvent", {"type": "mousePressed", "x": spt["x"],
-                                                                    "y": spt["y"], "button": "left", "clickCount": 1})
-                                c.call("Input.dispatchMouseEvent", {"type": "mouseReleased", "x": spt["x"],
-                                                                    "y": spt["y"], "button": "left", "clickCount": 1})
-                    except Exception:
-                        pass
-                    time.sleep(6)
-                    try:
-                        c.close()
-                    except Exception:
-                        pass
-                    c = _reconnect(tab["id"])
-                    url2 = _eval(c, "location.href", timeout=20)
-                    body2 = _eval(c, "document.body.innerText || ''", timeout=25) or ""
-                    snippet = prompt.strip().split("\n")[0][:40]
-                    if url2 != CHAT_URL and snippet in body2:
-                        url = url2
-                        body_proof = True
-                        ok = True
-                        sent = True
-                        print(f"      [capacity] retry round {round_+1}: send ACCEPTED ({url})")
-                        break
-                    print(f"      [capacity] retry round {round_+1}: still rejected")
-        print(f"prompt sent: {'VERIFIED' if ok else 'NOT VERIFIED — retry needed'}")
+            backoff = min(20 + 10 * assault_round, 60)
+            print(f"      next assault round in {backoff}s")
+            time.sleep(backoff)
+
+        # in-process rounds exhausted — persistent hand-off: the supervisor
+        # relaunches recover_capacity.py, which re-runs this same aggressive
+        # loop (never passively waiting) until the task generates.
+        url = _eval(c, "location.href", timeout=20) or CHAT_URL
+        m = re.search(r"/c/([0-9a-f]{8})", url)
+        uuid = m.group(1) if m else tab["id"]
+        flag = os.path.join(BASE, "flags/capacity_recover.json")
+        os.makedirs(os.path.dirname(flag), exist_ok=True)
+        with open(flag, "w") as f:
+            f.write(json.dumps({"name": name, "prompt_file": prompt_file, "uuid": uuid,
+                                "tab_id": tab["id"], "ts": int(time.time())}))
         _save({"name": name, "tab_id": tab["id"], "url": url, "ts": int(time.time()),
                "prompt_file": prompt_file, "prompt_chars": len(prompt),
                "mode": "agents-tab", "model": WANT_MODEL, "skill": WANT_SKILL,
-               "insert_pct": pct, "sent": ok})
-        return 0 if ok else 2
+               "insert_pct": pct, "sent": False, "stage": "capacity"})
+        print("      assault rounds exhausted — flag written; recover_capacity.py (supervisor-")
+        print("      guarded) re-runs the aggressive loop. session: dispatch_worker.py check " + name)
+        return 3
     finally:
-        c.close()
+        try:
+            c.close()
+        except Exception:
+            pass
 
 
 # ------------------------------------------------------------------ done --

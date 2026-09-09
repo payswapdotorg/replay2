@@ -1,23 +1,31 @@
 #!/usr/bin/env python3
-"""recover_capacity.py <url-uuid> — wait out GLM-5.3 capacity, then recover the send.
+"""recover_capacity.py — PERSISTENT AGGRESSIVE capacity assault (operator policy).
 
-For a session whose prompt sits in the transcript + composer draft but whose
-generation is blocked by the 'Model is currently at capacity' dialog: polls
-once a minute WITHOUT clicking Cancel (cancel destroys new-task sessions);
-when capacity clears it dismisses the dialog and re-sends from the draft.
+Operator (2026-09-09): "do not wait just because a popup tells you to, never
+wait, find a way around it ... normally cancelling and retrying works just as
+long as you always pick the right model (GLM 5.3), the agents tab and the
+full stack skill before resending the prompt."
+
+So this poller NEVER waits out a GLM-5.3 capacity peak: it re-runs the full
+verified dispatch (dispatch_worker.create — agents tab + GLM-5.3 + Full-Stack
++ insert + send, cancelling every capacity popup it meets and re-picking the
+selections) round after round until the task actually lands and generates.
+The supervisor keeps this process alive while flags/capacity_recover.json
+exists; success (or an already-live session) clears the flag.
+
+Flag format: {"name": ..., "prompt_file": ..., "uuid": ..., "tab_id": ...}
+Legacy flags {"uuid": ...} are resolved through the session registry.
 """
 import json
 import os
+import subprocess
 import sys
 import time
 
-BASE = os.path.dirname(os.path.abspath(__file__))
-sys.path.insert(0, BASE)
-import channel
-
-UUID = sys.argv[1]
+BASE = "/home/z/my-project/scripts"
 FLAG = os.path.join(BASE, "flags/capacity_recover.json")
 PIDFILE = os.path.join(BASE, "flags/capacity_recover.pid")
+REG = os.path.join(BASE, "flags/session_registry.jsonl")
 
 
 def _clear_flag():
@@ -28,94 +36,52 @@ def _clear_flag():
             pass
 
 
-def find_tab():
-    for t in channel.list_tabs():
-        if UUID in (t.get("url") or ""):
-            return t
+def _spec():
+    """Resolve (name, prompt_file) from the flag — legacy-registry aware."""
+    d = json.load(open(FLAG))
+    if d.get("name") and d.get("prompt_file"):
+        return d
+    uuid = d.get("uuid", "")
+    try:
+        lines = open(REG).read().split("\n")
+    except Exception:
+        lines = []
+    for line in reversed([l for l in lines if l.strip()]):
+        try:
+            s = json.loads(line)
+        except Exception:
+            continue
+        if s.get("stage") == "capacity" and (
+                uuid in (s.get("url") or "") or (s.get("tab_id") or "").startswith(uuid)):
+            d["name"] = s.get("name")
+            d["prompt_file"] = s.get("prompt_file")
+            return d
     return None
 
 
 def main():
-    for attempt in range(240):  # up to 4 hours
-        tab = find_tab()
-        if not tab:
-            print(f"[{attempt}] tab LOST — session died", flush=True)
-            _clear_flag()
-            return 2
-        try:
-            c = channel.CDP(tab["webSocketDebuggerUrl"], timeout=20)
-            st = json.loads(c.eval(r"""(() => {
-              const body = document.body.innerText || '';
-              const i = document.querySelector('#chat-input, textarea');
-              const btns = Array.from(document.querySelectorAll('button')).map(b => (b.innerText||'').trim());
-              return JSON.stringify({capacity: body.includes('currently at capacity'),
-                                     composer: i ? (i.value||'').length : -1,
-                                     chars: body.length,
-                                     generating: btns.some(b => /^(Stop|Pause|Halt)$/i.test(b))});
-            })()""", timeout=20) or "{}")
-            c.close()
-        except Exception as e:
-            print(f"[{attempt}] busy {type(e).__name__}", flush=True)
-            time.sleep(60)
-            continue
-        if st.get("generating"):
-            print(f"[{attempt}] GENERATING (chars={st.get('chars')}) — recovered", flush=True)
+    spec = _spec()
+    if not spec or not spec.get("name") or not spec.get("prompt_file"):
+        print("flag unresolvable (no name/prompt_file) — clearing", flush=True)
+        _clear_flag()
+        return 4
+    name, prompt_file = spec["name"], spec["prompt_file"]
+    print(f"aggressive recovery: {name} <- {prompt_file} (never waits out capacity)", flush=True)
+    for attempt in range(240):  # up to ~8h of active assault; supervisor re-arms
+        rc = subprocess.call([sys.executable, os.path.join(BASE, "dispatch_worker.py"),
+                              "create", name, prompt_file])
+        print(f"[{attempt}] create rc={rc}", flush=True)
+        if rc == 0:
             _clear_flag()
             return 0
-        if not st.get("capacity"):
-            print(f"[{attempt}] capacity cleared chars={st.get('chars')}", flush=True)
-            c = channel.CDP(tab["webSocketDebuggerUrl"], timeout=30)
-            try:
-                c.call("Page.bringToFront", {}, timeout=10)
-                time.sleep(1)
-                c.eval(r"""(() => {
-                  const b = Array.from(document.querySelectorAll('button')).find(x => (x.innerText||'').trim() === 'Cancel');
-                  if (b) b.click();
-                  return 'ok';
-                })()""", timeout=15)
-                time.sleep(4)
-                body = c.eval("document.body.innerText || ''", timeout=20) or ""
-                if "currently at capacity" in body:
-                    print(f"[{attempt}] capacity returned", flush=True)
-                    c.close()
-                    time.sleep(60)
-                    continue
-                comp = c.eval("(() => { const i = document.querySelector('#chat-input, textarea'); return i ? String((i.value||'').length) : 'gone'; })()", timeout=15)
-                if comp not in ("0", "gone") and int(comp) > 1000:
-                    # re-send the retained draft
-                    alt = c.eval(r"""(() => {
-                      const i = document.querySelector('#chat-input, textarea');
-                      const form = i ? i.closest('form') : null;
-                      if (!form) return '';
-                      const btns = Array.from(form.querySelectorAll('button'))
-                        .filter(b => !b.disabled && b.getBoundingClientRect().width > 0);
-                      const b = btns[btns.length - 1];
-                      const r = b.getBoundingClientRect();
-                      return JSON.stringify({x: Math.round(r.x + r.width/2), y: Math.round(r.y + r.height/2)});
-                    })()""", timeout=15)
-                    if alt:
-                        pt = json.loads(alt)
-                        c.call("Input.dispatchMouseEvent", {"type": "mousePressed", "x": pt["x"], "y": pt["y"], "button": "left", "clickCount": 1})
-                        c.call("Input.dispatchMouseEvent", {"type": "mouseReleased", "x": pt["x"], "y": pt["y"], "button": "left", "clickCount": 1})
-                        time.sleep(6)
-                time.sleep(10)
-                body = c.eval("document.body.innerText || ''", timeout=20) or ""
-                gen = c.eval(r"""(() => {
-                  const btns = Array.from(document.querySelectorAll('button')).map(b => (b.innerText||'').trim());
-                  return btns.some(b => /^(Stop|Pause|Halt)$/i.test(b)) ? 'yes' : 'no';
-                })()""", timeout=15)
-                print(f"[{attempt}] after recovery: generating={gen} capacity={'currently at capacity' in body}", flush=True)
-                if gen == "yes" or "currently at capacity" not in body:
-                    c.close()
-                    _clear_flag()
-                    return 0
-            finally:
-                c.close()
-            time.sleep(60)
-            continue
-        if attempt % 10 == 0:
-            print(f"[{attempt}] still capacity-blocked (chars={st.get('chars')})", flush=True)
-        time.sleep(60)
+        if rc == 1:
+            print("session already live — recovered elsewhere", flush=True)
+            _clear_flag()
+            return 0
+        # rc==3: create ran its full in-process assault and re-staged the
+        # flag; go again immediately (short gap). rc==2/other: give the page
+        # a moment, then the next create closes stale tabs and retries.
+        time.sleep(20 if rc == 3 else 45)
     return 3
 
 
@@ -125,11 +91,4 @@ if __name__ == "__main__":
             f.write(str(os.getpid()))
     except Exception:
         pass
-    try:
-        rc = main()
-    except Exception as e:
-        import traceback
-        with open(os.path.join(BASE, "logs/recover.log"), "a") as f:
-            f.write(f"FATAL: {e!r}\n{traceback.format_exc()}\n")
-        rc = 99
-    sys.exit(rc)
+    sys.exit(main())

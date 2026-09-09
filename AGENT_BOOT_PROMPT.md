@@ -116,21 +116,21 @@ prompt did not land. Failure ladder — climb it in order:
    Close the tab and open a fresh one at the SAME session URL (the
    conversation persists server-side); the session keeps generating. Record
    the tab change in the registry (`tab-reopen` record) and keep monitoring.
-9. **GLM-5.3 capacity** ("Model is currently at capacity" / "Currently in
-   peak hours" dialog). TWO states — distinguish them by the URL:
-   - **Send ACCEPTED** (URL is `/c/<session-id>`, prompt visible in the
-     transcript, generation queued server-side): do NOT touch the dialog —
-     Cancel, Enter, or send-clicks during an active block ROLL BACK the
-     pending task (tab redirects home = session destroyed; verified twice).
-     The dispatcher writes `flags/capacity_recover.json` and exits 3;
-     `recover_capacity.py` (kept alive by the supervisor) waits out the peak,
-     dismisses the stale dialog once capacity clears, and re-sends the
-     retained composer draft. You just wait — verify
-     `scripts/logs/recover.log` advances.
-   - **Send REJECTED** (URL still the home page, prompt draft retained in
-     the composer): the operator's recovery applies — Cancel (safe here:
-     nothing is pending) then Enter / send again; retry a few rounds. The
-     dispatcher does this automatically (capacity retry loop).
+9. **GLM-5.3 capacity** ("Model is currently at capacity" / "peak hours"
+   dialog). OPERATOR POLICY (2026-09-09): **never wait out the popup —
+   always fight through it.** Cancel the dialog, re-pick the three
+   selections (agents tab, model GLM-5.3, skill Full-Stack — a cancel can
+   reset them), and resend the prompt. If the site rolls the session back
+   (tab redirects home), simply recreate the task: a destroyed session
+   costs nothing, waiting costs hours. The dispatcher does all of this
+   automatically — `create` runs an in-process assault loop
+   (cancel -> re-pick -> resend, ~12 rounds with backoff). When its rounds
+   exhaust it writes `flags/capacity_recover.json` and exits 3, and the
+   supervisor relaunches `recover_capacity.py`, which re-runs the same
+   aggressive dispatch loop until the task generates. Progress lands in
+   `scripts/logs/recover.log`. Only cancel dialogs on tasks YOU are
+   dispatching — a live session owned by another running job must never be
+   cancelled.
 10. **Turn stall** (session generated, then stops mid-task without finishing):
    send a continuation message (`send <name> "continue — deliver the remaining
    files per the report format"`). Sites truncate long turns; continuation
