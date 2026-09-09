@@ -14,7 +14,10 @@ ROOT = os.path.dirname(BASE)
 PORT = os.environ.get("REPLAY_PORT", "3000")
 
 env = dict(os.environ)
-env.setdefault("NODE_OPTIONS", "--max-old-space-size=1536")
+# 1024MB V8 old-space: RSS still overshoots the cap (native + buffers), so
+# the previous 1536 setting ballooned to ~1.9GB RSS under agent-chat load
+# and risked OOM on the 4GB box. 1024 keeps RSS ~1.3-1.4GB worst case.
+env.setdefault("NODE_OPTIONS", "--max-old-space-size=1024")
 p = subprocess.Popen(["bun", "run", "dev", "--", "-p", PORT],
     stdout=open(os.path.join(BASE, "dev.log"), "w"), stderr=subprocess.STDOUT,
     start_new_session=True, cwd=ROOT, env=env)

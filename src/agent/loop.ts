@@ -14,7 +14,7 @@
  *   error {message}
  *   done {finish}
  */
-import { getZai } from "./config";
+import { getZai, getZaiFallback } from "./config";
 import { buildSystemPrompt, toolsForModel } from "./prompt";
 import { TOOL_DEFS, executeTool, toolAvailability, ToolCtx } from "./tools";
 
@@ -83,25 +83,70 @@ async function* sseObjects(stream: AsyncIterable<unknown>, signal: AbortSignal) 
 }
 
 async function createCompletion(
-  zai: Awaited<ReturnType<typeof getZai>>,
   body: Record<string, unknown>,
   emit: Emit,
   signal: AbortSignal
 ): Promise<AsyncIterable<unknown> | Record<string, unknown>> {
+  const primary = await getZai();
   let lastErr: unknown = null;
-  for (let attempt = 0; attempt <= RETRY_DELAYS_MS.length; attempt++) {
-    if (signal.aborted) throw new Error("aborted");
-    try {
-      return await zai.chat.completions.create(body as never);
-    } catch (e) {
-      lastErr = e;
-      const msg = String(e);
-      const retriable = /429|rate|timeout|502|503|ECONN/i.test(msg);
-      if (!retriable || attempt === RETRY_DELAYS_MS.length) throw e;
-      const wait = RETRY_DELAYS_MS[attempt];
-      emit({ type: "status", text: `gateway busy (attempt ${attempt + 1}/${RETRY_DELAYS_MS.length + 1}) — retrying in ${wait / 1000}s` });
-      await new Promise((r) => setTimeout(r, wait));
+
+  const run = async (
+    client: Awaited<ReturnType<typeof getZai>>,
+    b: Record<string, unknown>,
+    tag: string
+  ): Promise<AsyncIterable<unknown> | Record<string, unknown>> => {
+    for (let attempt = 0; attempt <= RETRY_DELAYS_MS.length; attempt++) {
+      if (signal.aborted) throw new Error("aborted");
+      try {
+        return await client.chat.completions.create(b as never);
+      } catch (e) {
+        lastErr = e;
+        const msg = String(e);
+        const retriable = /429|rate|timeout|502|503|ECONN/i.test(msg);
+        if (!retriable || attempt === RETRY_DELAYS_MS.length) throw e;
+        const wait = RETRY_DELAYS_MS[attempt];
+        emit({ type: "status", text: `${tag} busy (attempt ${attempt + 1}/${RETRY_DELAYS_MS.length + 1}) — retrying in ${wait / 1000}s` });
+        await new Promise((r) => setTimeout(r, wait));
+      }
     }
+    throw lastErr;
+  };
+
+  try {
+    return await run(primary, body, "gateway");
+  } catch (e) {
+    if (signal.aborted) throw e;
+    if (!/429|rate/i.test(String(e))) throw e; // non-rate-limit errors surface directly
+  }
+
+  // 429-class exhaustion — try the operator's fallback credential (separate
+  // quota pool: open-platform key vs the built-in session credential).
+  // The open-platform API requires thinking=low/high/max on some models
+  // (error 1210: "always engages in thinking") — adapt once on that error.
+  const fb = await getZaiFallback();
+  if (fb) {
+    emit({ type: "status", text: "primary credential rate-limited — switching to the operator fallback key" });
+    const fbRun = async (b: Record<string, unknown>) => {
+      try {
+        return await fb.chat.completions.create(b as never);
+      } catch (e) {
+        if (/1210|engages in thinking/.test(String(e))) {
+          return await fb.chat.completions.create({ ...b, thinking: { type: "low" } } as never);
+        }
+        throw e;
+      }
+    };
+    try {
+      return await fbRun(body);
+    } catch (e2) {
+      if (signal.aborted || !/429|rate/i.test(String(e2))) throw e2;
+    }
+  }
+
+  // Last resort: downgrade to the fast lane (separate quota class).
+  if (body.model === "glm-5.3" || body.model === "glm-5.2") {
+    emit({ type: "status", text: "rate limits persist — finishing this round on glm-5.3-flash" });
+    return run(fb ?? primary, { ...body, model: "glm-5.3-flash" }, "flash");
   }
   throw lastErr;
 }
@@ -156,7 +201,7 @@ export async function runAgentTurn(opts: {
     let finish: string | null = null;
     const toolCallMap = new Map<number, { id: string; name: string; args: string }>();
 
-    const stream = (await createCompletion(zai, body, emit, signal)) as AsyncIterable<unknown>;
+    const stream = (await createCompletion(body, emit, signal)) as AsyncIterable<unknown>;
     try {
       for await (const j of sseObjects(stream, signal)) {
         const choice = (j as { choices?: { delta?: Record<string, unknown>; finish_reason?: string }[] }).choices?.[0];

@@ -43,7 +43,7 @@ async function envContext(): Promise<string> {
   const hosting = avail.bash
     ? "self-hosted (sandbox/full tool surface)"
     : avail.remote_bash
-      ? "serverless + Composio E2B remote sandbox (remote_bash/remote_python give you real persistent code execution)"
+      ? "serverless + remote E2B sandbox (remote_bash/remote_python give you real persistent code execution — direct E2B key, Composio fallback)"
       : "serverless (cloud tools only)";
   return [
     `# Live environment (refreshed this turn)`,
@@ -85,7 +85,7 @@ The operator can switch you between: ${models}. All share these tools.
 # Tools (function calling)
 Call tools directly per their JSON schemas. Highlights:
 - **bash / read_file / write_file / list_dir** — repo-grounded engineering (self-hosted)
-- **remote_bash / remote_python** — the Composio E2B remote sandbox: REAL persistent Linux execution (files persist across calls, Python 3.13 + Node 20, 180s/command). On serverless this is your execution surface — clone repos, build, test, run scripts. On self-hosted use it for heavy or isolated work.
+- **remote_bash / remote_python** — the persistent E2B remote sandbox: REAL Linux execution (files + python state persist across calls while the sandbox lives, ~180s/command; direct E2B key with Composio fallback). On serverless this is your execution surface — clone repos, build, test, run scripts. On self-hosted use it for heavy or isolated work.
 - **browser** — the live replay Chrome: look (screenshot+vision), click, drag, type, eval JS, tabs. Coordinates are fx/fy fractions 0..1.
 - **dispatch_session** — spawn a chat.z.ai worker session for long-horizon builds (prompt must be fully self-contained; poll with check)
 - **web_search / read_web_page** — live web research

@@ -110,6 +110,55 @@ export async function sdkAvailable(): Promise<boolean> {
   }
 }
 
+// ---------------------------------------------------------------------------
+// 429 fallback credential — the operator's personal Z.ai open-platform key
+// (ZAI_API_KEY_FALLBACK). Used ONLY when the primary credential is
+// rate-limited: the SDK snapshots its config at create() time, so an isolated
+// HOME dir yields a second, independent client. The open-platform endpoint is
+// OpenAI-compatible (POST {baseUrl}/chat/completions, Bearer key) — same SDK
+// call shape. NOTE: do NOT set ZAI_API_KEY on the sandbox: that env pair
+// materializes a .z-ai-config that would override the built-in primary.
+// ---------------------------------------------------------------------------
+
+let fallbackCached: ZAI | null = null;
+let fallbackError: string | null = null;
+let fallbackFailAt = 0;
+const FALLBACK_COOLDOWN_MS = 60000;
+
+export function fallbackConfigured(): boolean {
+  return Boolean(process.env.ZAI_API_KEY_FALLBACK);
+}
+
+export async function getZaiFallback(): Promise<ZAI | null> {
+  if (!fallbackConfigured()) return null;
+  if (fallbackCached) return fallbackCached;
+  if (fallbackError && Date.now() - fallbackFailAt < FALLBACK_COOLDOWN_MS) return null;
+  const baseUrl = process.env.ZAI_FALLBACK_BASE_URL || "https://api.z.ai/api/paas/v4";
+  const apiKey = process.env.ZAI_API_KEY_FALLBACK as string;
+  try {
+    const dir = join(process.cwd(), ".data", "zai-fallback");
+    await fsp.mkdir(dir, { recursive: true });
+    await fsp.writeFile(join(dir, ".z-ai-config"), JSON.stringify({ baseUrl, apiKey }), { mode: 0o600 });
+    // ZAI.create() reads <homedir>/.z-ai-config (cwd has none, so the override
+    // is unambiguous) and snapshots it into the instance — HOME is restored
+    // immediately after, leaving the primary untouched.
+    const savedHome = process.env.HOME;
+    process.env.HOME = dir;
+    try {
+      fallbackCached = await ZAI.create();
+    } finally {
+      if (savedHome === undefined) delete process.env.HOME;
+      else process.env.HOME = savedHome;
+    }
+    fallbackError = null;
+    return fallbackCached;
+  } catch (e) {
+    fallbackError = String(e);
+    fallbackFailAt = Date.now();
+    return null;
+  }
+}
+
 /** Chat models offered in the console model picker (validated names). */
 export const CHAT_MODELS = [
   { id: "glm-5.3", label: "GLM-5.3", note: "flagship · coding + long-horizon" },

@@ -21,6 +21,15 @@ REPLAYD_PORT="${REPLAYD_PORT:-3100}"
 export REPLAY_PORT CDP_PORT REPLAYD_PORT
 export REPLAYD_URL="http://127.0.0.1:$REPLAYD_PORT"
 
+# Deployment secrets (COMPOSIO_API_KEY / E2B_API_KEY / ZAI_API_KEY_FALLBACK).
+# Optional, gitignored, chmod 600 — sourced so the whole supervised tree
+# (console dev server included) inherits them. Never commit this file.
+if [ -f "$SCRIPTS/env.sh" ]; then
+  . "$SCRIPTS/env.sh"
+  export COMPOSIO_API_KEY E2B_API_KEY ZAI_API_KEY_FALLBACK ZAI_FALLBACK_BASE_URL 2>/dev/null || true
+  echo "[deploy] secrets: scripts/env.sh sourced"
+fi
+
 say() { echo "[deploy $(date +%H:%M:%S)] $*"; }
 
 http_ok() { curl -sf -o /dev/null --max-time 4 "$1" && return 0 || return 1; }
