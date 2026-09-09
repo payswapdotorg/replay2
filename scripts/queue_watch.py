@@ -102,6 +102,25 @@ def state(tab_prefix):
     return ("queued-capacity" if cap else "queued"), len(body), (1000 if filled else hits), url
 
 
+def run_with_hb(name, cmd):
+    """Run a re-dispatch subprocess while KEEPING THE HEARTBEAT FRESH.
+
+    2026-09-09 fix (wave-4 forensics): a capacity-peak re-dispatch (create's
+    assault loop with backoffs) can run 10-20 minutes; the old blocking
+    subprocess.call never ticked the heartbeat, so the supervisor killed the
+    watcher MID-ASSAULT as 'hung' (603s stale) — the orphaned create() then
+    finished its job against a watcher that had already been replaced.
+    Ticking every 15s during the wait makes a legitimately-busy watcher
+    indistinguishable from a healthy one (hangs still die via the 600s rule
+    because a true hang stops calling this loop entirely).
+    """
+    p = subprocess.Popen(cmd, stdout=None, stderr=subprocess.STDOUT)
+    while p.poll() is None:
+        heartbeat(name)
+        time.sleep(15)
+    return p.returncode
+
+
 def main():
     name, tab_prefix = sys.argv[1], sys.argv[2]
     marker = sys.argv[3] if len(sys.argv) > 3 else "COMPLETION REPORT"
@@ -129,20 +148,20 @@ def main():
                     pass
                 return 0
             if st == "tablost" or st == "home":
-                print(f"{stamp} session destroyed ({st}) — re-dispatching (assault)", flush=True)
+                print(f"[{name}] {stamp} session destroyed ({st}) — re-dispatching (assault)", flush=True)
                 # the dead session's registry record would make create() bail
                 # with "already exists" — void it first
-                subprocess.call([sys.executable, os.path.join(BASE, "dispatch_worker.py"),
+                run_with_hb(name, [sys.executable, os.path.join(BASE, "dispatch_worker.py"),
                                  "void", name,
                                  f"session destroyed while queued ({st}); queue_watch assault re-dispatch"])
-                subprocess.call([sys.executable, os.path.join(BASE, "dispatch_worker.py"),
+                run_with_hb(name, [sys.executable, os.path.join(BASE, "dispatch_worker.py"),
                                  "create", name,
                                  os.path.join(BASE, "worker-prompts", f"{name.replace('wo-', 'WO-')}.md")])
                 # refresh tab prefix from the registry's latest record
                 rec = dw._find(name)
                 if rec:
                     tab_prefix = (rec.get("tab_id") or "")[:8]
-                    print(f"{stamp} new session tab={tab_prefix}", flush=True)
+                    print(f"[{name}] {stamp} new session tab={tab_prefix}", flush=True)
                     write_spec(name, tab_prefix, marker)  # keep supervisor contract fresh
             # progress bookkeeping + staleness-assault policy
             if ln != last_len:
@@ -163,20 +182,20 @@ def main():
                     and stuck_assaults < STUCK_ASSAULT_MAX):
                 stuck_assaults += 1
                 stuck_since = 0
-                print(f"{stamp} STUCK {STUCK_ASSAULT_AFTER}s in queued-capacity — "
+                print(f"[{name}] {stamp} STUCK {STUCK_ASSAULT_AFTER}s in queued-capacity — "
                       f"assault #{stuck_assaults}/{STUCK_ASSAULT_MAX} (fresh dispatch beats a zombie session)",
                       flush=True)
-                subprocess.call([sys.executable, os.path.join(BASE, "dispatch_worker.py"),
+                run_with_hb(name, [sys.executable, os.path.join(BASE, "dispatch_worker.py"),
                                  "void", name,
                                  f"stuck in queued-capacity {STUCK_ASSAULT_AFTER}s with zero progress; "
                                  f"staleness assault #{stuck_assaults}"])
-                subprocess.call([sys.executable, os.path.join(BASE, "dispatch_worker.py"),
+                run_with_hb(name, [sys.executable, os.path.join(BASE, "dispatch_worker.py"),
                                  "create", name,
                                  os.path.join(BASE, "worker-prompts", f"{name.replace('wo-', 'WO-')}.md")])
                 rec = dw._find(name)
                 if rec:
                     tab_prefix = (rec.get("tab_id") or "")[:8]
-                    print(f"{stamp} new session tab={tab_prefix}", flush=True)
+                    print(f"[{name}] {stamp} new session tab={tab_prefix}", flush=True)
                     write_spec(name, tab_prefix, marker)
                 last_len = 0
                 rounds_since_progress = 0
