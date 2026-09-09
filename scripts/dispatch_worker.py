@@ -871,31 +871,83 @@ def send(name, message):
         except Exception:
             st0 = {}
         if st0.get("capacity") or st0.get("hasCancel"):
+            # RATE-LIMIT GUARD (22:29 forensics): the personal-usage-limit
+            # dialog ('try again 1 hour later') re-arms on every rejected
+            # send — grinding assault rounds during the cooldown is exactly
+            # the treadmill that kept the account limited for hours. If the
+            # limit dialog is up, DON'T send at all.
+            limited = _eval(c, r"""(() => {
+              const t = document.body.innerText || '';
+              return (t.includes('exceeds the personal limit') ||
+                      t.includes('try again 1 hour later')) ? 'yes' : 'no';
+            })()""", timeout=15)
+            if limited == "yes":
+                print("      [rate-limited] account cooldown active — NOT sending (re-arms the limit)")
+                _save({"action": "send", "name": name, "tab_id": tab["id"], "ts": int(time.time()),
+                       "msg_chars": len(message), "sent": False, "kind": "continuation",
+                       "note": "rate-limited (account cooldown)"})
+                return 3
             _eval(c, JS_CLICK_CANCEL, timeout=15)
             print("      [capacity] pre-existing popup cancelled before composer use")
             time.sleep(3)
-        comp = _eval(c, JS_COMPOSER)
-        if not comp:
-            print("ERROR: composer not found — login expired?")
-            return 2
-        pt = json.loads(comp)
-        c.call("Input.dispatchMouseEvent", {"type": "mousePressed", "x": pt["x"], "y": pt["y"],
-                                            "button": "left", "clickCount": 1})
-        c.call("Input.dispatchMouseEvent", {"type": "mouseReleased", "x": pt["x"], "y": pt["y"],
-                                            "button": "left", "clickCount": 1})
-        time.sleep(0.5)
-        _eval(c, JS_CLEAR_COMPOSER, timeout=15)
-        time.sleep(0.3)
-        c.call("Input.insertText", {"text": message})
-        ratio_js = JS_INSERT_RATIO.replace("__PLEN__", str(len(message)))
-        ok, ratio = _wait(c, ratio_js, "100", tries=8, sleep=1.0, desc="insert")
+        # STAGED-REJECTED SHORTCUT (wave-4 forensics): after a capacity
+        # rejection the composer often still holds the FULL message (the UI
+        # staged it into the transcript but never sent). If so, skip the
+        # clear+insert entirely — re-inserting an 80K prompt through a modal
+        # transition is exactly when insertText lands nowhere (ratio 0).
+        staged_len = _eval(c, r"""(() => {
+          const i = document.querySelector('#chat-input, textarea');
+          return i ? String((i.value||'').length) : 'gone';
+        })()""", timeout=15)
         try:
-            pct = int(ratio)
+            staged = int(staged_len) >= int(len(message) * 0.97)
         except Exception:
-            pct = 0
-        if not (97 <= pct <= 115):
-            print(f"ERROR: insert ratio {pct}%; message not sent")
-            return 2
+            staged = False
+        if staged:
+            print(f"      [staged] composer already holds the full message ({staged_len} chars) — send-only path")
+            pct = 100
+        else:
+            comp = _eval(c, JS_COMPOSER)
+            if not comp:
+                print("ERROR: composer not found — login expired?")
+                return 2
+            pt = json.loads(comp)
+            c.call("Input.dispatchMouseEvent", {"type": "mousePressed", "x": pt["x"], "y": pt["y"],
+                                                "button": "left", "clickCount": 1})
+            c.call("Input.dispatchMouseEvent", {"type": "mouseReleased", "x": pt["x"], "y": pt["y"],
+                                                "button": "left", "clickCount": 1})
+            time.sleep(0.5)
+            # FOCUS-BEFORE-INSERT (wave-4 forensics): Input.insertText goes to
+            # the FOCUSED element; after a modal Cancel the focus sits on
+            # <body> and the insert vanishes (ratio 0%). Focus the textarea
+            # and hard-verify BEFORE inserting.
+            focused0 = _eval(c, r"""(() => {
+              const i = document.querySelector('#chat-input, textarea');
+              return (i && document.activeElement === i) ? 'yes' : 'no';
+            })()""", timeout=15)
+            if focused0 != "yes":
+                _eval(c, r"""(() => {
+                  const i = document.querySelector('#chat-input, textarea');
+                  if (i) { i.focus(); return 'ok'; } return 'gone';
+                })()""", timeout=15)
+                time.sleep(0.4)
+            _eval(c, JS_CLEAR_COMPOSER, timeout=15)
+            time.sleep(0.3)
+            _eval(c, r"""(() => {
+              const i = document.querySelector('#chat-input, textarea');
+              if (i) { i.focus(); return 'ok'; } return 'gone';
+            })()""", timeout=15)
+            time.sleep(0.2)
+            c.call("Input.insertText", {"text": message})
+            ratio_js = JS_INSERT_RATIO.replace("__PLEN__", str(len(message)))
+            ok, ratio = _wait(c, ratio_js, "100", tries=8, sleep=1.0, desc="insert")
+            try:
+                pct = int(ratio)
+            except Exception:
+                pct = 0
+            if not (97 <= pct <= 115):
+                print(f"ERROR: insert ratio {pct}%; message not sent")
+                return 2
         body_before = int(_eval(c, "(document.body.innerText||'').length", timeout=15) or 0)
         ok = False
         reason = ""
@@ -954,6 +1006,21 @@ def send(name, message):
                 ok, reason = True, "composer-cleared+grew"
                 break
             if st.get("capacity") or st.get("hasCancel"):
+                # RATE-LIMIT BAIL (22:29 forensics): grinding rounds while the
+                # personal-limit dialog is up re-arms the cooldown — abort
+                # instead of assaulting; the caller waits out the window.
+                try:
+                    limited_now = _eval(c, r"""(() => {
+                      const t = document.body.innerText || '';
+                      return (t.includes('exceeds the personal limit') ||
+                              t.includes('try again 1 hour later')) ? 'yes' : 'no';
+                    })()""", timeout=15)
+                except Exception:
+                    limited_now = "no"
+                if limited_now == "yes":
+                    reason = "rate-limited (account cooldown) — aborting assault"
+                    print(f"      [rate-limited] {reason}")
+                    break
                 # capacity popup rejected the send — gentle in-session assault
                 # (never destroys the session: it holds 45+ min of live work)
                 _eval(c, JS_CLICK_CANCEL, timeout=15)
