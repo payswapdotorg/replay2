@@ -125,10 +125,12 @@ async function createCompletion(
     if (!primaryDead(e)) throw e; // auth/validation errors surface directly
   }
 
-  // 429-class exhaustion — try the operator's fallback credential (separate
-  // quota pool: open-platform key vs the built-in session credential).
-  // The open-platform API requires thinking=low/high/max on some models
-  // (error 1210: "always engages in thinking") — adapt once on that error.
+  // 429/network-class exhaustion — try the operator's fallback credential
+  // (separate quota pool: open-platform key vs the built-in session
+  // credential). The open-platform v4 API accepts thinking.type in
+  // {enabled, disabled} (NOT low/high/max, despite error 1210's wording —
+  // verified empirically: {type:"low"} → 1210, {type:"enabled"} → passes
+  // validation) and rejects disabled on glm-5.3 — adapt once on that error.
   const fb = await getZaiFallback();
   if (fb) {
     emit({ type: "status", text: "primary credential unavailable (rate limit or unreachable gateway) — switching to the operator fallback key" });
@@ -137,7 +139,7 @@ async function createCompletion(
         return await fb.chat.completions.create(b as never);
       } catch (e) {
         if (/1210|engages in thinking/.test(String(e))) {
-          return await fb.chat.completions.create({ ...b, thinking: { type: "low" } } as never);
+          return await fb.chat.completions.create({ ...b, thinking: { type: "enabled" } } as never);
         }
         throw e;
       }
