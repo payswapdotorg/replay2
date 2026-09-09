@@ -11,7 +11,11 @@
   "dependencies": {
     "next": "^15.1.0",
     "react": "^19.0.0",
-    "react-dom": "^19.0.0"
+    "react-dom": "^19.0.0",
+    "react-markdown": "^10.1.0",
+    "rehype-highlight": "^7.0.2",
+    "remark-gfm": "^4.0.1",
+    "z-ai-web-dev-sdk": "^0.0.18"
   },
   "devDependencies": {
     "@eslint/eslintrc": "^3.3.7",
