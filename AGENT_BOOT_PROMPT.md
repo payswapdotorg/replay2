@@ -116,12 +116,21 @@ prompt did not land. Failure ladder — climb it in order:
    Close the tab and open a fresh one at the SAME session URL (the
    conversation persists server-side); the session keeps generating. Record
    the tab change in the registry (`tab-reopen` record) and keep monitoring.
-9. **GLM-5.3 capacity** ("Model is currently at capacity" dialog after send):
-   NEVER click Cancel — canceling destroys new-task sessions server-side.
-   The dispatcher stages the send and writes `flags/capacity_recover.json`;
-   `recover_capacity.py` (kept alive by the supervisor) polls once a minute
-   and re-sends from the composer draft when capacity clears. You just wait —
-   verify `scripts/logs/recover.log` advances.
+9. **GLM-5.3 capacity** ("Model is currently at capacity" / "Currently in
+   peak hours" dialog). TWO states — distinguish them by the URL:
+   - **Send ACCEPTED** (URL is `/c/<session-id>`, prompt visible in the
+     transcript, generation queued server-side): do NOT touch the dialog —
+     Cancel, Enter, or send-clicks during an active block ROLL BACK the
+     pending task (tab redirects home = session destroyed; verified twice).
+     The dispatcher writes `flags/capacity_recover.json` and exits 3;
+     `recover_capacity.py` (kept alive by the supervisor) waits out the peak,
+     dismisses the stale dialog once capacity clears, and re-sends the
+     retained composer draft. You just wait — verify
+     `scripts/logs/recover.log` advances.
+   - **Send REJECTED** (URL still the home page, prompt draft retained in
+     the composer): the operator's recovery applies — Cancel (safe here:
+     nothing is pending) then Enter / send again; retry a few rounds. The
+     dispatcher does this automatically (capacity retry loop).
 10. **Turn stall** (session generated, then stops mid-task without finishing):
    send a continuation message (`send <name> "continue — deliver the remaining
    files per the report format"`). Sites truncate long turns; continuation

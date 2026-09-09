@@ -634,7 +634,10 @@ def create(name, prompt_file):
         # Correct protocol: leave the dialog in place, write the recovery flag
         # and exit 3 — the supervisor relaunches recover_capacity.py, which
         # waits out the peak and re-sends the retained composer draft.
-        if ok:
+        # Fires for ANY accepted state: ok=True (send verified) OR a session
+        # URL already assigned (send accepted, composer draft restored,
+        # generation queued server-side).
+        if ok or (url and url != CHAT_URL):
             try:
                 st = json.loads(_eval(c, JS_CAPACITY_STATE, timeout=15) or "{}")
             except Exception:
@@ -662,6 +665,80 @@ def create(name, prompt_file):
             released = _handle_sandbox_limit(c, _active_session_keywords(extra=[name]))
             if released:
                 print(f"      [sandbox] released {released} idle sandbox(es) so the new job can start")
+        # 7c. operator recovery (2026-09-09): "you recover from peak hours
+        # prompts by doing Enter then trying to send the prompt again" — but
+        # ONLY in the send-REJECTED state: URL still the home page (no /c/
+        # session id = no pending task to roll back) AND the draft retained
+        # in the composer. In that state Cancel is a safe dismissal and the
+        # re-send is a pure retry. If the send was ACCEPTED (URL /c/... +
+        # prompt in transcript), the pending task is server-side queued and
+        # ANY send interaction destroys it — that case is handled by the
+        # guarded recovery poller above (7a) and must not be touched here.
+        if not ok and url == CHAT_URL:
+            try:
+                st = json.loads(_eval(c, JS_CAPACITY_STATE, timeout=15) or "{}")
+            except Exception:
+                st = {}
+            try:
+                comp = _eval(c, r"""(() => {
+                  const i = document.querySelector('#chat-input, textarea');
+                  return i ? String((i.value||'').length) : 'gone';
+                })()""", timeout=15)
+            except Exception:
+                comp = "gone"
+            if st.get("capacity") and comp not in ("0", "gone") and int(comp) > 1000:
+                print("      [capacity] send REJECTED (draft retained, no session yet) — operator retry: Cancel + re-send")
+                for round_ in range(4):
+                    _eval(c, JS_CLICK_CANCEL, timeout=15)
+                    time.sleep(45)
+                    try:
+                        c.close()
+                    except Exception:
+                        pass
+                    c = _reconnect(tab["id"])
+                    # Enter retry (operator method), send-button fallback
+                    try:
+                        c.eval(r"""(() => {
+                          const i = document.querySelector('#chat-input, textarea');
+                          if (i) { i.focus(); return 'focused'; }
+                          return 'no-composer';
+                        })()""", timeout=15)
+                        for typ in ("keyDown", "keyUp"):
+                            c.call("Input.dispatchKeyEvent", {
+                                "type": typ, "key": "Enter", "code": "Enter",
+                                "windowsVirtualKeyCode": 13, "nativeVirtualKeyCode": 13,
+                            }, timeout=15)
+                        time.sleep(3)
+                    except Exception:
+                        pass
+                    try:
+                        sb = _eval(c, JS_SEND_BUTTON, timeout=15)
+                        if sb:
+                            spt = json.loads(sb)
+                            if not spt.get("disabled"):
+                                c.call("Input.dispatchMouseEvent", {"type": "mousePressed", "x": spt["x"],
+                                                                    "y": spt["y"], "button": "left", "clickCount": 1})
+                                c.call("Input.dispatchMouseEvent", {"type": "mouseReleased", "x": spt["x"],
+                                                                    "y": spt["y"], "button": "left", "clickCount": 1})
+                    except Exception:
+                        pass
+                    time.sleep(6)
+                    try:
+                        c.close()
+                    except Exception:
+                        pass
+                    c = _reconnect(tab["id"])
+                    url2 = _eval(c, "location.href", timeout=20)
+                    body2 = _eval(c, "document.body.innerText || ''", timeout=25) or ""
+                    snippet = prompt.strip().split("\n")[0][:40]
+                    if url2 != CHAT_URL and snippet in body2:
+                        url = url2
+                        body_proof = True
+                        ok = True
+                        sent = True
+                        print(f"      [capacity] retry round {round_+1}: send ACCEPTED ({url})")
+                        break
+                    print(f"      [capacity] retry round {round_+1}: still rejected")
         print(f"prompt sent: {'VERIFIED' if ok else 'NOT VERIFIED — retry needed'}")
         _save({"name": name, "tab_id": tab["id"], "url": url, "ts": int(time.time()),
                "prompt_file": prompt_file, "prompt_chars": len(prompt),
