@@ -25,18 +25,21 @@ FLAGS = os.path.join(BASE, "flags")
 
 
 def state(tab_prefix):
-    tab = None
-    for t in channel.list_tabs():
-        if t["id"].startswith(tab_prefix):
-            tab = t
-            break
-    if not tab:
-        return "tablost", 0, 0, ""
     try:
-        c = channel.CDP(tab["webSocketDebuggerUrl"], timeout=20)
-        url = dw._eval(c, "location.href", timeout=15)
-        body = dw._eval(c, "document.body.innerText || ''", timeout=25) or ""
-        c.close()
+        tab = None
+        for t in channel.list_tabs():
+            if t["id"].startswith(tab_prefix):
+                tab = t
+                break
+        if not tab:
+            return "tablost", 0, 0, ""
+        try:
+            c = channel.CDP(tab["webSocketDebuggerUrl"], timeout=20)
+            url = dw._eval(c, "location.href", timeout=15)
+            body = dw._eval(c, "document.body.innerText || ''", timeout=25) or ""
+            c.close()
+        except Exception as e:
+            return f"busy:{type(e).__name__}", 0, 0, ""
     except Exception as e:
         return f"busy:{type(e).__name__}", 0, 0, ""
     hits = body.count(sys.argv[3]) if len(sys.argv) > 3 else 0
@@ -52,33 +55,45 @@ def state(tab_prefix):
 def main():
     name, tab_prefix = sys.argv[1], sys.argv[2]
     marker = sys.argv[3] if len(sys.argv) > 3 else "COMPLETION REPORT"
+    # supervisor contract: while this spec exists, the supervisor resurrects
+    # this watcher; we remove it when the session completes
+    spec = os.path.join(FLAGS, "queue_watch.spec")
+    open(spec, "w").write(json.dumps({"name": name, "tab_prefix": tab_prefix,
+                                      "marker": marker, "pid": os.getpid()}) + "\n")
     rounds_since_progress = 0
     last_len = 0
     while True:
-        st, ln, hits, url = state(tab_prefix)
-        stamp = time.strftime("%H:%M:%S")
-        print(f"{stamp} {st} chars={ln} hits={marker and hits} url={url[:60]}", flush=True)
-        mk = os.path.join(FLAGS, f"{name}-complete.marker")
-        if hits >= 2:
-            open(mk, "w").write(f"{time.time()} {url}\n")
-            print("COMPLETE — marker written", flush=True)
-            return 0
-        if st == "tablost" or st == "home":
-            print(f"{stamp} session destroyed ({st}) — re-dispatching (assault)", flush=True)
-            subprocess.call([sys.executable, os.path.join(BASE, "dispatch_worker.py"),
-                             "create", name,
-                             os.path.join(BASE, "worker-prompts", f"{name.replace('wo-', 'WO-')}.md")])
-            # refresh tab prefix from the registry's latest record
-            rec = dw._find(name)
-            if rec:
-                tab_prefix = (rec.get("tab_id") or "")[:8]
-                print(f"{stamp} new session tab={tab_prefix}", flush=True)
-        # progress bookkeeping
-        if ln != last_len:
-            rounds_since_progress = 0
-            last_len = ln
-        else:
-            rounds_since_progress += 1
+        try:
+            st, ln, hits, url = state(tab_prefix)
+            stamp = time.strftime("%H:%M:%S")
+            print(f"{stamp} {st} chars={ln} hits={hits} url={url[:60]}", flush=True)
+            mk = os.path.join(FLAGS, f"{name}-complete.marker")
+            if hits >= 2:
+                open(mk, "w").write(f"{time.time()} {url}\n")
+                print("COMPLETE — marker written", flush=True)
+                try:
+                    os.remove(spec)
+                except Exception:
+                    pass
+                return 0
+            if st == "tablost" or st == "home":
+                print(f"{stamp} session destroyed ({st}) — re-dispatching (assault)", flush=True)
+                subprocess.call([sys.executable, os.path.join(BASE, "dispatch_worker.py"),
+                                 "create", name,
+                                 os.path.join(BASE, "worker-prompts", f"{name.replace('wo-', 'WO-')}.md")])
+                # refresh tab prefix from the registry's latest record
+                rec = dw._find(name)
+                if rec:
+                    tab_prefix = (rec.get("tab_id") or "")[:8]
+                    print(f"{stamp} new session tab={tab_prefix}", flush=True)
+            # progress bookkeeping
+            if ln != last_len:
+                rounds_since_progress = 0
+                last_len = ln
+            else:
+                rounds_since_progress += 1
+        except Exception as e:
+            print(f"{time.strftime('%H:%M:%S')} loop-error {type(e).__name__} — continuing", flush=True)
         time.sleep(120)
 
 

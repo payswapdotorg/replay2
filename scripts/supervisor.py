@@ -233,6 +233,33 @@ def heartbeat():
         pass
 
 
+def ensure_queue_watch():
+    """Resurrect queue_watch.py while flags/queue_watch.spec exists.
+
+    The spec is written by queue_watch.py itself; it removes the spec when
+    the watched session completes, which retires the guard.
+    """
+    spec_path = os.path.join(FLAGS, "queue_watch.spec")
+    if not os.path.exists(spec_path):
+        return
+    try:
+        spec = json.loads(open(spec_path).read().strip() or "{}")
+    except Exception:
+        return
+    pid = spec.get("pid")
+    if pid and pid_alive(pid, "queue_watch"):
+        return
+    r = subprocess.run(["pgrep", "-f", "scripts/queue_watch.py"], capture_output=True, text=True)
+    if r.returncode == 0 and r.stdout.strip():
+        return  # already running under a different pid
+    log("queue_watch DEAD — restarting (spec present)")
+    args = [PY, os.path.join(BASE, "queue_watch.py"),
+            spec.get("name", ""), spec.get("tab_prefix", ""), spec.get("marker", "")]
+    subprocess.Popen(args, stdout=open(os.path.join(LOGDIR, "queue-watch.log"), "a"),
+                     stderr=subprocess.STDOUT)
+    log(f"queue_watch restarted: {spec.get('name')} tab={spec.get('tab_prefix')}")
+
+
 def main():
     # single-instance guard
     lock_fh = open(LOCK, "w")
@@ -250,6 +277,7 @@ def main():
             ensure_watcher()
             ensure_replayd()
             ensure_capacity_recovery()
+            ensure_queue_watch()
             if cycle % 3 == 0:          # browser check every ~30s
                 ensure_browser()
                 ensure_dev()
