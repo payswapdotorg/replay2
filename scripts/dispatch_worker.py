@@ -208,6 +208,27 @@ JS_COMPOSER = r"""(() => {
   return JSON.stringify({x: Math.round(r.x + r.width/2), y: Math.round(r.y + r.height/2)});
 })()"""
 
+JS_FOCUS_COMPOSER = r"""(() => {
+  const i = document.querySelector('#chat-input, textarea');
+  if (!i) return 'gone';
+  i.focus();
+  return (document.activeElement === i) ? 'ok' : 'no';
+})()"""
+
+JS_DISMISS_DIALOG = r"""(() => {
+  // promotional / notification dialogs (2026-09-09 23:50 forensics: the
+  // GLM-5.3-Flash launch dialog) overlay the composer, steal focus and eat
+  // clicks — insertText lands 0%, Enter vanishes, sends fail with url=None.
+  // Close them via their close button (aria-label or bare svg button).
+  const dlg = document.querySelector('[role=dialog]');
+  if (!dlg) return 'none';
+  const btns = [...dlg.querySelectorAll('button')];
+  const close = btns.find(b => /close/i.test(b.getAttribute('aria-label') || '')
+                              || ((b.innerText||'').trim() === '' && b.querySelector('svg')));
+  if (close) { close.click(); return 'closed'; }
+  return 'dialog-no-close-button';
+})()"""
+
 JS_CLEAR_COMPOSER = r"""(() => {
   // React-native clear: bypass the controlled-component setter, then notify
   const i = document.querySelector('#chat-input, textarea');
@@ -592,6 +613,20 @@ def _select_insert_send(c, tab, prompt, name, prompt_file):
         # clear whatever is in the composer (React-native clear)
         _eval(c, JS_CLEAR_COMPOSER, timeout=15)
         time.sleep(0.3)
+        # DOM-FOCUS (23:35 forensics): the coordinate click above can MISS
+        # the textarea (dropdown overlays, layout shifts after the model/skill
+        # chips) — Input.insertText then goes to <body> and the insert lands
+        # 0%. focus() the element directly and hard-verify activeElement.
+        foc = _eval(c, JS_FOCUS_COMPOSER, timeout=15)
+        if foc != "ok":
+            print(f"      [focus] composer focus returned '{foc}' — retrying click")
+            pt2 = json.loads(_eval(c, JS_COMPOSER) or '{"x":0,"y":0}')
+            c.call("Input.dispatchMouseEvent", {"type": "mousePressed", "x": pt2["x"], "y": pt2["y"],
+                                                "button": "left", "clickCount": 1})
+            c.call("Input.dispatchMouseEvent", {"type": "mouseReleased", "x": pt2["x"], "y": pt2["y"],
+                                                "button": "left", "clickCount": 1})
+            time.sleep(0.4)
+            _eval(c, JS_FOCUS_COMPOSER, timeout=15)
         # chunked insert: a single >100K-char Input.insertText starves the
         # CDP websocket (recv timeout under the event flood) and can block
         # the page's input handler; 16K chunks with short pauses are reliable
@@ -617,6 +652,21 @@ def _select_insert_send(c, tab, prompt, name, prompt_file):
     # 7. send
     print("[7/7] sending ...")
     body_before = int(_eval(c, "(document.body.innerText||'').length", timeout=15) or 0)
+    # FOCUS-BEFORE-ENTER (23:40 forensics): after an 80K-char insert the
+    # textarea grew (rect moved) and focus may sit elsewhere — an Enter to
+    # <body> silently drops the send (url stays home). Re-click the LIVE
+    # textarea rect and DOM-focus it right before pressing Enter.
+    try:
+        fp = json.loads(_eval(c, JS_COMPOSER) or '{"x":0,"y":0}')
+        c.call("Input.dispatchMouseEvent", {"type": "mousePressed", "x": fp["x"], "y": fp["y"],
+                                            "button": "left", "clickCount": 1})
+        c.call("Input.dispatchMouseEvent", {"type": "mouseReleased", "x": fp["x"], "y": fp["y"],
+                                            "button": "left", "clickCount": 1})
+        time.sleep(0.3)
+    except Exception:
+        pass
+    _eval(c, JS_FOCUS_COMPOSER, timeout=15)
+    time.sleep(0.2)
     for typ in ("keyDown", "keyUp"):
         c.call("Input.dispatchKeyEvent", {
             "type": typ, "key": "Enter", "code": "Enter",
@@ -707,6 +757,14 @@ def create(name, prompt_file):
                            "ts": int(time.time()), "prompt_file": prompt_file})
                     return 2
                 c.call('Page.bringToFront', {})
+                # dismiss any promotional/notification dialog that overlays
+                # the composer (GLM-5.3-Flash launch popup etc.) — it steals
+                # focus and eats the clicks/inserts that follow
+                for _ in range(2):
+                    dres = _eval(c, JS_DISMISS_DIALOG, timeout=10)
+                    if dres == 'none':
+                        break
+                    time.sleep(1.2)
 
                 ok, url, pct, c = _select_insert_send(c, tab, prompt, name, prompt_file)
             except Exception as e:
@@ -863,6 +921,14 @@ def send(name, message):
         if busy == "busy":
             print("session is generating right now; not interrupting")
             return 0
+        # dismiss promotional/notification dialogs first (they overlay the
+        # composer, steal focus and eat clicks — GLM-5.3-Flash popup etc.)
+        for _ in range(2):
+            dres = _eval(c, JS_DISMISS_DIALOG, timeout=10)
+            if dres == "none":
+                break
+            print(f"      [dialog] dismissed promotional dialog ({dres})")
+            time.sleep(1.2)
         # a capacity modal may already be up (e.g. from a previous failed
         # send): it BLOCKS the composer — insert would land nowhere (ratio 0).
         # Cancel it first so the page below becomes interactive again.
@@ -1214,11 +1280,29 @@ def sandboxes(session_substr=None):
 
 # ------------------------------------------------------------------- main --
 
+def _dispatch_lock():
+    """Serialize ALL browser-driving commands (create/send/void).
+
+    2026-09-09 23:23 forensics: two queue_watchers fired their tablost
+    re-dispatches on the same 2-min cycle tick — the two concurrent create()
+    flows fought over the same Chrome (interleaved model-selection clicks,
+    racing inserts) and BOTH came back 'prompt sent: NOT VERIFIED'. The
+    browser is a single shared resource: one dispatch at a time, others
+    block here (flock released on process exit).
+    """
+    import fcntl
+    lk = open(os.path.join(BASE, "flags", "dispatch.lock"), "w")
+    fcntl.flock(lk, fcntl.LOCK_EX)
+    return lk
+
+
 def main():
     if len(sys.argv) < 2:
         print(__doc__)
         return 1
     cmd = sys.argv[1]
+    if cmd in ("create", "send", "void"):
+        _dispatch_lock()
     if cmd == "create":
         return create(sys.argv[2], sys.argv[3])
     if cmd == "check":
