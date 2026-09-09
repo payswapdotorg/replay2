@@ -23,7 +23,7 @@ import { FLAGS } from "@/lib/replay";
 
 export const dynamic = "force-dynamic";
 export const runtime = "nodejs";
-export const maxDuration = 800; // Vercel clamps per plan; self-hosted unlimited
+export const maxDuration = 300; // hobby plan cap; self-hosted sets its own
 
 type IncomingMsg = {
   role: "user" | "assistant" | "tool";
