@@ -284,21 +284,30 @@ JS_SANDBOX_RELEASE_TARGET = r"""(() => {
 def _active_session_keywords(extra=None):
     """Keywords identifying sessions with active jobs (registry truth).
 
+    Registry semantics: the LATEST record per name wins (file order =
+    chronological; this is how void -> re-create and tab-reopen work). A name
+    is live only when its latest record is sent and carries no terminal
+    action (void/failed/done). Old records — e.g. chat-tab-era sessions the
+    operator ruled NULL AND VOID, superseded re-dispatches, or done sessions —
+    must NOT contribute keywords, or their stale sandboxes get KEPT in the
+    concurrency modal and block new jobs.
+
     A sandbox row is KEPT if its name matches any keyword. Keywords come from
-    live registry sessions: 'wo-009-agents' -> ['wo-009-agents', 'WO-009'].
-    The modal identifies holders by their session UUID (e.g. '2d8588a4-…') —
-    so every live session's /c/<uuid> id is added as a keyword too.
+    live sessions: 'wo-009-agents' -> ['wo-009-agents', 'WO-009']. The modal
+    identifies holders by their session UUID (e.g. '2d8588a4-…') — so every
+    live session's /c/<uuid> id is added as a keyword too.
     """
-    kws = []
-    done = {s.get("name") for s in _sessions() if s.get("action") == "done"}
+    last = {}
     for s in _sessions():
-        if s.get("action") in ("void", "failed"):
-            continue
-        if s.get("name") in done:
+        n = s.get("name")
+        if n:
+            last[n] = s  # later lines supersede earlier ones
+    kws = []
+    for n, s in last.items():
+        if s.get("action") in ("void", "failed", "done"):
             continue  # retired: its sandbox is no longer an active job
         if not s.get("sent"):
             continue
-        n = s.get("name") or ""
         if n:
             kws.append(n)
             wo = n.split("-agents")[0].split("-chat")[0]
@@ -348,6 +357,13 @@ def _handle_sandbox_limit(c, keep_kws, max_rounds=6, log=print):
     number of sandbox releases verified (row disappears from the modal).
     """
     released = 0
+    # the modal only processes real pointer events on a FOCUSED (front) tab —
+    # clicks dispatched while the tab is backgrounded are silently ignored
+    try:
+        c.call("Page.bringToFront", {}, timeout=10)
+        time.sleep(0.5)
+    except Exception:
+        pass
     for round_ in range(max_rounds):
         try:
             st = json.loads(_eval(c, JS_SANDBOX_ROWS, timeout=15) or "{}")
