@@ -136,7 +136,13 @@ export async function getZaiFallback(): Promise<ZAI | null> {
   const baseUrl = process.env.ZAI_FALLBACK_BASE_URL || "https://api.z.ai/api/paas/v4";
   const apiKey = process.env.ZAI_API_KEY_FALLBACK as string;
   try {
-    const dir = join(process.cwd(), ".data", "zai-fallback");
+    // Serverless (Vercel/Lambda): cwd is the read-only bundle — /tmp is the
+    // only writable path (same pattern as writeEnvConfig). Self-hosted keeps
+    // .data/zai-fallback inside the repo tree.
+    const serverless = Boolean(process.env.VERCEL || process.env.AWS_LAMBDA_FUNCTION_NAME);
+    const dir = serverless
+      ? join("/tmp", "zai-fallback")
+      : join(process.cwd(), ".data", "zai-fallback");
     await fsp.mkdir(dir, { recursive: true });
     await fsp.writeFile(join(dir, ".z-ai-config"), JSON.stringify({ baseUrl, apiKey }), { mode: 0o600 });
     // ZAI.create() reads <homedir>/.z-ai-config (cwd has none, so the override
