@@ -400,6 +400,22 @@ def handle_event(payload):
             pass
         return {"ok": True, "kind": "dialog"}
 
+    if kind == "eval":
+        # JS evaluation on the active tab (returnByValue). Used by the agent
+        # chat backend to inspect page state; expression capped at 20k chars.
+        expr = str(payload.get("expr", ""))[:20000]
+        if not expr.strip():
+            return {"ok": False, "error": "empty-expr", "kind": "eval"}
+        try:
+            res = c.eval(expr, timeout=15)
+        except Exception as e:
+            return {"ok": False, "error": f"eval-error: {e!r}"[:300], "kind": "eval"}
+        try:
+            json.dumps(res)
+        except Exception:
+            res = str(res)[:4000]
+        return {"ok": True, "kind": "eval", "result": res}
+
     return {"ok": False, "error": f"unknown-type:{kind}"}
 
 

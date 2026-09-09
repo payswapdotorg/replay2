@@ -3,7 +3,10 @@
 A deployable **remote-browser-control console** (a "replay"): a web page that
 live-mirrors a headless Chrome and lets a human operate it from anywhere —
 click, **drag (streamed in real time)**, type, scroll, switch tabs, log in —
-including slider-captcha verification.
+including slider-captcha verification. Plus a **full agent chat**: a
+GLM-5.3 conversation section with real tools (bash, the replay browser, web
+search, images, vision, worker dispatch, skills) — the same class of
+assistant you'd talk to on chat.z.ai, embedded in the console.
 
 Deploy the whole stack into a fresh sandbox with one command and a one-line
 login; no rebuilding.
@@ -22,17 +25,117 @@ Xvfb :99 ── Chrome (CDP :9222, persistent profile scripts/browser-profile)
 
 Next.js console :3000  (/) ── frame/event/tabs/status/inbox routes proxy to
                  replayd with a bridge.py spawn fallback.
+                 /api/agent/chat — the agent conversation backend (SSE).
 ```
 
 - Console UI: live replay image (native pointer listeners — React synthetic
   handlers proved unreliable), amber drag guide, click feedback line with the
   probed target element, tab bar with auto-focus of new tabs, keyboard box
-  (no auto-Enter), message thread to the resident agent.
+  (no auto-Enter), and the **Agent chat** column (see below).
 - Clicks are sent as **fractions** (fx/fy 0..1); the daemon maps them with the
   live viewport (`Page.getLayoutMetrics`) — immune to image-size/scale skew.
-- `scripts/dispatch_worker.py` — create named chat sessions in the browser
-  (new tab → navigate → type prompt → Enter → verify in DOM) and check them.
-  Useful for dispatching work to AI chat sessions living inside the replay.
+- `scripts/dispatch_worker.py` — create named **agent** sessions in the
+  browser (agents tab + GLM-5.3 + Full-Stack skill, every step hard-verified,
+  sandbox-concurrency handling) and check/void them. Useful for dispatching
+  long-horizon work to AI sessions living inside the replay.
+
+## Agent chat ("Message the agent")
+
+The console's conversation section is a full agent, not a message box:
+
+- **Model**: GLM-5.3 (picker: GLM-5.3 / -Flash / 5.2 / 4.6), streaming with
+  native tool calling, thinking phase, 429 backoff + credential fallback
+  chain (primary → operator fallback key → flash downgrade).
+- **Tools** (15, capability-detected at runtime):
+  - *local tier* (self-hosted): `bash`, `read_file`, `write_file`,
+    `list_dir`, `browser` (the live replay Chrome: look = screenshot + GLM
+    vision, click/domclick/drag/type/eval/tabs…), `dispatch_session`
+    (agents-tab worker dispatch incl. sandbox concurrency)
+  - *cloud tier* (work on Vercel too): `remote_bash` + `remote_python`
+    (persistent E2B sandbox — direct `E2B_API_KEY`, Composio Connect as
+    fallback), `web_search`, `read_web_page`,
+    `generate_image`, `search_images`, `edit_image`, `analyze_image`
+    (GLM-4.6V vision), `load_skill`
+- **Skills**: bundled playbooks (browser-ops, fullstack-dev, web-research,
+  media-tools, resident-ops, chat-playbook) loaded on demand — the system
+  prompt stays small, the agent pulls full guidance when relevant.
+- **UI**: streaming markdown with syntax-highlighted code blocks + copy,
+  tool-call cards with results/durations/inline images, multi-conversation
+  history (localStorage — serverless-safe), image attachments (vision
+  pre-pass), stop / regenerate, model picker, resident-agent notes inline.
+- **Resident bridge**: prompts sent through the chat are mirrored into
+  `scripts/flags/operator_inbox.jsonl` (source-tagged) so a resident CLI
+  agent watching the inbox stays aware; resident replies (agent_outbox)
+  surface inline in the thread.
+- **Hard constraints** (enforced by the system prompt): the agent never
+  solves captchas and never touches credentials — logins are the operator's,
+  driven through the replay image.
+
+### Deploy on Vercel (serverless)
+
+The chat works standalone on Vercel — with `E2B_API_KEY` set it even keeps
+REAL code execution (a persistent cloud sandbox), not just the cloud tools:
+
+1. Import the repo in Vercel (framework preset: Next.js).
+2. Set env vars:
+   - `ZAI_BASE_URL` + `ZAI_API_KEY` — the z-ai-web-dev-sdk gateway
+     credentials (primary chat credential).
+   - `E2B_API_KEY` — direct E2B code-interpreter key: turns
+     `remote_bash`/`remote_python` into a real persistent Linux sandbox
+     (clone repos, build, test, run scripts — ~180s/command, files persist
+     while the sandbox lives).
+   - `COMPOSIO_API_KEY` (optional) — Composio Connect consumer key; used as
+     the remote-execution fallback when E2B is absent, and for future
+     integrations.
+   - `ZAI_API_KEY_FALLBACK` + `ZAI_FALLBACK_BASE_URL` (optional, default
+     `https://api.z.ai/api/paas/v4`) — a second Z.ai credential tried when
+     the primary is rate-limited (429), before an automatic flash-model
+     downgrade.
+   - `AGENT_MODEL` (optional, default `glm-5.3`).
+3. Deploy. The console shows the replay pane offline, the chat badge reads
+   "serverless · cloud + remote tools", and web search / page reader / image
+   generation / image search / edit / vision / skills / remote execution
+   all work.
+4. Optional: point `REPLAYD_URL` at an exposed replayd (e.g. the sandbox
+   daemon behind a tunnel) to re-enable the browser + dispatch tools
+   remotely.
+
+The local tools (`bash`, files, `browser`, `dispatch_session`) report
+unavailability gracefully on serverless — the agent explains the limitation
+and adapts (remote sandbox, cloud tools) instead of failing silently.
+Route config sets `maxDuration = 300` (Vercel hobby clamps to it).
+
+### Model hosting & rate limits — an honest assessment
+
+The chat's intelligence is a hosted API (Z.ai GLM models via the SDK). If
+you want to own the capacity instead of renting it, the realistic ladder:
+
+1. **Fallback chain (built in, zero cost).** Primary credential →
+   `ZAI_API_KEY_FALLBACK` (a second, separately-metered key — note it must
+   carry balance; an empty open-platform key answers 429 "insufficient
+   balance") → automatic downgrade to `glm-5.3-flash`. Covers bursts, not
+   sustained heavy use.
+2. **Rent a GPU host and serve open GLM weights yourself** (the real
+   "host my own models" option). vLLM on a single 24–48 GB GPU
+   (RTX 4090 / A6000) comfortably serves GLM-4.5-Air-class MoE quantized;
+   an 80 GB card (A100/H100) serves it at higher quality; larger open GLM
+   releases need more. vLLM exposes an OpenAI-compatible endpoint, so the
+   same SDK call shape works — but note: the *chat-completion* surface is
+   all you get. The platform features (web search, image generation/edit,
+   vision, page reader) are Z.ai services, not model weights — those stay
+   on the API. And GLM-5.3 (the flagship this console defaults to) is not
+   open-weights: self-hosting means accepting a visibly weaker model in
+   exchange for uncapped throughput. Rough cost: $0.35–0.7/h (spot 4090) to
+   $1.5–2.5/h (80 GB), i.e. break-even only past a few hours of heavy daily
+   traffic.
+3. **This sandbox is not a candidate.** 2 vCPU, 4 GB RAM, no GPU — not even
+   a 9B model at usable quality fits. E2B sandboxes (the remote tier) have
+   no GPU either.
+
+Recommendation: keep the API + fallback chain now; revisit a rented GPU
+only when daily usage would pay for ~4+ GPU-hours, and then point the
+fallback/primary at your own vLLM endpoint via `ZAI_FALLBACK_BASE_URL` /
+`ZAI_BASE_URL`.
 
 ## Deploy (fresh sandbox)
 
@@ -72,6 +175,13 @@ to get a branch/PR summary card in the console.
 | `REPLAY_DISPLAY` / `REPLAY_WxH` | `:99` / `1440x900` | Xvfb settings |
 | `SKIP_BROWSER=1` | — | console-only redeploy |
 | `SKIP_SUPERVISOR=1` | — | don't start watchdogs (parallel test) |
+
+**Deployment secrets** (agent chat remote tier): if `scripts/env.sh` exists
+(gitignored, chmod 600) `deploy.sh` sources it into the whole supervised
+tree — set `COMPOSIO_API_KEY`, `E2B_API_KEY`, `ZAI_API_KEY_FALLBACK` (+
+`ZAI_FALLBACK_BASE_URL`) there. Never set `ZAI_API_KEY` in it on the
+sandbox: that pair materializes a `.z-ai-config` which overrides the
+built-in SDK credential.
 
 Set all three `*_PORT` vars to run a fully isolated second deployment
 beside an existing one (e.g. `REPLAY_PORT=3005 CDP_PORT=9223 REPLAYD_PORT=3101

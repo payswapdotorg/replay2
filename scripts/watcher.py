@@ -199,10 +199,13 @@ def main():
         except Exception as e:
             log(f"loop error {e!r}")
 
-        for _ in range(12):
+        for i in range(12):
             check_dialogs()
             check_inbox()
             time.sleep(10)
+            if i == 5:  # heartbeat line ~every 60s: keeps the console's
+                # watcher-alive badge (watcher.log mtime) truthful
+                log(f"hb login={STATE['login']}")
         check_procs()
 
 
