@@ -592,7 +592,13 @@ def _select_insert_send(c, tab, prompt, name, prompt_file):
         # clear whatever is in the composer (React-native clear)
         _eval(c, JS_CLEAR_COMPOSER, timeout=15)
         time.sleep(0.3)
-        c.call("Input.insertText", {"text": prompt})
+        # chunked insert: a single >100K-char Input.insertText starves the
+        # CDP websocket (recv timeout under the event flood) and can block
+        # the page's input handler; 16K chunks with short pauses are reliable
+        CH = 16000
+        for off in range(0, len(prompt), CH):
+            c.call("Input.insertText", {"text": prompt[off:off + CH]}, timeout=90)
+            time.sleep(0.4)
         ok, ratio = _wait(c, ratio_js, "100", tries=8, sleep=1.0, desc="insert")
         try:
             pct = int(ratio)
@@ -693,15 +699,32 @@ def create(name, prompt_file):
 
             # wait for the page shell (sidebar Agent nav present)
             print("[2/7] waiting for page shell ...")
-            ok_shell, last = _wait(c, JS_AGENT_PRESENT, "found", tries=25, sleep=1.5, desc="shell")
-            if not ok_shell:
-                print(f"ERROR: page shell never loaded (last={last}); login may be expired")
-                _save({"name": name, "action": "failed", "stage": "shell", "tab_id": tab["id"],
-                       "ts": int(time.time()), "prompt_file": prompt_file})
-                return 2
-            c.call('Page.bringToFront', {})
+            try:
+                ok_shell, last = _wait(c, JS_AGENT_PRESENT, "found", tries=25, sleep=1.5, desc="shell")
+                if not ok_shell:
+                    print(f"ERROR: page shell never loaded (last={last}); login may be expired")
+                    _save({"name": name, "action": "failed", "stage": "shell", "tab_id": tab["id"],
+                           "ts": int(time.time()), "prompt_file": prompt_file})
+                    return 2
+                c.call('Page.bringToFront', {})
 
-            ok, url, pct, c = _select_insert_send(c, tab, prompt, name, prompt_file)
+                ok, url, pct, c = _select_insert_send(c, tab, prompt, name, prompt_file)
+            except Exception as e:
+                # transient CDP/websocket failure (busy page, dialog churn):
+                # never crash the assault — reconnect and take the next round
+                print(f"      [transient] {type(e).__name__} in round {assault_round} — "
+                      f"reconnect + next assault round")
+                try:
+                    c.close()
+                except Exception:
+                    pass
+                try:
+                    c = _reconnect(tab["id"])
+                except Exception:
+                    tab = channel.new_tab() or tab
+                    c = channel.CDP(tab["webSocketDebuggerUrl"], timeout=30)
+                time.sleep(5)
+                continue
 
             try:
                 st = json.loads(_eval(c, JS_CAPACITY_STATE, timeout=15) or "{}")
