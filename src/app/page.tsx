@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useRef, useState } from "react";
+import { AgentChat } from "@/components/AgentChat";
 
 type Status = {
   ts: string;
@@ -13,10 +14,9 @@ type Status = {
 
 type Tab = { id: string; title: string; url: string };
 type TabsInfo = { active: string; new: string[]; tabs: Tab[] };
-type Msg = { ts: number; from: "operator" | "agent"; text: string };
-type Inbox = { thread: Msg[]; agent_heartbeat_ms: number; watcher_alive: boolean };
+type Inbox = { thread: unknown[]; agent_heartbeat_ms: number; watcher_alive: boolean };
 
-const CONSOLE_VERSION = "v6.1 · realtime drag";
+const CONSOLE_VERSION = "v7 · agent chat (GLM-5.3 + tools)";
 const START_URL = "https://chat.z.ai/";
 const FRAME_FAST_MS = 220; // while dragging / right after an event
 const FRAME_IDLE_MS = 1300; // steady state
@@ -37,7 +37,6 @@ export default function Console() {
   const [tabs, setTabs] = useState<TabsInfo>({ active: "", new: [], tabs: [] });
   const [inbox, setInbox] = useState<Inbox>({ thread: [], agent_heartbeat_ms: 0, watcher_alive: false });
   const [kb, setKb] = useState("");
-  const [msg, setMsg] = useState("");
   const [tick, setTick] = useState(0);
   const [dragStart, setDragStart] = useState<{ fx: number; fy: number } | null>(null);
   const [dragCur, setDragCur] = useState<{ fx: number; fy: number } | null>(null);
@@ -46,7 +45,6 @@ export default function Console() {
   const [domMode, setDomMode] = useState(false);
   const [navUrl, setNavUrl] = useState("");
   const imgRef = useRef<HTMLImageElement>(null);
-  const threadRef = useRef<HTMLDivElement>(null);
   const autoSelRef = useRef(false);
   const rippleTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const dragRef = useRef<{ fx: number; fy: number } | null>(null);
@@ -125,7 +123,6 @@ export default function Console() {
       /* ignore */
     }
   }, []);
-
   // Adaptive frame loop: fast (~4.5fps) while dragging or right after an
   // event, relaxed otherwise. Sequential — no request pileup.
   useEffect(() => {
@@ -149,7 +146,7 @@ export default function Console() {
     refreshInbox();
     const st = setInterval(refreshStatus, 20000);
     const tb = setInterval(refreshTabs, 5000);
-    const ib = setInterval(refreshInbox, 4000);
+    const ib = setInterval(refreshInbox, 5000);
     const tk = setInterval(() => setTick((t) => t + 1), 10000);
     return () => {
       clearInterval(st);
@@ -158,11 +155,6 @@ export default function Console() {
       clearInterval(tk);
     };
   }, [refreshStatus, refreshTabs, refreshInbox]);
-
-  useEffect(() => {
-    const el = threadRef.current;
-    if (el) el.scrollTop = el.scrollHeight;
-  }, [inbox.thread.length]);
 
   const sendEvent = useCallback(
     async (payload: Record<string, unknown>): Promise<Record<string, unknown> | null> => {
@@ -375,22 +367,6 @@ export default function Console() {
     setKb("");
   };
 
-  const sendMsg = async () => {
-    const text = msg.trim();
-    if (!text) return;
-    setMsg("");
-    try {
-      await fetch("/api/inbox", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ text }),
-      });
-      setTimeout(refreshInbox, 500);
-    } catch {
-      /* ignore */
-    }
-  };
-
   const selectTab = async (id: string) => {
     autoSelRef.current = true;
     try {
@@ -425,7 +401,6 @@ export default function Console() {
         : "text-amber-700 bg-amber-50 border-amber-200";
 
   const activeTab = tabs.tabs.find((t) => t.id === tabs.active);
-  const lastAgent = inbox.thread.filter((m) => m.from === "agent").slice(-1)[0];
 
   return (
     <main className="min-h-screen flex flex-col bg-neutral-50 text-neutral-900">
@@ -448,6 +423,9 @@ export default function Console() {
             >
               watcher {inbox.watcher_alive ? "alive" : "down"}
             </span>
+            <span className="px-2 py-1 rounded-md border text-xs font-medium text-violet-700 bg-violet-50 border-violet-200">
+              agent heartbeat {ago(inbox.agent_heartbeat_ms || 0)}
+            </span>
             <span className={`px-2 py-1 rounded-md border text-xs font-medium ${loginColor}`}>
               browser: {status?.browser_login ?? "…"}
             </span>
@@ -455,7 +433,7 @@ export default function Console() {
         </div>
       </header>
 
-      <section className="flex-1 max-w-7xl w-full mx-auto px-4 py-4 grid gap-4 lg:grid-cols-[1fr_380px]">
+      <section className="flex-1 max-w-[1600px] w-full mx-auto px-4 py-4 grid gap-4 lg:grid-cols-[minmax(0,1fr)_minmax(430px,540px)]">
         <div className="flex flex-col gap-3">
           <div className="border border-neutral-200 rounded-lg bg-white p-3">
             <div className="flex items-center justify-between mb-2 gap-2 flex-wrap">
@@ -622,123 +600,81 @@ export default function Console() {
               </button>
             </div>
           </div>
+
+          {/* Remote repo summary + operator notes (collapsible) */}
+          <details className="border border-neutral-200 rounded-lg bg-white">
+            <summary className="px-4 py-2.5 text-sm font-semibold cursor-pointer select-none">
+              Stack &amp; repo status{" "}
+              <span className="text-[11px] text-neutral-400 font-normal">
+                {status?.repo ? `${status.repo} · ${status.pulls?.filter((p) => p.state === "open").length ?? 0} open PRs` : "no repo configured"}
+              </span>
+            </summary>
+            <div className="px-4 pb-3">
+              {status?.repo && (
+                <div className="text-xs space-y-1 mb-3">
+                  <div className="flex justify-between">
+                    <span className="text-neutral-500">repo</span>
+                    <span className="font-mono">{status.repo}</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-neutral-500">main</span>
+                    <span className="font-mono">{status.main_sha ?? "…"}</span>
+                  </div>
+                  {status.pulls && status.pulls.length > 0 && (
+                    <div className="flex justify-between">
+                      <span className="text-neutral-500">pulls</span>
+                      <span className="font-mono">
+                        {status.pulls.filter((p) => p.state === "open").length} open /{" "}
+                        {status.pulls.length} total
+                      </span>
+                    </div>
+                  )}
+                  {status?.branches && status.branches.length > 0 && (
+                    <div className="pt-1 border-t border-neutral-100 mt-1">
+                      <div className="text-neutral-500 mt-1">branches</div>
+                      <div className="max-h-32 overflow-y-auto">
+                        {status.branches.map((b) => (
+                          <div key={b.name} className="flex justify-between">
+                            <span className="truncate">{b.name}</span>
+                            <span className="font-mono text-neutral-500">{b.sha}</span>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+                </div>
+              )}
+              <div className="border border-amber-200 bg-amber-50 rounded-lg p-3">
+                <h3 className="text-xs font-semibold text-amber-900 mb-1.5">Operator notes</h3>
+                <ol className="list-decimal ml-4 text-xs text-amber-900 space-y-1.5">
+                  <li>
+                    <b>Site login (drags stream LIVE):</b> click &quot;Sign in&quot; in the
+                    replay → <b>Continue with Email</b> → click the email field → type in
+                    the box below the replay (it auto-focuses the first input) → Continue →
+                    password the same way. Slider/captcha: <b>press on the slider handle
+                    and drag slowly</b> — the replay follows your drag in real time; release
+                    when aligned. If a click ever lands wrong, toggle <b>DOM click</b> mode.
+                    Login and captchas are yours alone — the agent never touches them.
+                  </li>
+                  <li>
+                    <b>Agent chat (right):</b> a full GLM-5.3 agent with tools — bash, the
+                    live replay browser, web search, images, vision, worker sessions, skills.
+                    It streams, calls tools and shows results as cards. Multi-conversation,
+                    attachments, stop &amp; regenerate supported.
+                  </li>
+                  <li>
+                    <b>Stale page?</b> Hard-refresh (Ctrl+Shift+R). The version badge
+                    top-left must match the expected console version.
+                  </li>
+                </ol>
+              </div>
+            </div>
+          </details>
         </div>
 
-        <div className="flex flex-col gap-3">
-          {/* Operator ⇄ agent thread */}
-          <div className="border border-neutral-200 rounded-lg bg-white p-4 flex flex-col">
-            <div className="flex items-center justify-between mb-2">
-              <h2 className="text-sm font-semibold">Message the agent</h2>
-              <span className="text-[11px] text-neutral-400">
-                agent active {tick ? "" : ""}{ago(inbox.agent_heartbeat_ms || 0)}
-              </span>
-            </div>
-            <div
-              ref={threadRef}
-              className="max-h-64 overflow-y-auto space-y-2 pr-1 mb-2 text-sm"
-              aria-label="message thread"
-            >
-              {inbox.thread.length === 0 && (
-                <p className="text-xs text-neutral-400 py-4 text-center">
-                  No messages yet — send one below; the resident agent reads and answers
-                  from this thread.
-                </p>
-              )}
-              {inbox.thread.map((m, i) => (
-                <div
-                  key={`${m.ts}-${i}`}
-                  className={`rounded-lg px-3 py-2 max-w-[90%] ${
-                    m.from === "operator"
-                      ? "ml-auto bg-neutral-900 text-white"
-                      : "bg-neutral-100 text-neutral-800"
-                  }`}
-                >
-                  <div className="text-[10px] opacity-60 mb-0.5">
-                    {m.from === "operator" ? "you" : "agent"} ·{" "}
-                    {new Date(m.ts).toLocaleTimeString()}
-                  </div>
-                  <div className="whitespace-pre-wrap break-words">{m.text}</div>
-                </div>
-              ))}
-            </div>
-            <div className="flex gap-2">
-              <input
-                className="flex-1 border border-neutral-300 rounded px-2 py-1.5 text-sm"
-                placeholder="message the agent…"
-                value={msg}
-                onChange={(e) => setMsg(e.target.value)}
-                onKeyDown={(e) => e.key === "Enter" && sendMsg()}
-                aria-label="message to the agent"
-              />
-              <button
-                className="px-3 py-1.5 text-sm bg-neutral-900 text-white rounded hover:bg-neutral-700"
-                onClick={sendMsg}
-              >
-                Send
-              </button>
-            </div>
-            {lastAgent && (
-              <div className="mt-1 text-[11px] text-neutral-400 truncate">
-                last reply: {lastAgent.text.slice(0, 80)}
-              </div>
-            )}
-          </div>
-
-          {/* Remote repo summary — only when REPO is configured in scripts/env.sh */}
-          {status?.repo && (
-            <div className="border border-neutral-200 rounded-lg bg-white p-4 text-xs space-y-1">
-              <div className="flex justify-between">
-                <span className="text-neutral-500">repo</span>
-                <span className="font-mono">{status.repo}</span>
-              </div>
-              <div className="flex justify-between">
-                <span className="text-neutral-500">main</span>
-                <span className="font-mono">{status.main_sha ?? "…"}</span>
-              </div>
-              {status.pulls && status.pulls.length > 0 && (
-                <div className="flex justify-between">
-                  <span className="text-neutral-500">pulls</span>
-                  <span className="font-mono">
-                    {status.pulls.filter((p) => p.state === "open").length} open /{" "}
-                    {status.pulls.length} total
-                  </span>
-                </div>
-              )}
-              <div className="pt-1 border-t border-neutral-100 mt-1">
-                <div className="text-neutral-500 mt-1">branches</div>
-                <div className="max-h-40 overflow-y-auto">
-                  {status?.branches?.map((b) => (
-                    <div key={b.name} className="flex justify-between">
-                      <span className="truncate">{b.name}</span>
-                      <span className="font-mono text-neutral-500">{b.sha}</span>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            </div>
-          )}
-
-          <div className="border border-amber-200 bg-amber-50 rounded-lg p-4">
-            <h2 className="text-sm font-semibold text-amber-900 mb-2">Operator notes</h2>
-            <ol className="list-decimal ml-4 text-xs text-amber-900 space-y-1.5">
-              <li>
-                <b>Site login (drags stream LIVE):</b> click &quot;Sign in&quot; in the
-                replay → <b>Continue with Email</b> → click the email field → type in
-                the box below the replay (it auto-focuses the first input) → Continue →
-                password the same way. Slider/captcha: <b>press on the slider handle
-                and drag slowly</b> — the replay follows your drag in real time; release
-                when aligned. If a click ever lands wrong, toggle <b>DOM click</b> mode.
-              </li>
-              <li>
-                <b>Message the resident agent</b> through the textbox above — it reads
-                and replies while working; no login needed.
-              </li>
-              <li>
-                <b>Stale page?</b> Hard-refresh (Ctrl+Shift+R). The version badge
-                top-left must match the expected console version.
-              </li>
-            </ol>
-          </div>
+        {/* Agent chat — the full conversation section (model + tools) */}
+        <div className="lg:sticky lg:top-4 h-[calc(100vh-8.5rem)] min-h-[480px]">
+          <AgentChat />
         </div>
       </section>
 
