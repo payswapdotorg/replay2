@@ -23,8 +23,10 @@ import dispatch_worker as dw
 BASE = "/home/z/my-project/scripts"
 FLAGS = os.path.join(BASE, "flags")
 
-SPEC_PATH = os.path.join(FLAGS, "queue_watch.spec")
-HB_PATH = os.path.join(FLAGS, "queue_watch_heartbeat")
+# per-name spec files (multi-watch): flags/queue_watch.spec.<name> — the
+# supervisor iterates all of them; each watcher owns exactly one session.
+SPEC_PATH = os.path.join(FLAGS, "queue_watch.spec.{name}")
+HB_PATH = os.path.join(FLAGS, "queue_watch_heartbeat.{name}")
 
 # staleness-assault policy (2026-09-09 forensics): a session stuck in
 # queued-capacity NEVER self-recovered (2/2 data points: 49cda388 destroyed
@@ -41,16 +43,16 @@ def write_spec(name, tab_prefix, marker):
     supervisor restart resumes watching the live session instead of a dead
     tab and wrongly triggering another assault."""
     try:
-        open(SPEC_PATH, "w").write(json.dumps(
+        open(SPEC_PATH.format(name=name), "w").write(json.dumps(
             {"name": name, "tab_prefix": tab_prefix, "marker": marker,
              "pid": os.getpid()}) + "\n")
     except Exception:
         pass
 
 
-def heartbeat():
+def heartbeat(name):
     try:
-        with open(HB_PATH, "w") as f:
+        with open(HB_PATH.format(name=name), "w") as f:
             f.write(time.strftime("%Y-%m-%d %H:%M:%S"))
     except Exception:
         pass
@@ -74,13 +76,22 @@ def state(tab_prefix):
             return f"busy:{type(e).__name__}", 0, 0, ""
     except Exception as e:
         return f"busy:{type(e).__name__}", 0, 0, ""
-    hits = body.count(sys.argv[3]) if len(sys.argv) > 3 else 0
+    marker_arg = sys.argv[3] if len(sys.argv) > 3 else "COMPLETION REPORT"
+    hits = body.count(marker_arg)
+    # 2026-09-09 (WO-010 forensics): GLM workers in this environment answer
+    # in Chinese ~half the time — a genuine report headline may be
+    # "=== WO-010 完成报告 ===" instead of the English literal. Accept the
+    # bilingual headline so a real report is never missed.
+    if "COMPLETION REPORT" in marker_arg:
+        hits += body.count(marker_arg.replace("COMPLETION REPORT", "完成报告"))
     # TRUE completion: the marker is followed by a FILLED report — a real hex
     # SHA on the base-SHA line (the prompt template only has a placeholder).
     # Prompt echoes (even duplicated by an operator-procedure resend) never
-    # satisfy this; a genuine answer always does.
+    # satisfy this; a genuine answer always does. Field labels may be English
+    # or Chinese (base branch / 基础分支), colon may be ASCII or fullwidth.
     filled = bool(re.search(
-        r"=== WO-\d+ COMPLETION REPORT ===[\s\S]{0,400}?base branch \+ base SHA: main @ [0-9a-f]{7,40}",
+        r"=== WO-\d+ (?:COMPLETION REPORT|完成报告) ==="
+        r"[\s\S]{0,600}?(?:base branch|基础分支)\s*\+\s*(?:base SHA|基础\s*SHA)\s*[:：]\s*main\s*@\s*[0-9a-f]{7,40}",
         body))
     gen = bool(re.search(r"\b(Stop|Pause|Halt)\b", body[-1500:]))
     cap = "currently at capacity" in body or "peak hours" in body
@@ -105,15 +116,15 @@ def main():
         try:
             st, ln, hits, url = state(tab_prefix)
             stamp = time.strftime("%H:%M:%S")
-            print(f"{stamp} {st} chars={ln} hits={hits} url={url[:60]}", flush=True)
-            heartbeat()
+            print(f"[{name}] {stamp} {st} chars={ln} hits={hits} url={url[:60]}", flush=True)
+            heartbeat(name)
             mk = os.path.join(FLAGS, f"{name}-complete.marker")
             if hits >= 2:
                 open(mk, "w").write(f"{time.time()} {url}\n")
-                print("COMPLETE — marker written", flush=True)
+                print(f"[{name}] COMPLETE — marker written", flush=True)
                 try:
-                    os.remove(SPEC_PATH)
-                    os.remove(HB_PATH)
+                    os.remove(SPEC_PATH.format(name=name))
+                    os.remove(HB_PATH.format(name=name))
                 except Exception:
                     pass
                 return 0
@@ -170,8 +181,8 @@ def main():
                 last_len = 0
                 rounds_since_progress = 0
         except Exception as e:
-            print(f"{time.strftime('%H:%M:%S')} loop-error {type(e).__name__} — continuing", flush=True)
-        heartbeat()  # also tick after loop errors (busy states are not hangs)
+            print(f"[{name}] {time.strftime('%H:%M:%S')} loop-error {type(e).__name__} — continuing", flush=True)
+        heartbeat(name)  # also tick after loop errors (busy states are not hangs)
         time.sleep(120)
 
 

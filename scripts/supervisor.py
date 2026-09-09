@@ -273,49 +273,51 @@ def heartbeat():
 
 
 def ensure_queue_watch():
-    """Resurrect queue_watch.py while flags/queue_watch.spec exists.
+    """Resurrect queue_watch.py for every flags/queue_watch.spec.<name>.
 
-    The spec is written by queue_watch.py itself; it removes the spec when
-    the watched session completes, which retires the guard. Also SIGKILLs
-    a HUNG instance (queue_watch_heartbeat stale beyond 600s — its loop is
-    ~120s sleep + <=~60s of CDP work; forensic case 2026-09-09: an instance
-    sat hung-but-alive for 40 minutes with nobody noticing).
+    Multi-watch (wave-4+): each spec file names ONE session; a watcher owns
+    exactly one. The spec is written by queue_watch.py itself; it removes the
+    spec when the watched session completes, which retires the guard. Also
+    SIGKILLs a HUNG instance (queue_watch_heartbeat.<name> stale beyond 600s —
+    its loop is ~120s sleep + <=~60s of CDP work; forensic case 2026-09-09:
+    an instance sat hung-but-alive for 40 minutes with nobody noticing).
     """
-    spec_path = os.path.join(FLAGS, "queue_watch.spec")
-    if not os.path.exists(spec_path):
-        return
-    try:
-        spec = json.loads(open(spec_path).read().strip() or "{}")
-    except Exception:
-        return
-    pid = spec.get("pid")
-    if pid and pid_alive(pid, "queue_watch"):
-        age = hb_age(os.path.join(FLAGS, "queue_watch_heartbeat"))
-        if age > 600 and (time.time() - proc_start_epoch(pid)) > 600:
-            log(f"queue_watch HUNG (pid {pid}, heartbeat {int(age)}s stale) — SIGKILL + restart")
+    import glob as _glob
+    for spec_path in sorted(_glob.glob(os.path.join(FLAGS, "queue_watch.spec.*"))):
+        try:
+            spec = json.loads(open(spec_path).read().strip() or "{}")
+        except Exception:
+            continue
+        name = spec.get("name", "")
+        pid = spec.get("pid")
+        if pid and pid_alive(pid, "queue_watch"):
+            age = hb_age(os.path.join(FLAGS, f"queue_watch_heartbeat.{name}"))
+            if age > 600 and (time.time() - proc_start_epoch(pid)) > 600:
+                log(f"queue_watch[{name}] HUNG (pid {pid}, heartbeat {int(age)}s stale) — SIGKILL + restart")
+                try:
+                    subprocess.run(["kill", "-9", str(pid)], capture_output=True)
+                except Exception:
+                    pass
+                time.sleep(1)
+            else:
+                continue
+        # alive under a different pid for THIS session? (match by name arg)
+        r = subprocess.run(["pgrep", "-f", f"scripts/queue_watch.py {name} "],
+                           capture_output=True, text=True)
+        if r.returncode == 0 and r.stdout.strip():
+            p = r.stdout.strip().split("\n")[0]
             try:
-                subprocess.run(["kill", "-9", str(pid)], capture_output=True)
+                spec["pid"] = p
+                open(spec_path, "w").write(json.dumps(spec) + "\n")
             except Exception:
                 pass
-            time.sleep(1)
-        else:
-            return
-    r = subprocess.run(["pgrep", "-f", "scripts/queue_watch.py"], capture_output=True, text=True)
-    if r.returncode == 0 and r.stdout.strip():
-        # alive under a different pid (spec pid stale) — heal spec
-        p = r.stdout.strip().split("\n")[0]
-        try:
-            spec["pid"] = p
-            open(spec_path, "w").write(json.dumps(spec) + "\n")
-        except Exception:
-            pass
-        return
-    log("queue_watch DEAD — restarting (spec present)")
-    args = [PY, os.path.join(BASE, "queue_watch.py"),
-            spec.get("name", ""), spec.get("tab_prefix", ""), spec.get("marker", "")]
-    subprocess.Popen(args, stdout=open(os.path.join(LOGDIR, "queue-watch.log"), "a"),
-                     stderr=subprocess.STDOUT)
-    log(f"queue_watch restarted: {spec.get('name')} tab={spec.get('tab_prefix')}")
+            continue
+        log(f"queue_watch[{name}] DEAD — restarting (spec present)")
+        args = [PY, os.path.join(BASE, "queue_watch.py"),
+                name, spec.get("tab_prefix", ""), spec.get("marker", "")]
+        subprocess.Popen(args, stdout=open(os.path.join(LOGDIR, "queue-watch.log"), "a"),
+                         stderr=subprocess.STDOUT)
+        log(f"queue_watch[{name}] restarted: tab={spec.get('tab_prefix')}")
 
 
 def main():

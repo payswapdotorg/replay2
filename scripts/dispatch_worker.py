@@ -833,7 +833,16 @@ def send(name, message):
     Failure-ladder step 3: a turn stalled mid-work (or the composer kept the
     text after a failed send) — the recovery is a browser-driven re-send in
     the SAME session. Uses the proven create() method: click composer ->
-    React-native clear -> insertText -> Enter (send-button fallback).
+    React-native clear -> insertText -> focus-the-textarea -> Enter.
+
+    2026-09-09 fix (WO-010 stall forensics): the old code clicked the
+    composer at coordinates measured BEFORE the insert — a 1k-char message
+    grows the textarea ~60px, so the click landed below it and Enter went
+    to <body> (message never sent). The fix re-queries the textarea rect
+    AFTER insert, clicks its center, hard-verifies activeElement === the
+    textarea, and only then presses Enter. Capacity popups are assaulted
+    in-session (Cancel + refocus + Enter) per the operator policy: never
+    wait, never destroy a session that holds work.
     """
     s = _find(name)
     if not s:
@@ -854,6 +863,17 @@ def send(name, message):
         if busy == "busy":
             print("session is generating right now; not interrupting")
             return 0
+        # a capacity modal may already be up (e.g. from a previous failed
+        # send): it BLOCKS the composer — insert would land nowhere (ratio 0).
+        # Cancel it first so the page below becomes interactive again.
+        try:
+            st0 = json.loads(_eval(c, JS_CAPACITY_STATE, timeout=15) or "{}")
+        except Exception:
+            st0 = {}
+        if st0.get("capacity") or st0.get("hasCancel"):
+            _eval(c, JS_CLICK_CANCEL, timeout=15)
+            print("      [capacity] pre-existing popup cancelled before composer use")
+            time.sleep(3)
         comp = _eval(c, JS_COMPOSER)
         if not comp:
             print("ERROR: composer not found — login expired?")
@@ -877,25 +897,78 @@ def send(name, message):
             print(f"ERROR: insert ratio {pct}%; message not sent")
             return 2
         body_before = int(_eval(c, "(document.body.innerText||'').length", timeout=15) or 0)
-        for typ in ("keyDown", "keyUp"):
-            c.call("Input.dispatchKeyEvent", {
-                "type": typ, "key": "Enter", "code": "Enter",
-                "windowsVirtualKeyCode": 13, "nativeVirtualKeyCode": 13})
-        time.sleep(3)
-        cleared = _eval(c, r"""(() => {
-          const i = document.querySelector('#chat-input');
-          return i ? String((i.value||'').length) : 'gone';
-        })()""", timeout=20)
-        if cleared not in ("0", "gone"):
-            # fallback 1: the page's send button (class differs between the
-            # new-task page and session pages)
+        ok = False
+        reason = ""
+        for attempt in range(CAPACITY_ROUNDS + 1):
+            # FOCUS FIX: re-query the textarea rect AFTER the insert (it grew)
+            # and hard-verify focus before pressing Enter — an Enter dispatched
+            # to <body> silently drops the message (WO-010 forensics).
+            fp = _eval(c, JS_COMPOSER)  # #chat-input/textarea rect, live
+            if not fp:
+                print("ERROR: textarea vanished — login expired or page navigated")
+                return 2
+            f = json.loads(fp)
+            c.call("Input.dispatchMouseEvent", {"type": "mousePressed", "x": f["x"], "y": f["y"],
+                                                 "button": "left", "clickCount": 1})
+            c.call("Input.dispatchMouseEvent", {"type": "mouseReleased", "x": f["x"], "y": f["y"],
+                                                 "button": "left", "clickCount": 1})
+            time.sleep(0.5)
+            focused = _eval(c, r"""(() => {
+              const i = document.querySelector('#chat-input, textarea');
+              return (i && document.activeElement === i) ? 'yes' : 'no';
+            })()""", timeout=15)
+            if focused != "yes":
+                # last resort: DOM focus() then re-verify
+                _eval(c, r"""(() => {
+                  const i = document.querySelector('#chat-input, textarea');
+                  if (i) { i.focus(); return 'ok'; } return 'gone';
+                })()""", timeout=15)
+                time.sleep(0.4)
+            # the text may have been consumed by an earlier round — restore it
+            clen = _eval(c, r"""(() => {
+              const i = document.querySelector('#chat-input, textarea');
+              return i ? String((i.value||'').length) : 'gone';
+            })()""", timeout=15)
+            if clen == "0":
+                c.call("Input.insertText", {"text": message})
+                time.sleep(0.5)
+            for typ in ("keyDown", "keyUp"):
+                c.call("Input.dispatchKeyEvent", {
+                    "type": typ, "key": "Enter", "code": "Enter",
+                    "windowsVirtualKeyCode": 13, "nativeVirtualKeyCode": 13})
+            time.sleep(5)
+            # outcome triage
+            try:
+                st = json.loads(_eval(c, JS_CAPACITY_STATE, timeout=15) or "{}")
+            except Exception:
+                st = {}
+            if st.get("generating"):
+                ok, reason = True, "generating"
+                break
+            cleared = _eval(c, r"""(() => {
+              const i = document.querySelector('#chat-input, textarea');
+              return i ? String((i.value||'').length) : 'gone';
+            })()""", timeout=20)
+            body_now = int(_eval(c, "(document.body.innerText||'').length", timeout=15) or 0)
+            if cleared in ("0", "gone") and body_now > body_before:
+                ok, reason = True, "composer-cleared+grew"
+                break
+            if st.get("capacity") or st.get("hasCancel"):
+                # capacity popup rejected the send — gentle in-session assault
+                # (never destroys the session: it holds 45+ min of live work)
+                _eval(c, JS_CLICK_CANCEL, timeout=15)
+                backoff = min(20 + 10 * attempt, 60)
+                print(f"      [capacity] round {attempt}: popup cancelled — "
+                      f"refocus + re-Enter in {backoff}s (in-session, work preserved)")
+                time.sleep(backoff)
+                continue
+            # no popup, not generating, composer still holds text — try the
+            # send-button fallbacks once, then next attempt round
             sb = _eval(c, JS_SEND_BUTTON)
             spt = None
             if sb:
                 spt = json.loads(sb)
-            if not spt or spt.get("disabled"):
-                # fallback 2: session pages use an icon-only round button —
-                # the LAST enabled button inside the composer's form
+            if (not spt or spt.get("disabled")):
                 try:
                     alt = _eval(c, r"""(() => {
                       const i = document.querySelector('#chat-input, textarea');
@@ -918,18 +991,15 @@ def send(name, message):
                                                     "y": spt["y"], "button": "left", "clickCount": 1})
                 c.call("Input.dispatchMouseEvent", {"type": "mouseReleased", "x": spt["x"],
                                                     "y": spt["y"], "button": "left", "clickCount": 1})
-                time.sleep(3)
-                cleared = _eval(c, r"""(() => {
-                  const i = document.querySelector('#chat-input');
-                  return i ? String((i.value||'').length) : 'gone';
-                })()""", timeout=20)
-        sent = cleared in ("0", "gone")
+                time.sleep(5)
+            if attempt >= CAPACITY_ROUNDS:
+                reason = f"not-sent after {attempt+1} attempts (cleared={cleared})"
         body_after = int(_eval(c, "(document.body.innerText||'').length", timeout=15) or 0)
-        ok = sent and body_after > body_before
-        print(f"message sent: {'VERIFIED' if ok else 'NOT VERIFIED'} "
-              f"(composer-cleared={sent}, body {body_before}->{body_after})")
+        print(f"message sent: {'VERIFIED' if ok else 'NOT VERIFIED'} ({reason}; "
+              f"body {body_before}->{body_after})")
         _save({"action": "send", "name": name, "tab_id": tab["id"], "ts": int(time.time()),
-               "msg_chars": len(message), "sent": ok, "kind": "continuation"})
+               "msg_chars": len(message), "sent": ok, "kind": "continuation",
+               "note": reason})
         return 0 if ok else 2
     finally:
         c.close()
