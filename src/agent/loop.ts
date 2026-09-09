@@ -112,11 +112,17 @@ async function createCompletion(
     throw lastErr;
   };
 
+  // Network-class failure (e.g. the internal gateway being unreachable from
+  // Vercel) is as fatal to the primary as a rate limit: fall through to the
+  // fallback credential instead of surfacing fetch errors to the user.
+  const primaryDead = (e: unknown) =>
+    /429|rate|fetch failed|ENOTFOUND|ECONNREFUSED|EAI_AGAIN|ECONN|network|timeout|502|503/i.test(String(e));
+
   try {
     return await run(primary, body, "gateway");
   } catch (e) {
     if (signal.aborted) throw e;
-    if (!/429|rate/i.test(String(e))) throw e; // non-rate-limit errors surface directly
+    if (!primaryDead(e)) throw e; // auth/validation errors surface directly
   }
 
   // 429-class exhaustion — try the operator's fallback credential (separate
@@ -125,7 +131,7 @@ async function createCompletion(
   // (error 1210: "always engages in thinking") — adapt once on that error.
   const fb = await getZaiFallback();
   if (fb) {
-    emit({ type: "status", text: "primary credential rate-limited — switching to the operator fallback key" });
+    emit({ type: "status", text: "primary credential unavailable (rate limit or unreachable gateway) — switching to the operator fallback key" });
     const fbRun = async (b: Record<string, unknown>) => {
       try {
         return await fb.chat.completions.create(b as never);
@@ -139,7 +145,11 @@ async function createCompletion(
     try {
       return await fbRun(body);
     } catch (e2) {
-      if (signal.aborted || !/429|rate/i.test(String(e2))) throw e2;
+      if (signal.aborted) throw e2;
+      // Insufficient balance is terminal for BOTH credentials — downgrading
+      // the model or retrying cannot fix it; surface it immediately.
+      if (/1113|insufficient balance|quota/i.test(String(e2))) throw e2;
+      if (!/429|rate|fetch failed|ENOTFOUND|ECONNREFUSED|EAI_AGAIN|network|timeout|502|503/i.test(String(e2))) throw e2;
     }
   }
 
