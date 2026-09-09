@@ -300,7 +300,7 @@ def _env_conf():
 
 
 def gh(repo, path, token=""):
-    hdr = [f"Authorization: token {token}"] if token else []
+    hdr = ["-H", f"Authorization: token {token}"] if token else []
     r = subprocess.run(["curl", "-s", "--max-time", "10", *hdr,
                         f"https://api.github.com/repos/{repo}{path}"],
                        capture_output=True, text=True)
