@@ -22,7 +22,7 @@ import subprocess
 import sys
 import time
 
-BASE = "/home/z/my-project/scripts"
+BASE = os.path.dirname(os.path.abspath(__file__))
 FLAG = os.path.join(BASE, "flags/capacity_recover.json")
 PIDFILE = os.path.join(BASE, "flags/capacity_recover.pid")
 REG = os.path.join(BASE, "flags/session_registry.jsonl")

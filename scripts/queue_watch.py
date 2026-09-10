@@ -16,11 +16,11 @@ import subprocess
 import sys
 import time
 
-sys.path.insert(0, "/home/z/my-project/scripts")
+sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 import channel
 import dispatch_worker as dw
 
-BASE = "/home/z/my-project/scripts"
+BASE = os.path.dirname(os.path.abspath(__file__))
 FLAGS = os.path.join(BASE, "flags")
 
 # per-name spec files (multi-watch): flags/queue_watch.spec.<name> — the

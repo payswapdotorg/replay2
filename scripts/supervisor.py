@@ -26,7 +26,7 @@ import subprocess
 import time
 import urllib.request
 
-BASE = "/home/z/my-project/scripts"
+BASE = os.path.dirname(os.path.abspath(__file__))
 FLAGS = os.path.join(BASE, "flags")
 LOGDIR = os.path.join(BASE, "logs")
 os.makedirs(FLAGS, exist_ok=True)
