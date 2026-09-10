@@ -259,6 +259,8 @@ JS_MODAL_STATE = r"""(() => {
   const body = document.body.innerText || '';
   const capacity = body.includes('currently at capacity') || body.includes('try again later')
                 || body.includes('peak hours');
+  const personal = body.includes('exceeds the personal limit')
+                || body.includes('try again 1 hour later');
   let hasCancel = false;
   let generating = false;
   document.querySelectorAll('button').forEach(b => {
@@ -268,35 +270,28 @@ JS_MODAL_STATE = r"""(() => {
   });
   // transcript length is returned for frozen-stall detection in the daemon:
   // streaming workers grow the transcript (never frozen), stalled ones don't
-  return JSON.stringify({capacity: capacity, hasCancel: hasCancel, generating: generating, len: body.length});
+  return JSON.stringify({capacity: capacity, personal: personal, hasCancel: hasCancel, generating: generating, len: body.length});
 })()"""
 
-JS_MODAL_CANCEL = r"""(() => {
-  const b = Array.from(document.querySelectorAll('button'))
-    .find(x => (x.innerText || '').trim() === 'Cancel');
-  if (!b) return 'no-cancel';
-  b.click();
-  return 'ok';
-})()"""
-
-NUDGE_INTERVAL = 300  # s — min spacing between full nudges per session
-NUDGE_MSG = ("Continue: implement per the brief above. Deliver via git push, "
-             "then report with the COMPLETION REPORT marker. Dismiss capacity "
-             "popups and retry.")
+# PERSONAL USAGE LIMIT PROTOCOL (boot lesson 16): every failed attempt
+# re-arms the 1h window — probing extends the block. HARD FREEZE all nudges
+# while any session shows the personal-limit dialog; resume one cycle after
+# the freeze lapses.
+PERSONAL_FREEZE_S = 75 * 60
 
 
 def nudge_stalled_sessions(st):
     """Paced in-session recovery for capacity-blocked worker sessions.
 
-    Operator policy: never wait out a capacity peak. For every live session:
-    capacity modal -> click Cancel (renderer hygiene); no modal + turn ended
-    (no streaming indicator AND transcript frozen across cycles) -> spawn a
-    detached `send` nudge (the proven composer dance) at most once per
-    NUDGE_INTERVAL per session. Streaming workers are NEVER touched.
+    Operator policy: capacity popups are fought (Cancel + paced nudges);
+    the PERSONAL usage limit is NOT — every failed attempt re-arms its 1h
+    window, so its detection hard-freezes all nudging for 75 minutes.
+    Streaming workers (Stop button or growing transcript) are never touched.
     """
     now = time.time()
     nudged = st.setdefault("nudge_ts", {})
     lens = st.setdefault("nudge_len", {})
+    freeze_until = st.get("personal_freeze_until", 0)
     for name, rec in registry_sessions():
         if rec.get("action") in ("void", "failed", "done"):
             continue
@@ -320,6 +315,13 @@ def nudge_stalled_sessions(st):
             state = json.loads(raw)
         except Exception:
             continue
+        if state.get("personal"):
+            if now > freeze_until:
+                st["personal_freeze_until"] = now + PERSONAL_FREEZE_S
+                save_state(st)
+                log(f"nudger: PERSONAL USAGE LIMIT detected on {name} — HARD FREEZE all nudges for {PERSONAL_FREEZE_S // 60} min (lesson 16: failed attempts re-arm the window)")
+                outbox(f"Personal usage limit engaged (seen on {name}). All worker nudges frozen for {PERSONAL_FREEZE_S // 60} min per lesson 16 — probing would extend the block. Workers resume after the freeze; sessions hold their briefs server-side.")
+            return  # freeze: touch nothing this cycle
         if state.get("generating"):
             lens[name] = state.get("len", 0)
             continue
@@ -334,6 +336,8 @@ def nudge_stalled_sessions(st):
             except Exception:
                 pass
             continue
+        if now < freeze_until:
+            continue  # still inside the personal-limit freeze window
         # no modal, not streaming: turn ended. Nudge only if the transcript
         # is frozen (unchanged across slow cycles) and pacing allows.
         cur = state.get("len", 0)
@@ -355,6 +359,19 @@ def nudge_stalled_sessions(st):
         )
         out.close()
     save_state(st)
+
+JS_MODAL_CANCEL = r"""(() => {
+  const b = Array.from(document.querySelectorAll('button'))
+    .find(x => (x.innerText || '').trim() === 'Cancel');
+  if (!b) return 'no-cancel';
+  b.click();
+  return 'ok';
+})()"""
+
+NUDGE_INTERVAL = 300  # s — min spacing between full nudges per session
+NUDGE_MSG = ("Continue: implement per the brief above. Deliver via git push, "
+             "then report with the COMPLETION REPORT marker. Dismiss capacity "
+             "popups and retry.")
 
 
 def main():
