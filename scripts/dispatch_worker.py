@@ -47,7 +47,6 @@ import os
 import re
 import sys
 import time
-import urllib.request
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 import channel
@@ -770,47 +769,7 @@ def create(name, prompt_file):
                 except Exception:
                     tab = channel.new_tab() or tab
                     c = channel.CDP(tab["webSocketDebuggerUrl"], timeout=30)
-                try:
-                    c.call("Page.navigate", {"url": CHAT_URL}, timeout=30)
-                except Exception:
-                    # navigate can time out on a busy renderer (capacity-modal
-                    # churn) — reconnect once, retry; if it STILL fails the
-                    # tab is wedged (websocket accepts, renderer never
-                    # responds): close it and continue on a FRESH tab
-                    # (boot-prompt failure ladder #8) instead of looping on a
-                    # zombie tab round after round
-                    try:
-                        c.close()
-                    except Exception:
-                        pass
-                    _fresh = None
-                    try:
-                        _fresh = _reconnect(tab["id"])
-                        _fresh.call("Page.navigate", {"url": CHAT_URL}, timeout=30)
-                        c = _fresh
-                    except Exception:
-                        try:
-                            c.close()
-                        except Exception:
-                            pass
-                        try:
-                            urllib.request.urlopen(
-                                "http://127.0.0.1:9222/json/close/" + tab["id"],
-                                timeout=5).read()
-                            print("      [wedged] tab closed:", tab["id"][:8])
-                        except Exception:
-                            pass
-                        tab = channel.new_tab()
-                        if not tab:
-                            print("      [wedged] new_tab failed — next assault round")
-                            continue
-                        print("      [wedged] fresh tab:", tab["id"][:8])
-                        try:
-                            c = channel.CDP(tab["webSocketDebuggerUrl"], timeout=30)
-                            c.call("Page.navigate", {"url": CHAT_URL}, timeout=30)
-                        except Exception:
-                            print("      [transient] fresh-tab navigate failed — next assault round")
-                            continue
+                c.call("Page.navigate", {"url": CHAT_URL}, timeout=30)
                 print(f"[assault {assault_round}/{CAPACITY_ROUNDS}] popup cancelled — "
                       f"re-picking selections and re-sending")
 
@@ -899,11 +858,7 @@ def create(name, prompt_file):
         url = _eval(c, "location.href", timeout=20) or CHAT_URL
         m = re.search(r"/c/([0-9a-f]{8})", url)
         uuid = m.group(1) if m else tab["id"]
-        # per-session flag file: two exhausted sessions must never overwrite
-        # each other's recovery spec (single-slot flag lost all but the last
-        # writer). Name is sanitized; legacy single flag remains readable.
-        safe = re.sub(r"[^A-Za-z0-9_.-]", "_", name)
-        flag = os.path.join(BASE, f"flags/capacity_recover.{safe}.json")
+        flag = os.path.join(BASE, "flags/capacity_recover.json")
         os.makedirs(os.path.dirname(flag), exist_ok=True)
         with open(flag, "w") as f:
             f.write(json.dumps({"name": name, "prompt_file": prompt_file, "uuid": uuid,
@@ -1014,9 +969,19 @@ def send(name, message):
             # the treadmill that kept the account limited for hours. If the
             # limit dialog is up, DON'T send at all.
             limited = _eval(c, r"""(() => {
-              const t = document.body.innerText || '';
-              return (t.includes('exceeds the personal limit') ||
-                      t.includes('try again 1 hour later')) ? 'yes' : 'no';
+              // 2026-09-10 fix: the limit text ALSO survives as stale
+              // TRANSCRIPT text after the cooldown lapses (inline in a
+              // message element, never removed) — only a LIVE modal blocks
+              // sending. Live = fixed-position overlay carrying the text.
+              for (const el of document.querySelectorAll('div,section')) {
+                const st = getComputedStyle(el);
+                if (st.position === 'fixed' && parseInt(st.zIndex || '0') >= 500) {
+                  const lt = (el.innerText || '');
+                  if (lt.includes('exceeds the personal limit') ||
+                      lt.includes('try again 1 hour later')) return 'yes';
+                }
+              }
+              return 'no';
             })()""", timeout=15)
             if limited == "yes":
                 print("      [rate-limited] account cooldown active — NOT sending (re-arms the limit)")
@@ -1148,10 +1113,20 @@ def send(name, message):
                 # instead of assaulting; the caller waits out the window.
                 try:
                     limited_now = _eval(c, r"""(() => {
-                      const t = document.body.innerText || '';
-                      return (t.includes('exceeds the personal limit') ||
-                              t.includes('try again 1 hour later')) ? 'yes' : 'no';
-                    })()""", timeout=15)
+                              // 2026-09-10 fix: the limit text ALSO survives as stale
+                      // TRANSCRIPT text after the cooldown lapses (inline in a
+                      // message element, never removed) — only a LIVE modal blocks
+                      // sending. Live = fixed-position overlay carrying the text.
+                      for (const el of document.querySelectorAll('div,section')) {
+                        const st = getComputedStyle(el);
+                        if (st.position === 'fixed' && parseInt(st.zIndex || '0') >= 500) {
+                          const lt = (el.innerText || '');
+                          if (lt.includes('exceeds the personal limit') ||
+                              lt.includes('try again 1 hour later')) return 'yes';
+                        }
+                      }
+                      return 'no';
+            })()""", timeout=15)
                 except Exception:
                     limited_now = "no"
                 if limited_now == "yes":
