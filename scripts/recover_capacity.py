@@ -115,6 +115,17 @@ def main():
                 _clear_flag()
                 return 0
             print("rc=1 but session NOT in registry (crashed create) — retrying", flush=True)
+            # 2026-09-10 fix: an unsent/stale create record blocks every retry
+            # (create() exits 1 on _find hit). Invalidate it so the next
+            # attempt starts fresh (registry semantics: failed action
+            # invalidates earlier creates for the name).
+            try:
+                with open(REG, "a") as f:
+                    f.write(json.dumps({"action": "failed", "name": name,
+                                        "note": "stale unsent record invalidated by recovery retry"}) + "\n")
+                print("stale record invalidated — next create starts fresh", flush=True)
+            except Exception:
+                pass
             time.sleep(20)
             continue
         # rc==3: create ran its full in-process assault and re-staged the
