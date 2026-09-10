@@ -81,6 +81,7 @@ def _find(name):
     A later void/failed record with the same name invalidates every earlier
     create record for it (so names can be reused after void)."""
     found = None
+    create_url = None
     for s in _sessions():
         if s.get("name") != name:
             continue
@@ -88,8 +89,23 @@ def _find(name):
             found = None  # invalidated / retired
         elif s.get("stage") == "capacity":
             found = None  # capacity-staged: the aggressive assault re-dispatch owns it
-        elif s.get("action") != "tab-reopen":
-            found = s  # latest create record wins
+        elif s.get("action") == "tab-reopen":
+            # §3.8 recovery: the session's live tab changed — carry it onto the
+            # resolved record so _tab_for (tab_id + url fallback) finds the new tab
+            if found is not None:
+                found = dict(found)
+                if s.get("tab_id"):
+                    found["tab_id"] = s["tab_id"]
+                if s.get("url"):
+                    found["url"] = s["url"]
+        else:
+            found = dict(s)  # latest create/send record wins
+            if s.get("action") is None and s.get("url"):
+                create_url = s["url"]  # create records own the canonical URL
+            if not found.get("url") and create_url:
+                found["url"] = create_url
+    if found is not None and not found.get("url") and create_url:
+        found = dict(found, url=create_url)
     return found
 
 
@@ -329,15 +345,23 @@ def _active_session_keywords(extra=None):
     live session's /c/<uuid> id is added as a keyword too.
     """
     last = {}
+    ever_sent = set()
     for s in _sessions():
         n = s.get("name")
         if n:
             last[n] = s  # later lines supersede earlier ones
+            if s.get("sent"):
+                ever_sent.add(n)
     kws = []
     for n, s in last.items():
         if s.get("action") in ("void", "failed", "done"):
             continue  # retired: its sandbox is no longer an active job
-        if not s.get("sent"):
+        # 2026-09-10 fix (mkt-25 sandbox released mid-work twice): the latest
+        # record for an ACTIVE session may be a tab-reopen (renderer recovery)
+        # or a failed continuation send — neither carries sent, but the
+        # session still holds live work. Liveness = latest record non-terminal
+        # AND the name has EVER sent successfully.
+        if n not in ever_sent:
             continue
         if n:
             kws.append(n)
@@ -427,6 +451,8 @@ def _handle_sandbox_limit(c, keep_kws, max_rounds=6, log=print):
         except Exception:
             log(f"      [sandbox] could not locate Release for {target['name'][:40]}")
             return released
+        c.call("Input.dispatchMouseEvent", {"type": "mouseMoved", "x": pt["x"], "y": pt["y"]})
+        time.sleep(0.4)
         c.call("Input.dispatchMouseEvent", {"type": "mousePressed", "x": pt["x"], "y": pt["y"],
                                             "button": "left", "clickCount": 1})
         c.call("Input.dispatchMouseEvent", {"type": "mouseReleased", "x": pt["x"], "y": pt["y"],
