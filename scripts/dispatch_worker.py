@@ -839,7 +839,25 @@ def create(name, prompt_file):
                        "mode": "agents-tab", "model": WANT_MODEL, "skill": WANT_SKILL,
                        "insert_pct": pct, "sent": False})
                 return 2
-            # capacity dialog present (send accepted OR rejected) — assault
+            if ok and "/c/" in (url or ""):
+                # TWO-STATE CAPACITY PROTOCOL (queue_watch.py; live evidence
+                # 2026-09-10): a send whose URL moved to /c/<uuid> (composer
+                # cleared + prompt in transcript) was ACCEPTED — the task is
+                # QUEUED server-side and the capacity popup is COSMETIC.
+                # Cancelling destroys the queued session and re-queues at the
+                # back (two hours of destroyed sessions before this fix).
+                # Do NOT cancel: keep the tab open, register the session as
+                # sent-queued, and monitor with `check <name>` — generation
+                # starts when capacity frees.
+                print("prompt ACCEPTED — session live at " + str(url))
+                print("      capacity popup is COSMETIC (task queued server-side) — NOT cancelling;")
+                print("      monitor generation start with: dispatch_worker.py check " + name)
+                _save({"name": name, "tab_id": tab["id"], "url": url, "ts": int(time.time()),
+                       "prompt_file": prompt_file, "prompt_chars": len(prompt),
+                       "mode": "agents-tab", "model": WANT_MODEL, "skill": WANT_SKILL,
+                       "insert_pct": pct, "sent": True, "stage": "queued-capacity"})
+                return 0
+            # capacity dialog present and the send was NOT accepted — assault
             print(f"      [capacity] GLM-5.3 at capacity (round {assault_round}) — "
                   f"Cancel + re-pick + resend (operator policy: never wait)")
             try:

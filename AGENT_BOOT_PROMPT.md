@@ -131,6 +131,17 @@ prompt did not land. Failure ladder — climb it in order:
    `scripts/logs/recover.log`. Only cancel dialogs on tasks YOU are
    dispatching — a live session owned by another running job must never be
    cancelled.
+   **TWO-STATE REFINEMENT (2026-09-10, live evidence):** the assault applies
+   ONLY to sends that were NOT accepted (tab still at home, composer state
+   ambiguous). If the send was ACCEPTED — URL moved to `/c/<uuid>`, composer
+   cleared, prompt visible in the transcript — the capacity popup is
+   COSMETIC: the task is queued server-side and generates when capacity
+   frees. Cancelling at that point DESTROYS the queued session and re-queues
+   at the back (two hours of self-destruction observed before this fix;
+   with it, both queued sends landed on the next attempt). The dispatcher
+   now detects acceptance (`ok` + `/c/` URL) and registers the session as
+   `stage: queued-capacity` WITHOUT cancelling — monitor generation start
+   with `check <name>`; do not re-dispatch a queued-capacity session.
 10. **Turn stall** (session generated, then stops mid-task without finishing):
    send a continuation message (`send <name> "continue — deliver the remaining
    files per the report format"`). Sites truncate long turns; continuation
