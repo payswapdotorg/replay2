@@ -177,6 +177,24 @@ prompt did not land. Failure ladder — climb it in order:
    `branches: ain]` when an output layer swallows `[m` as an ANSI reset.
    Before "fixing" corrupted-looking strings in files, byte-verify with
    `od -c` / python `repr` / git diff — never patch on a single tool view.
+16. **Personal usage limit ("WorkSpaces Management — current usage exceeds
+   the personal limit, try again 1 hour later")**: distinct from BOTH the
+   GLM-5.3 capacity popup AND the sandbox-concurrency modal. It gates
+   GENERATION, not sends — sessions are still accepted (queued) but every
+   generation attempt errors ("No response, Please try again later") and
+   each FAILED ATTEMPT APPEARS TO CONSUME/REFRESH the usage window — so
+   probing repeatedly extends the block. Protocol that works:
+   (a) release held sandboxes at `https://chat.z.ai/settings/dashboard`
+   (Sandbox section lists every held workspace — LIVE and EXPIRED — each
+   with a Release button; completed sessions' sandboxes linger and hold
+   the limit);
+   (b) then HARD FREEZE all sends/nudges/re-dispatches for a full hour+
+   (a rolling window only clears if NOTHING touches it);
+   (c) then ONE fresh dispatch. If the generation errors again, freeze
+   longer — never probe at a cadence faster than hourly under this limit.
+   Also note: queued sessions are destroyed by the site during peaks —
+   check `curl :9222/json/list` for the session URL; if the tab rolled
+   home, re-dispatch fresh after the freeze.
 
 Always record what you did in the registry/worklog so retries are traceable,
 and tell the operator when manual action (login/captcha) is needed.
