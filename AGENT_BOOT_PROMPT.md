@@ -135,6 +135,37 @@ prompt did not land. Failure ladder — climb it in order:
    send a continuation message (`send <name> "continue — deliver the remaining
    files per the report format"`). Sites truncate long turns; continuation
    recovers the delivery.
+11. **Dispatcher crash on assault re-navigate** (unguarded `Page.navigate`
+   after `_reconnect` times out with WebSocketTimeoutException): fixed in the
+   dispatcher — the navigate is retried once, then the tab is treated as
+   wedged and replaced (see 12). Keep the patched dispatcher; never revert to
+   a version that can crash mid-assault.
+12. **Wedged tab during capacity assault** (websocket accepts connections but
+   `Runtime.evaluate`/`Page.navigate` never respond — the renderer is dead):
+   close the tab via `curl http://127.0.0.1:9222/json/close/<tabId>` (browser-
+   process-level close works when CDP commands don't) and continue the assault
+   on a FRESH tab. The patched dispatcher does this automatically (`[wedged]
+   tab closed` / `[wedged] fresh tab` lines). Symptom without the patch:
+   `navigate retry failed — next assault round` repeating forever on the same
+   tab.
+13. **Long dispatches must run detached** (capacity assault can legally need
+   >10 min): launch `dispatch_worker.py create` via the launcher pattern
+   (`subprocess.Popen(..., start_new_session=True)` from a tiny python
+   launcher that exits immediately) and poll the registry/log — a tool-shell
+   timeout must never kill an assault mid-round. The `timeout 2700` budget per
+   create is a floor, not a ceiling; if it expires without a send, relaunch.
+14. **Harvest gaps from identical code blocks**: the transcript renderer
+   deduplicates identical fenced blocks — N identical `tsconfig.json`/
+   `eslint.config.js` deliveries render as ONE block under the first path
+   anchor. When the file count is short by (N-1) identical boilerplates,
+   replicate the canonical copy (verify it is package-agnostic first) and let
+   the pipeline prove the replication (typecheck/lint/build per package).
+   A dense scroll-sweep (33 positions vs the default 8) also recovers blocks
+   the default sweep misses.
+15. **Terminal display artifact**: text like `branches: [main]` can render as
+   `branches: ain]` when an output layer swallows `[m` as an ANSI reset.
+   Before "fixing" corrupted-looking strings in files, byte-verify with
+   `od -c` / python `repr` / git diff — never patch on a single tool view.
 
 Always record what you did in the registry/worklog so retries are traceable,
 and tell the operator when manual action (login/captcha) is needed.

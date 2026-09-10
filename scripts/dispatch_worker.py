@@ -47,6 +47,7 @@ import os
 import re
 import sys
 import time
+import urllib.request
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 import channel
@@ -769,7 +770,47 @@ def create(name, prompt_file):
                 except Exception:
                     tab = channel.new_tab() or tab
                     c = channel.CDP(tab["webSocketDebuggerUrl"], timeout=30)
-                c.call("Page.navigate", {"url": CHAT_URL}, timeout=30)
+                try:
+                    c.call("Page.navigate", {"url": CHAT_URL}, timeout=30)
+                except Exception:
+                    # navigate can time out on a busy renderer (capacity-modal
+                    # churn) — reconnect once, retry; if it STILL fails the
+                    # tab is wedged (websocket accepts, renderer never
+                    # responds): close it and continue on a FRESH tab
+                    # (boot-prompt failure ladder #8) instead of looping on a
+                    # zombie tab round after round
+                    try:
+                        c.close()
+                    except Exception:
+                        pass
+                    _fresh = None
+                    try:
+                        _fresh = _reconnect(tab["id"])
+                        _fresh.call("Page.navigate", {"url": CHAT_URL}, timeout=30)
+                        c = _fresh
+                    except Exception:
+                        try:
+                            c.close()
+                        except Exception:
+                            pass
+                        try:
+                            urllib.request.urlopen(
+                                "http://127.0.0.1:9222/json/close/" + tab["id"],
+                                timeout=5).read()
+                            print("      [wedged] tab closed:", tab["id"][:8])
+                        except Exception:
+                            pass
+                        tab = channel.new_tab()
+                        if not tab:
+                            print("      [wedged] new_tab failed — next assault round")
+                            continue
+                        print("      [wedged] fresh tab:", tab["id"][:8])
+                        try:
+                            c = channel.CDP(tab["webSocketDebuggerUrl"], timeout=30)
+                            c.call("Page.navigate", {"url": CHAT_URL}, timeout=30)
+                        except Exception:
+                            print("      [transient] fresh-tab navigate failed — next assault round")
+                            continue
                 print(f"[assault {assault_round}/{CAPACITY_ROUNDS}] popup cancelled — "
                       f"re-picking selections and re-sending")
 
