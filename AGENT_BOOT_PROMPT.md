@@ -165,6 +165,14 @@ prompt did not land. Failure ladder — climb it in order:
    launcher that exits immediately) and poll the registry/log — a tool-shell
    timeout must never kill an assault mid-round. The `timeout 2700` budget per
    create is a floor, not a ceiling; if it expires without a send, relaunch.
+   2026-09-10 sharpening: `setsid nohup ... &` typed in the tool shell is NOT
+   sufficient — setsid changes the session, not the PARENT, and the tool
+   shell reaps its descendant tree when the invocation ends (a monitor died
+   after exactly one poll this way; a mid-assault create died the same way).
+   The launcher process must EXIT IMMEDIATELY so the child reparents to init
+   BEFORE the invoking shell call returns. Use `scripts/launch_create.py`
+   (generic detached create) and `scripts/launch_monitor.py` (detached
+   session-state monitor writing /tmp/orbb_sessions.log every 60s).
 14. **Harvest gaps from identical code blocks**: the transcript renderer
    deduplicates identical fenced blocks — N identical `tsconfig.json`/
    `eslint.config.js` deliveries render as ONE block under the first path
