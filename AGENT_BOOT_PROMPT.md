@@ -163,3 +163,54 @@ and tell the operator when manual action (login/captcha) is needed.
   milestone (append-only, `---` section separators). Assume the sandbox can
   reset at any time; everything that must survive belongs in the remote repo
   or the worklog, not in your head.
+
+## 5. Deliverable transit — corruption and the git channel (2026-09-10 lessons)
+
+Chat transcripts are a LOSSY delivery channel for code. Observed failure
+modes, all reproduced:
+
+- **Message elision**: the chat DOM drops middles of long messages (~45K+
+  chars). A report "arrives" but file blocks are hollow — 36 of 396 lines,
+  9.4K chars silently missing across ALL file blocks of a message.
+- **SQL mangling**: fenced SQL bodies arrive with whitespace collapsed
+  (`BEGINRAISEEXCEPTION`), smart-char substitution and zero-width chars.
+  TypeScript files mostly survive; SQL rarely does.
+- **File cards NEVER transit**: "NEW FILE X/12" cards render only a preview —
+  the file content is not in the DOM at all. Mandate inline fenced blocks.
+- **Telemetry lies**: `body.innerText` is unreliable on virtualized
+  transcripts (false stall readings). Judge liveness by bottom-region
+  signals: typing indicator, "Ran N commands" counters, Todo Progress.
+
+Recovery ladder (chat-only fallback): demand re-emission ONE file per
+message, smallest first, inline fenced blocks only, with a "FILE DONE"
+handshake per file. Small messages transit intact.
+
+**The gold standard is GIT DELIVERY**: when worker sandboxes have network
+access to the code host, have the worker push a delivery branch itself
+(`git push https://<token>@host/org/repo.git <branch>`) and report only the
+branch name, commit SHA and gate table in chat. The resident agent then
+verifies the branch at its own integration station (never trust reported
+test numbers — re-run the gate), opens the PR, and squash-merges. Grant the
+push token transiently in the worker prompt; it must never be committed or
+echoed in reports. Shared-file conflicts between concurrent workers are
+resolved at the integration station, not in chat.
+
+## 6. Capacity popups vs rate limits (2026-09-10 forensics)
+
+Two different dialogs, two different policies:
+
+- **Capacity/peak-hours** ("Model is currently at capacity", "GLM-5.3 is
+  intensifying the coordination of resources"): FIGHT. Cancel, re-pick the
+  three selections (agents tab, GLM-5.3, Full-Stack — a cancel can reset
+  them), resend. The dispatcher's assault loop does this automatically.
+- **Personal usage limit** ("exceeds the personal limit", "try again 1 hour
+  later"): STOP. Every rejected send during the cooldown RE-ARMS the 1h
+  timer — grinding assault rounds is exactly the treadmill that kept the
+  account limited for hours. `send` now aborts before sending when this
+  dialog is up; do not work around it. Do other work (integration,
+  verification, harvesting) and retry after the cooldown lapses.
+
+Promotional dialogs (GLM-5.3-Flash launch popup etc.) overlay the composer,
+steal focus and eat inserts/Enters — the dispatcher dismisses them before
+every composer use. `dispatch_worker.py` implements all of this; do not
+hand-roll click sequences when the tool already encodes the policy.
