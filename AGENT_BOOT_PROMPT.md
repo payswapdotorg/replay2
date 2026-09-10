@@ -368,3 +368,16 @@ re-dispatching; harvest if alive).
     reload the tab and check.
     Monitoring corollary: status polling should reload each watched tab
     before reading (status_all.py does this now).
+
+20. **Destroyed workspace ≠ lost work (2026-09-10, MKT-027 precedent)**: a
+   worker sandbox can be torn down MID-RUN (workspace vanishes from the
+   workspaces API; no branch pushed; transcript frozen). The chat session
+   still holds the worker's FULL context — every file it wrote is in the
+   transcript. Recovery that works: send a targeted rebuild nudge
+   ("your workspace was destroyed; re-clone at base SHA; re-create every
+   file you wrote from your context; re-run gates; push with the
+   token-embedded URL; post the real completion report"). The worker
+   rebuilt 7k lines and delivered. Also: a plain-HTTPS clone has NO push
+   credentials — if the worker's `git push -u origin` fails with "could
+   not read Username", nudge the exact token-URL push command from its
+   brief.
