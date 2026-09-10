@@ -315,3 +315,29 @@ Caveats:
   ALL conversations with ids/titles/models — use it to map prior sessions
   when the session registry is empty (fresh sandbox) instead of clicking the
   lazily-loading sidebar.
+
+17. **worker-prompts/ is ephemeral** (gitignored, and the wave builders do
+    not mkdir it): a stack relaunch or any disk event can wipe it, after
+    which every queue_watch assault re-dispatch dies instantly with
+    FileNotFoundError while the log fills with tracebacks — the loop looks
+    "alive" (fresh heartbeats) but is a zombie. After ANY stack relaunch:
+    `ls scripts/worker-prompts/` first; if missing, rebuild at the CURRENT
+    base (`python3 scripts/build_wave4_prompts.py <repo> <sha>` +
+    build_wave5_prompts.py) — never at a stale base. The assault loop
+    self-heals on its next 150s cycle once the files exist.
+18. **Never `git reset --hard` a FETCH_HEAD from a different repo while
+    standing in a subdirectory** — if the working repo is the PARENT (replay2/
+    can be tracked inside a larger project repo), that reset checks the
+    foreign tree into the project root and deletes every tracked file that
+    is not in it (scripts vanish from disk for minutes; running watchdogs
+    keep re-invoking them). Recovery: `git reset --hard ORIG_HEAD` from the
+    parent root immediately, then verify service health (:3100/healthz,
+    :3000/, queue_watch pids). When syncing replay2 from GitHub, use
+    `git show <remote-sha>:<file> > <file>` per file or a subtree push —
+    never a bare reset.
+
+Tools added: `scripts/check_chats.py` (server-side chat/message-tree state
+via the in-page chats API — works with no local tab open) and
+`scripts/check_workspaces.py` (workspaces user-fc/status/ls-tree via the
+in-page API — check whether worker sandboxes survived a tab loss BEFORE
+re-dispatching; harvest if alive).

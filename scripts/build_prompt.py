@@ -14,6 +14,7 @@ import subprocess
 
 BASE = os.path.dirname(os.path.abspath(__file__))
 PROMPTS = os.path.join(BASE, "worker-prompts")
+os.makedirs(PROMPTS, exist_ok=True)  # ephemeral dir: rebuild-safe
 
 
 # ------------------------------------------------------- signature digests --

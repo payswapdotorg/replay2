@@ -19,6 +19,7 @@ from build_prompt import read_file, rust_signatures
 
 BASE = os.path.dirname(os.path.abspath(__file__))
 PROMPTS = os.path.join(BASE, "worker-prompts")
+os.makedirs(PROMPTS, exist_ok=True)  # ephemeral dir: rebuild-safe
 
 BOOTSTRAP = """BOOTSTRAP (read in the repo, in order):
 1. ARCHITECT_START_HERE.md  2. AGENTS.md (follow its formatting/lint rules)  3. docs/architecture/CODEX-UNIVERSAL-ARCHITECTURE.md  4. docs/architecture/CODEX-UNIVERSAL-LOCK.md  5. docs/architecture/CODEX-CAPABILITY-IMPLEMENTATION-MAP.md  6. docs/implementation-roadmap.md  7. docs/development-state/dependency-graph.json  8. This Work Order packet below.
