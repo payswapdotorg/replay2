@@ -83,6 +83,15 @@ def main():
         _clear_flag()
         return 4
     name, prompt_file = spec["name"], spec["prompt_file"]
+    # resolve relative prompt paths against the repo root (replay2/) — flags
+    # written before the absolute-path fix (or by hand) may carry relative
+    # paths; a bare FileNotFoundError must not read as "already live"
+    if not os.path.isabs(prompt_file):
+        prompt_file = os.path.join(os.path.dirname(BASE), prompt_file)
+    if not os.path.exists(prompt_file):
+        print(f"prompt file missing: {prompt_file} — clearing flag", flush=True)
+        _clear_flag()
+        return 4
     print(f"aggressive recovery: {name} <- {prompt_file} (never waits out capacity)", flush=True)
     for attempt in range(240):  # up to ~8h of active assault; supervisor re-arms
         rc = subprocess.call([sys.executable, os.path.join(BASE, "dispatch_worker.py"),

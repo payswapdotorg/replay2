@@ -733,6 +733,10 @@ def _select_insert_send(c, tab, prompt, name, prompt_file):
 
 
 def create(name, prompt_file):
+    # absolute from the start: the capacity-recovery flag + registry records
+    # are consumed by processes with a DIFFERENT cwd (supervisor/relaunchers) —
+    # a relative path broke recovery with FileNotFoundError (2026-09-10)
+    prompt_file = os.path.abspath(prompt_file)
     prompt = open(prompt_file, encoding="utf-8").read()
     if _find(name):
         print(f"session {name} already exists")
