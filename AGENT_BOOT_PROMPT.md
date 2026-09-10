@@ -341,3 +341,22 @@ via the in-page chats API — works with no local tab open) and
 `scripts/check_workspaces.py` (workspaces user-fc/status/ls-tree via the
 in-page API — check whether worker sandboxes survived a tab loss BEFORE
 re-dispatching; harvest if alive).
+
+19. **Three watcher/send traps (2026-09-10 wo-012 forensics)**:
+    (a) queue_watch's completion gate must be the FILLED-report regex only —
+    a raw marker-text count (hits>=2) is nudge-poisoned: the prompt itself
+    contributes 1 and any continuation nudge or worker thought echoing
+    "COMPLETION REPORT" contributes the 2nd → false COMPLETE, watcher exit,
+    spec deleted. Patched: gate = hits>=1000 (filled-regex, case-insensitive,
+    900-char window, 主干/基础分支 variants).
+    (b) A FROZEN session page (0 chars growth) does NOT mean a dead turn —
+    the tab render wedges mid-stream while the worker keeps running
+    server-side. ALWAYS `Page.reload` the tab before diagnosing; only then
+    trust the page text. Reloads never disturb the server-side turn.
+    (c) `send`'s "VERIFIED" proof (composer-cleared+grew) is PAGE-LOCAL: a
+    wedged session can render the message optimistically and the server
+    silently drops it (chats API message count unchanged). Before acting on
+    a "sent" nudge, confirm persistence via the chats API; after any send,
+    reload the tab and check.
+    Monitoring corollary: status polling should reload each watched tab
+    before reading (status_all.py does this now).

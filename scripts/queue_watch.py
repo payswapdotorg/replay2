@@ -89,10 +89,15 @@ def state(tab_prefix):
     # Prompt echoes (even duplicated by an operator-procedure resend) never
     # satisfy this; a genuine answer always does. Field labels may be English
     # or Chinese (base branch / 基础分支), colon may be ASCII or fullwidth.
+    # 2026-09-10 fix (wo-012 forensics): the complete gate was hits>=2, which a
+    # CONTINUATION NUDGE mentioning "COMPLETION REPORT" also trips (prompt 1
+    # + nudge 1 = 2 -> false COMPLETE, watcher exits, spec deleted). The gate
+    # is now the filled-regex ONLY (tolerant: case-insensitive, wider window,
+    # flexible separator between the two field labels).
     filled = bool(re.search(
-        r"=== WO-\d+ (?:COMPLETION REPORT|完成报告) ==="
-        r"[\s\S]{0,600}?(?:base branch|基础分支)\s*\+\s*(?:base SHA|基础\s*SHA)\s*[:：]\s*main\s*@\s*[0-9a-f]{7,40}",
-        body))
+        r"===?\s*WO-\d+\s*(?:COMPLETION\s*REPORT|完成报告)\s*===?"
+        r"[\s\S]{0,900}?(?:base\s*branch|基础分支)[^\n]{0,60}?(?:base\s*SHA|基础\s*SHA)\s*[:：]\s*(?:main|主干)\s*@\s*[0-9a-f]{7,40}",
+        body, re.IGNORECASE))
     gen = bool(re.search(r"\b(Stop|Pause|Halt)\b", body[-1500:]))
     cap = "currently at capacity" in body or "peak hours" in body
     # RATE-LIMITED (wave-4 forensics 21:07): 'usage exceeds the personal
@@ -145,7 +150,7 @@ def main():
             print(f"[{name}] {stamp} {st} chars={ln} hits={hits} url={url[:60]}", flush=True)
             heartbeat(name)
             mk = os.path.join(FLAGS, f"{name}-complete.marker")
-            if hits >= 2:
+            if hits >= 1000:   # filled-regex ONLY (see 2026-09-10 fix above)
                 open(mk, "w").write(f"{time.time()} {url}\n")
                 print(f"[{name}] COMPLETE — marker written", flush=True)
                 try:

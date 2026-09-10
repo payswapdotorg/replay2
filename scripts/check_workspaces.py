@@ -77,22 +77,23 @@ def main():
         if not cid:
             continue
         print(f"== status chat={cid[:12]} ws={str(wid)[:16]} active={it.get('is_active')}")
-        print(api_post("/api/v1/web-dev/workspaces/status", {"chat_id": cid})[:1200])
+        print(api_post("/api/v1/web-dev/workspaces/status", {"chat_id": str(cid).removeprefix("chat-")})[:1200])
     # optional tree
     if len(sys.argv) > 1:
         cid = sys.argv[1]
         wid = None
         for it in items:
-            if str(it.get("chat_id") or it.get("chatId") or "").startswith(cid[:8]):
+            icid = str(it.get("chat_id") or it.get("chatId") or "").removeprefix("chat-")
+            if icid.startswith(cid[:8]):
                 wid = it.get("function_name") or it.get("workspace_id") or it.get("id")
-                cid = it.get("chat_id") or it.get("chatId")
+                cid = icid
                 break
         if wid is None:
             print("no workspace found for chat", cid)
             return
         print(f"== ls-tree chat={cid} ws={wid}:")
         print(api_post("/api/v1/web-dev/workspaces/files/ls-tree",
-                       {"chatId": cid, "workspace_id": wid})[:4000])
+                       {"chatId": str(cid).removeprefix("chat-"), "workspace_id": wid})[:20000])
 
 
 if __name__ == "__main__":
