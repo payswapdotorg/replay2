@@ -154,6 +154,25 @@ def ensure_capacity_recovery():
         out.close()
 
 
+def ensure_tab_gc():
+    """Close leaked chat-home tabs (crashed creates leak one tab each; they
+    exhaust the renderer and cause the CDP websocket timeouts). Keeps the
+    newest 2 home tabs for in-flight dispatches; session tabs (/c/) never."""
+    try:
+        import urllib.request
+        tabs = json.load(urllib.request.urlopen("http://127.0.0.1:3100/tabs", timeout=10))
+        home = [t for t in tabs.get("tabs", [])
+                if (t.get("url") or "").rstrip("/") == "https://chat.z.ai"]
+        for t in home[2:]:
+            try:
+                urllib.request.urlopen(
+                    "http://127.0.0.1:9222/json/close/" + t["id"], timeout=5).read()
+            except Exception:
+                pass
+    except Exception:
+        pass
+
+
 def ensure_watcher():
     # 1. liveness: pidfile, then pgrep fallback (heals stale pidfile)
     pid = read_pid(os.path.join(BASE, "watcher.pid"))
@@ -339,6 +358,7 @@ def main():
             ensure_watcher()
             ensure_replayd()
             ensure_capacity_recovery()
+            ensure_tab_gc()
             ensure_queue_watch()
             if cycle % 3 == 0:          # browser check every ~30s
                 ensure_browser()
