@@ -275,9 +275,10 @@ JS_MODAL_STATE = r"""(() => {
 
 # PERSONAL USAGE LIMIT PROTOCOL (boot lesson 16): every failed attempt
 # re-arms the 1h window — probing extends the block. HARD FREEZE all nudges
-# while any session shows the personal-limit dialog; resume one cycle after
-# the freeze lapses.
-PERSONAL_FREEZE_S = 75 * 60
+# while any session shows the personal-limit dialog; ESCALATE the freeze on
+# consecutive engagements (75 -> 120 -> 180 min: a deeply drained quota
+# recovers on its own schedule).
+PERSONAL_FREEZE_LADDER = [75 * 60, 120 * 60, 180 * 60]
 
 
 def nudge_stalled_sessions(st):
@@ -316,14 +317,30 @@ def nudge_stalled_sessions(st):
         except Exception:
             continue
         if state.get("personal"):
+            # dismiss the dialog so a STALE render cannot masquerade as a
+            # live cooldown on later cycles (the site re-renders it when the
+            # limit is genuinely engaged — 2026-09-10 verification)
+            try:
+                cdp = channel.CDP(tab["webSocketDebuggerUrl"], timeout=12)
+                try:
+                    cdp.eval(JS_MODAL_CANCEL, timeout=12)
+                finally:
+                    cdp.close()
+            except Exception:
+                pass
             if now > freeze_until:
-                st["personal_freeze_until"] = now + PERSONAL_FREEZE_S
+                n = min(st.get("personal_streak", 0), len(PERSONAL_FREEZE_LADDER) - 1)
+                dur = PERSONAL_FREEZE_LADDER[n]
+                st["personal_streak"] = n + 1
+                st["personal_freeze_until"] = now + dur
                 save_state(st)
-                log(f"nudger: PERSONAL USAGE LIMIT detected on {name} — HARD FREEZE all nudges for {PERSONAL_FREEZE_S // 60} min (lesson 16: failed attempts re-arm the window)")
-                outbox(f"Personal usage limit engaged (seen on {name}). All worker nudges frozen for {PERSONAL_FREEZE_S // 60} min per lesson 16 — probing would extend the block. Workers resume after the freeze; sessions hold their briefs server-side.")
+                log(f"nudger: PERSONAL USAGE LIMIT live on {name} (streak {n + 1}) — HARD FREEZE {dur // 60} min (lesson 16)")
+                outbox(f"Personal usage limit engaged (streak {n + 1}, seen on {name}). All nudges frozen {dur // 60} min — the deeply drained quota recovers on its own schedule; probing would re-arm the window.")
             return  # freeze: touch nothing this cycle
         if state.get("generating"):
             lens[name] = state.get("len", 0)
+            if st.get("personal_streak", 0) > 0:
+                st["personal_streak"] = 0  # generation flowing = quota recovered
             continue
         if state.get("capacity") and state.get("hasCancel"):
             try:
