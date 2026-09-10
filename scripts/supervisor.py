@@ -341,6 +341,27 @@ def ensure_queue_watch():
         log(f"queue_watch[{name}] restarted: tab={spec.get('tab_prefix')}")
 
 
+def ensure_resident_agent():
+    """Keep the resident operator-agent daemon immortal (pidfile -> pgrep -> launch)."""
+    pid = read_pid(os.path.join(FLAGS, "resident_agent.pid"))
+    if not pid_alive(pid, "resident_agent.py"):
+        r = subprocess.run(["pgrep", "-f", "scripts/resident_agent.py"], capture_output=True, text=True)
+        pid = r.stdout.strip().split("\n")[0] if r.stdout.strip() else ""
+    if pid:
+        try:
+            open(os.path.join(FLAGS, "resident_agent.pid"), "w").write(str(pid))
+        except Exception:
+            pass
+        return False
+    log("resident agent daemon DEAD — restarting")
+    out = open(os.path.join(LOGDIR, "resident_agent.log"), "a")
+    subprocess.Popen([PY, os.path.join(BASE, "resident_agent.py")],
+                     stdout=out, stderr=out, stdin=subprocess.DEVNULL,
+                     start_new_session=True)
+    out.close()
+    return True
+
+
 def main():
     # single-instance guard
     lock_fh = open(LOCK, "w")
@@ -356,6 +377,7 @@ def main():
     while True:
         try:
             ensure_watcher()
+            ensure_resident_agent()
             ensure_replayd()
             ensure_capacity_recovery()
             ensure_tab_gc()
