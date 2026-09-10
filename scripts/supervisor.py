@@ -122,34 +122,36 @@ def _rotate(path):
 
 
 def ensure_capacity_recovery():
-    """Keep the GLM-5.3 capacity-recovery poller alive while its flag exists.
+    """Keep the GLM-5.3 capacity-recovery pollers alive while flags exist.
 
-    The flag (flags/capacity_recover.json) is written when a session needs
-    send-recovery; recover_capacity.py removes it when done (or the session
-    died). While the flag exists, a dead poller is relaunched automatically.
+    Flags (flags/capacity_recover*.json — one PER exhausted session; the
+    legacy single capacity_recover.json is still honored) are written when a
+    session needs send-recovery; recover_capacity.py removes its flag when
+    done (or the session died). While a flag exists, a dead poller for THAT
+    flag is relaunched automatically. Per-flag pidfiles prevent cross-talk.
     """
-    flag = os.path.join(FLAGS, "capacity_recover.json")
-    pidf = os.path.join(FLAGS, "capacity_recover.pid")
-    if not os.path.exists(flag):
-        return
-    pid = read_pid(pidf)
-    if pid and pid_alive(pid, "recover_capacity"):
-        return  # alive
-    log("capacity recovery poller dead but flag present — relaunching")
-    with open(flag) as f:
-        spec = json.load(f)
-    # the aggressive assault needs name+prompt_file (uuid alone is legacy)
-    if not (spec.get("name") and spec.get("prompt_file")):
-        # legacy flag: let recover_capacity resolve it via the registry
-        if not spec.get("uuid"):
-            return
-    out = open(os.path.join(LOGDIR, "recover.log"), "a")
-    subprocess.Popen(
-        [PY, os.path.join(BASE, "recover_capacity.py"), spec.get("uuid", "")],
-        stdout=out, stderr=out, stdin=subprocess.DEVNULL,
-        start_new_session=True,
-    )
-    out.close()
+    import glob as _glob
+    for flag in sorted(_glob.glob(os.path.join(FLAGS, "capacity_recover*.json"))):
+        stem = os.path.basename(flag)[len("capacity_recover"):-len(".json")] or ""
+        pidf = os.path.join(FLAGS, f"capacity_recover.pid{stem}")
+        pid = read_pid(pidf)
+        if pid and pid_alive(pid, "recover_capacity"):
+            continue  # alive
+        log(f"capacity recovery poller dead but flag present ({os.path.basename(flag)}) — relaunching")
+        with open(flag) as f:
+            spec = json.load(f)
+        # the aggressive assault needs name+prompt_file (uuid alone is legacy)
+        if not (spec.get("name") and spec.get("prompt_file")):
+            # legacy flag: let recover_capacity resolve it via the registry
+            if not spec.get("uuid"):
+                continue
+        out = open(os.path.join(LOGDIR, "recover.log"), "a")
+        subprocess.Popen(
+            [PY, os.path.join(BASE, "recover_capacity.py"), flag, spec.get("uuid", "")],
+            stdout=out, stderr=out, stdin=subprocess.DEVNULL,
+            start_new_session=True,
+        )
+        out.close()
 
 
 def ensure_watcher():

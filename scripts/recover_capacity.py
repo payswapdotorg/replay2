@@ -10,8 +10,13 @@ So this poller NEVER waits out a GLM-5.3 capacity peak: it re-runs the full
 verified dispatch (dispatch_worker.create — agents tab + GLM-5.3 + Full-Stack
 + insert + send, cancelling every capacity popup it meets and re-picking the
 selections) round after round until the task actually lands and generates.
-The supervisor keeps this process alive while flags/capacity_recover.json
-exists; success (or an already-live session) clears the flag.
+The supervisor keeps one poller alive PER flag file while it exists; success
+(or an already-live session) clears the flag.
+
+Usage: recover_capacity.py [flag-path] [legacy-uuid]
+  flag-path  — flags/capacity_recover[.<name>].json (per-session; the
+               supervisor passes it explicitly). Defaults to the legacy
+               single-slot path for manual invocation.
 
 Flag format: {"name": ..., "prompt_file": ..., "uuid": ..., "tab_id": ...}
 Legacy flags {"uuid": ...} are resolved through the session registry.
@@ -23,8 +28,20 @@ import sys
 import time
 
 BASE = os.path.dirname(os.path.abspath(__file__))
-FLAG = os.path.join(BASE, "flags/capacity_recover.json")
-PIDFILE = os.path.join(BASE, "flags/capacity_recover.pid")
+# argv[1] = flag path (supervisor passes the per-session flag); argv[1] may
+# also be a bare legacy uuid (old supervisor invocation) — detect by suffix.
+_arg1 = sys.argv[1] if len(sys.argv) > 1 else ""
+if _arg1.endswith(".json"):
+    FLAG = os.path.abspath(_arg1)
+    _legacy_uuid = sys.argv[2] if len(sys.argv) > 2 else ""
+elif _arg1:
+    FLAG = os.path.join(BASE, "flags/capacity_recover.json")
+    _legacy_uuid = _arg1
+else:
+    FLAG = os.path.join(BASE, "flags/capacity_recover.json")
+    _legacy_uuid = ""
+_stem = os.path.basename(FLAG)[len("capacity_recover"):-len(".json")] or ""
+PIDFILE = os.path.join(BASE, f"flags/capacity_recover.pid{_stem}")
 REG = os.path.join(BASE, "flags/session_registry.jsonl")
 
 

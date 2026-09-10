@@ -899,7 +899,11 @@ def create(name, prompt_file):
         url = _eval(c, "location.href", timeout=20) or CHAT_URL
         m = re.search(r"/c/([0-9a-f]{8})", url)
         uuid = m.group(1) if m else tab["id"]
-        flag = os.path.join(BASE, "flags/capacity_recover.json")
+        # per-session flag file: two exhausted sessions must never overwrite
+        # each other's recovery spec (single-slot flag lost all but the last
+        # writer). Name is sanitized; legacy single flag remains readable.
+        safe = re.sub(r"[^A-Za-z0-9_.-]", "_", name)
+        flag = os.path.join(BASE, f"flags/capacity_recover.{safe}.json")
         os.makedirs(os.path.dirname(flag), exist_ok=True)
         with open(flag, "w") as f:
             f.write(json.dumps({"name": name, "prompt_file": prompt_file, "uuid": uuid,
