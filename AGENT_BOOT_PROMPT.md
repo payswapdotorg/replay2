@@ -274,3 +274,44 @@ Promotional dialogs (GLM-5.3-Flash launch popup etc.) overlay the composer,
 steal focus and eat inserts/Enters — the dispatcher dismisses them before
 every composer use. `dispatch_worker.py` implements all of this; do not
 hand-roll click sequences when the tool already encodes the policy.
+
+## 7. Workspace files API — direct sandbox harvest (2026-09-10 discovery)
+
+The chat.z.ai agent sandboxes expose a web-dev workspaces file API that the
+Tech Lead can drive from ANY logged-in chat.z.ai page (in-page fetch, Bearer
+token from localStorage, same-origin — credentials never leave the browser):
+
+- `GET  /api/v1/web-dev/workspaces/user-fc` → active workspaces
+  (function_name = workspace_id, chat_id, is_active; limit 3).
+- `POST /api/v1/web-dev/workspaces/status` {chat_id} → pod status.
+- `POST /api/v1/web-dev/workspaces/files/ls-tree` {chatId, workspace_id} →
+  FULL sandbox file tree (the codex clone lives at `codex/` inside it —
+  visible even though storage snapshots only capture the template root).
+- `POST /api/v1/web-dev/workspaces/files/content` {chatId, rev, filepath,
+  workspace_id} → raw file bytes (rev = latest workspace git snapshot uuid
+  from `GET .../git/log?chatId=...`; the rev covers the whole tree, not just
+  the snapshot listing). Fetch as arrayBuffer, base64 out via CDP.
+- `POST /api/v1/web-dev/workspaces/files/archive` {chatId, rev, workspace_id}
+  → streams a (binary) archive of the workspace.
+
+This is the GOLD delivery channel when a worker's sandbox is alive: harvest
+the deliverable files directly (e.g. all files under
+`codex/codex-rs/<crate>/`), reconstruct the branch at the integration
+station, re-run the verification trio, merge. No chat re-emission, no bundle
+nudge needed. WO-015 was recovered exactly this way (19 files, verified,
+merged via PR #14) after the worker could not push.
+
+Caveats:
+- A released/reaped sandbox disappears from user-fc; a continuation nudge
+  (new chat turn) re-provisions it — fresh disk, so the worker must re-create
+  files from its own conversation context (wo-012 recovered this way).
+- The worker's base may be older than current main (pre-WO-011): reconcile
+  the Cargo.toml members line + let cargo regenerate Cargo.lock at the
+  integration station — merge_bundle.py's strict base check will not pass on
+  a stale-base bundle; reconstruct instead.
+- Long-open session tabs wedge (eval timeouts): close + reopen a fresh tab
+  at the same /c/<uuid> — the conversation persists server-side.
+- The chats API `GET /api/v1/chats/list?limit=100` (in-page fetch) returns
+  ALL conversations with ids/titles/models — use it to map prior sessions
+  when the session registry is empty (fresh sandbox) instead of clicking the
+  lazily-loading sidebar.
