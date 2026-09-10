@@ -92,9 +92,31 @@ def main():
             _clear_flag()
             return 0
         if rc == 1:
-            print("session already live — recovered elsewhere", flush=True)
-            _clear_flag()
-            return 0
+            # 2026-09-10 fix: a CRASHED create also exits 1 (unhandled
+            # exception) — verify the session is genuinely live in the
+            # registry before aborting the assault (false positive ended
+            # recovery with no session created).
+            live = False
+            try:
+                for line in open(REG).read().split("\n"):
+                    if not line.strip():
+                        continue
+                    try:
+                        r = json.loads(line)
+                    except Exception:
+                        continue
+                    if r.get("name") == name and r.get("sent") and \
+                            r.get("action") not in ("void", "failed", "done"):
+                        live = True
+            except Exception:
+                pass
+            if live:
+                print("session already live — recovered elsewhere", flush=True)
+                _clear_flag()
+                return 0
+            print("rc=1 but session NOT in registry (crashed create) — retrying", flush=True)
+            time.sleep(20)
+            continue
         # rc==3: create ran its full in-process assault and re-staged the
         # flag; go again immediately (short gap). rc==2/other: give the page
         # a moment, then the next create closes stale tabs and retries.

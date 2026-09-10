@@ -1413,4 +1413,12 @@ def main():
 
 
 if __name__ == "__main__":
-    sys.exit(main())
+    try:
+        sys.exit(main())
+    except Exception:
+        # crash exit code must differ from rc=1 ('session already live'):
+        # recover_capacity treats 1 as recovered-elsewhere and would abort
+        # the assault on a websocket timeout (2026-09-10 false positive).
+        import traceback
+        traceback.print_exc()
+        sys.exit(4)
