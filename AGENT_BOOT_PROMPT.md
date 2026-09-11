@@ -437,3 +437,46 @@ the Tech Lead's own state-commit push WILL hit non-fast-forward — fetch
 `cargo clean` + clear ~/.cache/puppeteer (99% disk → 54%) before any
 verification build; ENOSPC mid-build costs far more than the cold
 rebuild.
+
+## Lessons 27-29 (2026-09-11 — payswap3 takeover session)
+
+27. **Transcripts are mortal, sandboxes are durable — harvest before
+    re-dispatching.** A platform incident can destroy every fan session's
+    transcript (empty assistant turns, sessions rolled back, URLs redirect
+    home) while the worker sandboxes survive INTACT with the full delivery
+    inside (worklog.md + all deliverable files + verification screenshots).
+    After ANY session-loss event, BEFORE re-dispatching: check the
+    workspaces files API (`user-fc` → `ls-tree`) for every lost session's
+    sandbox; if files exist, harvest (`harvest_delivery.py <chat> <ws> ""
+    <local-dir>` — root-level harvest now supported), transplant ONLY the
+    work-order deliverable files onto current main at the integration
+    station (workers' sandbox-local stand-ins are NOT deliverables), re-run
+    the gates (tsc/build/validators/browser E2E), and merge. This recovered
+    UI-004 (16 files) and UI-005 (15 files) after their transcripts died;
+    only the session with NO sandbox (UI-003) needed a fresh dispatch.
+    The workers' own worklogs (harvest `worklog.md` first) list their
+    deliverables and the integration discrepancies they knowingly flagged
+    (stand-in contract assumptions) — those flags predict the exact splice
+    points (e.g. formatMoney signature, ResolvedNavigation shape).
+
+28. **VERIFIED send does not guarantee the session persists.** During
+    platform instability a create can pass every gate (composer cleared,
+    /c/ URL, prompt visible) and the session is STILL destroyed
+    server-side minutes later (absent from chats/list; fresh tab at its
+    URL bounces home). Post-dispatch verification: confirm the new session
+    id appears in the chats API (`check_chats.py` / in-page
+    `/api/v1/chats/list`); if missing, re-dispatch with a fresh name
+    (`<name>-2`) and the SAME prompt file. The registry records
+    `tab-reopen`/void events so retries stay traceable.
+
+29. **Composio platform API (v3, 2026-09-11):** the working recipe is
+    `GET/POST https://backend.composio.dev/api/v3/<underscore_path>` with
+    header `x-api-key: <ak_ key>` (the v1 endpoints are retired; the v3
+    host is api.composio.dev which does NOT resolve from the sandbox;
+    mcp.composio.dev 301s to a marketing page — ignore it for platform
+    calls). Discovery endpoints: `connected_accounts`, `toolkits`.
+    Discovered state: ONLY GitHub connected (ACTIVE, OAuth2); Vercel,
+    Cloudflare, databases, queues, observability are all UNCONNECTED —
+    deployment work items that bind to real infrastructure must wait for
+    the operator to connect those providers. Record infrastructure truth
+    in the worklog; never claim infrastructure that is not connected.
