@@ -171,15 +171,26 @@ JS_OPEN_MODEL_MENU = r"""(() => {
 })()"""
 
 JS_CLICK_MODEL = r"""(() => {
-  // exact 'GLM-5.3' row (NOT 'GLM-5.3-Flash')
+  // robust 'GLM-5.3' row click (NOT 'GLM-5.3-Flash').
+  // 2026-09-11: site DOM changed — menu items render name+description in one
+  // node and the menu can auto-close between the open-click and the scan, so
+  // this expression re-opens the menu itself on every evaluation and matches
+  // both exact-text and first-line-prefix forms.
+  const b = document.querySelector('button.modelSelectorButton');
+  if (!b) return 'no-button';
+  if (b.getAttribute('aria-expanded') !== 'true') { b.click(); }
   const cands = [];
-  document.querySelectorAll('[role=menuitem], [role=option], [class*=popover] *, [class*=menu] *, [class*=item] *').forEach(e => {
-    const t = (e.innerText || '').trim();
-    if (t === 'GLM-5.3') cands.push(e);
-  });
+  const consider = (e) => {
+    const full = (e.innerText || '').trim();
+    const first = full.split('\\n')[0].trim();
+    if (full === 'GLM-5.3' || first === 'GLM-5.3') cands.push(e);
+  };
+  document.querySelectorAll('[role=menuitem], [role=option], [cmdk-item], [class*=popover] *, [class*=menu] *, [class*=item] *').forEach(consider);
   if (!cands.length) return 'no-option';
-  const label = cands[0];
-  const row = label.closest('[role=menuitem],[role=option],button,[class*=item]') || label;
+  // prefer the shallowest candidate (the row, not a deep span)
+  cands.sort((a, z) => (a.compareDocumentPosition(z) & 2) ? -1 : 1);
+  const el = cands[0];
+  const row = el.closest('[role=menuitem],[role=option],button,[cmdk-item],[class*=item]') || el;
   row.click();
   return 'ok';
 })()"""

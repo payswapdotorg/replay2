@@ -480,3 +480,32 @@ rebuild.
     deployment work items that bind to real infrastructure must wait for
     the operator to connect those providers. Record infrastructure truth
     in the worklog; never claim infrastructure that is not connected.
+
+## Lessons 30-31 (2026-09-11 — resident lead session)
+
+30. **The model menu DOM is a moving target — make the click
+    self-healing.** chat.z.ai changed the agents-tab model menu twice in
+    one day: items now render name+description in one node (no leaf whose
+    innerText is exactly `GLM-5.3`) and the popover can auto-close between
+    the open-click and the scan, so the matcher found nothing and create
+    died with "GLM-5.3 option not found". Fix (in
+    dispatch_worker.py::JS_CLICK_MODEL): the click expression itself
+    (a) re-opens the menu when `aria-expanded !== 'true'` on every
+    evaluation, and (b) matches BOTH exact-text and first-line-prefix
+    (`innerText.split('\n')[0] === 'GLM-5.3'`). The existing `_wait`
+    retry loop then absorbs the async item rendering. Always verify a
+    selector patch against a live idle tab before trusting a dispatch.
+
+31. **Sessions die server-side mid-work — detect by tab URL, then check
+    the chats API and the workspace before acting.** A live generating
+    session (ui-008, 12k chars) went silent: its tab redirected to
+    `https://chat.z.ai/` (home), its workspace vanished from
+    `user-fc`, the transcript was unrecoverable. That redirect is the
+    server's death certificate — void + re-dispatch immediately (the
+    operator rule). But ALSO learn the differential: `TAB-LOST` in
+    resident_poll on a BUSY streaming tab is usually just a CDP eval
+    timeout (the renderer answers nothing while streaming) — before
+    voiding, confirm via the tabs list that the tab URL still carries the
+    session `/c/<uuid>`. A tab still on its session URL is alive; only a
+    redirect to home (or a URL missing from the tabs list AND the chats
+    API) is death. Use patient_check.py for busy-tab polling.
