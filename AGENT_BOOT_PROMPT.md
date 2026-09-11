@@ -409,3 +409,31 @@ re-dispatching; harvest if alive).
     when its tab disappears); a fresh worker redoes the work faster than a
     zombie ever resolves. Distinguish from a LIVE long compile by checking
     whether the transcript shows ANY event growth over ~30-45 min.
+
+## Lessons 24-26 (WO-016 wave — post-roadmap extension)
+
+24. **Files-API chatId must be the RAW uuid.** The workspaces listing
+shows `chat_id: "chat-<uuid>"`, but `/api/v1/web-dev/workspaces/files/*`
+REJECTS the `chat-` prefix with `"Access denied: chat does not belong to
+current user"`. Strip the prefix when harvesting. Symptom is exact and
+reproducible; do not re-auth or reopen tabs — just re-call with the raw
+uuid.
+
+25. **Worker sandboxes may have NO Rust toolchain at all.** WO-016's
+worker verified compile-correctness "by careful static reasoning" — the
+real 1.95.0 toolchain then exposed 5 compile errors + 2 real logic bugs
+(clamp overflowing the hard FAILURE_MESSAGE_MAX_BYTES bound; a fixture
+declaring a lifecycle op but rejecting it — the shared conformance
+harness caught that one). ALWAYS budget Tech-Lead integration time for
+compile+fix cycles on tool-less deliveries; the acceptance trio (test/
+clippy/fmt) is the only truth. Good news: the fixes are usually
+mechanical (visibility, Display, lifetimes, typos).
+
+26. **The architect pushes to main CONCURRENTLY with merges.** During
+WO-016 three docs commits (7e3285bcc, e0319920d, 761ad874c) landed
+mid-flight: squash-merge re-parents cleanly onto them (docs-only), but
+the Tech Lead's own state-commit push WILL hit non-fast-forward — fetch
++ rebase + push is the routine, never force-push. Also: pre-emptively
+`cargo clean` + clear ~/.cache/puppeteer (99% disk → 54%) before any
+verification build; ENOSPC mid-build costs far more than the cold
+rebuild.
