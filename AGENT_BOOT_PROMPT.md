@@ -844,3 +844,32 @@ rebuild.
     hour. Ladder update: fresh-tab re-sync BEFORE nudging; a nudge sent
     into an actively-working session is harmless but a queue-window can
     consume it re-rendering state the worker already passed.
+
+## Lesson 53 (2026-09-11 — M3-B landing: sandbox-staged tarball transit)
+
+53. **Put the delivery-transit protocol IN THE DISPATCH PROMPT — the worker's
+    clone lives outside the files-API scope, and chat-only delivery is the
+    lossy fallback.** M3-B proved the full chain: the worker implemented +
+    verified everything, ended its turn WITHOUT inline file blocks (it left
+    the work "in the working tree at ~/ORBB, ready for the tech lead" — the
+    clone sits OUTSIDE the pod project root, and files/content 404s on
+    absolute paths). The working recovery, now baked into every packet
+    prompt up front:
+    1. Worker packages ONLY the git-status changed files into the PROJECT
+       ROOT (the dir its shell starts in — contains src/app/page.tsx,
+       bun.lock): `cd ~/ORBB && tar czf PROJECT_ROOT/<pkt>-files.tgz
+       $(git status --porcelain | awk '{print $NF}')` (+ pnpm-lock.yaml
+       only if its diff is non-empty).
+    2. Worker writes `<pkt>-sha256.txt` with the tarball hash.
+    3. Worker then posts the FINAL REPORT (summary/verification/assumptions/
+       handoffs/deps + file PATH LINES only — bytes travel via the tarball).
+    4. Lead harvests via files/content (base64 for the binary tgz) and
+       VERIFIES the sha256 locally — M3-B landed byte-perfect this way
+       (122,226 bytes, hash match), zero chat-transit corruption, zero
+       re-emission nudges.
+    A continuation nudge CAN retrofit staging onto a finished-but-undelivered
+    session (proven on M3-B), but the upfront prompt section removes the
+    round-trip entirely. Also note: `pnpm e2e:web` uses fixed port 3100 by
+    design; the replay console occupies 3100 on the lead's box — run local
+    e2e with `ORBB_WEB_E2E_PORT=<free-port>` (the playwright config reads
+    that env).
