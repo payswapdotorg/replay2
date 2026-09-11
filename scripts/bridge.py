@@ -336,7 +336,11 @@ def cmd_status():
         "browser_login": "unknown",
     }
     try:
-        tab = pick_tab()
+        # Login is a profile-wide property: read it from a chat.z.ai tab even
+        # when the ACTIVE tab is something else (e.g. the TurboVPN popup tab).
+        tabs = channel.list_tabs()
+        tab = next((t for t in tabs if "chat.z.ai" in (t.get("url") or "")),
+                   tabs[0] if tabs else None)
         if tab:
             out["browser_login"] = _login_state(tab)
     except Exception:

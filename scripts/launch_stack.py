@@ -58,6 +58,16 @@ open(os.path.join(BASE, "xvfb.pid"), "w").write(str(p1.pid))
 time.sleep(2)
 
 # 2. Chrome with CDP
+# Pre-installed operator extensions (e.g. TurboVPN) — auto-loaded whenever
+# the directory exists, so watchdog restarts keep them installed.
+EXT_ROOT = os.path.join(BASE, "extensions")
+ext_args = []
+if os.path.isdir(EXT_ROOT):
+    for name in sorted(os.listdir(EXT_ROOT)):
+        ext_dir = os.path.join(EXT_ROOT, name)
+        if os.path.isdir(ext_dir) and os.path.exists(os.path.join(ext_dir, "manifest.json")):
+            ext_args.append(f"--load-extension={ext_dir}")
+            print("extension loaded:", ext_dir)
 env = dict(os.environ)
 env["DISPLAY"] = DISPLAY
 p2 = subprocess.Popen([chrome,
@@ -68,7 +78,7 @@ p2 = subprocess.Popen([chrome,
     "--disable-session-crashed-bubble", "--hide-crash-restore-bubble",
     "--disable-background-timer-throttling", "--disable-backgrounding-occluded-windows",
     "--disable-renderer-backgrounding", "--disable-dev-shm-usage", "--disable-features=Translate",
-    "--lang=en-US", "--no-sandbox", START_URL],
+    "--lang=en-US", "--no-sandbox", *ext_args, START_URL],
     stdout=open(os.path.join(BASE, "browser.log"), "w"), stderr=subprocess.STDOUT,
     start_new_session=True, env=env)
 open(os.path.join(BASE, "browser.pid"), "w").write(str(p2.pid))

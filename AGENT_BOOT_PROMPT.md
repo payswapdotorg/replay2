@@ -783,3 +783,28 @@ rebuild.
     and batch-retry on a ~15-20 min cadence. Do not interpret the rejection
     as prompt/tooling failure — diagnostics (lesson 40's ladder) must run
     first.
+
+50. **Browser-extension VPNs (TurboVPN etc.) are installed via CRX download
+    + unpacked load, are profile-local, AUTO-CONNECT, and are only visible
+    to BROWSER-side probes.** Recipe (sandbox reset / fresh deploy): find
+    the official extension ID from the Chrome Web Store URL, download the
+    CRX from clients2.google.com/service/update2/crx (response=redirect,
+    prodversion=<chrome version>, x=id%3D<EXTID>%26uc), strip the CRX3
+    header (12-byte magic+version, then 4-byte header length -> zip starts
+    at 12+header_len), unzip into scripts/extensions/<name>/, and patch
+    launch_stack.py to append --load-extension=<dir> (auto-load on every
+    watchdog restart — the extension survives Chrome deaths). The extension
+    ID of an unpacked load is path-derived; get the REAL id from the CDP
+    target list (service_worker URL). Control UI without toolbar access:
+    open chrome-extension://<id>/<popup.html from manifest> AS A TAB —
+    full connect/disconnect/server UI renders and is clickable through
+    the replay console (clicks via CDP Input work; menus close via their
+    own X button, not Escape). CRITICAL probe discipline: an extension
+    VPN routes only the BROWSER's traffic — a python-side urllib egress
+    probe will NEVER see it connect/disconnect. Measure egress with
+    fetch() evaluated INSIDE a browser tab (CDP Runtime.evaluate,
+    await_promise; prefer a chrome-extension:// page — host_permissions
+    bypass CSP; chat.z.ai pages CSP-block external fetches). Verified
+    2026-09-11: TurboVPN auto-connected at browser start (US exit),
+    browser egress 79.110.54.211 vs raw sandbox 47.57.232.232 while
+    chat.z.ai loaded fine through the VPN.
