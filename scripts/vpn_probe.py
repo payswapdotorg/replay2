@@ -26,8 +26,8 @@ import urllib.request
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 import channel  # noqa: E402
 
-CHAT_ID = "a21e36d6-579e-450a-8756-92da90bb22c1"
-URL_MARK = "a21e36d6"
+CHAT_ID = "267b7af1-a22f-4d55-be87-3459390e0c3f"
+URL_MARK = "267b7af1"
 LOG = "/tmp/vpn_probe.log"
 
 
