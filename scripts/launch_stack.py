@@ -70,6 +70,14 @@ if os.path.isdir(EXT_ROOT):
             print("extension loaded:", ext_dir)
 env = dict(os.environ)
 env["DISPLAY"] = DISPLAY
+# Turbo VPN extension (operator-directed fix for generation-queue geo block;
+# unpacked from CRX 2.0.4 — see AGENT_BOOT_PROMPT lesson 45/49).
+# Default path survives supervisor/watchdog restarts (no env needed); the env
+# var overrides, and a missing dir disables the flag cleanly.
+load_ext = os.environ.get("CHROME_LOAD_EXTENSION", "/home/z/turbovpn/ext")
+ext_flags = []
+if load_ext and os.path.isdir(load_ext):
+    ext_flags.append(f"--load-extension={load_ext}")
 p2 = subprocess.Popen([chrome,
     f"--remote-debugging-port={CDP_PORT}", "--remote-debugging-address=127.0.0.1",
     "--remote-allow-origins=*", f"--user-data-dir={PROFILE}",
