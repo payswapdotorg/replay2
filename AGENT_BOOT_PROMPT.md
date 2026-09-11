@@ -585,3 +585,24 @@ rebuild.
     the directive — n grows, a fresh assistant placeholder appears and
     the turn starts streaming. Lesson 33's chats-API verification is
     what catches (c): never trust a single browser-level send proof.
+
+38. **The frozen-turn root cause may be the OOM killer, not the chat
+    platform: a 4.1GB sandbox running Chrome + Next dev + PostgreSQL +
+    vitest kills chrome renderers (dmesg: `oom-kill ... task=chrome`),
+    and a dead renderer is EXACTLY the frozen-turn signature (page
+    static, no Stop button, empty assistant placeholder).** Prevention:
+    close redundant tabs, run review batteries SEQUENTIALLY (two
+    concurrent vitest suites + chrome OOM'd instantly in 2026-09-11
+    forensics — killed twice), and check `dmesg | tail` when a turn
+    freezes or a background suite dies silently. setsid+nohup is NOT
+    enough when the box itself runs out of memory.
+
+39. **When a worker turn dies with all durable deliverables already
+    persisted (branch + evidence + PR + CI green), don't re-run the
+    whole revival — send a FINAL-REPORT-ONLY directive.** The worker
+    contract's last step (the chat completion report) is recoverable
+    cheaply: refresh the tab (lesson 37's resync), send a directive
+    that restates the verified delivery state and asks ONLY for the
+    exact-format final message. Proven on wo-060's second death: the
+    report arrived within a minute, contract closed with DONE, and the
+    merge proceeded without re-doing any work.
