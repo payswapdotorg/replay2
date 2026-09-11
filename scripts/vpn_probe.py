@@ -26,8 +26,8 @@ import urllib.request
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 import channel  # noqa: E402
 
-CHAT_ID = "800dbe75-5c7f-4d01-9345-abd875e5aab3"
-URL_MARK = "800dbe75"
+CHAT_ID = "a21e36d6-579e-450a-8756-92da90bb22c1"
+URL_MARK = "a21e36d6"
 LOG = "/tmp/vpn_probe.log"
 
 
@@ -42,6 +42,29 @@ def egress_ip():
         except Exception:
             continue
     return "?"
+
+
+def browser_egress_ip(tab):
+    """IP as seen by the BROWSER (in-page fetch) — detects VPN extension
+    routing that sandbox-level curl cannot see."""
+    js = """
+    (async () => {
+      try {
+        const r = await fetch("https://api.ipify.org", {cache: "no-store"});
+        return (await r.text()).trim();
+      } catch (e) { return "?"; }
+    })()
+    """
+    try:
+        c = channel.CDP(tab["webSocketDebuggerUrl"], timeout=20)
+        try:
+            val = c.eval(js, await_promise=True, timeout=20)
+        finally:
+            c.close()
+        v = str(val).strip()
+        return v if v and len(v) <= 45 and " " not in v else "?"
+    except Exception:
+        return "?"
 
 
 def find_session_tab(tabs):
@@ -140,6 +163,10 @@ def main():
             emit(f"{ts} ip={ip} TABS-ERR:{type(e).__name__}")
             time.sleep(60)
             continue
+        bip = "?"
+        anytab0 = find_any_chat_tab(tabs)
+        if anytab0:
+            bip = browser_egress_ip(anytab0)
         stab = find_session_tab(tabs)
         if stab:
             chars, flag = dom_state(stab)
@@ -152,7 +179,7 @@ def main():
             if "HTTP4" in api or "HTTP5" in api or ":HTML" in api \
                     or "not found" in api.lower():
                 api += " SESSION-LOST?"
-        emit(f"{ts} ip={ip} dom={chars}/{flag} chat={api}{ip_note}")
+        emit(f"{ts} ip={ip} bip={bip} dom={chars}/{flag} chat={api}{ip_note}")
         time.sleep(60)
 
 
