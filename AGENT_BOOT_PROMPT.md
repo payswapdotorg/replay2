@@ -829,3 +829,18 @@ rebuild.
     Session chat-id ROLLS (ec524ffc -> 958f426a -> 6e507406 observed)
     while content persists — track sessions by TAB id + registry, not by
     chat id.
+
+52. **A wedged renderer shows a STALE view that masks active server-side
+    work — never diagnose "stalled worker" from one tab alone.** A session
+    tab can freeze at a fixed char-count with a pending- dots placeholder
+    while the worker continues executing server-side (post-reload renderer
+    wedge). The stale tab + a lagging chat updated_at together look exactly
+    like a generation-queue stall. DEFINITIVE liveness check: open a FRESH
+    tab at the same session URL (safe when the chat has assistant content)
+    — the re-synced view reveals the true transcript. Close the wedged tab,
+    record tab-reopen in the registry (tab_id + url fields), keep the
+    session. The ui-009 worker was mid-remediation ("zero axe violations
+    across all 28 surfaces") while its tab had shown one char-count for an
+    hour. Ladder update: fresh-tab re-sync BEFORE nudging; a nudge sent
+    into an actively-working session is harmless but a queue-window can
+    consume it re-rendering state the worker already passed.
