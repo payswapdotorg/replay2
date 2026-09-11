@@ -381,3 +381,31 @@ re-dispatching; harvest if alive).
    credentials — if the worker's `git push -u origin` fails with "could
    not read Username", nudge the exact token-URL push command from its
    brief.
+
+21. **Display layer redacts secret-shaped strings in tool output** (WO-014
+    forensics): a worker's realistic fake-credential test fixture (xoxb-…
+    Slack token) displayed as "[REDACTED:slack_token]" in EVERY text view
+    (Read tool, cat, even python repr output) — while byte-level access
+    (data.count(b"..."), hexdump) showed the real bytes. When displayed text
+    contradicts computed results, or before "fixing corrupted-looking
+    strings", ALWAYS byte-verify (`data.find`, `[hex(b) for b in chunk]`).
+    The redaction also masks what GitHub push protection will flag.
+22. **GitHub push protection blocks realistic fake secrets in TEST FIXTURES**
+    (WO-014): a worker's scrubber tests embedded a full xoxb-… token and
+    GitHub refused the push (GH013 rule violation; the error names the
+    pattern + file:line + an unblock URL). Fix at the integration station:
+    assemble fixtures at RUNTIME from fragments
+    (`format!("{}{}", "xox", "b-…")`) so the full shape never appears in
+    source; semantics unchanged; re-run the trio on the amended commit.
+    Worker prompt templates should mandate fragment-assembled fixtures for
+    credential-scrubber tests from the start.
+23. **Zombie turn signature** (WO-012 forensics): turn open server-side
+    (model chip disabled, composer send blocked, draft persists across
+    reloads) + ZERO transcript events for hours + pod Running + no delivery
+    files = the stream died mid-tool-call and the server never closed the
+    turn. The resume nudge cannot be delivered (blocked by the open turn —
+    it parks as a server-side draft). Correct action: void the session and
+    re-dispatch fresh (the queue_watch assault loop does this automatically
+    when its tab disappears); a fresh worker redoes the work faster than a
+    zombie ever resolves. Distinguish from a LIVE long compile by checking
+    whether the transcript shows ANY event growth over ~30-45 min.
