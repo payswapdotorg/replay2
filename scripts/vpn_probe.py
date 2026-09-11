@@ -113,8 +113,17 @@ def chat_api_state(tab):
 
 def main():
     known_ips = set()
-    print(f"{time.strftime('%H:%M:%S')} vpn_probe started "
-          f"(chat={CHAT_ID[:8]} log={LOG})", flush=True)
+    os.makedirs(os.path.dirname(LOG), exist_ok=True)
+    logf = open(LOG, "a", buffering=1)
+    logf.write(f"{time.strftime('%H:%M:%S')} vpn_probe started "
+               f"(chat={CHAT_ID[:8]})\n")
+
+    def emit(line):
+        print(line, flush=True)
+        logf.write(line + "\n")
+
+    emit(f"{time.strftime('%H:%M:%S')} vpn_probe running "
+         f"(pid {os.getpid()})")
     while True:
         ts = time.strftime("%H:%M:%S")
         ip = egress_ip()
@@ -128,7 +137,7 @@ def main():
             tabs = json.load(urllib.request.urlopen(
                 "http://127.0.0.1:9222/json/list", timeout=10))
         except Exception as e:
-            print(f"{ts} ip={ip} TABS-ERR:{type(e).__name__}", flush=True)
+            emit(f"{ts} ip={ip} TABS-ERR:{type(e).__name__}")
             time.sleep(60)
             continue
         stab = find_session_tab(tabs)
@@ -143,8 +152,7 @@ def main():
             if "HTTP4" in api or "HTTP5" in api or ":HTML" in api \
                     or "not found" in api.lower():
                 api += " SESSION-LOST?"
-        print(f"{ts} ip={ip} dom={chars}/{flag} chat={api}{ip_note}",
-              flush=True)
+        emit(f"{ts} ip={ip} dom={chars}/{flag} chat={api}{ip_note}")
         time.sleep(60)
 
 
