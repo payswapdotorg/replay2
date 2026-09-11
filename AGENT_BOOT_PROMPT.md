@@ -632,3 +632,59 @@ rebuild.
     harvesting) between rounds. Sandboxes outlive sessions: ALWAYS check
     `user-fc` workspaces + ls-tree (chatId WITHOUT the `chat-` prefix —
     the #1 harvest-bug) before assuming work is lost.
+
+## Lessons 41-44 (2026-09-11 — MOS resident lead session)
+
+41. **Registry tab-reopen records must MERGE, not replace — a reopened tab
+    must never un-send the session.** The nudger/monitor's live-session
+    filter treated the LATEST registry record per name as authoritative; a
+    `tab-reopen` record (renderer recovery, §3.8) carries only
+    name/tab_id/url — no `sent`, no `mode` — so every tab-reopened session
+    turned invisible to the nudger (skipped as not-sent) and to completion
+    announcements (skipped as non-agent-mode). Live incident: the nudger
+    went silent for hours across TWO sessions after their tab-reopens,
+    including missing a personal-limit lapse probe. Fix: `tab-reopen`
+    REBINDS the tab_id onto the session's create-record state (sent/mode/
+    prompt_file preserved). Any registry consumer must use merge semantics,
+    not latest-record-wins, for non-terminal actions.
+
+42. **Dispatcher keeper-keywords must derive the WORK-ITEM prefix from
+    re-dispatch session names.** Sandbox-modal rows are titled from the
+    PROMPT's first line ("MKT-031 Worker Implementation Guide"), while the
+    registry name carries the re-dispatch suffix ("mkt-031b"). A keeper
+    list built only from exact names + the wo-N derived forms never matches
+    — the dispatcher released mkt-031b's ACTIVE sandbox twice mid-work.
+    Fix: for every live session add the regex `^(mkt-\d+)` prefix (both
+    cases) as a keeper keyword. General rule: derive keywords from BOTH
+    the registry name AND the prompt-derived row title the modal shows.
+
+43. **Releasing sandboxes from the settings dashboard: match the EXACT
+    title ELEMENT, never an ancestor walk.** The dashboard sandbox section
+    nests rows deeply; a "closest row containing the title" matcher can
+    resolve to an ANCESTOR that also contains OTHER rows' Release buttons —
+    one wrong click released an ACTIVE workspace (its 243K-char transcript
+    held the worker's only surviving work; recovery via lesson 20/37
+    rebuild). Safe procedure: find the leaf element whose textContent is
+    EXACTLY the target title, then walk UP at most a few levels to the
+    smallest node containing exactly one Release button and no other
+    session titles. Also: done/expired sessions' workspaces keep counting
+    against the 3-slot cap ("Expired" state, Release button still present)
+    — release them promptly after merging, and re-verify via
+    /api/v1/web-dev/workspaces/user-fc.
+
+44. **Established sessions SURVIVE peaks that destroy fresh dispatches;
+    a dialog on the tab is TAB-LOCAL state, not worker ground truth.**
+    Peak pattern (three consecutive MKT-015 dispatches): the create lands
+    VERIFIED, then the platform destroys the session server-side (chats
+    API returns HTTP 500 for BOTH the original and the rolled chat id; the
+    tab hops to a fresh /c/ uuid), while established mid-work sessions
+    ride the SAME peak with context intact — hold the re-dispatch until
+    the peak breaks instead of grinding dispatches into the destroyer
+    (complements lesson 40's batched-retry posture: batch ≠ grind — retry
+    on a ~15-20 min cadence, never in a tight loop). And the inverse,
+    same day: a worker whose tab rendered the personal-limit dialog for 3+
+    hours KEPT RUNNING server-side and pushed its delivery branch
+    mid-"freeze" (MKT-021, branch pushed 05:04Z inside a 03:14-06:14
+    freeze window) — before voiding or re-dispatching anything, check the
+    chats API message tree and the remote branch list; the dialog says
+    nothing about the worker.
