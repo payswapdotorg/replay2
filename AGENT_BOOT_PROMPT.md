@@ -808,3 +808,24 @@ rebuild.
     2026-09-11: TurboVPN auto-connected at browser start (US exit),
     browser egress 79.110.54.211 vs raw sandbox 47.57.232.232 while
     chat.z.ai loaded fine through the VPN.
+
+51. **Post-send destruction can look like success: verify server-side landing,
+    and route API diagnostics around the proxy's path-quirks.** A dispatch can
+    print "prompt sent: VERIFIED" (composer cleared, prompt text visible in
+    the body — optimistic local render) while the message POST was dropped
+    at network level ("Failed to fetch" signature through the extension-VPN
+    proxy): the chat exists server-side (agents-tab type, correct creation
+    time) with ZERO messages, and the tab later redirects home. Verify
+    landing after every send: the page DOM is ground truth (a session URL
+    with the prompt + an assistant placeholder/loading dots = landed).
+    API-quirk map for in-page diagnostics (proxy drops some paths at network
+    level while others pass): GET /api/v1/chats is DROPPED, GET
+    /api/v1/chats/ (trailing slash) works; GET /api/v1/models dropped;
+    root + others fine. The chat-detail endpoint NEVER includes messages
+    (separate messages API) — "messages=0" there proves nothing. When a
+    modal's UI buttons refuse to act on coordinate clicks (sandbox Release
+    buttons), a DOM .click() via Runtime.evaluate works. Capacity popups
+    can self-close before you reach them — re-check state before acting.
+    Session chat-id ROLLS (ec524ffc -> 958f426a -> 6e507406 observed)
+    while content persists — track sessions by TAB id + registry, not by
+    chat id.
