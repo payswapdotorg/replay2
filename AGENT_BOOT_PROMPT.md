@@ -551,3 +551,37 @@ rebuild.
     (dispatch_worker._find carries it onto the resolved record; §3.8).
     send() then works against the fresh tab. The chat session itself
     was never dead — only the tab's renderer.
+
+36. **A worker turn can FREEZE mid-stream: chats-API shows the
+    in-flight assistant message EMPTY for the whole turn, so n=2 /
+    lastRole=assistant / len 0 is NOT proof of death — and NOT proof
+    of life.** The only liveness ground truth during an in-flight turn
+    is the DOM: sample `document.body.innerText.length` ~60-90s apart
+    (growth = LIVE; static + no Stop button = FROZEN). 2026-09-11
+    incident: wo-060 streamed 4h of work (194K chars of transcript in
+    the DOM — tool calls, test runs, file writes), the platform
+    interrupted, the stream froze, and the server committed NOTHING
+    (assistant placeholder stayed len 0; the streamed content lived
+    only in the renderer). monitor_wave.py now pairs every chat-API
+    poll with dom_state() (bodyLen + Stop + a FROZEN(n) counter) —
+    4+ consecutive no-growth polls flag a dead turn. FIRST ACTION on
+    suspected freeze: dump the DOM transcript to a file
+    (`document.body.innerText` via CDP) — it is the only surviving
+    record of what the worker did and feeds the revival directive.
+
+37. **Reviving a frozen turn: refresh, then re-send — and expect the
+    first send to stage-without-sending.** Sequence that worked:
+    (a) dump the DOM transcript (see 36); (b) write a revival
+    directive that re-orients the worker from its SANDBOX (git status/
+    diff vs dispatch base) — the sandbox survives the interruption
+    even though the chat context does not; include the exact
+    freeze-point state extracted from the DOM dump (which tests were
+    failing, what the last command was); (c) send it — the first send
+    will likely be STAGED-NOT-SENT (browser-verified composer-cleared
+    + body grew, but chats-API n did NOT grow): the dead turn's
+    placeholder message blocks the queue; (d) `Page.reload` the tab —
+    this drops the staged bubble and the frozen stream (already
+    dumped — zero loss) and resyncs the UI to server truth; (e) re-send
+    the directive — n grows, a fresh assistant placeholder appears and
+    the turn starts streaming. Lesson 33's chats-API verification is
+    what catches (c): never trust a single browser-level send proof.
