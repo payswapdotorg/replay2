@@ -509,3 +509,45 @@ rebuild.
     session `/c/<uuid>`. A tab still on its session URL is alive; only a
     redirect to home (or a URL missing from the tabs list AND the chats
     API) is death. Use patient_check.py for busy-tab polling.
+
+## Lessons 32-35 (2026-09-11 — D-08 wave A takeover session)
+
+32. **Workers stall after the evidence-doc push — put the FULL delivery
+    chain in the original dispatch prompt.** Wave-A pattern (3/3
+    workers): implement → push branch → push evidence doc →
+    chat goes silent (turn dies server-side) → NO PR, NO final report.
+    The chat-API `updated_at` equals the last branch push exactly — that
+    is the stall signature. Fix: the dispatch prompt itself now carries
+    steps for PR opening (curl POST /pulls with the PAT), CI polling
+    (check-rruns on the head SHA), and the final report format.
+    A stalled turn is then REVIVED by sending a completion directive
+    (send() into the same session — the new turn revives the tool
+    layer; proven 3/3).
+
+33. **"message sent: VERIFIED" can lie — verify sends against the chats
+    API, not the DOM.** A capacity popup can swallow the Enter AFTER the
+    body-grew proof: the transcript shows the full prompt (staged) but
+    the chats API stays at n=2 (no new user message). Ground truth =
+    `fetch('/api/v1/chats/{cid}')` message count. If n did not grow,
+    re-send (the send() staged-rejected path re-fires the composer).
+
+34. **A live fixed-position capacity modal on a WORKER's continuation
+    blocks its turn; Cancel + re-Enter the staged composer revives it.**
+    The modal ("peak hours / switch to GLM-5.3-Flash") re-arms on the
+    worker's own turn retry. The recovery loop (capacity_recover.py):
+    every 60s, if a live modal (position:fixed, zIndex>=500) exists →
+    click Cancel → if the composer holds >40 staged chars → focus +
+    Enter. NEVER click "Switch to GLM-5.3-Flash" (worker model contract
+    is GLM-5.3). Proven on two sessions. Distinguish stale transcript
+    TEXT from a LIVE modal: only fixed-position overlays block.
+
+35. **A tab whose CDP websocket times out is recoverable: close +
+    reopen + registry `tab-reopen` record.** Tab 52E24CF6 stopped
+    answering CDP evals (WebSocketTimeoutException on every connect).
+    Recovery: HTTP /json/close/<id> → channel.new_tab() (may land on
+    about:blank — navigate via location.href to the session URL) →
+    wait for the composer → append `{"action":"tab-reopen","name":...,
+    "tab_id":<new>,"url":<session-url>}` to session_registry.jsonl
+    (dispatch_worker._find carries it onto the resolved record; §3.8).
+    send() then works against the fresh tab. The chat session itself
+    was never dead — only the tab's renderer.
