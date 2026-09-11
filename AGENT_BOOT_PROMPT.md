@@ -783,3 +783,37 @@ rebuild.
     and batch-retry on a ~15-20 min cadence. Do not interpret the rejection
     as prompt/tooling failure — diagnostics (lesson 40's ladder) must run
     first.
+
+## Lesson 50 (2026-09-11 — installing the operator's VPN on Chrome for Testing)
+
+50. **The Chrome Web Store "Add to Chrome" button silently does nothing on
+    Chrome for Testing — install the extension via CRX + `--load-extension`
+    instead.** The store page renders fine, the button is clickable (JS
+    .click() and real CDP Input events both land on it — elementFromPoint
+    confirms), but the native install-confirmation dialog NEVER appears
+    (no new X window, no browser_ui CDP target, nothing in
+    chrome://extensions-internals). This stranded the operator for 20
+    minutes on the store page. Working procedure (operator-directed Turbo
+    VPN case, 2026-09-11):
+    1. `curl -o turbo.crx "https://clients2.google.com/service/update2/crx?response=redirect&prodversion=153&acceptformat=crx2,crx3&x=id%3D<EXTID>%26uc"`
+       (EXTID from the store URL).
+    2. Strip the CRX header: find `PK\x03\x04` offset, slice to a .zip,
+       unzip to a stable dir (e.g. `/home/z/turbovpn/ext`).
+    3. Add `--load-extension=<dir>` to the Chrome launch in
+       `launch_stack.py` (env `CHROME_LOAD_EXTENSION` overrides; a missing
+       dir disables the flag cleanly). Kill chrome + re-run
+       `launch_stack.py` — the supervisor's own restarts keep the flag
+       because it is the in-file default. NOTE: an unpacked extension gets
+       a PATH-DERIVED id (not the store id) — functionally irrelevant for
+       a proxy VPN.
+    4. The Turbo VPN popup auto-connects when opened: navigate a tab to
+       `chrome-extension://<id>/dist/popup/index.html` (path from the
+       unpacked manifest.json `action.default_popup`), wait ~30s, popup
+       shows CONNECTED; verify with an in-page fetch to api.ipify.org
+       (egress must change — 47.57.x/8.212.x Alibaba -> 162.19.205.94 OVH
+       in the observed case). The proxy persists via the background
+       service worker; the popup tab can stay open harmlessly.
+    Result: the generation-queue HTML-error block (lesson 45/49) cleared
+    immediately — chat writes persisted server-side right after connect.
+    What remains afterward is ordinary GLM-5.3 peak capacity (lesson 44:
+    fight-through on a batched 15-20 min cadence, never tight-loop).
