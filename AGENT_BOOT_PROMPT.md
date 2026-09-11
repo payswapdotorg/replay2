@@ -606,3 +606,29 @@ rebuild.
     exact-format final message. Proven on wo-060's second death: the
     report arrived within a minute, contract closed with DONE, and the
     merge proceeded without re-doing any work.
+
+## Lesson 40 (2026-09-11 — peak-hours capacity crisis playbook [resident-lead session])
+
+32. **Platform peak hours destroy sessions faster than dispatches can stick
+    — cycle retries with offline work, and trust the differential
+    diagnostics.** Between ~11:00-13:00 UTC (19:00-21:00 Beijing) the
+    platform entered a hard capacity crisis: EVERY new session was either
+    destroyed server-side minutes after VERIFIED send (`chats/<id>` API →
+    "chat not found"), or its generation queue rejected the request
+    (in-page "No response, Please try again later" + `SyntaxError:
+    Unexpected token '<'` — the API returned an HTML error page). Six
+    consecutive architect-rulings dispatches died this way; a ui-009
+    dispatch died the same way within 10 minutes. The diagnostic ladder:
+    (1) chats/list has the id → session exists, check `<id>` detail for
+    the message tree; (2) detail returns "chat not found" → destroyed,
+    void immediately; (3) DOM shows "No response" with the doctype
+    SyntaxError → generation queue rejection, ONE resend via
+    `dispatch_worker.py send` is worth trying, then void on repeat.
+    Earlier the same day (04:00-09:30 UTC) sessions generated fine for
+    hours — the crisis is time-of-day capacity, not prompt or tooling.
+    Playbook: void dead sessions immediately, never wait passively, but
+    batch dispatch retries every ~15-20 minutes while doing offline Tech
+    Lead work (prompt pre-drafting, state reconciliation, evidence
+    harvesting) between rounds. Sandboxes outlive sessions: ALWAYS check
+    `user-fc` workspaces + ls-tree (chatId WITHOUT the `chat-` prefix —
+    the #1 harvest-bug) before assuming work is lost.
