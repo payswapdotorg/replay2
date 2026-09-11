@@ -688,3 +688,32 @@ rebuild.
     freeze window) — before voiding or re-dispatching anything, check the
     chats API message tree and the remote branch list; the dialog says
     nothing about the worker.
+
+## Lesson 45 (2026-09-11 — operator VPN finding; SyntaxError block)
+
+45. **The generation-queue `SyntaxError: Unexpected token '<'` block is
+    IP/region-level and is SOLVED BY ROUTING THE SANDBOX EGRESS THROUGH A
+    VPN** (operator finding via Google, 2026-09-11; hard operator rules
+    same day: popups with a Cancel button are ALWAYS Cancel-then-retry,
+    never trust chat.z.ai notifications, sessions ALWAYS start in the
+    agents tab). Differential diagnosis of the "No response, Please try
+    again later" family:
+    - General API (GET /api/v1/chats/list unauthenticated) returns proper
+      JSON 403 from the same box while the generation path serves an HTML
+      error page → the block is scoped to the generation route, not a
+      wholesale WAF block; VPN changes the region/cluster routing and
+      clears it.
+    - Sandbox egress can already rotate between datacenter IPs
+      (observed 47.57.242.119 <-> 8.212.10.159, both Alibaba) —
+      per-connection IP flapping is ROUTINE and is NOT a VPN signal;
+      only a genuinely NEW egress IP indicates operator VPN action.
+    - Do NOT grind retries against this block: one attempt per the
+      lesson-40 ladder, then stop — failed generation attempts can re-arm
+      cooldown windows (lesson 16) and a browser-VERIFIED nudge can stage
+      in the DOM without persisting (chats API n stays flat; lesson 33).
+    - Tooling: `scripts/vpn_probe.py` (detached via
+      `scripts/launch_vpn_probe.py`) passively logs every 60s: egress IP
+      (NEW-EGRESS-IP marker = possible VPN), watched session DOM state
+      (len/STREAM/FINAL/ERR) and server-side liveness via the in-page
+      chats API. It NEVER sends. On VPN-ON (new IP) or block lapse: send
+      ONE retry nudge, verify chats-API n grows, then monitor normally.
