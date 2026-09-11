@@ -25,9 +25,13 @@ def main():
     cid = sys.argv[1]
     js = f"""
     (async () => {{
-      const r = await fetch('/api/v1/chats/{{cid}}', {{credentials:'include'}});
-      const t = await r.text();
-      return t.slice(0, 400000);
+      // 2026-09-11 fix: Bearer token required — cookie-only auth returns an
+      // EMPTY message tree (false '0 messages' verdicts). localStorage 'token'
+      // is a raw JWT string.
+      const t = localStorage.getItem('token') || '';
+      const r = await fetch('/api/v1/chats/{cid}', {{credentials:'include', headers: {{'Authorization': 'Bearer ' + t}}}});
+      const t2 = await r.text();
+      return t2.slice(0, 400000);
     }})()
     """
     raw = page_eval(js, timeout=60)

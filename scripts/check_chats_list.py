@@ -13,10 +13,12 @@ import channel
 
 JS = """
 (async () => {
-  const token = JSON.parse(localStorage.getItem('token') || '{}');
-  const t = token.accessToken || token.token || Object.values(token)[0] || '';
+  // 2026-09-11 fix: localStorage 'token' is a RAW JWT string now — JSON.parse
+  // throws ('Unexpected token e') and every diagnostic silently went blind.
+  const t = localStorage.getItem('token') || '';
   const r = await fetch('/api/v1/chats/list?limit=100', {
-    headers: { 'Authorization': 'Bearer ' + (typeof t === 'string' ? t : '') }
+    credentials: 'include',
+    headers: { 'Authorization': 'Bearer ' + t }
   });
   const j = await r.json();
   return JSON.stringify(j);
@@ -32,7 +34,7 @@ def main():
         return 1
     c = channel.CDP(tab['webSocketDebuggerUrl'], timeout=30)
     try:
-        result = c.eval(JS, timeout=30000)
+        result = c.eval(JS, await_promise=True, timeout=30000)
         data = result if isinstance(result, (dict, list)) else json.loads(result)
     finally:
         c.close()

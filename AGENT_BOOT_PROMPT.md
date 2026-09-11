@@ -717,3 +717,69 @@ rebuild.
       (len/STREAM/FINAL/ERR) and server-side liveness via the in-page
       chats API. It NEVER sends. On VPN-ON (new IP) or block lapse: send
       ONE retry nudge, verify chats-API n grows, then monitor normally.
+
+## Lessons 46-49 (2026-09-11 — rulings harvest + RTN materialization session)
+
+(Overlap note: remote lesson 45 / vpn_probe.py covers the generation-queue block from the monitoring angle; 49 below adds the diagnostics + operator-inbox playbook.)
+
+46. **localStorage 'token' is now a RAW JWT string — JSON.parse(token) throws
+    and every chats-API diagnostic silently went blind.** The stored value
+    changed shape (raw "eyJhbGci..." string, not a JSON object with
+    accessToken). JSON.parse throws SyntaxError inside the async fn → the
+    promise rejects → eval returns {} → scripts print "total chats: 0" /
+    "0 messages" with NO error surfaced. Cookie-only auth
+    (credentials:'include' without Bearer) ALSO returns an EMPTY message
+    tree — false "0 messages" verdicts. Fix everywhere: `const t =
+    localStorage.getItem('token') || ''` + Authorization Bearer header.
+    ALSO: check_session_detail.py had a latent f-string bug — `{{cid}}` in
+    an f-string renders LITERAL `{cid}` in the URL → 404 → "0 messages"
+    FOREVER (the script had never actually worked; nobody had validated it
+    against a known-good chat). And check_chats_list.py called
+    c.eval(JS) WITHOUT await_promise → the Promise serialized to {} →
+    "0 chats". Lesson: validate diagnostics against a KNOWN-GOOD target
+    before trusting a negative result.
+
+47. **The DOM collapses long messages — the authoritative harvest channel
+    is POST /api/v1/chats/{cid}/messages/batch.** document.body.innerText
+    showed only ~1/3 of the Architect's 31.5K-char rulings document (mid-
+    document truncation + "Show full message" affordances). The chat tree
+    API (/api/v1/chats/{cid}) carries content for OLD messages only; the
+    live turn's content lives in the batch endpoint: POST with
+    {"ids":[<message-id>,...]} (Bearer auth) → data[<id>].content_blocks =
+    an array of typed blocks (text | tool_calls | reasoning); the LAST
+    text block is the final message, complete. This recovered the rulings
+    byte-perfect. Find message ids via the tree API's history.messages.
+    Also: a turn that rendered complete in the DOM persisted after reload
+    (server DID commit it) even though the tree API still showed the
+    placeholder without content — commit and tree-content land at
+    different times; the batch endpoint is the truth.
+
+48. **Render-refusal wedge: a chat whose generation-queue request was
+    dropped (user message in tree, NO assistant placeholder) becomes
+    client-unrenderable — PERMANENTLY.** /c/<uuid> redirects to home
+    (verified unchanged 2h later); the sidebar may not even list it. The
+    chat EXISTS in the API — this is NOT lesson 31's death certificate
+    (destroyed = 404/500). No composer reachable → unrevivable via
+    browser → void. CRITICAL corollary: do NOT Page.reload a live tab
+    whose chat has NO assistant placeholder — ui-009f rendered fine for
+    20 minutes, and the reload itself wedged it (the fresh SPA boot
+    bounces placeholder-less chats home). Only reload chats whose turn
+    placeholder exists (the rulings chat survived reload+resend). The
+    revival sequence (37) works ONLY for chats with an existing assistant
+    placeholder.
+
+49. **Generation-queue geo degradation = the operator's "syntax error"
+    notifications; the VPN is the fix and it is OPERATOR-side.** The queue
+    returns HTML error pages — in-page "No response, Please try again
+    later." + "SyntaxError: Unexpected token '<', \"<!doctypeh...\" is not
+    valid JSON" (the frontend parsing an HTML block page as JSON). The
+    operator's Google-search finding applies: a VPN solves it (geo-based
+    degradation). No VPN tooling exists on the box (no openvpn/wireguard/
+    proxy). Established mid-generation turns survive; NEW turns get
+    rejected — including kicks sent into rolled replacement chats. Playbook:
+    surface the VPN request to the operator inbox IMMEDIATELY (include the
+    exact error signatures as evidence), stop grinding dispatches (44),
+    pre-build the next prompts so dispatch is instant when egress changes,
+    and batch-retry on a ~15-20 min cadence. Do not interpret the rejection
+    as prompt/tooling failure — diagnostics (lesson 40's ladder) must run
+    first.

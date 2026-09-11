@@ -380,6 +380,28 @@ def _active_session_keywords(extra=None):
             if wo != n:
                 kws.append(wo)
                 kws.append(wo.upper())  # 'wo-009' -> 'WO-009'
+        # 2026-09-11 fix (lesson-42 recurrence: rulings sandbox row title
+        # 'RTN Plan Rulings: 5 Open Questions' matched NO keyword — the modal
+        # shows the platform-transformed CHAT TITLE, not the session name or
+        # UUID). Two extra derivations per live session:
+        #   (a) every name word >=5 chars, lowercased ('architect-rulings-5'
+        #       -> 'architect', 'rulings' — 'rulings' matches the row title)
+        #   (b) the prompt file's first-line work-item prefix ('# UI-009 —
+        #       ...' -> 'ui-009') for rows titled from the prompt head
+        for w in re.split(r"[^A-Za-z0-9]+", n or ""):
+            if len(w) >= 5:
+                kws.append(w.lower())
+        pf = s.get("prompt_file") or ""
+        if pf and os.path.isfile(pf):
+            try:
+                with open(pf, "r", errors="replace") as fh:
+                    first = fh.readline().strip()
+                first = re.sub(r"^#+\s*", "", first)
+                prefix = re.split(r"\s+[—–-]\s+", first)[0].strip()
+                if prefix and len(prefix) >= 3:
+                    kws.append(prefix.lower())
+            except Exception:
+                pass
         # the session UUID from the recorded URL (modal rows use it as name)
         u = s.get("url") or ""
         if "/c/" in u:
