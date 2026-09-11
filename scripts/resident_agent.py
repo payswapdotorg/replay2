@@ -188,6 +188,40 @@ def registry_sessions():
     return [(n, latest[n]) for n in order]
 
 
+def live_worker_sessions():
+    """Sessions whose CREATE record has not been invalidated (void/failed/done).
+
+    dispatch_worker semantics: a later void/failed/done record invalidates
+    every earlier create; a SEND record (sent true OR false — e.g. a
+    rate-limited continuation attempt) does NOT invalidate anything. The
+    authoritative tab_id is the latest create/tab-reopen record's.
+    """
+    sessions = {}
+    try:
+        for l in open(REG, encoding="utf-8").read().split("\n"):
+            if not l.strip():
+                continue
+            try:
+                d = json.loads(l)
+            except Exception:
+                continue
+            n = d.get("name")
+            if not n:
+                continue
+            a = d.get("action")
+            if a in (None, "create", "tab-reopen"):
+                sessions[n] = {"name": n, "tab_id": d.get("tab_id", ""),
+                               "sent": bool(d.get("sent")), "record": d}
+            elif a in ("void", "failed", "done"):
+                sessions.pop(n, None)
+            # send records never invalidate; they may refresh the tab binding
+            elif a == "send" and n in sessions and d.get("tab_id"):
+                sessions[n]["tab_id"] = d["tab_id"]
+    except Exception:
+        pass
+    return [(n, s) for n, s in sessions.items()]
+
+
 def session_live_state(rec):
     """CDP probe of a session tab: (chars, streaming, report)."""
     tab_id = rec.get("tab_id", "")
@@ -293,13 +327,10 @@ def nudge_stalled_sessions(st):
     nudged = st.setdefault("nudge_ts", {})
     lens = st.setdefault("nudge_len", {})
     freeze_until = st.get("personal_freeze_until", 0)
-    for name, rec in registry_sessions():
-        if rec.get("action") in ("void", "failed", "done"):
-            continue
-        if not rec.get("sent"):
-            continue
-        tab_id = rec.get("tab_id", "")
-        if not tab_id:
+    for name, srec in live_worker_sessions():
+        rec = srec["record"] if isinstance(srec, dict) else srec
+        tab_id = srec.get("tab_id", "") if isinstance(srec, dict) else rec.get("tab_id", "")
+        if not srec.get("sent", rec.get("sent")):
             continue
         try:
             tab = next((t for t in channel.list_tabs() if t.get("id") == tab_id), None)
