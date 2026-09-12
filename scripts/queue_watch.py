@@ -179,7 +179,7 @@ def main():
                                  f"session destroyed while queued ({st}); queue_watch assault re-dispatch"])
                 run_with_hb(name, [sys.executable, os.path.join(BASE, "dispatch_worker.py"),
                                  "create", name,
-                                 os.path.join(BASE, "worker-prompts", f"{name.replace('wo-', 'WO-')}.md")])
+                                 os.path.join(BASE, "worker-prompts", f"{name.upper()}.md")])
                 # refresh tab prefix from the registry's latest record
                 rec = dw._find(name)
                 if rec:
@@ -219,7 +219,7 @@ def main():
                                  f"staleness assault #{stuck_assaults}"])
                 run_with_hb(name, [sys.executable, os.path.join(BASE, "dispatch_worker.py"),
                                  "create", name,
-                                 os.path.join(BASE, "worker-prompts", f"{name.replace('wo-', 'WO-')}.md")])
+                                 os.path.join(BASE, "worker-prompts", f"{name.upper()}.md")])
                 rec = dw._find(name)
                 if rec:
                     tab_prefix = (rec.get("tab_id") or "")[:8]
