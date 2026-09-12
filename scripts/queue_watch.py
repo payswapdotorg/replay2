@@ -36,6 +36,12 @@ HB_PATH = os.path.join(FLAGS, "queue_watch_heartbeat.{name}")
 STUCK_ASSAULT_AFTER = 5400   # s of queued-capacity with zero progress (fresh)
 STUCK_ASSAULT_WORKRICH = 21600  # s for work-rich sessions (chars >= 15K)
 STUCK_ASSAULT_MAX = 3        # then keep waiting (peaks do end eventually)
+RL_DEFER_AFTER = 3900        # s after a rate-limit sighting before an assault
+                             # may re-dispatch (the site says 'try again 1
+                             # hour later'; rate-limited sessions get
+                             # destroyed server-side within minutes and the
+                             # home/tablost path must not churn into the
+                             # same cooldown — 2026-09-12 13:13 forensic)
 
 
 def write_spec(name, tab_prefix, marker):
@@ -57,6 +63,28 @@ def heartbeat(name):
             f.write(time.strftime("%Y-%m-%d %H:%M:%S"))
     except Exception:
         pass
+
+
+def note_ratelimit(name):
+    """Persist the last rate-limit sighting epoch (survives watcher restarts
+    via the supervisor contract — the 2026-09-12 13:07-13:18 forensic showed
+    rate-limited sessions get DESTROYED server-side within 2-6 min, which
+    used to trigger the home/tablost assault immediately: an infinite churn
+    loop that burns dispatch allowance and may extend its own cooldown)."""
+    try:
+        with open(os.path.join(FLAGS, f"queue_watch.ratelimit.{name}"), "w") as f:
+            f.write(str(time.time()))
+    except Exception:
+        pass
+
+
+def ratelimit_age(name):
+    """Seconds since the last rate-limit sighting (huge if never)."""
+    try:
+        return max(0.0, time.time() - float(
+            open(os.path.join(FLAGS, f"queue_watch.ratelimit.{name}")).read().strip()))
+    except Exception:
+        return 1e9
 
 
 def state(tab_prefix):
@@ -170,22 +198,37 @@ def main():
                 except Exception:
                     pass
                 return 0
+            if st == "rate-limited":
+                note_ratelimit(name)
             if st == "tablost" or st == "home":
-                print(f"[{name}] {stamp} session destroyed ({st}) — re-dispatching (assault)", flush=True)
-                # the dead session's registry record would make create() bail
-                # with "already exists" — void it first
-                run_with_hb(name, [sys.executable, os.path.join(BASE, "dispatch_worker.py"),
-                                 "void", name,
-                                 f"session destroyed while queued ({st}); queue_watch assault re-dispatch"])
-                run_with_hb(name, [sys.executable, os.path.join(BASE, "dispatch_worker.py"),
-                                 "create", name,
-                                 os.path.join(BASE, "worker-prompts", f"{name.upper()}.md")])
-                # refresh tab prefix from the registry's latest record
-                rec = dw._find(name)
-                if rec:
-                    tab_prefix = (rec.get("tab_id") or "")[:8]
-                    print(f"[{name}] {stamp} new session tab={tab_prefix}", flush=True)
-                    write_spec(name, tab_prefix, marker)  # keep supervisor contract fresh
+                # 2026-09-12 13:13 forensic: a rate-limited session is destroyed
+                # server-side within minutes; assaulting then re-dispatches into
+                # the SAME cooldown — infinite churn that burns allowance and
+                # possibly extends the lockout. Defer the assault until the
+                # cooldown window (65 min from the last rate-limit sighting)
+                # has passed.
+                rl_age = ratelimit_age(name)
+                if rl_age < RL_DEFER_AFTER:
+                    print(f"[{name}] {stamp} session destroyed ({st}) while account "
+                          f"rate-limited (last sighting {int(rl_age)}s ago) — DEFERRING "
+                          f"re-dispatch {int(RL_DEFER_AFTER - rl_age)}s (churn guard)",
+                          flush=True)
+                else:
+                    print(f"[{name}] {stamp} session destroyed ({st}) — re-dispatching (assault)", flush=True)
+                    # the dead session's registry record would make create() bail
+                    # with "already exists" — void it first
+                    run_with_hb(name, [sys.executable, os.path.join(BASE, "dispatch_worker.py"),
+                                     "void", name,
+                                     f"session destroyed while queued ({st}); queue_watch assault re-dispatch"])
+                    run_with_hb(name, [sys.executable, os.path.join(BASE, "dispatch_worker.py"),
+                                     "create", name,
+                                     os.path.join(BASE, "worker-prompts", f"{name.upper()}.md")])
+                    # refresh tab prefix from the registry's latest record
+                    rec = dw._find(name)
+                    if rec:
+                        tab_prefix = (rec.get("tab_id") or "")[:8]
+                        print(f"[{name}] {stamp} new session tab={tab_prefix}", flush=True)
+                        write_spec(name, tab_prefix, marker)  # keep supervisor contract fresh
             # progress bookkeeping + staleness-assault policy
             if ln != last_len:
                 rounds_since_progress = 0
