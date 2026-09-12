@@ -806,7 +806,14 @@ def create(name, prompt_file):
                 except Exception:
                     tab = channel.new_tab() or tab
                     c = channel.CDP(tab["webSocketDebuggerUrl"], timeout=30)
-                c.call("Page.navigate", {"url": CHAT_URL}, timeout=30)
+                try:
+                    c.call("Page.navigate", {"url": CHAT_URL}, timeout=30)
+                except Exception:
+                    # reconnect landed on a dead ws — force a brand-new tab
+                    # (2026-09-12: this call killed 4 consecutive creates)
+                    tab = channel.new_tab() or tab
+                    c = channel.CDP(tab["webSocketDebuggerUrl"], timeout=30)
+                    c.call("Page.navigate", {"url": CHAT_URL}, timeout=30)
                 print(f"[assault {assault_round}/{CAPACITY_ROUNDS}] popup cancelled — "
                       f"re-picking selections and re-sending")
 
