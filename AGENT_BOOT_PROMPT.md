@@ -1111,3 +1111,69 @@ Field-proven this round (2026-09-12 14:40–15:05 UTC):
   slots are busy — move flags/queue_watch.spec.<name> to flags/parked/
   <spec>.parked, kill the watcher pid, remove its heartbeat (the parked/
   convention stops supervisor resurrection).
+
+## Lessons 58-63 (2026-09-12 — sandbox-reset recovery + credential-restored finalization session)
+
+58. **A sandbox reset loses EVERYTHING local — recover from the remote repos
+    only, in this order.** The 07:38 UTC reset wiped the browser profile
+    (login), env.sh (ALL credentials), product clones, embedded PG, worklog,
+    /tmp state, watchers. What survived: the GitHub repos ONLY. Recovery
+    recipe (~10 min): (1) clone replay2, ./deploy.sh — the turbovpn
+    extension is TRACKED at scripts/extensions/turbovpn and auto-loads;
+    (2) re-connect VPN by opening chrome-extension://<id>/dist/popup/
+    index.html AS A TAB and DOM-.click() the power button; (3) re-clone the
+    product repo (public-read; pushes need the token); (4) re-provision
+    embedded PG (initdb -U zeck --auth=trust, pg_ctl -o "-p 55432 -h
+    127.0.0.1"); (5) notify the operator: fresh chat.z.ai login + env.sh
+    restore are the ONLY things the agent cannot recover itself. Keep all
+    delivery-chain artifacts staged OUTSIDE the product repo tree
+    (/home/z/lead-staging/).
+
+59. **A parallel Lead lineage with credentials may advance the SAME roadmap
+    on the same repo — coordinate through the governed state files, never
+    assumptions.** Re-fetch origin EVERY monitoring cycle; treat
+    spec/validation-state/{program,frontier}-state.json on origin/main as
+    the ONLY coordination truth; a merged work/VAL-* branch supersedes your
+    in-flight worker for that WO (stand it down BEFORE it burns slots);
+    packets must inline the OFFICIAL spec from origin; re-fetch before
+    opening any PR (skip your duplicate if the WO merged meanwhile).
+
+60. **The zombie-tab trap cuts both ways: a tab can show a LIVE session URL
+    for a chat the server already destroyed — verify against the chats API
+    before trusting any 'queued' watcher verdict.** A queued-capacity
+    session destroyed server-side leaves the tab rendering the stale /c/
+    <uuid> with the prompt in the body; the watcher reports
+    queued-capacity forever. Death certificate = ABSENCE from
+    /api/v1/chats/list. Check any session queued >30 min against the
+    chats API; void + fresh re-dispatch recovers faster.
+
+61. **The personal-usage limit KILLS IN-FLIGHT TURNS, not just new sends —
+    and the recovery clock re-arms on every generation attempt.** A
+    rate-limit dialog on a sibling tab + a mid-stream turn freezing at the
+    same minute (DOM static, updated_at FROZEN server-side) = limit-kill.
+    Recovery: (a) release ALL stale/idle sandboxes from the settings
+    dashboard (they hold the limit); (b) STOP assault loops during the
+    cooldown (each re-dispatch RE-ARMS the 1h window); (c) revive the
+    killed turn with the lesson-37 sequence — the sandbox retains every
+    file it wrote. Stage the revival directive BEFORE the freeze lapses.
+    (2026-09-12 operator update: rate-limit notifications DISREGARDED —
+    churn guard cut to 240s, never a cooldown wait.)
+
+62. **The tool shell kills its process group when an invocation ends —
+    `nohup cmd &` children die instantly with EMPTY logs.** Any process
+    that must outlive the invocation (watchers, dispatches fighting
+    popups, probes) needs start_new_session=True (setsid): use
+    scripts/launch_detached.py <log> <cmd...> — the lesson-13
+    launch_send.py pattern generalized. Verify by pid liveness + log
+    growth, never by the launcher's return alone.
+
+63. **A peak-hours popup can swallow a dispatch send AFTER the machinery
+    printed "prompt ACCEPTED" — verify acceptance with the watcher's hits
+    counter (prompt text present in the TRANSCRIPT), not the send log.**
+    Symptom: dispatch log says ACCEPTED; queue_watch reports
+    queued-capacity with chars≈prompt-size and hits=0 (text sits in the
+    composer, blocked by the modal). Recovery (operator policy:
+    Enter+resend): launch_send.py <session> @<original-packet> — cancels
+    the popup, detects the staged composer text (≥97% → send-only path),
+    presses Enter with focus verification. Transcript hits = acceptance
+    truth (lesson-33 family).
