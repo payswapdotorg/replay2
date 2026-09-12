@@ -907,7 +907,7 @@ def create(name, prompt_file):
                 cid = (url or "").split("/c/")[-1].split("/")[0].split("?")[0]
                 exists_server = False
                 try:
-                    ev = _eval(c, r"""(async () => {
+                    ev = c.eval(r"""(async () => {
                       const m = location.href.match(/\/c\/([0-9a-f-]{36})/);
                       if (!m) return JSON.stringify({err: 'no-chat-url'});
                       const tok = (localStorage.getItem('token') || '').replace(/^"|"$/g, '');
@@ -924,7 +924,7 @@ def create(name, prompt_file):
                         }
                       }
                       return JSON.stringify({exists: true, userLen: userLen});
-                    })()""", timeout=30)
+                    })()""", await_promise=True, timeout=30)
                     evd = json.loads(ev or "{}")
                     if evd.get("exists") and evd.get("userLen", 0) > 100:
                         exists_server = True
@@ -1333,7 +1333,7 @@ def send(name, message):
                   return JSON.stringify({role: last ? last.role : null, len: txt.length,
                     nullish: txt.length <= 10, landed: !!landed});
                 })()"""
-                vr = json.loads(_eval(c, verify_js, timeout=30) or "{}")
+                vr = json.loads(c.eval(verify_js, await_promise=True, timeout=30) or "{}")
                 if vr.get("err"):
                     reason = "server-verify: " + vr["err"]
                     ok = False
