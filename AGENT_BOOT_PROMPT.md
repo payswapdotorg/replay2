@@ -1416,3 +1416,21 @@ prober), spaced_send.py (patient retry loop), launch_detached.py
     record. Discriminator for "composer emptied": consumed-by-roll =
     composer 0 + URL changed + transcript `hasPrompt` true (SUCCESS);
     lost-message = composer 0 + URL unchanged (needs re-insert).
+
+## Lesson 77 (2026-09-12 — sandbox-reset port: sentinel hardening must reach GitHub)
+
+77. **The unhardened suspension sentinel misfires on chrome-error:// pages —
+    and an unpushed hotfix dies with its sandbox.** The original 9255580
+    hardening (net-error classification + two-consecutive-open gate + 0/3
+    resume) lived only in the lost sandbox; the fresh clone re-shipped the
+    vulnerable sentinel. Ported and pushed same-day this time. Rules:
+    (a) chrome-error:// URLs, net-error body markers, blank shells and
+    off-site URLs classify as net-error — NEVER "open"; (b) the dispatch
+    plan fires only after TWO consecutive genuine open probes; (c) a 0/3
+    dispatch round resumes watching (600s cadence, backing off to 1800s
+    after three consecutive 0/3 rounds — batch, never grind); (d)
+    account-level truth is the chats API (403 = wall, 200 = lifted) — a
+    rendered home page alone proves nothing, and an empty 200 chats list
+    means a fresh/wiped account, not a block. Push infra hotfixes to
+    GitHub IMMEDIATELY — a hotfix that exists only locally is a hotfix
+    the next sandbox reset deletes.
