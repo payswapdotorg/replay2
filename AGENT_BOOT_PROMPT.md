@@ -873,3 +873,118 @@ rebuild.
     design; the replay console occupies 3100 on the lead's box — run local
     e2e with `ORBB_WEB_E2E_PORT=<free-port>` (the playwright config reads
     that env).
+
+## PROJECT HANDOFF — Zeck validation sprint (2026-09-12, session e0879e54)
+
+This section is project-specific handoff state for the next resident Tech Lead
+agent continuing the Zeck validation program. The operator said: "He will have
+access to the same account and sessions in the replay."
+
+### A. Program state (verified at head f7d5480)
+
+- Repo: /home/z/Zeck (GitHub payswapdotorg/zeck, creds in git credential
+  store; secrets in /home/z/.secrets/env.sh sourced via ~/.bashrc — NEVER
+  commit any of it).
+- Roadmap: docs/VALIDATION-ROADMAP.md — VAL-000..VAL-052, 53 work orders.
+- Governing contract: docs/LLM-VALIDATION-TECH-LEAD-CONTRACT.md (concurrency,
+  customer boundaries, issue/plan protocol, governance checks).
+- State files: spec/validation-state/{program,frontier,dependency}-state.json
+  — the ONLY truth for done/eligible/blocked.
+- DONE: VAL-001..013 (13/53) — the app-portfolio wave 010 (text apps),
+  011 (RAG), 012 (tool-agent/multi-step), 013 (long-running/resumable) are
+  all merged via PRs #56, #61, #59, #62 with REAL provider dispatches.
+  CI: three workflows green on every merge. 16 merged PRs total.
+- ELIGIBLE NOW: VAL-017 (VLM / image-recognition / audio apps). Spec already
+  issued + GitHub issue #55 exists. After VAL-017: VAL-014/015/016/018/019
+  need spec issuance (they depend on VAL-009 which is complete — issue them
+  in the finalization commit of VAL-017 per the established pattern).
+- Embedded PostgreSQL 16.4 runs at 127.0.0.1:55432 (zonky, data at
+  ~/.local/embedded-pg). If down: pg_ctl start it per VAL-008 notes.
+- The delivery chain pattern that works (VAL-010..013 precedent): branch
+  work/VAL-0XX at current main → implement app + platform driver + corpus
+  fixtures with exact ground truth + unit tests + crown integration test
+  over the REAL served API + REAL gateway dispatch (OpenRouter via env
+  credential) → full battery (typecheck/lint/unit/architecture/integration
+  + governance + validation checks) → evidence doc → PR → CI poll →
+  squash-merge → finalization commit (mark complete + issue next specs +
+  create GitHub issues) → push. Keep the push token transient; never in
+  the repo.
+
+### B. The one live defect + leftover
+
+- /home/z/Zeck/benchmarks/validation/apps/shared/media.ts is UNTRACKED
+  prep for VAL-017 (deterministic synthetic media: PNG canvas writer +
+  WAV tone synthesis, all pure/deterministic). It has ONE syntax bug:
+  `return Buffer.concat(ader, data]);` in synthesizeWav must be
+  `return Buffer.concat([header, data]);`. Fix, reuse (imageFixture keys
+  scene-001/scene-004/img-c-001..003, audioFixture event-001/002,
+  mediaDigest), and include it in the VAL-017 branch.
+
+### C. Provider truth (verified live, 2026-09-11/12)
+
+- The operator's Qwen key (in /home/z/.secrets/env.sh as QWEN/DASHSCOPE)
+  is a dashscope-INTERNATIONAL credential — the CN endpoint 401s;
+  https://dashscope-intl.aliyuncs.com WORKS (text: qwen-flash; VLM:
+  qwen-vl-plus — 64x64 PNG minimum, 1x1 is rejected; ASR: qwen3-asr-flash
+  via multimodal-generation data-URI; image: qwen-image-2.0 via
+  multimodal-generation; video: wan2.2-t2v-plus via video-synthesis with
+  X-DashScope-Async header, size param omitted). Account is free-tier:
+  qwen-turbo/plus 403 (quota) but specialized fleets serve fine.
+- OpenRouter (credential in env.sh) is the proven REAL dispatch rail used
+  by VAL-010..013 (llama-3.3-70b open-weights route was the workhorse).
+  ARK keys the operator supplied are malformed (rejected format) — surfaced
+  to the operator; do not burn time there.
+- VAL-017 needs a multimodal dispatch binding: src ModelRequest contract is
+  text-only today; extend it for image/audio payloads (OpenRouter vision
+  models + dashscope-intl audio both reachable with env credentials).
+- z-ai-web-dev-sdk exists in the sandbox (chat/VLM/TTS/ASR/image/edit/
+  video) with /etc/.z-ai-config — an authorized fallback provider, usable
+  from backend code only.
+
+### D. Session/infra state for this handoff
+
+- Replay stack: Xvfb+Chrome CDP :9222 UP, replayd :3100 UP, console :3000
+  UP, watchdog pair alive. The chat.z.ai browser session is LOGGED IN
+  (never logged out; operator confirmed). Turbo VPN extension may or may
+  not still be connected — check egress via an in-page fetch if new
+  dispatches hit the generation-queue HTML block (lesson 45/49/50).
+- No worker sessions were dispatched by the last two sessions — VAL-009
+  through VAL-013 were implemented by the resident Tech Lead DIRECTLY
+  (faster and more robust than worker dispatch for this repo: the
+  environment has bun, the repo, PG, and credentials locally; every
+  worker dispatch costs platform-capacity risk). RECOMMENDATION: keep
+  implementing directly; use worker dispatch only if tooling allows and
+  the operator asks for parallelism.
+- THE CRITICAL OPERATING CONDITION of the last session: the agent↔sandbox
+  TOOL BRIDGE suffered long "403 broken session" outages (hundreds of
+  consecutive failures) with brief recovery windows (minutes). When the
+  bridge drops: KEEP RETRYING with cheap `echo` probes and do durable work
+  in the windows — each window may be only a few tool calls long, so
+  make every call count (batch state checks into one command; write files
+  with single heredocs; append worklog sections atomically). The user
+  knows about this and approved continuing regardless. Redeploying
+  replay2 does NOT fix the tool bridge (it is platform-side, upstream of
+  the sandbox) — only the operator/platform can heal it.
+- Operator standing orders (2026-09-12): continue until the whole roadmap
+  is done; find ways around limitations; alternatives to any provider are
+  acceptable; if a login/human-check is needed, open the site in the
+  replay browser and the operator will handle it; do not stop until the
+  operator replies.
+
+### E. Immediate next actions (in order)
+
+1. Fix media.ts syntax bug (one-line fix) and land it in the VAL-017
+   branch.
+2. Implement VAL-017 per spec (issue #55): multimodal ModelRequest
+   binding + vision/audio customer apps over the synthetic media corpus +
+   per-row ground-truth oracles (containsText from fixture annotations) +
+   REAL VLM dispatch (OpenRouter vision or qwen-vl-plus) + crown
+   integration test. Full battery, PR, merge, finalize.
+3. In the VAL-017 finalization: issue specs + GitHub issues for the next
+   eligible wave (VAL-014, 015, 016, 018, 019 — check dependency-state
+   against the roadmap before issuing).
+4. Continue wave by wave to VAL-052. Reliability stage (VAL-020+) and
+   economics (VAL-03x) follow the roadmap docs.
+5. Append every milestone to /home/z/my-project/worklog.md (append-only,
+   `---` sections) — the shared cross-agent worklog.
+
