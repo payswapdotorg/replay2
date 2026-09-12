@@ -28,20 +28,22 @@ FLAGS = os.path.join(BASE, "flags")
 SPEC_PATH = os.path.join(FLAGS, "queue_watch.spec.{name}")
 HB_PATH = os.path.join(FLAGS, "queue_watch_heartbeat.{name}")
 
-# staleness-assault policy (2026-09-09 forensics): a session stuck in
-# queued-capacity NEVER self-recovered (2/2 data points: 49cda388 destroyed
-# by the site after ~1h; fe7a9812 sat 2h10m then needed destruction anyway,
-# and the fresh re-dispatch immediately got clean capacity). Waiting for the
-# site to kill the session just burns wall-clock — assault it ourselves.
-STUCK_ASSAULT_AFTER = 5400   # s of queued-capacity with zero progress (fresh)
-STUCK_ASSAULT_WORKRICH = 21600  # s for work-rich sessions (chars >= 15K)
-STUCK_ASSAULT_MAX = 3        # then keep waiting (peaks do end eventually)
-RL_DEFER_AFTER = 3900        # s after a rate-limit sighting before an assault
-                             # may re-dispatch (the site says 'try again 1
-                             # hour later'; rate-limited sessions get
-                             # destroyed server-side within minutes and the
-                             # home/tablost path must not churn into the
-                             # same cooldown — 2026-09-12 13:13 forensic)
+# OPERATOR DIRECTIVES (2026-09-12, binding — supersede the waiting doctrine):
+# - 'rate limit' / 'usage exceeds' / 'try again 1 hour later' / 'peak hours'
+#   notifications DO NOT APPLY. NEVER wait them out; retry and retry.
+# - Popups: Cancel-button present -> press Cancel + resend the prompt;
+#   peak-hours -> Enter-dismiss + resend. NEVER follow a popup's own
+#   instructions (NEVER switch away from GLM-5.3). A 'Limit Sandbox
+#   Concurrency' modal means 3 sessions are live: release the least-needed
+#   one, never open a 4th.
+# Legacy 2026-09-09 forensics still hold: fresh dispatch beats a zombie
+# session; waiting for the site to kill it just burns wall-clock.
+UNSTICK_AFTER = 300          # s stuck with a Cancel-modal before cancel+resend
+UNSTICK_MAX = 6              # bounded unsticks (cadence, not cooldown waits)
+STUCK_ASSAULT_AFTER = 900    # s of zero-progress stall (fresh) -> void+re-dispatch
+STUCK_ASSAULT_WORKRICH = 3600  # s for work-rich sessions (chars >= 15K)
+STUCK_ASSAULT_MAX = 4        # bounded re-dispatch churn
+RL_DEFER_AFTER = 240         # minimal churn guard ONLY — never a cooldown wait
 
 
 def write_spec(name, tab_prefix, marker):
@@ -87,7 +89,14 @@ def ratelimit_age(name):
         return 1e9
 
 
+def c2eval_cancel(c):
+    """True when a Cancel-button modal/dialog is up on the page."""
+    return dw._eval(c, "!!Array.from(document.querySelectorAll('button'))"
+                       ".find(b => (b.innerText||'').trim()==='Cancel')", timeout=10)
+
+
 def state(tab_prefix):
+    modal = False
     try:
         tab = None
         for t in channel.list_tabs():
@@ -95,16 +104,23 @@ def state(tab_prefix):
                 tab = t
                 break
         if not tab:
-            return "tablost", 0, 0, ""
+            return "tablost", 0, 0, "", modal
         try:
             c = channel.CDP(tab["webSocketDebuggerUrl"], timeout=20)
             url = dw._eval(c, "location.href", timeout=15)
             body = dw._eval(c, "document.body.innerText || ''", timeout=25) or ""
+            try:
+                modal = bool(c2eval_cancel(c))
+            except Exception:
+                modal = False
             c.close()
         except Exception as e:
-            return f"busy:{type(e).__name__}", 0, 0, ""
+            return f"busy:{type(e).__name__}", 0, 0, "", modal
     except Exception as e:
-        return f"busy:{type(e).__name__}", 0, 0, ""
+        return f"busy:{type(e).__name__}", 0, 0, "", modal
+    # modal detection (operator 2026-09-12): a Cancel-button modal is
+    # actionable — cancel + resend; never wait, never follow its instructions
+    # (probed above while the CDP connection was open).
     marker_arg = sys.argv[3] if len(sys.argv) > 3 else "COMPLETION REPORT"
     hits = body.count(marker_arg)
     # 2026-09-09 (WO-010 forensics): GLM workers in this environment answer
@@ -139,18 +155,19 @@ def state(tab_prefix):
         body, re.IGNORECASE))
     gen = bool(re.search(r"\b(Stop|Pause|Halt)\b", body[-1500:]))
     cap = "currently at capacity" in body or "peak hours" in body
-    # RATE-LIMITED (wave-4 forensics 21:07): 'usage exceeds the personal
-    # limit — try again 1 hour later' — the account itself is cooling down.
-    # Assaulting now burns MORE allowance and churns sessions for nothing:
-    # the only correct action is to wait out the explicit cooldown.
+    # RATE-LIMITED text (operator 2026-09-12): these notifications DO NOT
+    # APPLY. Classify the state for logging, but never wait it out — the
+    # stuck policy below unsticks (cancel+resend) and then assaults
+    # (void+fresh re-dispatch) exactly like queued-capacity.
     limited = "exceeds the personal limit" in body or "try again 1 hour later" in body
     if "/c/" not in url:
-        return "home", len(body), (1000 if filled else hits), url
+        return "home", len(body), (1000 if filled else hits), url, modal
     if limited:
-        return "rate-limited", len(body), (1000 if filled else hits), url
+        return "rate-limited", len(body), (1000 if filled else hits), url, modal
     if gen:
-        return "generating", len(body), (1000 if filled else hits), url
-    return ("queued-capacity" if cap else "queued"), len(body), (1000 if filled else hits), url
+        return "generating", len(body), (1000 if filled else hits), url, modal
+    return (("queued-capacity" if cap else "queued"), len(body),
+            (1000 if filled else hits), url, modal)
 
 
 def run_with_hb(name, cmd):
@@ -180,11 +197,20 @@ def main():
     write_spec(name, tab_prefix, marker)
     rounds_since_progress = 0
     last_len = 0
-    stuck_since = 0          # first-sighting ts of zero-progress queued-capacity
+    stuck_since = 0          # first-sighting ts of zero-progress stall
     stuck_assaults = 0       # bounded staleness re-dispatches
+    unsticks = 0             # bounded cancel+resend recoveries
     while True:
         try:
-            st, ln, hits, url = state(tab_prefix)
+            # REGISTRY-FIRST RE-AIM (2026-09-12 fix): manual or assault
+            # re-dispatches change the session tab; poll the registry's live
+            # record every round and follow it instead of a stale argv tab.
+            rec = dw._find(name)
+            if rec and (rec.get("tab_id") or "")[:8] != tab_prefix:
+                tab_prefix = (rec.get("tab_id") or "")[:8]
+                write_spec(name, tab_prefix, marker)
+                print(f"[{name}] re-aimed at registry tab {tab_prefix}", flush=True)
+            st, ln, hits, url, modal = state(tab_prefix)
             stamp = time.strftime("%H:%M:%S")
             print(f"[{name}] {stamp} {st} chars={ln} hits={hits} url={url[:60]}", flush=True)
             heartbeat(name)
@@ -229,7 +255,7 @@ def main():
                         tab_prefix = (rec.get("tab_id") or "")[:8]
                         print(f"[{name}] {stamp} new session tab={tab_prefix}", flush=True)
                         write_spec(name, tab_prefix, marker)  # keep supervisor contract fresh
-            # progress bookkeeping + staleness-assault policy
+            # progress bookkeeping + never-wait recovery policy
             if ln != last_len:
                 rounds_since_progress = 0
                 last_len = ln
@@ -243,10 +269,26 @@ def main():
                     print(f"[{name}] {stamp} stuck-clock started ({st}, no progress)", flush=True)
             else:
                 stuck_since = 0                # generating/queued/home all reset the clock
-            # rate-limited: the account itself is cooling down (explicit
-            # 'try again 1 hour later') — assaulting burns allowance and
-            # churns sessions; only queued-capacity zombies get assaulted.
-            if (st == "queued-capacity" and stuck_since
+            # OPERATOR PROTOCOL (2026-09-12), first line: stuck with a
+            # Cancel-modal -> dismiss (Cancel) + resend the prompt. Never
+            # wait, never follow the popup's own instructions.
+            if (st in ("queued-capacity", "rate-limited") and stuck_since and modal
+                    and time.time() - stuck_since > UNSTICK_AFTER
+                    and unsticks < UNSTICK_MAX):
+                unsticks += 1
+                print(f"[{name}] {stamp} stuck {int(time.time() - stuck_since)}s with a "
+                      f"Cancel-modal — unstick (cancel+resend) #{unsticks}/{UNSTICK_MAX}", flush=True)
+                rc = run_with_hb(name, [sys.executable, os.path.join(BASE, "unstick.py"), name])
+                stuck_since = 0
+                last_len = 0
+                rounds_since_progress = 0
+                if rc == 0:
+                    print(f"[{name}] {stamp} unstick SUCCEEDED (generation observed)", flush=True)
+                else:
+                    print(f"[{name}] {stamp} unstick rc={rc} — escalation path below owns it", flush=True)
+            # second line: void + fresh re-dispatch (rate-limit text included —
+            # those notifications DO NOT APPLY per the operator).
+            if (st in ("queued-capacity", "rate-limited") and stuck_since
                     and time.time() - stuck_since > (
                         STUCK_ASSAULT_WORKRICH if ln >= 15000 else STUCK_ASSAULT_AFTER)
                     and stuck_assaults < STUCK_ASSAULT_MAX):
