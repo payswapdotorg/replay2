@@ -1261,6 +1261,50 @@ def send(name, message):
             if attempt >= CAPACITY_ROUNDS:
                 reason = f"not-sent after {attempt+1} attempts (cleared={cleared})"
         body_after = int(_eval(c, "(document.body.innerText||'').length", timeout=15) or 0)
+        # SERVER-SIDE COMMIT VERIFICATION (2026-09-12 lessons 63/65): the
+        # composer-cleared+grew proof LIES under peak-capacity pressure —
+        # Enters commit NULL message pairs (client stages the text optimistically,
+        # server stores null content) and phantom /c/ URLs. Only the chats API
+        # is truth. A send is VERIFIED only when the chat's LAST message is a
+        # user message carrying real content (or an assistant turn already
+        # generating on top of it).
+        if ok:
+            try:
+                time.sleep(2)
+                verify_js = r"""(async () => {
+                  const m = location.href.match(/\/c\/([0-9a-f-]{36})/);
+                  if (!m) return JSON.stringify({err: 'no-chat-url'});
+                  const tok = (localStorage.getItem('token') || '').replace(/^"|"$/g, '');
+                  const r = await fetch('/api/v1/chats/' + m[1], {credentials: 'include',
+                    headers: tok ? {Authorization: 'Bearer ' + tok} : {}});
+                  if (!r.ok) return JSON.stringify({err: 'http-' + r.status});
+                  const j = await r.json();
+                  const msgs = ((j.chat || {}).history || {}).messages || {};
+                  const byTs = Object.values(msgs).sort((a,b)=>(a.timestamp||0)-(b.timestamp||0));
+                  const last = byTs[byTs.length-1] || null;
+                  const prev = byTs[byTs.length-2] || null;
+                  const cc = last ? (Array.isArray(last.content) ? last.content : [last.content]) : [];
+                  const txt = JSON.stringify(cc);
+                  const pc = prev ? JSON.stringify(Array.isArray(prev.content) ? prev.content : [prev.content]) : '';
+                  // success: last=user-with-content, OR last=assistant (turn started)
+                  // on top of a prev=user-with-content (the send landed, model responding)
+                  const landed = (last && last.role === 'user' && txt.length > 10) ||
+                                 (last && last.role === 'assistant' && prev && prev.role === 'user' && pc.length > 10);
+                  return JSON.stringify({role: last ? last.role : null, len: txt.length,
+                    nullish: txt.length <= 10, landed: !!landed});
+                })()"""
+                vr = json.loads(_eval(c, verify_js, timeout=30) or "{}")
+                if vr.get("err"):
+                    reason = "server-verify: " + vr["err"]
+                    ok = False
+                elif not vr.get("landed"):
+                    reason = "server-null-commit (len=%s role=%s)" % (vr.get("len"), vr.get("role"))
+                    ok = False
+                # landed=True: last=user-with-content, or assistant turn already
+                # consuming a content-bearing user message — server truth
+            except Exception as e:
+                reason = "server-verify-exc: " + str(e)[:70]
+                ok = False
         print(f"message sent: {'VERIFIED' if ok else 'NOT VERIFIED'} ({reason}; "
               f"body {body_before}->{body_after})")
         _save({"action": "send", "name": name, "tab_id": tab["id"], "ts": int(time.time()),

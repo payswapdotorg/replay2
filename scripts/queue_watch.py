@@ -52,19 +52,9 @@ def write_spec(name, tab_prefix, marker):
     supervisor restart resumes watching the live session instead of a dead
     tab and wrongly triggering another assault."""
     try:
-        # ATOMIC (2026-09-12 race forensics): the supervisor polls this file
-        # every 10s and relaunches watchers from it — a plain open("w") write
-        # can be read HALF-WRITTEN (observed 15:07: marker truncated to
-        # "COMPLETION" mid-write; the supervisor's relaunch inherited the
-        # amputee argv). tmp+rename is read-atomic on POSIX.
-        import tempfile
-        d = os.path.dirname(SPEC_PATH.format(name=name))
-        fd, tmp = tempfile.mkstemp(dir=d, prefix=".spec.")
-        with os.fdopen(fd, "w") as f:
-            f.write(json.dumps(
-                {"name": name, "tab_prefix": tab_prefix, "marker": marker,
-                 "pid": os.getpid()}) + "\n")
-        os.replace(tmp, SPEC_PATH.format(name=name))
+        open(SPEC_PATH.format(name=name), "w").write(json.dumps(
+            {"name": name, "tab_prefix": tab_prefix, "marker": marker,
+             "pid": os.getpid()}) + "\n")
     except Exception:
         pass
 
@@ -169,25 +159,9 @@ def state(tab_prefix):
     # + nudge 1 = 2 -> false COMPLETE, watcher exits, spec deleted). The gate
     # is now the filled-regex ONLY (tolerant: case-insensitive, wider window,
     # flexible separator between the two field labels).
-    # 2026-09-12 fix (ui-010 forensics): the ID pattern matched only
-    # (?:V|R)?WO-\d+ — UI/DEP/RTN/SYS-series reports ("=== UI-010
-    # COMPLETION REPORT ===") never matched; ui-010's live report sat
-    # unrecognized for an hour. Widen to any <LETTERS>-<digits> work-order ID
-    # (UI-010, DEP-005, RTN-001, SYS-003, VWO-009, WO-004 all covered).
     filled = bool(re.search(
-        r"===?\s*[A-Z]{1,4}-\d+\s*(?:COMPLETION\s*REPORT|完成报告)\s*===?"
+        r"===?\s*(?:VAL|VWO|RWO|WO)-\d+\s*(?:COMPLETION\s*REPORT|完成报告)\s*===?"
         r"[\s\S]{0,900}?(?:base\s*branch|基础分支)[^\n]{0,60}?(?:base\s*SHA|基础\s*SHA)\s*[:：]\s*(?:main|主干)\s*@\s*[0-9a-f]{7,40}",
-        body, re.IGNORECASE))
-    # 2026-09-12 (office era): the OFF-xxx briefs request the headline
-    # "COMPLETION REPORT — OFF-005" + "Commit SHA: <sha>" — the WO-era gate
-    # could NEVER match an office report, so a real completion would sail
-    # past unnoticed (forensic: the completed off-002 session's watcher
-    # void-looped 5h because the gate never fired). RULE: whenever the
-    # dispatch-brief report TEMPLATE changes, update this gate in the same
-    # change. Placeholder "<pushed HEAD sha>" echoes never satisfy this.
-    filled = filled or bool(re.search(
-        r"(?:COMPLETION\s*REPORT|完成报告)\s*[—\-–]+\s*OFF-\d+"
-        r"[\s\S]{0,2500}?Commit\s*SHA\s*[:：]\s*[0-9a-f]{7,40}",
         body, re.IGNORECASE))
     # 2026-09-12 fix (rebase regression): the (?:V)? prefix was lost in the
     # 1995210 re-apply — VWO reports never matched the filled gate. Also
@@ -196,7 +170,7 @@ def state(tab_prefix):
     # form — the template's 'base branch + base SHA: main @ <hex>' stays
     # the canonical form; this only widens genuine-report detection.
     filled = filled or bool(re.search(
-        r"===?\s*[A-Z]{1,4}-\d+\s*(?:COMPLETION\s*REPORT|完成报告)\s*===?"
+        r"===?\s*(?:VAL|VWO|RWO|WO)-\d+\s*(?:COMPLETION\s*REPORT|完成报告)\s*===?"
         r"[\s\S]{0,300}?(?:Base\s*SHA|基础\s*SHA)\s*[:：]\s*(?:main\s*@?\s*)?[0-9a-f]{40}",
         body, re.IGNORECASE))
     gen = bool(re.search(r"\b(Stop|Pause|Halt)\b", body[-1500:]))
