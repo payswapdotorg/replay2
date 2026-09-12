@@ -91,7 +91,13 @@ def main():
         print(f"[{name}] state before: {st0} | body {body0} chars")
         d = dismiss_modal(ws)
         print(f"[{name}] modal dismissal: {d}")
-        prompt = open(rec["prompt_file"], encoding="utf-8").read()
+        # 2026-09-12 fix: tab-reopen records (registry re-aim) don't carry
+        # prompt_file — _find only carries tab_id/url onto the resolved
+        # record. Fall back to the canonical staged prompt path instead of
+        # crashing with KeyError (the crash aborted the whole unstick).
+        pf = rec.get("prompt_file") or os.path.join(
+            BASE, "worker-prompts", f"{name}.md")
+        prompt = open(pf, encoding="utf-8").read()
         res = channel.send_text(prompt, tab=tab)
         print(f"[{name}] resend: ok={res['ok']} proof={res['proof']} detail={res['detail'][:200]}")
         # watch for generation for up to 75s
