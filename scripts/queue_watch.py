@@ -169,6 +169,10 @@ def state(tab_prefix):
     # + nudge 1 = 2 -> false COMPLETE, watcher exits, spec deleted). The gate
     # is now the filled-regex ONLY (tolerant: case-insensitive, wider window,
     # flexible separator between the two field labels).
+    filled = bool(re.search(
+        r"===?\s*(?:V|R)?WO-\d+\s*(?:COMPLETION\s*REPORT|完成报告)\s*===?"
+        r"[\s\S]{0,900}?(?:base\s*branch|基础分支)[^\n]{0,60}?(?:base\s*SHA|基础\s*SHA)\s*[:：]\s*(?:main|主干)\s*@\s*[0-9a-f]{7,40}",
+        body, re.IGNORECASE))
     # 2026-09-12 (office era): the OFF-xxx briefs request the headline
     # "COMPLETION REPORT — OFF-005" + "Commit SHA: <sha>" — the WO-era gate
     # could NEVER match an office report, so a real completion would sail
@@ -179,10 +183,6 @@ def state(tab_prefix):
     filled = filled or bool(re.search(
         r"(?:COMPLETION\s*REPORT|完成报告)\s*[—\-–]+\s*OFF-\d+"
         r"[\s\S]{0,2500}?Commit\s*SHA\s*[:：]\s*[0-9a-f]{7,40}",
-        body, re.IGNORECASE))
-    filled = bool(re.search(
-        r"===?\s*(?:V|R)?WO-\d+\s*(?:COMPLETION\s*REPORT|完成报告)\s*===?"
-        r"[\s\S]{0,900}?(?:base\s*branch|基础分支)[^\n]{0,60}?(?:base\s*SHA|基础\s*SHA)\s*[:：]\s*(?:main|主干)\s*@\s*[0-9a-f]{7,40}",
         body, re.IGNORECASE))
     # 2026-09-12 fix (rebase regression): the (?:V)? prefix was lost in the
     # 1995210 re-apply — VWO reports never matched the filled gate. Also
