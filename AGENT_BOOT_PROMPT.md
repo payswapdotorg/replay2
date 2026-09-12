@@ -1025,3 +1025,41 @@ access to the same account and sessions in the replay."
     queued-capacity threshold; fresh sessions (< 15K) keep the aggressive
     90-min assault. Voiding a work-rich session to "refresh capacity"
     destroys the mission.
+
+## ADDENDUM 2026-09-12 07:40 UTC (Task 27 handoff — operator migrating environments)
+
+Supersedes "Immediate next actions" in the section above. Program truth:
+
+- VAL-017 IS IMPLEMENTED and PUSHED: branch `work/VAL-017-multimodal` @ 678c9a0
+  on origin (16 files, +3218 lines: image-recognition/vlm/audio-understanding
+  apps, shared media.ts — the earlier "syntax bug" was a display artifact,
+  the file is committed and clean — platform/multimodal.ts, 21 unit + 8
+  discrimination tests, the crown integration test, evidence doc
+  docs/work-items/VAL-017.md claiming full battery + REAL live runs:
+  9 driven, 7 COMPLETED + 2 honest FAILED, $0.000400, digests only).
+- Delivery chain INCOMPLETE: no PR, no CI, no merge, no finalization. The next
+  Lead's FIRST job is the independent review: re-run the full battery
+  (typecheck / lint / test:unit / test:architecture; then source
+  /home/z/.secrets/env.sh and run test:integration with ZECK_PG_TEST_URL
+  pointing at the embedded PG 127.0.0.1:55432 + OPENROUTER_API_KEY +
+  QWEN_API_KEY; then scripts/governance-check.py), cross-check the evidence
+  doc, then PR (GitHub REST API — no gh binary, token in env.sh) -> CI poll
+  -> merge -> finalization commit (mark VAL-017 complete in program-state;
+  issue the next eligible wave specs + GitHub issues: VAL-014/015/016/018/019
+  per the roadmap's dependency rules).
+- OPERATOR ORDER (2026-09-12 07:09 UTC, STANDING): from VAL-014 onward ALL
+  implementation is dispatched to WORKERS through the replay account (AGENTS
+  tab, GLM-5.3, Full-Stack skill, scripts/dispatch_worker.py with its
+  capacity protocol — never wait out a capacity popup). The Lead
+  orchestrates, reviews, merges, finalizes — and does NOT implement.
+  "You are the tech lead not a worker."
+- Credentials: /home/z/.secrets/env.sh (never in any repo/log). The
+  QWEN_API_KEY stored there (sk-ws-H.DMI...) is the dashscope-intl-verified
+  key; an older handoff mentioned a different key string that was never
+  verified — trust env.sh. Workers should not receive operator provider
+  keys in prompts (prompts/sessions are logged); the Lead runs the live
+  credential-gated verification passes in its own environment.
+- Environment: this sandbox's tool bridge is 403-flaky (the operator is
+  migrating to more stable tools). Replay2 stack + watchers were left
+  RUNNING and logged-in. The shared worklog is
+  /home/z/my-project/worklog.md — Task 27 (this handoff) is appended there.
