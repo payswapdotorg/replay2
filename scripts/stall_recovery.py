@@ -119,7 +119,11 @@ def api_messages(cdp, chat_id):
         const r = await fetch('/api/v1/chats/{chat_id}', {{credentials: 'include'}});
         if (!r.ok) return JSON.stringify({{err: 'http' + r.status}});
         const j = await r.json();
-        const msgs = Object.values((j.chat || {{}}).history || {{}}).messages || {{}};
+        // 2026-09-12 fix: history.messages is the message MAP (chat.history
+        // also carries currentId). The old form read .messages off an
+        // ARRAY (undefined) -> always empty -> the detector was BLIND
+        // (off-005/off-007 dead turns sat 40+ min with no recovery fired).
+        const msgs = ((j.chat || {{}}).history || {{}}).messages || {{}};
         const out = Object.values(msgs).map(m => ({{
           role: m.role, ts: m.timestamp || 0, len: (m.content || '').length
         }}));
