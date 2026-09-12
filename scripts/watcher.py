@@ -62,21 +62,37 @@ def get_pat():
 
 
 def check_login():
+    """Scan ALL chat.z.ai tabs (home tab first) — during capacity events the
+    first tab is a worker chat page whose body carries neither the username
+    marker nor 'Sign in', which used to produce false 'login LOST' alarms
+    (forensic case 2026-09-12 12:01: 'login LOST' outbox message while
+    dispatches were still succeeding as logged-in tepa)."""
     try:
-        tabs = channel.list_tabs()
-        tab = next((t for t in tabs if "chat.z.ai" in (t.get("url") or "")), None)
-        if not tab:
+        tabs = [t for t in channel.list_tabs() if "chat.z.ai" in (t.get("url") or "")]
+        if not tabs:
             return STATE["login"]
-        cdp = channel.CDP(tab["webSocketDebuggerUrl"], timeout=12)
-        try:
-            body = cdp.eval("document.body.innerText || ''", timeout=10) or ""
-        finally:
-            cdp.close()
-        if "tepa" in body:
-            return "logged-in(tepa)"
-        if "Sign in" in body or "Log in" in body:
+        # priority: home/root tab first (username always visible there),
+        # then any other chat.z.ai tab
+        tabs.sort(key=lambda t: 0 if (t.get("url") or "").rstrip("/").endswith("chat.z.ai") else 1)
+        saw_signin = False
+        for tab in tabs:
+            try:
+                cdp = channel.CDP(tab["webSocketDebuggerUrl"], timeout=12)
+                try:
+                    body = cdp.eval("document.body.innerText || ''", timeout=10) or ""
+                finally:
+                    cdp.close()
+            except Exception:
+                continue
+            if "tepa" in body:
+                return "logged-in(tepa)"
+            if "Sign in" in body or "Log in" in body:
+                saw_signin = True
+        if saw_signin:
             return "logged-out"
-        return "page:" + str(len(body))
+        # no tab shows either marker (e.g. all worker chats mid-render):
+        # keep the previous state rather than flapping
+        return STATE["login"]
     except Exception:
         return STATE["login"]
 
