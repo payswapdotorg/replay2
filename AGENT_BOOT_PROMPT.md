@@ -263,20 +263,31 @@ push token transiently in the worker prompt; it must never be committed or
 echoed in reports. Shared-file conflicts between concurrent workers are
 resolved at the integration station, not in chat.
 
-## 6. Capacity popups vs rate limits (2026-09-10 forensics)
+## 6. Capacity popups vs rate limits (2026-09-10 forensics; policy updated 2026-09-12)
 
 Two different dialogs, two different policies:
 
 - **Capacity/peak-hours** ("Model is currently at capacity", "GLM-5.3 is
-  intensifying the coordination of resources"): FIGHT. Cancel, re-pick the
-  three selections (agents tab, GLM-5.3, Full-Stack — a cancel can reset
-  them), resend. The dispatcher's assault loop does this automatically.
+  intensifying the coordination of resources"): FIGHT — and NEVER WAIT
+  (operator ruling 2026-09-12: "do not wait just because a popup or any
+  message tells you to; never wait, retry and retry"). Cancel + refocus +
+  Enter-resend IN-SESSION — a live session is never destroyed for a popup
+  (destruction/re-create is only for tablost/home). The 90-minute
+  destruction wait for a stalled queued-capacity session is OBSOLETE:
+  `queue_watch.py` now fires an in-session cancel+resend UNSTICK
+  (UNSTICK_AFTER=300s, unstick.py) and escalates to a fresh void+re-dispatch
+  after only 900s (STUCK_ASSAULT_AFTER) — the rate-limit churn guard
+  (RL_DEFER_AFTER=240s) is a minimal anti-hammer, never a cooldown wait.
+  Manual application of the resend unstuck BOTH office sessions in <60s
+  each on 2026-09-12 after 90+ min of zombie queueing. Always re-pick
+  the three selections (agents tab, GLM-5.3, Full-Stack — a cancel can
+  reset them) when re-creating from scratch.
 - **Personal usage limit** ("exceeds the personal limit", "try again 1 hour
-  later"): STOP. Every rejected send during the cooldown RE-ARMS the 1h
-  timer — grinding assault rounds is exactly the treadmill that kept the
-  account limited for hours. `send` now aborts before sending when this
-  dialog is up; do not work around it. Do other work (integration,
-  verification, harvesting) and retry after the cooldown lapses.
+  later"): the OPERATOR ruled these notifications "do not apply" (2026-09-12)
+  — disregard them by default. The live-modal guard in `send` remains as a
+  cheap safety net (assaulting through a REAL live cooldown re-armed it
+  historically), but do not organize the schedule around rate-limit text;
+  do other work (integration, verification, harvesting) and retry.
 
 Promotional dialogs (GLM-5.3-Flash launch popup etc.) overlay the composer,
 steal focus and eat inserts/Enters — the dispatcher dismisses them before
@@ -1177,3 +1188,43 @@ Field-proven this round (2026-09-12 14:40–15:05 UTC):
     the popup, detects the staged composer text (≥97% → send-only path),
     presses Enter with focus verification. Transcript hits = acceptance
     truth (lesson-33 family).
+
+
+## Lessons 64-66 (2026-09-12 — office takeover cycle 9: OFF-era gate + spec atomicity)
+
+64. **The completion gate must track the report-template era.** The WO-era
+    filled-regex (`=== (V|R)?WO-\d+ COMPLETION REPORT ===` + base-SHA line)
+    could NEVER match the OFFICE briefs' report format ("COMPLETION REPORT
+    — OFF-005" headline + "Commit SHA: <hex>" line) — a real completion
+    would sail past the watcher unnoticed (forensic: the completed off-002
+    session's watcher void-looped 5h because the gate never fired for its
+    era). The gate now accepts the OFF era as a third alternative
+    (EN/中文 headline, ASCII/fullwidth colon, 2500-char window to the
+    Commit-SHA hex; the template placeholder `<pushed HEAD sha>` never
+    matches). RULE: whenever the dispatch-brief report TEMPLATE changes,
+    update the state() filled gate in the SAME change — the watcher is
+    only as good as its gate, and a missed gate means a rogue watcher
+    churning void+create-fail forever on a completed item.
+
+65. **Spec files are read concurrently by the supervisor — write them
+    atomically.** queue_watch write_spec used a plain open("w") write; the
+    supervisor's 10s poll read a HALF-WRITTEN spec, captured a truncated
+    marker ("COMPLETION"), and its relauncher inherited the amputee argv
+    forever (observed 2026-09-12 15:07). All spec writes are now
+    tmp+rename (read-atomic on POSIX). Same rule for ANY flags/ file the
+    supervisor polls.
+
+66. **Retire watchers of completed items; they don't retire themselves.**
+    A watcher whose session completes without tripping the gate (see 64)
+    loops tablost→void→create-fail forever and spams the registry with
+    void records every 150s (observed: off-002's watcher ran 5+ hours
+    after the item merged; its create attempts failed on a missing
+    worker-prompts/off-002.md so it never duplicated work, but it burned
+    log/registry space and triage attention). Protocol on item completion:
+    verify the marker/branch, then kill the watcher pid + rm
+    flags/queue_watch.spec.<name> + rm flags/queue_watch_heartbeat.<name>
+    — the supervisor's resurrect contract keys on the spec file's
+    existence. Stale completed-session TABS also linger (off-002's chat
+    tab survived all day); harmless triage noise — the sandbox-limit
+    modal's Release button is what actually frees concurrency slots
+    (automated in _handle_sandbox_limit with keep-keywords).
