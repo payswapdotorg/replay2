@@ -997,6 +997,18 @@ def send(name, message):
         return 2
     c = channel.CDP(tab["webSocketDebuggerUrl"], timeout=30)
     try:
+        # JUNK-SESSION GUARD (2026-09-12 vwo-011 forensic): a 'message sent:
+        # VERIFIED' into a tab that has rolled HOME creates a junk chat and
+        # fools the body-growth proof (942 -> 1431 was the home page, not the
+        # session). Verify the tab is on THIS session's chat URL before
+        # touching the composer; a destroyed session is the watcher
+        # assault's job, not the send path's.
+        want = (s.get("url") or "").rstrip("/").split("/c/")[-1]
+        cur = _eval(c, "location.href", timeout=15) or ""
+        if "/c/" not in cur or (want and want not in cur):
+            print(f"tab is NOT on {name}'s session (at {cur[:70]}) — destroyed; "
+                  "refusing to send into a blank/home chat")
+            return 3
         # refuse to interrupt an actively-generating turn
         busy = _eval(c, r"""(() => {
           const btns = Array.from(document.querySelectorAll('button'))
@@ -1022,11 +1034,11 @@ def send(name, message):
         except Exception:
             st0 = {}
         if st0.get("capacity") or st0.get("hasCancel"):
-            # RATE-LIMIT GUARD (22:29 forensics): the personal-usage-limit
-            # dialog ('try again 1 hour later') re-arms on every rejected
-            # send — grinding assault rounds during the cooldown is exactly
-            # the treadmill that kept the account limited for hours. If the
-            # limit dialog is up, DON'T send at all.
+            # OPERATOR DIRECTIVE (2026-09-12, supersedes the 22:29 rate-limit
+            # guard): rate-limit notifications DO NOT APPLY — never wait out
+            # a cooldown. Cancel the modal and attempt the send (the
+            # cancel+retry protocol); a rejected send reports itself and the
+            # queue_watch unstick/assault ladder owns the retry cadence.
             limited = _eval(c, r"""(() => {
               // 2026-09-10 fix: the limit text ALSO survives as stale
               // TRANSCRIPT text after the cooldown lapses (inline in a
@@ -1042,12 +1054,7 @@ def send(name, message):
               }
               return 'no';
             })()""", timeout=15)
-            if limited == "yes":
-                print("      [rate-limited] account cooldown active — NOT sending (re-arms the limit)")
-                _save({"action": "send", "name": name, "tab_id": tab["id"], "ts": int(time.time()),
-                       "msg_chars": len(message), "sent": False, "kind": "continuation",
-                       "note": "rate-limited (account cooldown)"})
-                return 3
+            # (live-modal probe above kept for logging only)
             _eval(c, JS_CLICK_CANCEL, timeout=15)
             print("      [capacity] pre-existing popup cancelled before composer use")
             time.sleep(3)
