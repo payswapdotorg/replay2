@@ -810,52 +810,169 @@ def create(name, prompt_file):
                 print(f"[assault {assault_round}/{CAPACITY_ROUNDS}] popup cancelled — "
                       f"re-picking selections and re-sending")
 
-            # wait for the page shell (sidebar Agent nav present)
-            print("[2/7] waiting for page shell ...")
             try:
-                ok_shell, last = _wait(c, JS_AGENT_PRESENT, "found", tries=25, sleep=1.5, desc="shell")
-                if not ok_shell:
-                    print(f"ERROR: page shell never loaded (last={last}); login may be expired")
-                    _save({"name": name, "action": "failed", "stage": "shell", "tab_id": tab["id"],
-                           "ts": int(time.time()), "prompt_file": prompt_file})
-                    return 2
-                c.call('Page.bringToFront', {})
-                # dismiss any promotional/notification dialog that overlays
-                # the composer (GLM-5.3-Flash launch popup etc.) — it steals
-                # focus and eats the clicks/inserts that follow
-                for _ in range(2):
-                    dres = _eval(c, JS_DISMISS_DIALOG, timeout=10)
-                    if dres == 'none':
-                        break
-                    time.sleep(1.2)
+                # wait for the page shell (sidebar Agent nav present)
+                print("[2/7] waiting for page shell ...")
+                try:
+                    ok_shell, last = _wait(c, JS_AGENT_PRESENT, "found", tries=25, sleep=1.5, desc="shell")
+                    if not ok_shell:
+                        print(f"ERROR: page shell never loaded (last={last}); login may be expired")
+                        _save({"name": name, "action": "failed", "stage": "shell", "tab_id": tab["id"],
+                               "ts": int(time.time()), "prompt_file": prompt_file})
+                        return 2
+                    c.call('Page.bringToFront', {})
+                    # dismiss any promotional/notification dialog that overlays
+                    # the composer (GLM-5.3-Flash launch popup etc.) — it steals
+                    # focus and eats the clicks/inserts that follow
+                    for _ in range(2):
+                        dres = _eval(c, JS_DISMISS_DIALOG, timeout=10)
+                        if dres == 'none':
+                            break
+                        time.sleep(1.2)
 
-                ok, url, pct, c = _select_insert_send(c, tab, prompt, name, prompt_file)
-                # DELAYED LANDING RE-CHECK (2026-09-12 forensics): the capacity
-                # popup + optimistic-render rollback arrive SECONDS after the
-                # send; an immediate check exits with a false VERIFIED before
-                # the site rolls the un-accepted session back to home. Ground
-                # truth after the settle window: session URL (/c/...), prompt
-                # visible in the transcript — else the send did NOT stick.
-                if ok:
-                    time.sleep(9)
+                    ok, url, pct, c = _select_insert_send(c, tab, prompt, name, prompt_file)
+                    # DELAYED LANDING RE-CHECK (2026-09-12 forensics): the capacity
+                    # popup + optimistic-render rollback arrive SECONDS after the
+                    # send; an immediate check exits with a false VERIFIED before
+                    # the site rolls the un-accepted session back to home. Ground
+                    # truth after the settle window: session URL (/c/...), prompt
+                    # visible in the transcript — else the send did NOT stick.
+                    if ok:
+                        time.sleep(9)
+                        try:
+                            url_now = _eval(c, "location.href", timeout=20) or CHAT_URL
+                        except Exception:
+                            url_now = url
+                        if url_now not in (CHAT_URL, "about:blank"):
+                            url = url_now  # landed (or queued-capacity) — keep truth
+                        else:
+                            body_now = _eval(c, "document.body.innerText || ''", timeout=25) or ""
+                            snippet = prompt.strip().split("\n")[0][:40]
+                            if not (snippet in body_now and len(body_now) > 3000):
+                                print("      [landing] send did NOT stick (rolled back home) — assault round")
+                                ok = False
+                                url = url_now
+                except Exception as e:
+                    # transient CDP/websocket failure (busy page, dialog churn):
+                    # never crash the assault — reconnect and take the next round
+                    print(f"      [transient] {type(e).__name__} in round {assault_round} — "
+                          f"reconnect + next assault round")
                     try:
-                        url_now = _eval(c, "location.href", timeout=20) or CHAT_URL
+                        c.close()
                     except Exception:
-                        url_now = url
-                    if url_now not in (CHAT_URL, "about:blank"):
-                        url = url_now  # landed (or queued-capacity) — keep truth
-                    else:
-                        body_now = _eval(c, "document.body.innerText || ''", timeout=25) or ""
-                        snippet = prompt.strip().split("\n")[0][:40]
-                        if not (snippet in body_now and len(body_now) > 3000):
-                            print("      [landing] send did NOT stick (rolled back home) — assault round")
-                            ok = False
-                            url = url_now
-            except Exception as e:
-                # transient CDP/websocket failure (busy page, dialog churn):
-                # never crash the assault — reconnect and take the next round
-                print(f"      [transient] {type(e).__name__} in round {assault_round} — "
-                      f"reconnect + next assault round")
+                        pass
+                    try:
+                        c = _reconnect(tab["id"])
+                    except Exception:
+                        tab = channel.new_tab() or tab
+                        c = channel.CDP(tab["webSocketDebuggerUrl"], timeout=30)
+                    time.sleep(5)
+                    continue
+
+                try:
+                    st = json.loads(_eval(c, JS_CAPACITY_STATE, timeout=15) or "{}")
+                except Exception:
+                    st = {}
+                if st.get("generating"):
+                    ok = True  # generation started — the task is live
+                if ok and not st.get("capacity"):
+                    # 7b. the agent's sandbox provisions AFTER the prompt send —
+                    # if the sandbox-limit modal now blocks it, release idle
+                    # sandboxes so the job starts
+                    time.sleep(4)
+                    released = _handle_sandbox_limit(c, _active_session_keywords(extra=[name]))
+                    if released:
+                        print(f"      [sandbox] released {released} idle sandbox(es) so the new job can start")
+                    print(f"prompt sent: {'VERIFIED' if ok else 'NOT VERIFIED — retry needed'}")
+                    _save({"name": name, "tab_id": tab["id"], "url": url, "ts": int(time.time()),
+                           "prompt_file": prompt_file, "prompt_chars": len(prompt),
+                           "mode": "agents-tab", "model": WANT_MODEL, "skill": WANT_SKILL,
+                           "insert_pct": pct, "sent": ok})
+                    return 0
+                if not st.get("capacity"):
+                    # no capacity dialog: genuine insert/send failure — climb the
+                    # failure ladder (check body tail, re-send, or re-create)
+                    print(f"prompt sent: NOT VERIFIED — retry needed (url={url})")
+                    _save({"name": name, "tab_id": tab["id"], "url": url, "ts": int(time.time()),
+                           "prompt_file": prompt_file, "prompt_chars": len(prompt),
+                           "mode": "agents-tab", "model": WANT_MODEL, "skill": WANT_SKILL,
+                           "insert_pct": pct, "sent": False})
+                    return 2
+                if ok and "/c/" in (url or ""):
+                    # SERVER-SIDE EXISTENCE CHECK (2026-09-12 lessons 63/65): the
+                    # URL moving to /c/<uuid> used to be trusted as acceptance —
+                    # under the peak gate it LIES (phantom /c/ URLs with a staged
+                    # composer; the chat is never created server-side). Verify the
+                    # chat EXISTS (and carries the first message) before calling
+                    # it accepted.
+                    cid = (url or "").split("/c/")[-1].split("/")[0].split("?")[0]
+                    exists_server = False
+                    try:
+                        ev = c.eval(r"""(async () => {
+                          const m = location.href.match(/\/c\/([0-9a-f-]{36})/);
+                          if (!m) return JSON.stringify({err: 'no-chat-url'});
+                          const tok = (localStorage.getItem('token') || '').replace(/^"|"$/g, '');
+                          const r = await fetch('/api/v1/chats/' + m[1], {credentials: 'include',
+                            headers: tok ? {Authorization: 'Bearer ' + tok} : {}});
+                          if (!r.ok) return JSON.stringify({err: 'http-' + r.status});
+                          const j = await r.json();
+                          const msgs = ((j.chat || {}).history || {}).messages || {};
+                          let userLen = 0;
+                          for (const mm of Object.values(msgs)) {
+                            if (mm.role === 'user') {
+                              const cc = Array.isArray(mm.content) ? mm.content : [mm.content];
+                              userLen = Math.max(userLen, JSON.stringify(cc).length);
+                            }
+                          }
+                          return JSON.stringify({exists: true, userLen: userLen});
+                        })()""", await_promise=True, timeout=30)
+                        evd = json.loads(ev or "{}")
+                        if evd.get("exists") and evd.get("userLen", 0) > 100:
+                            exists_server = True
+                        else:
+                            print(f"      [server-verify] chat NOT live server-side ({ev[:90]}) — "
+                                  "phantom /c/ URL; continuing assault")
+                    except Exception as e:
+                        print(f"      [server-verify] check failed ({str(e)[:60]}) — continuing assault")
+                    if not exists_server:
+                        ok = False
+                    # TWO-STATE CAPACITY PROTOCOL (queue_watch.py; live evidence
+                    # 2026-09-10): a send whose URL moved to /c/<uuid> (composer
+                    # cleared + prompt in transcript) was ACCEPTED — the task is
+                    # QUEUED server-side and the capacity popup is COSMETIC.
+                    # Cancelling destroys the queued session and re-queues at the
+                    # back (two hours of destroyed sessions before this fix).
+                    # Do NOT cancel: keep the tab open, register the session as
+                    # sent-queued, and monitor with `check <name>` — generation
+                    # starts when capacity frees.
+                    if exists_server:
+                        print("prompt ACCEPTED — session live at " + str(url) + " (server-verified)")
+                        print("      capacity popup is COSMETIC (task queued server-side) — NOT cancelling;")
+                        print("      monitor generation start with: dispatch_worker.py check " + name)
+                        _save({"name": name, "tab_id": tab["id"], "url": url, "ts": int(time.time()),
+                               "prompt_file": prompt_file, "prompt_chars": len(prompt),
+                               "mode": "agents-tab", "model": WANT_MODEL, "skill": WANT_SKILL,
+                               "insert_pct": pct, "sent": True, "stage": "queued-capacity"})
+                        return 0
+                    # phantom /c/ URL: fall through to the assault (never register
+                    # a session that does not exist server-side)
+                # capacity dialog present and the send was NOT accepted — assault
+                print(f"      [capacity] GLM-5.3 at capacity (round {assault_round}) — "
+                      f"Cancel + re-pick + resend (operator policy: never wait)")
+                try:
+                    c.call("Page.bringToFront", {}, timeout=10)
+                except Exception:
+                    pass
+                _eval(c, JS_CLICK_CANCEL, timeout=15)
+                time.sleep(4)
+                backoff = min(20 + 10 * assault_round, 60)
+                print(f"      next assault round in {backoff}s")
+                time.sleep(backoff)
+            except Exception as _round_exc:
+                # ROUND CRASH RECOVERY (2026-09-12): a wedged renderer times out
+                # CDP evals mid-round; the round is DONE (send attempted, verdict
+                # printed) — reconnect and take the next round instead of dying
+                print(f"      [resilience] round crashed ({str(_round_exc)[:70]}) — next round")
                 try:
                     c.close()
                 except Exception:
@@ -863,110 +980,7 @@ def create(name, prompt_file):
                 try:
                     c = _reconnect(tab["id"])
                 except Exception:
-                    tab = channel.new_tab() or tab
-                    c = channel.CDP(tab["webSocketDebuggerUrl"], timeout=30)
-                time.sleep(5)
-                continue
-
-            try:
-                st = json.loads(_eval(c, JS_CAPACITY_STATE, timeout=15) or "{}")
-            except Exception:
-                st = {}
-            if st.get("generating"):
-                ok = True  # generation started — the task is live
-            if ok and not st.get("capacity"):
-                # 7b. the agent's sandbox provisions AFTER the prompt send —
-                # if the sandbox-limit modal now blocks it, release idle
-                # sandboxes so the job starts
-                time.sleep(4)
-                released = _handle_sandbox_limit(c, _active_session_keywords(extra=[name]))
-                if released:
-                    print(f"      [sandbox] released {released} idle sandbox(es) so the new job can start")
-                print(f"prompt sent: {'VERIFIED' if ok else 'NOT VERIFIED — retry needed'}")
-                _save({"name": name, "tab_id": tab["id"], "url": url, "ts": int(time.time()),
-                       "prompt_file": prompt_file, "prompt_chars": len(prompt),
-                       "mode": "agents-tab", "model": WANT_MODEL, "skill": WANT_SKILL,
-                       "insert_pct": pct, "sent": ok})
-                return 0
-            if not st.get("capacity"):
-                # no capacity dialog: genuine insert/send failure — climb the
-                # failure ladder (check body tail, re-send, or re-create)
-                print(f"prompt sent: NOT VERIFIED — retry needed (url={url})")
-                _save({"name": name, "tab_id": tab["id"], "url": url, "ts": int(time.time()),
-                       "prompt_file": prompt_file, "prompt_chars": len(prompt),
-                       "mode": "agents-tab", "model": WANT_MODEL, "skill": WANT_SKILL,
-                       "insert_pct": pct, "sent": False})
-                return 2
-            if ok and "/c/" in (url or ""):
-                # SERVER-SIDE EXISTENCE CHECK (2026-09-12 lessons 63/65): the
-                # URL moving to /c/<uuid> used to be trusted as acceptance —
-                # under the peak gate it LIES (phantom /c/ URLs with a staged
-                # composer; the chat is never created server-side). Verify the
-                # chat EXISTS (and carries the first message) before calling
-                # it accepted.
-                cid = (url or "").split("/c/")[-1].split("/")[0].split("?")[0]
-                exists_server = False
-                try:
-                    ev = c.eval(r"""(async () => {
-                      const m = location.href.match(/\/c\/([0-9a-f-]{36})/);
-                      if (!m) return JSON.stringify({err: 'no-chat-url'});
-                      const tok = (localStorage.getItem('token') || '').replace(/^"|"$/g, '');
-                      const r = await fetch('/api/v1/chats/' + m[1], {credentials: 'include',
-                        headers: tok ? {Authorization: 'Bearer ' + tok} : {}});
-                      if (!r.ok) return JSON.stringify({err: 'http-' + r.status});
-                      const j = await r.json();
-                      const msgs = ((j.chat || {}).history || {}).messages || {};
-                      let userLen = 0;
-                      for (const mm of Object.values(msgs)) {
-                        if (mm.role === 'user') {
-                          const cc = Array.isArray(mm.content) ? mm.content : [mm.content];
-                          userLen = Math.max(userLen, JSON.stringify(cc).length);
-                        }
-                      }
-                      return JSON.stringify({exists: true, userLen: userLen});
-                    })()""", await_promise=True, timeout=30)
-                    evd = json.loads(ev or "{}")
-                    if evd.get("exists") and evd.get("userLen", 0) > 100:
-                        exists_server = True
-                    else:
-                        print(f"      [server-verify] chat NOT live server-side ({ev[:90]}) — "
-                              "phantom /c/ URL; continuing assault")
-                except Exception as e:
-                    print(f"      [server-verify] check failed ({str(e)[:60]}) — continuing assault")
-                if not exists_server:
-                    ok = False
-                # TWO-STATE CAPACITY PROTOCOL (queue_watch.py; live evidence
-                # 2026-09-10): a send whose URL moved to /c/<uuid> (composer
-                # cleared + prompt in transcript) was ACCEPTED — the task is
-                # QUEUED server-side and the capacity popup is COSMETIC.
-                # Cancelling destroys the queued session and re-queues at the
-                # back (two hours of destroyed sessions before this fix).
-                # Do NOT cancel: keep the tab open, register the session as
-                # sent-queued, and monitor with `check <name>` — generation
-                # starts when capacity frees.
-                if exists_server:
-                    print("prompt ACCEPTED — session live at " + str(url) + " (server-verified)")
-                    print("      capacity popup is COSMETIC (task queued server-side) — NOT cancelling;")
-                    print("      monitor generation start with: dispatch_worker.py check " + name)
-                    _save({"name": name, "tab_id": tab["id"], "url": url, "ts": int(time.time()),
-                           "prompt_file": prompt_file, "prompt_chars": len(prompt),
-                           "mode": "agents-tab", "model": WANT_MODEL, "skill": WANT_SKILL,
-                           "insert_pct": pct, "sent": True, "stage": "queued-capacity"})
-                    return 0
-                # phantom /c/ URL: fall through to the assault (never register
-                # a session that does not exist server-side)
-            # capacity dialog present and the send was NOT accepted — assault
-            print(f"      [capacity] GLM-5.3 at capacity (round {assault_round}) — "
-                  f"Cancel + re-pick + resend (operator policy: never wait)")
-            try:
-                c.call("Page.bringToFront", {}, timeout=10)
-            except Exception:
-                pass
-            _eval(c, JS_CLICK_CANCEL, timeout=15)
-            time.sleep(4)
-            backoff = min(20 + 10 * assault_round, 60)
-            print(f"      next assault round in {backoff}s")
-            time.sleep(backoff)
+                    pass
 
         # in-process rounds exhausted — persistent hand-off: the supervisor
         # relaunches recover_capacity.py, which re-runs this same aggressive
