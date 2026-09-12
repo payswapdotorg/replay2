@@ -20,6 +20,6 @@ os.makedirs(os.path.dirname(log_path) or "/tmp", exist_ok=True)
 out = open(log_path, "a")
 p = subprocess.Popen(
     cmd, stdout=out, stderr=subprocess.STDOUT,
-    start_new_session=True, cwd="/home/z/replay2/scripts")
+    start_new_session=True, cwd=os.path.dirname(os.path.abspath(__file__)))
 out.flush()
 print(f"detached (pid {p.pid}); log: {log_path}")
