@@ -1228,3 +1228,41 @@ Field-proven this round (2026-09-12 14:40–15:05 UTC):
     tab survived all day); harmless triage noise — the sandbox-limit
     modal's Release button is what actually frees concurrency slots
     (automated in _handle_sandbox_limit with keep-keywords).
+## Lessons 67-69 (2026-09-12 — ui-010 closure harvest + usage-limit recovery session)
+
+67. **Stale-DOM turn-crash pattern (ui-010 forensics) — RELOAD reveals the
+    report.** A worker turn can run 262 commands, stage the full delivery in
+    the sandbox, and stream its final report — yet persist NOTHING to the
+    chats API message tree (assistant node stays content-less, generating=
+    False, chat record updated_at frozen) and FREEZE the tab DOM mid-render
+    (chars stuck at ~20K while the complete render is ~34K). queue_watch then
+    reads a stale "queued chars=X hits=1" forever. RECOVERY ORDER: (1)
+    Page.reload the worker tab — the fresh render pulls the COMPLETE report
+    from the server's render cache; (2) re-read the DOM (two marker hits =
+    the worker's own report); (3) harvest via the workspaces files API (the
+    pod stays Running; the staged repo is intact); (4) transplant + local
+    battery + PR. NEVER trust gen=False + empty node alone as "turn dead" —
+    reload first. Corollary: a stale composer (text inserted, Enter and send-
+    button clicks all fail silently) means the page wiring died with the
+    turn — reload rewires it; do not grind sends.
+
+68. **queue_watch filled-regex work-order-ID coverage.** The filled gate
+    matched only (?:V|R)?WO-\d+ — UI/DEP/RTN/SYS-series reports ("=== UI-010
+    COMPLETION REPORT ===") sat unrecognized for an hour while the delivery
+    waited. Fixed 2026-09-12: [A-Z]{1,4}-\d+ covers UI-010, DEP-005, RTN-001,
+    SYS-003, VWO-009, WO-004 (the parallel-lineage OFF- era gate of lesson 64
+    coexists as a third alternative). When a new work-order series is introduced,
+    re-check the regex against its report header form BEFORE dispatch.
+
+69. **Personal usage limit — observed recovery + non-waiting remedies.**
+    Data point: the limit (WorkSpaces Management dialog, "try again 1 hour
+    later") cleared after ~75 minutes of ZERO send attempts; read-only DOM
+    polling (queue_watch) did NOT re-arm it. Non-waiting remedies: (a)
+    release completed sessions' sandboxes at settings/dashboard (each held
+    workspace holds the 3-slot limit); (b) after the window clears, a QUEUED
+    session can be re-admitted by the site as a NEW chat id (d71b08bf →
+    65e06fd4 roll observed) with a fresh workspace — poll the workspaces API
+    (user-fc) for the CURRENT chat binding instead of trusting old chat ids;
+    ghost chat ids return HTTP 500 and their tabs redirect home. Retarget
+    watchers to the new tab; kill the old spec/heartbeat pair first so the
+    supervisor does not double-poll.
