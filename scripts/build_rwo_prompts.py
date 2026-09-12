@@ -56,6 +56,52 @@ configureInstall (~line 100), upgradeInstall (~117), rollbackInstall (~156):
 after resolving the install, verify the actor's org matches the install's
 org, else HTTP 403 permission_denied naming the install, its org, and the
 denied action (the RWO doc carries the exact code sketch).""",
+"rwo-004": """YOUR WORK ORDER: RWO-004 — PressRoom: Server-Side Publication Terminality
++ Publish Version Guard (P1 Family F — security/trust boundary). Read
+docs/validation/work-orders/RWO-004.md IN THE CLONE — it is the CONTRACT.
+The Fix scope: docs/validation/fixtures/media/ops.js — (1) editStory (~46):
+after the permission check add a status gate (edit allowed only for
+draft/in_review/approved; published/corrected → HTTP 409 terminal_state
+pointing to the correction path); (2) publishStory (~159): REQUIRE
+expectedVersion (HTTP 400 expected_version_required when absent) and call
+the existing checkVersion helper — stale version → 409 data_conflict
+(reload and re-review); editor/publish form passes the approved version.
+UI-only guards stay; the API twin must now match them.""",
+"rwo-007": """YOUR WORK ORDER: RWO-007 — FlowMart: Upgrade Means Forward (P1 Family G
+product half + P2 rider Family M — ordering + rollback direction). Read
+docs/validation/work-orders/RWO-007.md IN THE CLONE — it is the CONTRACT.
+The Fix scope: docs/validation/fixtures/marketplace/ops-install.js —
+(1) upgradeInstall (~117): semver-ordering comparison targetVersion vs
+inst.version — older target → HTTP 409 implicit_downgrade_refused (smallest
+fix: refuse, tell the user to use rollback); (2) rollbackInstall (~156):
+derive the rollback target from the most recent 'upgraded' history entry's
+fromVersion (never 'any toVersion differing from current' — no forward
+'rollbacks'); (3) FAILURES.md documents both contracts. The engine half of
+Family G is RWO-009's — do NOT touch engine crates.""",
+"rwo-008": """YOUR WORK ORDER: RWO-008 — FlowMart Entitlement: Renewal Must Restore
+Authority (P1 Family H — entitlement shadowing). Read
+docs/validation/work-orders/RWO-008.md IN THE CLONE — it is the CONTRACT.
+The Fix scope: docs/validation/fixtures/marketplace/ops-install.js —
+(1) entitlementFor (~11): replace first-match with newest-ACTIVE resolution
+(active && not past validUntil; latest grantedAt, tie-break highest id;
+no active but revoked/expired exist → resolve the most-recent such record
+so fail-closed errors name the newest relevant entitlement); (2)
+grantEntitlement (~217): document the newest-active selection (smallest
+fix — no superseded status needed); (3) FAILURES.md/README: revocation is
+terminal per record, recovery is a new grant.""",
+"rwo-009": """YOUR WORK ORDER: RWO-009 — Engine Distribution: Visibility Gate on the
+Upgrade Path + Ordering Guard Rider (P1 Family I + Family G engine half).
+Read docs/validation/work-orders/RWO-009.md IN THE CLONE — it is the
+CONTRACT. The Fix scope: codex-rs/workflow-distribution/src/memory.rs (+
+unit tests in the crate) — (1) evaluate_upgrade (~435): filter candidates
+through the SAME visibility predicate install uses (release_installable —
+private releases invisible to foreign installers); (2) decide_upgrade
+(~464): re-run the visibility gate on the target before approval
+(documented order: visibility → integrity → access → entitlement);
+(3) ordering guard: reject upgrade proposals whose 'to' version is older
+than 'from' with a typed error (IllegalDowngrade { expected_newer_than,
+got } — smallest fix: refuse). Engine crate IS yours in this RWO (unlike
+rwo-001); all other engine crates remain frozen.""",
 }
 
 VERIF = {
@@ -86,6 +132,44 @@ VERIF = {
   configure/upgrade/rollback on Northwind's ins-0402) — every write must now
   403 permission_denied naming install + org + action; same-org operations
   still succeed; reads remain org-scoped and unaffected.
+""",
+"rwo-004": """VERIFICATION (exact commands + results in your report):
+- bash docs/validation/fixtures/run-all.sh --reset; bash docs/validation/fixtures/verify-sweep.sh (59/59)
+- Re-run both VWO-010 Family F attacks → expect 409 terminal_state (author
+  edit on published story) and the version guards (400 expected_version_required
+  when expectedVersion absent; 409 data_conflict when stale).
+- Re-run the normal editorial path (create → attach → submit → approve →
+  publish → correct) → ok; correction path unchanged.
+""",
+"rwo-007": """VERIFICATION (exact commands + results in your report):
+- bash docs/validation/fixtures/run-all.sh --reset; bash docs/validation/fixtures/verify-sweep.sh (59/59)
+- Re-run the VWO-010 battery sections A2/B → upgrade with older target →
+  409 implicit_downgrade_refused (pin/history/events unchanged); after a
+  legit 1.2.0 → 1.3.0 upgrade, rollback → 1.2.0 (the fromVersion — never
+  forward).
+- Duplicate-version and stale-pin paths (VWO-005/006) still pass; re-run
+  the upgrade-rollback user path → ok.
+""",
+"rwo-008": """VERIFICATION (exact commands + results in your report):
+- bash docs/validation/fixtures/run-all.sh --reset; bash docs/validation/fixtures/verify-sweep.sh (59/59)
+- Re-run the VWO-010 C-restart battery: revoke ent-0501 → blocked naming the
+  revoked record; grant fresh active entitlement (ent-0504-style, valid 2027)
+  → the SAME previously blocked operation now succeeds on retry;
+  expired-only state still blocks naming the expired record; auto-trial
+  install path (no entitlement) unchanged.
+""",
+"rwo-009": """VERIFICATION (exact commands + results in your report):
+- cargo test -p codex-workflow-distribution
+- cargo clippy -p codex-workflow-distribution --all-targets -- -D warnings
+- Re-run the VWO-009 standalone probe battery attacks 5b/6d/12 → expect
+  REFUSED (foreign installer evaluate_upgrade returns None/not-visible;
+  decide_upgrade on a smuggled proposal → ReleaseNotVisible; older-target
+  upgrade record → typed IllegalDowngrade error; pin unchanged in each).
+- All existing distribution tests still pass (search/install visibility,
+  gate order, stale-proposal, AlreadyInstalled).
+- If cargo is unavailable in your sandbox, say so explicitly, verify by
+  careful static reasoning + the cited line-level findings, and the Tech
+  Lead independently compiles and runs everything.
 """,
 }
 
