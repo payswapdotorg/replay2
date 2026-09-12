@@ -1266,3 +1266,36 @@ Field-proven this round (2026-09-12 14:40–15:05 UTC):
     ghost chat ids return HTTP 500 and their tabs redirect home. Retarget
     watchers to the new tab; kill the old spec/heartbeat pair first so the
     supervisor does not double-poll.
+
+## Lessons 64-68 (2026-09-12 — peak-gate siege session)
+
+64. **A revival directive that quotes the literal report headline + the
+    real 40-hex base SHA INOCULATES the transcript against the filled-gate
+    — the watcher false-positives COMPLETE on your own directive.** Use
+    placeholder forms in continuation messages; never both literals.
+
+65. **Peak-gate Enters commit NULL message pairs (server accepts the
+    message record, drops the content payload) — the DOM proof
+    (composer-cleared + body-grew) is optimistic staging and LIES.** Only
+    the chats API message tree is commit truth. dispatch_worker.send()
+    now server-verifies (landed = last user-with-content or assistant
+    atop one); create() verifies the chat EXISTS before "ACCEPTED"
+    (phantom /c/ URLs fall through to the assault).
+
+66. **Under account saturation every submit path null-commits — fresh-tab
+    binding is NOT the differentiator; capacity WINDOWS are.** The account
+    queue is shared with parallel lineages (contention is external,
+    intermittent). Recovery = spaced single-round retries with a
+    landed pre-probe guard (spaced_send.py), never 13-round assaults
+    (null pairs pollute the tree).
+
+67. **Close ONLY tabs you OWN — prefix allowlist, never exclusion.**
+    Exclusion-based cleanup closed the parallel lineage's live tab.
+
+68. **CLEAR the composer before inserting on a reopened/staged tab** —
+    staging leaves copies; naive inserts double the content (ratio 200%)
+    and the next Enter sends N concatenated copies.
+
+Field-proven tooling this session: probe_chat.py (server-side truth
+prober), spaced_send.py (patient retry loop), launch_detached.py
+(setsid for any command), DW_ROUNDS env override (single-round sends).
