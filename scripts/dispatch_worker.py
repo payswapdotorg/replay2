@@ -545,7 +545,7 @@ def _wait(c, js, want, tries=20, sleep=1.0, desc=""):
 
 # ----------------------------------------------------------------- create --
 
-CAPACITY_ROUNDS = 12  # in-process assault rounds; then flag + exit 3 (the
+CAPACITY_ROUNDS = int(__import__("os").environ.get("DW_ROUNDS", "12"))  # in-process assault rounds; then flag + exit 3 (the
                       # supervisor relaunches recover_capacity.py, which re-runs
                       # the same aggressive loop — never a passive wait)
 
@@ -898,6 +898,43 @@ def create(name, prompt_file):
                        "insert_pct": pct, "sent": False})
                 return 2
             if ok and "/c/" in (url or ""):
+                # SERVER-SIDE EXISTENCE CHECK (2026-09-12 lessons 63/65): the
+                # URL moving to /c/<uuid> used to be trusted as acceptance —
+                # under the peak gate it LIES (phantom /c/ URLs with a staged
+                # composer; the chat is never created server-side). Verify the
+                # chat EXISTS (and carries the first message) before calling
+                # it accepted.
+                cid = (url or "").split("/c/")[-1].split("/")[0].split("?")[0]
+                exists_server = False
+                try:
+                    ev = _eval(c, r"""(async () => {
+                      const m = location.href.match(/\/c\/([0-9a-f-]{36})/);
+                      if (!m) return JSON.stringify({err: 'no-chat-url'});
+                      const tok = (localStorage.getItem('token') || '').replace(/^"|"$/g, '');
+                      const r = await fetch('/api/v1/chats/' + m[1], {credentials: 'include',
+                        headers: tok ? {Authorization: 'Bearer ' + tok} : {}});
+                      if (!r.ok) return JSON.stringify({err: 'http-' + r.status});
+                      const j = await r.json();
+                      const msgs = ((j.chat || {}).history || {}).messages || {};
+                      let userLen = 0;
+                      for (const mm of Object.values(msgs)) {
+                        if (mm.role === 'user') {
+                          const cc = Array.isArray(mm.content) ? mm.content : [mm.content];
+                          userLen = Math.max(userLen, JSON.stringify(cc).length);
+                        }
+                      }
+                      return JSON.stringify({exists: true, userLen: userLen});
+                    })()""", timeout=30)
+                    evd = json.loads(ev or "{}")
+                    if evd.get("exists") and evd.get("userLen", 0) > 100:
+                        exists_server = True
+                    else:
+                        print(f"      [server-verify] chat NOT live server-side ({ev[:90]}) — "
+                              "phantom /c/ URL; continuing assault")
+                except Exception as e:
+                    print(f"      [server-verify] check failed ({str(e)[:60]}) — continuing assault")
+                if not exists_server:
+                    ok = False
                 # TWO-STATE CAPACITY PROTOCOL (queue_watch.py; live evidence
                 # 2026-09-10): a send whose URL moved to /c/<uuid> (composer
                 # cleared + prompt in transcript) was ACCEPTED — the task is
@@ -907,14 +944,17 @@ def create(name, prompt_file):
                 # Do NOT cancel: keep the tab open, register the session as
                 # sent-queued, and monitor with `check <name>` — generation
                 # starts when capacity frees.
-                print("prompt ACCEPTED — session live at " + str(url))
-                print("      capacity popup is COSMETIC (task queued server-side) — NOT cancelling;")
-                print("      monitor generation start with: dispatch_worker.py check " + name)
-                _save({"name": name, "tab_id": tab["id"], "url": url, "ts": int(time.time()),
-                       "prompt_file": prompt_file, "prompt_chars": len(prompt),
-                       "mode": "agents-tab", "model": WANT_MODEL, "skill": WANT_SKILL,
-                       "insert_pct": pct, "sent": True, "stage": "queued-capacity"})
-                return 0
+                if exists_server:
+                    print("prompt ACCEPTED — session live at " + str(url) + " (server-verified)")
+                    print("      capacity popup is COSMETIC (task queued server-side) — NOT cancelling;")
+                    print("      monitor generation start with: dispatch_worker.py check " + name)
+                    _save({"name": name, "tab_id": tab["id"], "url": url, "ts": int(time.time()),
+                           "prompt_file": prompt_file, "prompt_chars": len(prompt),
+                           "mode": "agents-tab", "model": WANT_MODEL, "skill": WANT_SKILL,
+                           "insert_pct": pct, "sent": True, "stage": "queued-capacity"})
+                    return 0
+                # phantom /c/ URL: fall through to the assault (never register
+                # a session that does not exist server-side)
             # capacity dialog present and the send was NOT accepted — assault
             print(f"      [capacity] GLM-5.3 at capacity (round {assault_round}) — "
                   f"Cancel + re-pick + resend (operator policy: never wait)")
