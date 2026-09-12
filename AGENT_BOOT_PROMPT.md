@@ -990,3 +990,38 @@ access to the same account and sessions in the replay."
 5. Append every milestone to /home/z/my-project/worklog.md (append-only,
    `---` sections) — the shared cross-agent worklog.
 
+
+54. **A wedged tab (CDP evals time out forever) can mask a COMPLETED
+    session — recover with a fresh tab, never trust the wedged render.**
+    vwo-006's tab wedged mid-render showing a stale 16.5K "todo 5/10"
+    snapshot; the mission had actually COMPLETED (final report, bundle,
+    validator PASS) — the queue watcher could never read the DOM to fire.
+    Recovery: open a FRESH tab to the same /c/<uuid> URL (verify the URL
+    first!), read the true state, close the wedged tab, re-anchor the
+    registry (tab-reopen record) + rewrite the queue_watch spec. Extends
+    lesson 52 (parallel discovery) with the recovery procedure.
+
+55. **The workers' git clones live at /home/z/codex (OUTSIDE the
+    workspaces content-API root).** The content API only serves the pod's
+    /home/z/my-project — the delivery bundle must land there (the prompt
+    template already mandates it). Probing /home/z/codex/... always
+    returns "Failed to get file content" regardless of existence; don't
+    misread that as a missing clone. The chatId argument to the
+    content/ls-tree APIs takes the BARE uuid — a 'chat-' prefixed id
+    returns "chat does not belong to current user".
+
+56. **Peak-hours turn gate: continuation Enters get a modal ("switch to
+    GLM-5.3-Flash or try again later") — NEVER click the Flash switch
+    (operator model rule). Cancel + re-Enter rounds are correct.** The gate
+    is intermittent, not a wall (fresh dispatches and lucky nudges land).
+    A "nudge send timed out (bounded)" can still have LANDED — the
+    subprocess timeout fires mid-assault-rounds while a later Enter
+    succeeds server-side; always re-read the transcript state before
+    concluding failure.
+
+57. **Work-rich sessions must not be assaulted on the fresh-zombie
+    clock.** queue_watch now distinguishes: transcript >= 15K chars
+    (mid-mission, sandbox holds hours of evidence) gets a 6h
+    queued-capacity threshold; fresh sessions (< 15K) keep the aggressive
+    90-min assault. Voiding a work-rich session to "refresh capacity"
+    destroys the mission.

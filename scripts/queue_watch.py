@@ -33,7 +33,8 @@ HB_PATH = os.path.join(FLAGS, "queue_watch_heartbeat.{name}")
 # by the site after ~1h; fe7a9812 sat 2h10m then needed destruction anyway,
 # and the fresh re-dispatch immediately got clean capacity). Waiting for the
 # site to kill the session just burns wall-clock — assault it ourselves.
-STUCK_ASSAULT_AFTER = 5400   # s of queued-capacity with zero progress
+STUCK_ASSAULT_AFTER = 5400   # s of queued-capacity with zero progress (fresh)
+STUCK_ASSAULT_WORKRICH = 21600  # s for work-rich sessions (chars >= 15K)
 STUCK_ASSAULT_MAX = 3        # then keep waiting (peaks do end eventually)
 
 
@@ -193,11 +194,13 @@ def main():
             # 'try again 1 hour later') — assaulting burns allowance and
             # churns sessions; only queued-capacity zombies get assaulted.
             if (st == "queued-capacity" and stuck_since
-                    and time.time() - stuck_since > STUCK_ASSAULT_AFTER
+                    and time.time() - stuck_since > (
+                        STUCK_ASSAULT_WORKRICH if ln >= 15000 else STUCK_ASSAULT_AFTER)
                     and stuck_assaults < STUCK_ASSAULT_MAX):
                 stuck_assaults += 1
                 stuck_since = 0
-                print(f"[{name}] {stamp} STUCK {STUCK_ASSAULT_AFTER}s in queued-capacity — "
+                thresh = STUCK_ASSAULT_WORKRICH if ln >= 15000 else STUCK_ASSAULT_AFTER
+                print(f"[{name}] {stamp} STUCK {thresh}s in queued-capacity (chars={ln}) — "
                       f"assault #{stuck_assaults}/{STUCK_ASSAULT_MAX} (fresh dispatch beats a zombie session)",
                       flush=True)
                 run_with_hb(name, [sys.executable, os.path.join(BASE, "dispatch_worker.py"),
