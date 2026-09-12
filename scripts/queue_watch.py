@@ -59,6 +59,26 @@ def write_spec(name, tab_prefix, marker):
         pass
 
 
+def _prompt_file_for(name):
+    """The ORIGINAL prompt file for a session name (registry truth).
+
+    create() records the absolute prompt_file it used; void/failed records
+    do not carry it. A re-dispatch must reuse the ORIGINAL packet file —
+    deriving the filename from the session name (the old WO- convention)
+    crashes on FileNotFoundError for any other naming scheme (2026-09-12:
+    val-015/val-016 re-dispatch crash)."""
+    prompt = None
+    for s in dw._sessions():
+        if s.get("name") == name and s.get("prompt_file"):
+            prompt = s["prompt_file"]  # latest record wins
+    if prompt and os.path.exists(prompt):
+        return prompt
+    # legacy derivation (pre-registry packets); None when nothing exists —
+    # the caller must abort the re-dispatch rather than crash
+    legacy = os.path.join(BASE, "worker-prompts", f"{name.replace('wo-', 'WO-')}.md")
+    return legacy if os.path.exists(legacy) else None
+
+
 def heartbeat(name):
     try:
         with open(HB_PATH.format(name=name), "w") as f:
@@ -246,9 +266,14 @@ def main():
                     run_with_hb(name, [sys.executable, os.path.join(BASE, "dispatch_worker.py"),
                                      "void", name,
                                      f"session destroyed while queued ({st}); queue_watch assault re-dispatch"])
-                    run_with_hb(name, [sys.executable, os.path.join(BASE, "dispatch_worker.py"),
-                                     "create", name,
-                                     os.path.join(BASE, "worker-prompts", f"{name.upper()}.md")])
+                    # registry-truth prompt file (2026-09-12: name-derived paths
+                    # crash on any non-WO- naming scheme — lesson 58 lineage)
+                    _pf = _prompt_file_for(name)
+                    if not _pf:
+                        print(f"[{name}] NO PROMPT FILE found (registry+legacy) — re-dispatch aborted", flush=True)
+                    else:
+                        run_with_hb(name, [sys.executable, os.path.join(BASE, "dispatch_worker.py"),
+                                     "create", name, _pf])
                     # refresh tab prefix from the registry's latest record
                     rec = dw._find(name)
                     if rec:
@@ -302,9 +327,12 @@ def main():
                                  "void", name,
                                  f"stuck in queued-capacity {STUCK_ASSAULT_AFTER}s with zero progress; "
                                  f"staleness assault #{stuck_assaults}"])
-                run_with_hb(name, [sys.executable, os.path.join(BASE, "dispatch_worker.py"),
-                                 "create", name,
-                                 os.path.join(BASE, "worker-prompts", f"{name.upper()}.md")])
+                _pf = _prompt_file_for(name)
+                if not _pf:
+                    print(f"[{name}] NO PROMPT FILE found (registry+legacy) — re-dispatch aborted", flush=True)
+                else:
+                    run_with_hb(name, [sys.executable, os.path.join(BASE, "dispatch_worker.py"),
+                                 "create", name, _pf])
                 rec = dw._find(name)
                 if rec:
                     tab_prefix = (rec.get("tab_id") or "")[:8]

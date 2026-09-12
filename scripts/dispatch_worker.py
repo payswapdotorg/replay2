@@ -830,6 +830,27 @@ def create(name, prompt_file):
                     time.sleep(1.2)
 
                 ok, url, pct, c = _select_insert_send(c, tab, prompt, name, prompt_file)
+                # DELAYED LANDING RE-CHECK (2026-09-12 forensics): the capacity
+                # popup + optimistic-render rollback arrive SECONDS after the
+                # send; an immediate check exits with a false VERIFIED before
+                # the site rolls the un-accepted session back to home. Ground
+                # truth after the settle window: session URL (/c/...), prompt
+                # visible in the transcript — else the send did NOT stick.
+                if ok:
+                    time.sleep(9)
+                    try:
+                        url_now = _eval(c, "location.href", timeout=20) or CHAT_URL
+                    except Exception:
+                        url_now = url
+                    if url_now not in (CHAT_URL, "about:blank"):
+                        url = url_now  # landed (or queued-capacity) — keep truth
+                    else:
+                        body_now = _eval(c, "document.body.innerText || ''", timeout=25) or ""
+                        snippet = prompt.strip().split("\n")[0][:40]
+                        if not (snippet in body_now and len(body_now) > 3000):
+                            print("      [landing] send did NOT stick (rolled back home) — assault round")
+                            ok = False
+                            url = url_now
             except Exception as e:
                 # transient CDP/websocket failure (busy page, dialog churn):
                 # never crash the assault — reconnect and take the next round
