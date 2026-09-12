@@ -1434,3 +1434,23 @@ prober), spaced_send.py (patient retry loop), launch_detached.py
     means a fresh/wiped account, not a block. Push infra hotfixes to
     GitHub IMMEDIATELY — a hotfix that exists only locally is a hotfix
     the next sandbox reset deletes.
+
+71. **The revival-treadmill corollary: an 8-min retry cadence on null-
+    committing sends IS the lesson-61 cap treadmill.** 2026-09-12 22:25-
+    23:07: five revival attempts, five null pairs — each submit re-arms
+    the 1h window; the fixed short interval guarantees perpetual re-arm.
+    Anti-treadmill cadence: after ANY null commit, the next attempt must
+    be ≥65 min out (past the full re-arm window). freeze_revive.py
+    <session> @<directive> <resume-epoch> 3900 implements this. Also: the
+    null-commit can persist SILENTLY (no modal, composer idle, "Show full
+    message" staged render) — absence of the peak/limit modal is NOT
+    evidence the gate is open; only a landed send is.
+
+72. **The cap triggers on cumulative per-hour generation volume, not a
+    fixed wall clock.** Field data: val-018's worker completed a clean
+    50-min turn 19:00-19:50; val-019's worker died ~40 min into an
+    equally heavy turn at 21:05 (the account had already burned val-018's
+    quota in that hour). Scheduling heuristics for worker dispatch: after
+    any ~40+ min heavy generation turn completes, assume the account is
+    near the cap before dispatching the next worker; prefer a 20-30 min
+    quiet gap between heavy worker turns.
