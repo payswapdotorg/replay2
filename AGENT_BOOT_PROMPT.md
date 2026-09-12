@@ -1348,3 +1348,16 @@ prober), spaced_send.py (patient retry loop), launch_detached.py
     2 zombie tabs; slots freed first, then the usage-limit dialog was still
     stuck — that one is account-level and only clears with zero sends, per
     lesson 69.)
+
+69. **The capacity modal ("GLM-5.3 is intensifying... peak hours") can mask
+    the usage-cap re-arm treadmill — distinguish by what STOPPED working.**
+    2026-09-12 16:2x forensics: chat CREATIONS kept landing in occasional
+    windows (15:06, 15:47) while GENERATION stayed at exactly zero for 90+
+    minutes account-wide despite continuous retries. Creation ≠ generation:
+    the usage cap gates generation; every queued-turn attempt re-arms the
+    1h window (lesson 61). The modal text misleads (says "capacity", not
+    "personal limit"). The 90-minute-zero-generation signature = FREEZE ALL
+    RETRIES (sends AND creates) for 1h+ past the last re-arm; passive
+    server-side probes (chats API only — no sends!) detect the lapse (the
+    account's other queued turns fire first). Spaced 150s retries are NOT
+    patient enough under this mode — they ARE the treadmill.
