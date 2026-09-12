@@ -1299,3 +1299,52 @@ Field-proven this round (2026-09-12 14:40–15:05 UTC):
 Field-proven tooling this session: probe_chat.py (server-side truth
 prober), spaced_send.py (patient retry loop), launch_detached.py
 (setsid for any command), DW_ROUNDS env override (single-round sends).
+
+## Lessons 70-73 (2026-09-12 16:15 UTC — mid-operation machine reboot recovery)
+
+70. **The sandbox machine can REBOOT mid-operation (full process wipe, not
+    just a state reset) — the tool shell survives while every daemon dies.
+    Detect via `uptime`/`who -b` when CDP suddenly refuses connections.**
+    2026-09-12 15:59 UTC: Xvfb/Chrome/replayd/supervisor/watchers all died
+    mid-unstick; /home/z root restored to the Sep-11 15:59 snapshot (env.sh,
+    product clones, browser-profile GONE) while /home/z/my-project partially
+    persisted (worklog survived; the nested replay2 checkout did not — it
+    came back as the old tracked tree with NO .git and NO runtime dirs).
+    Recovery = lesson-58 recipe, then re-verify each component with
+    deploy.sh (idempotent) — do not trust any pre-reboot process table.
+
+71. **THE NESTED-CLONE GIT TRAP (self-inflicted, near-fatal): a directory
+    whose .git was wiped by a snapshot restore is NOT a repo — git silently
+    walks UP and adopts the PARENT repo.** Running `git remote add origin
+    <other-repo>` + `git fetch` + `git reset --hard origin/main` from that
+    directory re-pointed the SANDBOX repo's origin and swapped its ENTIRE
+    working tree to the other repo's tree (app sources + the day's worklog
+    entries deleted in one command). RULE: before ANY fetch/reset in a
+    supposed clone, run `git rev -parse --show-toplevel` and verify it is
+    the directory you are standing in AND that `<dir>/.git` exists; a
+    restored-without-.git directory must be re-cloned or re-initialized —
+    never remote-operated in place. Recovery when already hit: the original
+    HEAD is still in the object store — `git reset --hard <original-HEAD>`
+    (find it in the pre-meddling `git log` you captured, or reflog), then
+    remove the wrong remote, then re-overlay the intended code and commit.
+
+72. **Fresh browser profile ⇒ NEW extension IDs; discover, never hardcode.**
+    The turbovpn extension id changed with the fresh profile
+    (alfbkcag… → haofjlmm…). Find it via CDP `/json/list` (the service
+    worker target's chrome-extension:// URL). The popup page cannot be
+    opened with channel.new_tab (returns about:blank) — open any tab and
+    `Page.navigate` to chrome-extension://<id>/dist/popup/index.html, then
+    DOM-click the connect control (`.mt-5.w-16.h-16.cursor-pointer`), NOT
+    the "Tap to Connect" text (that opens the account menu and its sign-out
+    dialog — CANCEL it, the Premium plan rides on it). Verify with the
+    egress IP (api.ipify.org) + "CONNECTED" in the popup text.
+
+73. **Dead and parked session tabs hold concurrency slots even after their
+    watchers die — release them BEFORE re-arming anything.** On recovery,
+    probe every chat tab (completed-item tabs, parked-session tabs) and
+    close the unneeded ones; a 5-tab state (3 live + 1 completed + 1 parked)
+    is over the 3-slot cap and blocks generation account-wide. Then re-point
+    the survivors' watchers. (Pre-reboot this session: 3 frozen workers +
+    2 zombie tabs; slots freed first, then the usage-limit dialog was still
+    stuck — that one is account-level and only clears with zero sends, per
+    lesson 69.)
