@@ -293,6 +293,44 @@ def heartbeat():
         pass
 
 
+def ensure_stall_recovery():
+    """stall_recovery.py — dead-turn detector for worker sessions (frozen
+    DOM + server-side open-empty assistant turn -> close tab so queue_watch's
+    assault path re-dispatches). Born from the 2026-09-12 rwo-001/002
+    forensic: both remediation turns died mid-stream and plain-'queued'
+    sessions are never assaulted by queue_watch. pidfile first, pgrep
+    fallback, heartbeat-stale SIGKILL (same contract as queue_watch)."""
+    pidfile = os.path.join(BASE, "stall_recovery.pid")
+    pid = read_pid(pidfile)
+    if pid_alive(pid, "stall_recovery.py"):
+        age = hb_age(os.path.join(FLAGS, "stall_recovery_heartbeat"))
+        if age > 900 and (time.time() - proc_start_epoch(pid)) > 900:
+            log("stall_recovery HUNG (heartbeat stale) — SIGKILL + restart")
+            try:
+                subprocess.run(["kill", "-9", str(pid)], capture_output=True)
+            except Exception:
+                pass
+            time.sleep(1)
+        else:
+            return
+    else:
+        r = subprocess.run(["pgrep", "-f", "scripts/stall_recovery.py"],
+                           capture_output=True, text=True)
+        pid = r.stdout.strip().split("\n")[0] if r.stdout.strip() else ""
+        if pid:
+            try:
+                open(pidfile, "w").write(pid)
+            except Exception:
+                pass
+            return
+    log("stall_recovery DEAD — restarting")
+    subprocess.Popen(
+        [PY, os.path.join(BASE, "stall_recovery.py")],
+        stdout=open(os.path.join(LOGDIR, "stall_recovery.out"), "a"),
+        stderr=subprocess.STDOUT, start_new_session=True)
+    log("stall_recovery restarted")
+
+
 def ensure_queue_watch():
     """Resurrect queue_watch.py for every flags/queue_watch.spec.<name>.
 
@@ -360,6 +398,7 @@ def main():
             ensure_capacity_recovery()
             ensure_tab_gc()
             ensure_queue_watch()
+            ensure_stall_recovery()
             if cycle % 3 == 0:          # browser check every ~30s
                 ensure_browser()
                 ensure_dev()
