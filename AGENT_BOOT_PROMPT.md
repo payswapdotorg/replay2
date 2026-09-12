@@ -1361,3 +1361,16 @@ prober), spaced_send.py (patient retry loop), launch_detached.py
     server-side probes (chats API only — no sends!) detect the lapse (the
     account's other queued turns fire first). Spaced 150s retries are NOT
     patient enough under this mode — they ARE the treadmill.
+
+70. **"No response, Please try again later" + "The current usage exceeds the
+    personal limit" in the transcript body = the REAL cap, and it is NOT the
+    peak modal.** The peak modal (Cancel / Switch to GLM-5.3-Flash buttons)
+    is a soft gate — creation windows come and go. The personal-limit text
+    (often only in the body, sometimes no buttons at all) is the lesson-61
+    hard cap: EVERY send/create re-arms the 1-hour window. Distinguishing
+    test: probe the tab body AFTER a rejected round — peak text with
+    buttons = keep window-catching at ≥3-min spacing; personal-limit text =
+    HARD FREEZE all sends for 1h past the last attempt (the account's
+    queued turns fire first when it lapses — passive chats-API canary
+    only). The two texts can appear in the same session's history; the
+    LAST one wins.
