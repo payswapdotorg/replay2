@@ -53,12 +53,18 @@ def log(msg):
 
 
 def get_pat():
-    try:
-        env = open(os.path.join(BASE, "env.sh")).read()
-        m = re.search(r"OPERATOR_PAT=(ghp_\w+)", env)
-        return m.group(1) if m else ""
-    except Exception:
-        return ""
+    # 2026-09-12: credentials live in ~/.secrets/env.sh (never committed);
+    # scripts/env.sh remains as a fallback for stack defaults.
+    for path in (os.path.expanduser("~/.secrets/env.sh"), os.path.join(BASE, "env.sh")):
+        try:
+            env = open(path).read()
+        except Exception:
+            continue
+        for var in ("PAYSWAP_PAT", "GITHUB_TOKEN", "OPERATOR_PAT"):
+            m = re.search(rf"{var}=(ghp_\w+)", env)
+            if m:
+                return m.group(1)
+    return ""
 
 
 def check_login():
@@ -71,23 +77,34 @@ def check_login():
         tabs = [t for t in channel.list_tabs() if "chat.z.ai" in (t.get("url") or "")]
         if not tabs:
             return STATE["login"]
-        # priority: home/root tab first (username always visible there),
-        # then any other chat.z.ai tab
         tabs.sort(key=lambda t: 0 if (t.get("url") or "").rstrip("/").endswith("chat.z.ai") else 1)
         saw_signin = False
-        for tab in tabs:
+        for tab in tabs[:2]:
             try:
                 cdp = channel.CDP(tab["webSocketDebuggerUrl"], timeout=12)
                 try:
                     body = cdp.eval("document.body.innerText || ''", timeout=10) or ""
+                    tok = ""
+                    try:
+                        tok = cdp.eval("(localStorage.getItem('token')||'').length", timeout=8) or ""
+                    except Exception:
+                        tok = ""
                 finally:
                     cdp.close()
+                if "tepa" in body:
+                    return "logged-in(tepa)"
+                # 2026-09-12: token presence is the authoritative session probe — the
+                # body marker only appears on some pages, which made the resident
+                # agent report a stale "logged-out" while actually signed in.
+                try:
+                    if int(str(tok).strip() or "0") > 100:
+                        return "logged-in(token)"
+                except Exception:
+                    pass
+                if "Sign in" in body or "Log in" in body:
+                    saw_signin = True
             except Exception:
                 continue
-            if "tepa" in body:
-                return "logged-in(tepa)"
-            if "Sign in" in body or "Log in" in body:
-                saw_signin = True
         if saw_signin:
             return "logged-out"
         # no tab shows either marker (e.g. all worker chats mid-render):
@@ -100,7 +117,7 @@ def check_login():
 def check_branches(pat):
     r = subprocess.run(["curl", "-s", "--max-time", "15",
                         "-H", f"Authorization: token {pat}",
-                        "https://api.github.com/repos/payswapdotorg/codex/branches?per_page=50"],
+                        "https://api.github.com/repos/payswapdotorg/Zeck/branches?per_page=100"],
                        capture_output=True, text=True)
     try:
         bs = json.loads(r.stdout)

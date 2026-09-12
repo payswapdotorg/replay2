@@ -1374,3 +1374,45 @@ prober), spaced_send.py (patient retry loop), launch_detached.py
     queued turns fire first when it lapses — passive chats-API canary
     only). The two texts can appear in the same session's history; the
     LAST one wins.
+
+## Lessons 74-76 (2026-09-12 15:30 UTC — resident-lead wave-3: send-verification ground truth, duplicate dispatch, id rolls)
+
+
+74. **`form.requestSubmit()` on chat.z.ai NAVIGATES the page away — and
+    "composer-cleared + body-grew" is NOT proof of send.** The capacity
+    recovery path that submits via `SUBMIT_JS`'s form branch silently
+    bounced the tab to `https://chat.z.ai/` (body length collapses to
+    ~600) and destroyed the staged message. And during peak-hours
+    rollbacks the UI stages a sent message into the transcript DOM, then
+    ROLLS IT BACK server-side — every DOM-based "sent: VERIFIED
+    (composer-cleared+grew)" signal can be a false positive. THE ONLY
+    SEND GROUND TRUTH is the server-side tree: `fetch('/api/v1/chats/{cid}',
+    {headers:{Authorization:'Bearer '+localStorage.token}})` message
+    count must grow. Proven loop (val014_resend.py / staged_send_loop.py):
+    navigate tab to the chat URL → clear + `Input.insertText` → click
+    Cancel on the modal (NEVER 'Switch to GLM-5.3-Flash') → focus textarea
+    → Enter keyDown+keyUp → wait → tree count → retry rounds (the gate is
+    intermittent; round 5 of 5 landed on 41aff710). Submit method:
+    send-button click or Enter keys on the composer — never form submit.
+
+75. **Before ANY re-dispatch, run duplicate-dispatch forensics.** A prior
+    Lead session's dispatch can leave a LIVE chat (orphaned when that
+    session dies — its tab closes but the server chat + pod keep running;
+    observed: ee055f9d generating since 14:57 while a fresh dispatch
+    created a1aa5fc2 in parallel). Protocol: `check_chats.py` (list) +
+    `check_workspaces.py` (pods) FIRST; match by title; if a duplicate
+    exists KEEP the chat with the generation head start, DELETE the
+    redundant one (`DELETE /api/v1/chats/{id}` — 200), let the next
+    `dispatch_worker.py create` release its idle sandbox, and re-point
+    the registry (void the stale record + append a fresh create/tab-reopen
+    record). Never void-and-redo a live generating chat.
+
+76. **The peak-hours gate ROLLS the chat id on fresh dispatches too.**
+    A staged prompt sits in the composer of a pre-roll chat id
+    (3a0f8e27) that returns HTTP500 on the chats detail API and never
+    appears in chats/list — it is a dead shell, not an error state. After
+    the Cancel+Enter round lands, the tab URL changes to the REAL id
+    (3939c75e); read it from the tab and append a `tab-reopen` registry
+    record. Discriminator for "composer emptied": consumed-by-roll =
+    composer 0 + URL changed + transcript `hasPrompt` true (SUCCESS);
+    lost-message = composer 0 + URL unchanged (needs re-insert).
