@@ -244,8 +244,30 @@ def main():
             heartbeat(name)
             mk = os.path.join(FLAGS, f"{name}-complete.marker")
             if hits >= 1000:   # filled-regex ONLY (see 2026-09-10 fix above)
-                open(mk, "w").write(f"{time.time()} {url}\n")
-                print(f"[{name}] COMPLETE — marker written", flush=True)
+                # SERVER-SIDE CONFIRMATION (lesson 64, 2026-09-12 21:19
+                # re-offense): a continuation directive quoting the literal
+                # headline + base SHA inoculates the DOM against the filled
+                # gate (the watcher retired itself on the LEAD'S OWN
+                # directive). The DOM regex alone can NEVER be trusted for
+                # completion — confirm the marker lives in an ASSISTANT
+                # message server-side before declaring COMPLETE.
+                cid = (url or "").split("/c/")[-1].split("/")[0].split("?")[0]
+                server_ok = False
+                if len(cid) >= 30:
+                    try:
+                        _pr = subprocess.run(
+                            [sys.executable, os.path.join(BASE, "probe_chat.py"), cid],
+                            cwd=BASE, capture_output=True, text=True, timeout=60)
+                        _pd = json.loads(_pr.stdout.strip().split("\n")[-1])
+                        server_ok = bool(_pd.get("reportInAssistant"))
+                    except Exception:
+                        server_ok = False
+                if not server_ok:
+                    print(f"[{name}] filled-regex hit but SERVER probe says no "
+                          "assistant report — DOM inoculation suspected; NOT complete", flush=True)
+                else:
+                    open(mk, "w").write(f"{time.time()} {url}\n")
+                    print(f"[{name}] COMPLETE — marker written (server-confirmed)", flush=True)
                 try:
                     os.remove(SPEC_PATH.format(name=name))
                     os.remove(HB_PATH.format(name=name))
