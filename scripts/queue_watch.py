@@ -268,12 +268,12 @@ def main():
                 else:
                     open(mk, "w").write(f"{time.time()} {url}\n")
                     print(f"[{name}] COMPLETE — marker written (server-confirmed)", flush=True)
-                try:
-                    os.remove(SPEC_PATH.format(name=name))
-                    os.remove(HB_PATH.format(name=name))
-                except Exception:
-                    pass
-                return 0
+                    try:
+                        os.remove(SPEC_PATH.format(name=name))
+                        os.remove(HB_PATH.format(name=name))
+                    except Exception:
+                        pass
+                    return 0
             if st == "rate-limited":
                 note_ratelimit(name)
             if st == "tablost" or st == "home":
