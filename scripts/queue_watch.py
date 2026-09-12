@@ -96,8 +96,18 @@ def state(tab_prefix):
     # is now the filled-regex ONLY (tolerant: case-insensitive, wider window,
     # flexible separator between the two field labels).
     filled = bool(re.search(
-        r"===?\s*WO-\d+\s*(?:COMPLETION\s*REPORT|完成报告)\s*===?"
+        r"===?\s*(?:V)?WO-\d+\s*(?:COMPLETION\s*REPORT|完成报告)\s*===?"
         r"[\s\S]{0,900}?(?:base\s*branch|基础分支)[^\n]{0,60}?(?:base\s*SHA|基础\s*SHA)\s*[:：]\s*(?:main|主干)\s*@\s*[0-9a-f]{7,40}",
+        body, re.IGNORECASE))
+    # 2026-09-12 fix (rebase regression): the (?:V)? prefix was lost in the
+    # 1995210 re-apply — VWO reports never matched the filled gate. Also
+    # accept the observed report deviations (VWO-004/VWO-009 'Identity'
+    # layout: 'Base SHA: <hex>' / 'Base SHA: <hex> (verified') as a filled
+    # form — the template's 'base branch + base SHA: main @ <hex>' stays
+    # the canonical form; this only widens genuine-report detection.
+    filled = filled or bool(re.search(
+        r"===?\s*(?:V)?WO-\d+\s*(?:COMPLETION\s*REPORT|完成报告)\s*===?"
+        r"[\s\S]{0,300}?(?:Base\s*SHA|基础\s*SHA)\s*[:：]\s*(?:main\s*@?\s*)?[0-9a-f]{40}",
         body, re.IGNORECASE))
     gen = bool(re.search(r"\b(Stop|Pause|Halt)\b", body[-1500:]))
     cap = "currently at capacity" in body or "peak hours" in body
