@@ -914,11 +914,13 @@ access to the same account and sessions in the replay."
 
 - /home/z/Zeck/benchmarks/validation/apps/shared/media.ts is UNTRACKED
   prep for VAL-017 (deterministic synthetic media: PNG canvas writer +
-  WAV tone synthesis, all pure/deterministic). It has ONE syntax bug:
-  `return Buffer.concat(ader, data]);` in synthesizeWav must be
-  `return Buffer.concat([header, data]);`. Fix, reuse (imageFixture keys
-  scene-001/scene-004/img-c-001..003, audioFixture event-001/002,
-  mediaDigest), and include it in the VAL-017 branch.
+  WAV tone synthesis, all pure/deterministic). It is SYNTAX-CLEAN as-is
+  (bun build verified; byte-verified `([header` present, brackets
+  balanced — an apparent `Buffer.concat(ader, data]);` "bug" in tool
+  DISPLAYS is the lesson-21 redaction artifact eating `[he`, NOT real
+  bytes). Reuse as-is (imageFixture keys scene-001/scene-004/
+  img-c-001..003, audioFixture event-001/002, mediaDigest) and include
+  it in the VAL-017 branch.
 
 ### C. Provider truth (verified live, 2026-09-11/12)
 
