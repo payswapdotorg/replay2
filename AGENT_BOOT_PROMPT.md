@@ -1680,3 +1680,46 @@ prober), spaced_send.py (patient retry loop), launch_detached.py
     when its dependencies are complete). Before ANY frontier claim, run
     the state-consistency unit tests locally (2 files, <60s) — they are
     the cheapest claim-legality oracle.
+## Lessons 92-95 (2026-09-13 08:50 UTC — sporta M1 wave 2: three-gate peak model, zombie turns, quota modal, redirect chains)
+
+92. **Peak hours have THREE distinct gates — know which machinery owns
+    each before intervening.** (a) GLM-5.3 model capacity popup ("Currently
+    in peak hours … switch to GLM-5.3-Flash") → owned by the create/send
+    assault ladders (cancel + re-pick + resend; NEVER switch models). (b)
+    'WorkSpaces Management' quota modal ("The current usage exceeds the
+    personal limit. Please try again 1 hour later." — Cancel/OK only, NO
+    holder rows) → a usage-quota block, NOT the concurrency modal; policy:
+    ignore the '1 hour later' advice entirely (operator rule: never wait),
+    cancel it and keep sending — the queue machinery owns cadence. (c)
+    'Limit Sandbox Concurrency' modal (holder rows + Release buttons) →
+    stale-holder leak, owned by `dispatch_worker.py sandboxes` auto-release.
+    Misdiagnosing (b) as (c) wastes a release cycle on a modal that has no
+    rows.
+
+93. **Zombie-turn diagnosis: an open assistant turn (message type None,
+    children=0) that is >90 min old with NO workspace row in
+    check_workspaces.py and NO preview-chat-* iframe in the tab list is
+    DEAD, not slow.** Root cause seen: the auto-release during another
+    session's create killed the worker's sandbox mid-turn (short row-title
+    keywords like 'W203' < 5 chars evade the keyword guard). The turn can
+    never commit. Recovery: void the session and re-dispatch via
+    launch_create.py. Do NOT wait on it and do NOT send continuations into
+    it — the sandbox is gone.
+
+94. **Conversation-destroyed verdict needs three corroborating signals,
+    not one: (1) 0-message server tree, (2) absent from the /api/v1/chats/
+    list (use trailing-slash URLs), (3) no workspace + no sandbox iframe.**
+    A brand-new conversation can show 0 messages for many minutes while it
+    provisions (tab iframe preview-chat-<cid> present = alive/queued);
+    a destroyed one has neither tree nor tab iframe. Two-state policy
+    (accepted → wait) applies ONLY to (1)-with-lifesigns; all-three-absent
+    → void + recreate immediately.
+
+95. **Session URL redirect chains MULTIPLY during capacity fights — the
+    registry URL goes stale within minutes.** Observed: b77ef6f8 → tab
+    redirects to cdba08a9 while the ORIGINAL tab re-keys to fc2c0ec7; plus
+    2-3 phantom 0-message shells from assault rounds (0be2d3c6, 1b46c7c6,
+    de916aa4). Ground truth for 'which conversation is real' = live tab
+    listing (curl :9222/json) cross-referenced with the registry + message
+    trees. Close phantom-shell tabs only when their trees stay empty AND
+    no dispatch is mid-assault on them (the creates own their tabs).
