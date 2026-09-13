@@ -1566,3 +1566,51 @@ prober), spaced_send.py (patient retry loop), launch_detached.py
     collapse (body length dropping 200K→10K chars) is the site's
     compact-card rendering of an ACTIVE turn, not a destroyed session —
     never treat the drop alone as loss; the chats API is the truth.
+
+## Lessons 85-88 (2026-09-13 — sporta M1 wave: stale-sandbox modal, per-tab modals, capacity-swallowed sends)
+
+85. **Completed worker sessions LEAK sandbox slots — the 'Limit Sandbox
+    Concurrency' modal fills with stale holders and blocks ALL new
+    dispatches.** 2026-09-13 04:45: after marking three sessions done
+    (tabs closed), their sandboxes remained held; three fresh creates
+    (W103/W201/W701) sat prompt-accepted-but-never-started for 20+ min.
+    Diagnosis: `dispatch_worker.py sandboxes` (lists holders, auto-
+    releases idle rows); recovery is the operator's rule — click Release
+    on rows with no active job. NOTE the auto-release can silently
+    return 0 (page-busy eval exceptions have no log line); when that
+    happens, drive the modal manually: bringToFront + real CDP mouse
+    events on the row's Release button (programmatic .click() is a
+    no-op). Releasing ONE holder can drop the tab under the cap and the
+    modal auto-closes — but verify the other blocked session tabs too
+    (see 86).
+
+86. **The sandbox modal renders PER-TAB — clearing it on one session's
+    tab does NOT clear it on another's.** After releasing holders from
+    tab A, tab B (a different queued session) still showed the modal
+    with the SAME stale rows. Every blocked session tab needs its own
+    modal check + dismissal. Also: escape apostrophes when matching row
+    names in JS ("Worker B's W102 …" broke a naive `'__T__'` template —
+    build the JS string argument with JSON.dumps, and split newlines
+    with String.fromCharCode(10) not '\n' escapes inside layered
+    quoting).
+
+87. **Peak-hours capacity can SWALLOW a send: the composer keeps the
+    prompt, the site shows the peak toast, and the conversation the
+    send created is silently destroyed (message tree drops to 0
+    messages).** 'prompt sent: VERIFIED' proves only the UI accepted the
+    submit, not that the server kept it. Ground truth = the server-side
+    message tree (check_session_detail.py): user message present + no
+    assistant turn = accepted-and-queued (NEVER cancel — two-state
+    policy); tree EMPTY = destroyed → void the session and recreate.
+    Recreate via `launch_create.py <name> <prompt>` (Lesson-13 detached
+    pattern) — an in-tool `dispatch_worker.py create` dies at the tool
+    timeout mid-assault, and a bare nohup+& can die with the tool shell.
+
+88. **Concurrent browser drivers strain CDP: two creates + manual CDP
+    sessions + replayd frames produced 'page shell never loaded
+    (err:socket is already closed)' mid-assault.** The dispatch flock
+    serializes create/send/void against EACH OTHER, but manual CDP work
+    bypasses it. During capacity assaults: keep manual browser
+    interference at zero, serialize recreates (finish one create before
+    launching the next), and poll via server-side APIs + logs instead of
+    DOM scraping.
