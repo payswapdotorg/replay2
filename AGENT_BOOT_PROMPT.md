@@ -1864,3 +1864,63 @@ prober), spaced_send.py (patient retry loop), launch_detached.py
    dispatch_worker.py check timing out mid-assault with websocket recv
    timeouts). Poll scripts/logs/recover.log, the chats LIST API, and flag
    files; touch the browser ONLY when a landing needs handling.
+
+## Lesson 103 (2026-09-13 15:00 UTC — false-VERIFIED delayed rollback: the only landing truth is the server tree)
+
+103. **A create can print "prompt sent: VERIFIED" AND pass the 9s settle
+    check (URL /c/..., prompt in DOM) and STILL be destroyed server-side
+    minutes later.** Observed: w202 landed 4 consecutive false-VERIFIEDs
+    (64aeb7ff, 0c4cf39b, a028dc41, 717891d1) — each registry row sent=true,
+    each tree 0 messages, each absent from the chats list. GROUND TRUTH
+    for a landing: the server tree shows the user message (str_len > 0)
+    AND an assistant turn OPEN (type None) within ~2 min of the send; the
+    chats list includes the conversation. A registry sent row is
+    PROVISIONAL for at least 2 minutes — never mark a session done, exit
+    a fighter, or celebrate on it alone. The supervisor-owned
+    recover_capacity poller re-verifies every round and never exits on a
+    false VERIFIED — prefer arming it (write the flag json + let the
+    supervisor spawn) over one-shot launch_create for flaky capacity.
+
+## Lesson 104 (2026-09-13 15:10 UTC — a completed worker's stuck-open turn holds a generation slot)
+
+104. **A worker turn that rendered its final report in the DOM but never
+    committed server-side (assistant message still type None hours later)
+    can keep holding a generation slot and starve subsequent dispatches.**
+    Observed: w203's turn stayed open 2h+ after the branch was pushed,
+    merged, and evidence recorded; every w202 landing during that window
+    rolled back. Fix: after harvesting a session (branch pushed + report
+    rendered + merge done), CLOSE ITS TAB — the conversation and
+    transcript stay server-side (re-attached later by URL), the client
+    disconnect releases pressure on the site's generation pool. Do NOT
+    delete the conversation (it is evidence); do NOT re-dispatch (the
+    work is already in main).
+
+## Lesson 105 (2026-09-13 14:50 UTC — CDP strain: restart Chrome with identical flags, everything reconnects)
+
+105. **When every CDP websocket times out (list_tabs works, evals do
+    not) the browser is strained — tab churn from parallel fighters plus
+    resident polling exhausts it; the fighters log 'page shell never
+    loaded (err:socket is already closed)'.** Fix (S103 precedent,
+    re-proven): pkill the chrome process tree for the replay profile,
+    relaunch with the EXACT same flags (remote-debugging-port 9222,
+    same user-data-dir → login persists, load turbovpn ext, DISPLAY=:99)
+    detached; Chrome's session restore brings the tabs back within
+    seconds; fighters auto-reconnect on their next round. Worker sessions
+    are server-side — a Chrome restart never touches them. ALSO: your own
+    monitoring probes open tabs (check_session_detail opens one when no
+    tab matches) — poll the filesystem (session_registry.jsonl,
+    recover.log) at high frequency and only touch CDP when a registry
+    sent row survives 3+ minutes.
+
+## Lesson 106 (2026-09-13 12:55 UTC — phantom diagnosis triad for a landed-but-dead session)
+
+106. **Three independent signals distinguish a REAL landing from a
+    phantom: (a) server tree has user message + OPEN assistant turn;
+    (b) the conversation appears in the /api/v1/chats list; (c) a
+    workspace provisions for the chat id.** Any one missing = phantom
+    (roll back and keep fighting). A turn open with type None for >1h
+    with zero DOM growth AND no chat_updated_at movement = dead turn
+    (stall pattern); a turn open with periodic chat_updated_at movement
+    = generating normally (the DOM body only renders tool-call
+    summaries — silent stretches of minutes are NORMAL while the worker
+    writes files server-side).
