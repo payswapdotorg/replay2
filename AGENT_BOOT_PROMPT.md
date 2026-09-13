@@ -1798,3 +1798,17 @@ prober), spaced_send.py (patient retry loop), launch_detached.py
     completion marker. Serialization is a property of the WHOLE loop, not
     of any single script: every path that can spawn a create must check
     who owns the fight first.
+
+102. **Serve the last-good frame (bounded 30s) during capture churn.**
+    During dispatch assaults, rapid tab open/close/navigate makes
+    Page.captureScreenshot intermittently fail (WebSocketTimeout /
+    JSONDecodeError on mid-navigation targets) — the operator's replay
+    showed error gaps precisely while the most interesting action (the
+    assault) happened. replayd now caches the last good JPEG +
+    timestamp; on transient failure it serves the cached frame if
+    fresher than 30s (real outages still surface as 500 → the console's
+    700ms fail-retry). Together with v6.1.1 (lesson 96) the replay path
+    is now: bounded requests, fast retries, stale-serving, no bridge
+    spawn on daemon errors. Verify with repeated `curl :3100/frame`
+    during an active assault — 200s with occasional 'serving stale' log
+    lines, never a hard gap.

@@ -47,6 +47,9 @@ os.makedirs(LOGDIR, exist_ok=True)
 _conns = {}            # tab_id -> _TabConn
 _conns_lock = threading.Lock()
 _seen_lock = threading.Lock()
+_last_good_frame = b""   # stale-serving cache (lesson 102)
+_last_good_ts = 0.0
+_last_good_lock = threading.Lock()
 _started = time.time()
 _stats = {"events": 0, "frames": 0, "errors": 0}
 
@@ -406,16 +409,37 @@ def handle_event(payload):
 # ------------------------------------------------------------------- frames
 
 def handle_frame():
+    global _last_good_frame, _last_good_ts
     tab = pick_tab()
     if not tab:
-        return None
+        return _stale_frame()
     c = conn_for(tab)
     try:
         r = c.capture("Page.captureScreenshot", {"format": "jpeg", "quality": 72}, timeout=20)
-    except Exception:
+        data = base64.b64decode(r.get("data", ""))
+        if data:
+            with _last_good_lock:
+                _last_good_frame = data
+                _last_good_ts = time.time()
+            return data
+        return None
+    except Exception as e:
         drop_conn(tab["id"])
-        raise
-    return base64.b64decode(r.get("data", ""))
+        # transient capture failure (tab mid-navigation during dispatch
+        # churn): serve the LAST GOOD frame, bounded to 30s staleness, so
+        # the operator's replay keeps a live view instead of an error gap.
+        # Beyond 30s stale (real outage) we return None -> 500 -> the
+        # console's fast-retry loop takes over honestly.
+        _stats["errors"] += 1
+        log(f"frame capture failed ({e!r}) — serving stale")
+        return _stale_frame()
+
+
+def _stale_frame():
+    with _last_good_lock:
+        if _last_good_frame and (time.time() - _last_good_ts) < 30:
+            return _last_good_frame
+    return None
 
 
 def handle_tabs():
