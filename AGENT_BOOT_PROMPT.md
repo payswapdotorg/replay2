@@ -1614,3 +1614,28 @@ prober), spaced_send.py (patient retry loop), launch_detached.py
     interference at zero, serialize recreates (finish one create before
     launching the next), and poll via server-side APIs + logs instead of
     DOM scraping.
+## Lesson 89 (2026-09-13 — WebFlix wave-2 peak siege: culls, serial creates, dead-open turns)
+
+89. **Deep-peak dispatch is a different regime — five field-tested rules.**
+   Observed 2026-09-13 04:00-05:40 UTC while dispatching the WebFlix wave
+   (3 sessions landed off-peak; ZERO landed 05:00+ despite ~15 attempts):
+   (a) **Session-cull signature**: a freshly created session is destroyed by
+   the site within minutes when generation cannot start — tab rolls home,
+   the chat NEVER appears in the chats list, and chats-detail returns 500.
+   Culls are CHEAP (a destroyed session costs nothing): immediately void +
+   re-dispatch fresh; do not attempt recovery on a culled chat.
+   (b) **Serialize creates under siege**: N concurrent creates each cycling
+   tabs through cancel/re-pick/resend murder renderers ("page shell never
+   loaded — err:socket is already closed"). Even 2 concurrent churners die.
+   Run ONE create at a time; launch the next only after one lands.
+   (c) **Dead-open-turn detection without the DOM**: GET /api/v1/chats/{id}
+   showing an assistant message with content length 0 + frozen updated_at =
+   the chat is throttled (per-chat cap). Void + fresh re-dispatch beats any
+   revival attempt; a continuation send into such a chat null-commits.
+   (d) **Zombie queue**: a session sitting at n=1 (user prompt only, no
+   assistant turn) for ~40 min never generates — void + fresh.
+   (e) **Reliable surfaces**: the chats LIST endpoint (raw top-level array)
+   is truth; chats-detail flaps 200/500 per-request — retry, never conclude
+   from a single 500. The workspaces user-fc endpoint maps chat→sandbox.
+   Browser restart (kill browser.pid, re-run deploy.sh) fixes renderer
+   deaths; login persists in the profile.
