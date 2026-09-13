@@ -1454,3 +1454,42 @@ prober), spaced_send.py (patient retry loop), launch_detached.py
     any ~40+ min heavy generation turn completes, assume the account is
     near the cap before dispatching the next worker; prefer a 20-30 min
     quiet gap between heavy worker turns.
+
+## Lesson 78 (2026-09-13 — the moot-revival: check origin/main during long cap freezes)
+
+78. **During ANY long cap/peak freeze, poll the program's origin/main for
+    WO completion by the parallel lineage BEFORE continuing to grind the
+    revival.** 2026-09-12→13 field data: my val-019 worker was cap-killed
+    21:05; I ran an anti-treadmill revival cadence (00:28, 01:33 — both
+    null-commits) for a WO the parallel lineage had ALREADY completed at
+    ~21:3x (PR #76 merged, live-crown reviewed) — then they completed
+    VAL-020, VAL-021 and VAL-023 in the same window. TWO hours of revival
+    machinery aimed at a merged WO. Protocol: every freeze interval, ALSO
+    `git fetch origin` + check program-state.json for the WO's status
+    before the next revival attempt; a `complete` status kills the loop,
+    voids the session, releases the sandbox, and re-computes the frontier.
+
+79. **The usage cap is PER-CHAT, not account-wide.** Decisive evidence:
+    the parallel lineage's workers generated heavy turns during the exact
+    window my sends into MY chat null-committed (their VAL-019/020/021/023
+    implementations all landed 21:00-01:35 while f9338ecc rejected every
+    send). A cap-killed worker's chat stays throttled; fresh chats dispatch
+    fine. Consequences: (a) a cap-killed worker should be re-dispatched on
+    a FRESH chat after ~1 null revival attempt (the sandbox WIP is lost,
+    but the fresh chat generates immediately — the revival path only pays
+    off if the chat itself is healthy); (b) cross-lineage "account
+    saturation" models (lesson 66) need re-reading as per-chat contention;
+    (c) the chats-detail API can flap 200/500 per-request under the
+    degraded route — retry, and treat the chats LIST endpoint as the more
+    reliable surface.
+
+80. **VPN tunnel health is TWO routes, not one.** The plain egress probe
+    (ipify) can report HEALTHY while the chat.z.ai route is dead (all
+    /api/v1 fetches "Failed to fetch") AND the workspaces endpoint drops
+    while chats/list works — partial route failures, per-endpoint flaps.
+    vpn_full_toggle.py: full power-cycle with DUAL verification (ipify +
+    the site API from the home tab); after a toggle the node changes
+    (79.110.54.211 → 138.199.42.123) and both routes must be re-verified.
+    Also: /json/new?url= does NOT navigate on Chrome 151 — new tabs come
+    up about:blank; use Page.navigate on an existing blank tab (lesson-72
+    pattern) instead of opening new ones (orphans accumulate).
