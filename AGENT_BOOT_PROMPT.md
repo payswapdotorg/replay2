@@ -2060,3 +2060,42 @@ prober), spaced_send.py (patient retry loop), launch_detached.py
     authoring future relays, gate the arming step on a server-side chat
     check (token + /api/v1/chats/<id> 200 with message tree) — the
     registry alone is provisional forever.
+
+## Lesson 116 (2026-09-13 21:50 UTC — sandbox TTL kills unpushed work: harvest IMMEDIATELY on report render)
+
+116. **A worker whose final report has rendered but whose branch never
+    pushed loses EVERYTHING when its sandbox TTL (~2h) expires — the
+    workspace resets to a clean main clone (verified via
+    /api/v1/web-dev/workspaces/git/status?chatId=…: branch main, clean,
+    files []).** Observed: W205's worker completed with full benchmark
+    numbers in its report, push failed (no credentials in ITS sandbox —
+    see lesson 117), and by the time recovery was attempted the sandbox
+    had reset; the commit existed only in the expired sandbox. TL
+    discipline: the moment a worker's report renders, CHECK
+    git branch -r for its branch; if absent, run the follow-up-message
+    recovery (send the push command + token into the SAME chat) within
+    MINUTES, not hours. A completed worker with an unpushed branch is a
+    ticking 2-hour bomb.
+
+## Lesson 117 (2026-09-13 21:50 UTC — the [REDACTED:github_token] placeholder starves some sandboxes: embed the real PAT)
+
+117. **The TL worker-spec prompts carried a literal
+    `[REDACTED:github_token]` in the delivery git-push line.** Workers in
+    sandboxes WITH platform-provisioned git credentials pushed anyway
+    (W202/W204/W207); workers in sandboxes WITHOUT them failed with
+    "could not read Username for 'https://github.com'" (W205 — work
+    lost to lesson 116). FIX: embed the REAL PAT in every prompt file's
+    push URL before dispatch (the prompts/ dir is .gitignored — the
+    token never enters any repo; the worker's own rule forbids
+    printing/committing/echoing it). Recovery for an already-dispatched
+    worker: send a follow-up chat message containing the exact push
+    command with the token — but note that follow-up sends can
+    THEMSELVES phantom-fail (composer clears client-side, message never
+    reaches the server tree) — always verify the message landed via
+    /api/v1/chats/<id> message count, and treat the sandbox TTL clock as
+    running. Also: `manual_send.py`'s Input.insertText APPENDS on retry
+    (594→1188→1782 chars) — clear the textarea (focus + setSelectionRange
+    0..len + execCommand('delete')) before every insert, and click the
+    SEND BUTTON (aria-label send / first enabled button below the
+    composer) rather than Enter — Enter does not dispatch on this
+    composer. A send is only real when the server message count grows.
