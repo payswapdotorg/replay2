@@ -1493,3 +1493,37 @@ prober), spaced_send.py (patient retry loop), launch_detached.py
     Also: /json/new?url= does NOT navigate on Chrome 151 — new tabs come
     up about:blank; use Page.navigate on an existing blank tab (lesson-72
     pattern) instead of opening new ones (orphans accumulate).
+
+## Lesson 81 (2026-09-13 — the review-side PG battery: embedded server + worker-crown defect classes)
+
+81. **The worker sandbox has NO PostgreSQL — every PG-gated crown skips
+    whole in the worker's battery, and the Lead's independent real-PG run
+    is where crown defects actually surface.** Two defect classes found
+    in VAL-022's crown (both real, both review-fixed): (a) CROSS-ROW
+    EXECUTION STEALING — an awaitNextExecution-style completion poller
+    keyed to the world's application with a PER-ROW driven set re-drives
+    a previous row's execution whenever the current row's async app
+    submission lags the first poll; the double planning-decision under
+    one idempotency key then fails IDEMPOTENCY_KEY_REUSED. Fix pattern:
+    the driven set must be TEST-scoped, shared across every row. (b)
+    POLICY-EVENT INFLATION — quarantine-engaged (or any policy event)
+    journaled under the same step-event command as per-attempt records
+    inflates the ledger-verified attempt count. Fix pattern: count
+    attempt-bearing records only (reference.attempt present). WORKER
+    PACKET RULE: state the PG reality explicitly ("you have NO PostgreSQL
+    server; crown env-gated skip, offline paths must pass without PG;
+    the REAL PG crown run is the Lead's verification domain") — the
+    VAL-024 packet carries it.
+
+82. **The embedded PostgreSQL is at ~/.local/embedded-pg (zonky build,
+    dist/bin binaries, data on port 55432, trust auth) and the connection
+    URL lives in /home/z/.secrets/env.sh (ZECK_PG_TEST_URL).** It can die
+    mid-session (observed: immediate shutdown request) — restart with
+    `dist/bin/pg_ctl -D ~/.local/embedded-pg/data -l ~/.local/embedded-pg/
+    pg.log -o "-p 55432 -h 127.0.0.1 -k /tmp" start`. NEVER delete the
+    data/postmaster.pid of a LIVE server (it bookkeeps the shutdown
+    path). The workspaces listing endpoint is /api/v1/web-dev/workspaces/
+    user-fc (the /api/v1/workspaces variant flaps per-request under the
+    VPN route); the files API roots at the sandbox project root (root
+    files need a custom fetch — harvest_robust.py appends '/' to its
+    prefix argument and misses them).
