@@ -21,3 +21,6 @@ next-env.d.ts
 __pycache__/
 scripts/extensions/*.crx
 scripts/extensions/*.zip
+
+# live dispatch packets carry the push token — never commit
+scripts/prompts/

@@ -1953,3 +1953,34 @@ prober), spaced_send.py (patient retry loop), launch_detached.py
     then writes the next flag. Landing N arms fighter N+1; the TL's
     verify/merge quality gate stays fully manual — relay only sequences
     the ASSAULT side, never the review side.
+## Lessons 109-110 (2026-09-13 16:20 UTC — WebFlix wave-4: phantom merge failure, post-compression resume)
+
+109. **bun's isolated linker keeps workspace links in per-package
+   node_modules — run `bun install` at the verification station after EVERY
+   fetch/pull, BEFORE gates.** Symptom: a merged main that workers and prior
+   verification call green "fails" typecheck with a 48-error cascade
+   (TS2307 Cannot find module '@wfx/domain' in the new package's src/tests,
+   then derived TS2339 "Property does not exist" + TS7006 implicit-any
+   errors where types came from the unresolved import). Forensics
+   (2026-09-13, main 3224e7c): root `node_modules/@wfx/` does NOT exist by
+   design — bun links workspace deps into `packages/<consumer>/node_modules/
+   @wfx/<dep>`, and a git fetch that adds a package does not create the new
+   consumer's links. One `bun install` ("no changes") reconciled the links;
+   zero code changes; full CI green (385 tests). Verdict protocol:
+   fetch → bun install → gates. Never merge-verdict on stale links, and
+   never "fix" the phantom with code — the worker's branch was innocent.
+   (`tsc --traceResolution` confirms: "Found 'package.json' at
+   packages/<consumer>/node_modules/@wfx/<dep>/package.json".)
+
+110. **Post-compression resume: rebuild ground truth from artifacts, then
+   re-verify the remote before acting on any recorded claim.** After
+   context/history compression, do NOT trust the worklog's "merged/live"
+   snapshot as present tense. Recovery order: (1) `git ls-remote` the
+   source-of-truth repo for main + wfx/* branches; (2) grep the session
+   registry tail + `ps aux` for live pollers/creates; (3) chats LIST API
+   for sessions that actually exist server-side (phantom /c/ URLs lie —
+   wfx-010i's "sent" row was a lesson-98 phantom); (4) fetch + bun install
+   + full gates on main before trusting any merge recorded by a lost
+   segment. This sequence caught a dead assault (wfx-030b fighter gone
+   without a flag), a swallowed session, and — via lesson 102 — a phantom
+   "red main" that would have triggered a pointless revert.
