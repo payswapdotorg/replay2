@@ -1812,3 +1812,19 @@ prober), spaced_send.py (patient retry loop), launch_detached.py
     spawn on daemon errors. Verify with repeated `curl :3100/frame`
     during an active assault — 200s with occasional 'serving stale' log
     lines, never a hard gap.
+## Lesson 97 (2026-09-13 10:40 UTC — recover_capacity live-scan ordering bug: stale sent=True rows steal re-arms)
+
+97. **recover_capacity's registry liveness scan ignored row ORDERING — a
+    sent=True create row from BEFORE a later void/failed/done row falsely
+    matched 'live', so the poller cleared a fresh flag as 'recovered
+    elsewhere' and orphaned the session.** Observed: w203's 06:24 dispatch
+    row (conversation culled at 06:36) survived its 08:29 void in the naive
+    scan; every later re-arm was instantly 'resolved'. Fix (in repo):
+    walk rows in order — an invalidation row (void/failed/done) resets
+    live=False; only a sent=True create row AFTER the last invalidation
+    counts. Emergency manual workaround when a poller self-clears a flag:
+    append {'action':'failed','name':...} to session_registry.jsonl (kills
+    every earlier create row for the name), then rewrite the flag and let
+    the supervisor re-spawn. Also: verify ONE poller per flag (ps for two
+    recover_capacity trees on the same flag → kill the non-supervisor one;
+    the pidfile gets overwritten by whichever started last).

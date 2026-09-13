@@ -105,6 +105,13 @@ def main():
             # exception) — verify the session is genuinely live in the
             # registry before aborting the assault (false positive ended
             # recovery with no session created).
+            # 2026-09-13 fix (TL): the scan ORDERING — a sent=True create row
+            # from BEFORE a later void/failed/done row falsely matched 'live'
+            # (observed: w203's 06:24 culled-dispatch row made the poller
+            # clear a fresh flag as 'recovered elsewhere'). Registry
+            # semantics (see _find in dispatch_worker): a later
+            # void/failed/done invalidates every EARLIER create for the
+            # name. Walk rows in order; an invalidation resets live.
             live = False
             try:
                 for line in open(REG).read().split("\n"):
@@ -114,8 +121,11 @@ def main():
                         r = json.loads(line)
                     except Exception:
                         continue
-                    if r.get("name") == name and r.get("sent") and \
-                            r.get("action") not in ("void", "failed", "done"):
+                    if r.get("name") != name:
+                        continue
+                    if r.get("action") in ("void", "failed", "done"):
+                        live = False  # invalidates every earlier create row
+                    elif r.get("sent") and r.get("action") is None:
                         live = True
             except Exception:
                 pass
