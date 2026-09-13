@@ -289,6 +289,17 @@ def main():
                           f"rate-limited (last sighting {int(rl_age)}s ago) — DEFERRING "
                           f"re-dispatch {int(RL_DEFER_AFTER - rl_age)}s (churn guard)",
                           flush=True)
+                elif (os.path.exists(os.path.join(FLAGS, f"capacity_recover.{name}.json"))
+                      or os.path.exists(os.path.join(FLAGS, "capacity_recover.json"))):
+                    # LESSON 89(b) serialization (2026-09-13): while the
+                    # capacity-recover flag exists, recover_capacity.py OWNS the
+                    # create fight (supervisor-guarded). A second concurrent
+                    # churner here murders both (observed twice: renderer churn,
+                    # socket-already-closed). queue_watch only WATCHES for the
+                    # completion marker in this regime.
+                    print(f"[{name}] {stamp} session destroyed ({st}) but capacity_recover flag "
+                          f"present — recover_capacity.py owns the assault (serialized, lesson 89b)",
+                          flush=True)
                 else:
                     print(f"[{name}] {stamp} session destroyed ({st}) — re-dispatching (assault)", flush=True)
                     # the dead session's registry record would make create() bail

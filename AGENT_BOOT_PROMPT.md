@@ -1785,3 +1785,16 @@ prober), spaced_send.py (patient retry loop), launch_detached.py
     explicitly (Chrome 151 /json/new ignores ?url= — the 1872530
     vpn_connect fix generalized into channel.py; a fresh tab without
     navigation stays about:blank and every fetch SecurityErrors).
+
+101. **The dual-churn respawn race: queue_watch re-arms its OWN create
+    during recover_capacity's watch.** Observed twice on 2026-09-13: after
+    queue_watch's create exhausts 12 rounds and hands off via the
+    capacity_recover flag, queue_watch KEEPS WATCHING; when its watched
+    tab rolls home (tablost) it re-dispatches a SECOND concurrent create
+    — the exact 89(b) dual-churn that murders both. Fix (queue_watch.py,
+    09:21): the tablost/re-dispatch path now DEFERS when
+    flags/capacity_recover.{name}.json exists — recover_capacity.py owns
+    the create fight while flagged; queue_watch only watches for the
+    completion marker. Serialization is a property of the WHOLE loop, not
+    of any single script: every path that can spawn a create must check
+    who owns the fight first.
