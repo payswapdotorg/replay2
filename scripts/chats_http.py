@@ -91,18 +91,20 @@ def walk_messages(chat: dict):
 
 def cmd_detail(chat_id: str) -> None:
     data = api(f"/api/v1/chats/{chat_id}")
-    chat = data.get("data", data) if isinstance(data, dict) else {}
-    print(f"title: {chat.get('title')}")
-    print(f"updatedAt: {chat.get('updatedAt')}")
-    msgs = walk_messages(chat)
+    rec = data.get("data", data) if isinstance(data, dict) else {}
+    print(f"title: {rec.get('title')}")
+    print(f"updated_at: {rec.get('updated_at')}")
+    inner = rec.get("chat", {}) or {}
+    msgs = inner.get("history", {}).get("messages", {})
+    if isinstance(msgs, dict):
+        msgs = list(msgs.values())
     print(f"messages: {len(msgs)}")
     for m in msgs[-12:]:
         role = m.get("role")
         content = m.get("content")
         clen = len(content) if isinstance(content, str) else 0
         gen = m.get("generating")
-        ts = str(m.get("createdAt") or "")[:19]
-        print(f"  [{role}] gen={gen} len={clen} {ts}")
+        print(f"  [{role}] gen={gen} len={clen}")
 
 
 def main() -> int:
