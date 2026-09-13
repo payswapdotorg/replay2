@@ -1828,3 +1828,39 @@ prober), spaced_send.py (patient retry loop), launch_detached.py
     the supervisor re-spawn. Also: verify ONE poller per flag (ps for two
     recover_capacity trees on the same flag → kill the non-supervisor one;
     the pidfile gets overwritten by whichever started last).
+## Lessons 98-101 (2026-09-13 12:45 UTC — WebFlix wave-3: capacity-swallowed sends, churn-fatigued renderers)
+
+98. **"SENT" is not "delivered" — verify the server tree after any recovery
+   send.** capacity_recover_send.py proving "composer cleared + no block"
+   does NOT mean the chat materialized server-side. During GLM-5.3 capacity
+   sieges the site accepts the POST, clears the composer, and silently rolls
+   the chat back: chats-detail returns 500, the chat never appears in the
+   chats LIST, and later inspection shows 0 messages in the tree. Protocol:
+   after every recovery send, poll the chats LIST (the reliable surface) for
+   the new chat URL; empty tree = destroyed = void the session and re-dispatch
+   fresh. Chasing the phantom /c/ URL wastes cycles (wfx-004g burned three
+   "successful" sends this way before detection).
+
+99. **Renderer churn-fatigue is cumulative across the day.** Two concurrent
+   assault fighters survived ~22 min on their first pairing (died round 10-11),
+   but a LATER pairing died in ~5 min (round 3). The renderer's tolerance for
+   concurrent tab churn DEGRADES after hours of cancel/re-pick cycles — the
+   same maneuver that worked at 09:20 fails at 11:10. Calibration rule: pair
+   fighters only early in a fresh browser session; after any renderer death,
+   drop to the single supervisor-guarded poller (recover_capacity.py), which
+   survives tab-level wedges because each round re-opens its own tab.
+
+100. **Supervisor poller >> manual create loops under long sieges.** A
+   recover_capacity.py poller (supervisor-relaunched from its flag file on
+   death) fought through 5+ full 12-round cycles over 3+ hours with zero
+   operator attention while a plain launch_create.py create dies with its
+   tab. For any item worth fighting during a capacity freeze, write the flag
+   file and let the supervisor own the fight; keep YOUR cycles for
+   verification, packet-writing, and merges.
+
+101. **Log-only monitoring beats browser polling under siege.** During
+   capacity fights, every CDP eval competes with the assault's own tab
+   operations and can wedge the renderer the assault needs (observed:
+   dispatch_worker.py check timing out mid-assault with websocket recv
+   timeouts). Poll scripts/logs/recover.log, the chats LIST API, and flag
+   files; touch the browser ONLY when a landing needs handling.
