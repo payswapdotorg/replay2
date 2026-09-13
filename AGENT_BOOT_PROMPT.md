@@ -1924,3 +1924,32 @@ prober), spaced_send.py (patient retry loop), launch_detached.py
     = generating normally (the DOM body only renders tool-call
     summaries — silent stretches of minutes are NORMAL while the worker
     writes files server-side).
+
+## Lesson 107 (2026-09-13 16:20 UTC — CDP-free chat forensics: extract the token, use plain HTTP)
+
+107. **When Chrome is strained, ALL chat-side truth is still reachable:
+    one tiny CDP eval `localStorage.getItem('token')` (~1s) yields the
+    raw JWT; every /api/v1/chats* query then runs via urllib with the
+    Bearer header — no tabs, no strain, no timeouts.** Pattern (tools:
+    scripts/check_chat_turns.py, check_chat_tail.py, scan_slot_holders.py
+    in replay2): GET /api/v1/chats/list?limit=100 → items; GET
+    /api/v1/chats/{id} → body.chat.history.messages (dict, walk
+    childrenIds/parentId; sort by timestamp). Leaf message with role
+    assistant + content null + 3-second timestamp delta = the generation
+    DIED at send (site rejected it); use it to prove/disprove
+    account-side slot leaks before assuming self-inflicted capacity.
+
+## Lesson 108 (2026-09-13 16:20 UTC — wave relay: flags are the arming interface, supervisor is the launcher)
+
+108. **To chain dispatches without TL latency, do NOT hand-roll create
+    loops: write a per-session flag file
+    flags/capacity_recover.<name>.json
+    {"name":…, "prompt_file":…, "uuid":"", "tab_id":""} and the
+    supervisor's ensure_capacity_recovery() auto-spawns a persistent
+    recover_capacity.py fighter for it (re-arms forever, clears flag on
+    rc=0).** scripts/relay_next_wave.py (detached via launch_detached.py
+    — start_new_session, lesson-13) watches the PRIOR wave-item's flag
+    disappear + registry live row (walk-order semantics), settles 90s,
+    then writes the next flag. Landing N arms fighter N+1; the TL's
+    verify/merge quality gate stays fully manual — relay only sequences
+    the ASSAULT side, never the review side.
