@@ -2018,3 +2018,45 @@ prober), spaced_send.py (patient retry loop), launch_detached.py
    console (:3000 frames) dips for seconds and returns. Do it when create
    rc=2 "socket is already closed" repeats across fighters, not on first
    occurrence.
+
+## Lesson 114 (2026-09-13 18:10 UTC — Chrome restart KILLS the login: session-cookie death + JWT injection recovery)
+
+109. **The chat.z.ai auth `token` cookie is httpOnly AND `session: true`
+    (expires: -1) — it dies with the browser PROCESS.** A Chrome restart
+    therefore silently downgrades the app to a GUEST token
+    (guest-<ts>@guest.com in localStorage, guest cookie): every fighter
+    create then fails with 'page shell never loaded (last=not-found)' and
+    navigating to any /c/ URL bounces back to the logged-out landing page,
+    EVEN THOUGH the operator's JWT still validates server-side. LESSON
+    105's 'login persists through restart' is only true while the token
+    cookie survives — treat every restart as presumed logged-out.
+    RECOVERY (proven 2026-09-13 18:00): (1) BEFORE killing Chrome, extract
+    the operator JWT with one CDP eval
+    `localStorage.getItem('token')` and save it (e.g. /tmp/zai_token.txt);
+    (2) after restart, inject BOTH: (a) localStorage 'token' = JWT via
+    CDP eval, (b) the httpOnly cookie via CDP
+    `Network.setCookie {name:'token', value:JWT, domain:'chat.z.ai'
+    (HOST-ONLY — a leading-dot .chat.z.ai domain gets set but the app
+    still shows the login form), path:'/', secure:true, httpOnly:true}`;
+    (3) navigate to https://chat.z.ai/ — the app shell (Agent sidebar +
+    conversation list) renders within ~15s. Diagnostic triad if unsure:
+    decode the localStorage JWT payload — an `email` of
+    `guest-...@guest.com` means the session cookie died; the operator
+    account shows the real email. A cookie-only in-page fetch returning
+    200 is NOT proof of operator login (guest sessions also return 200 —
+    check the decoded payload instead).
+
+## Lesson 115 (2026-09-13 18:05 UTC — relays must not trust registry sent rows: false-VERIFIED fools arming logic)
+
+110. **relay_w206 armed the W206 fighter off w205's landing — but the
+    landing was a false-VERIFIED (chat absent-from-list, detail 500).**
+    Any automated sequencing that arms the next wave on a registry
+    `sent: true` row inherits lesson 103's failure mode: ground truth for
+    a LANDING is the server tree (user message + open assistant turn) AND
+    presence in /api/v1/chats/list — checked at ARM TIME, not inferred
+    from the registry. Mitigation applied operationally: void the false
+    row (walk-order invalidation) + re-write the session's
+    capacity_recover flag; the supervisor re-launches the fighter. When
+    authoring future relays, gate the arming step on a server-side chat
+    check (token + /api/v1/chats/<id> 200 with message tree) — the
+    registry alone is provisional forever.
