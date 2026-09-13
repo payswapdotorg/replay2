@@ -1984,3 +1984,37 @@ prober), spaced_send.py (patient retry loop), launch_detached.py
    segment. This sequence caught a dead assault (wfx-030b fighter gone
    without a flag), a swallowed session, and — via lesson 102 — a phantom
    "red main" that would have triggered a pointless revert.
+
+## Lessons 111-113 (2026-09-13 17:55 UTC — WebFlix wave-5: token hydration, slot release, Chrome restart)
+
+111. **Pipeline packets carry `[REDACTED:github_token]` placeholders —
+   hydrate before arming.** Packets staged in bulk (or recovered from the
+   sanitized templates) do NOT contain the live push token; a fighter armed
+   on a dry packet lands a worker that cannot push its branch (inline-file
+   fallback only). Pre-arm checklist: `grep -q <PAT> <packet>` for EVERY
+   packet behind a flag; hydrate with a single sed across the pipeline
+   (local packets are gitignored; the GitHub templates stay sanitized).
+   Observed: wfx-020a armed on a dry packet (7440 chars), caught only by a
+   post-arm token audit.
+
+112. **Released sandboxes are the slot truth: settings/dashboard shows the
+   LIVE/Expired list with per-row Release buttons — release dead sessions
+   promptly, keep only turn-running ones.** A delivered-but-dead worker
+   (turn frozen 1h, branch already merged) held a Live sandbox with a 1h31m
+   auto-expiry, and a merged item from hours earlier held an Expired one —
+   together they blocked 2 of 3 slots while zero sessions were generating.
+   Release procedure: open https://chat.z.ai/settings/dashboard, click each
+   Release button whose smallest enclosing row names a dead/delivered
+   session (mkt-031b lesson: NEVER release a session whose turn still
+   runs). Post-release the list shows empty — slots freed instantly.
+
+113. **After ~11h of siege churn, Chrome CDP strain blocks page-shell loads
+   ("socket is already closed") — restart Chrome with IDENTICAL flags and
+   the whole assault self-recovers.** Kill the main chrome pid, relaunch
+   the exact original command line (user-data-dir preserved → login token
+   + session-restore tabs survive; CDP :9222 returns within ~15s). The
+   recover_capacity pollers outlive the browser (separate processes) and
+   their next round opens a fresh tab — no re-arming needed. The operator
+   console (:3000 frames) dips for seconds and returns. Do it when create
+   rc=2 "socket is already closed" repeats across fighters, not on first
+   occurrence.
