@@ -34,13 +34,29 @@ def list_tabs():
 
 
 def new_tab(url="about:blank"):
+    # Chrome 151: /json/new creates the tab but IGNORES ?url= (stays
+    # about:blank — lesson 100 / the vpn_connect 1872530 fix generalized).
+    # Create, then navigate explicitly over CDP.
     qs = "?" + urllib.parse.urlencode({"url": url})
+    tab = None
     for method in ("PUT", "GET"):
         try:
-            return _http_json("/json/new" + qs, method=method)
+            tab = _http_json("/json/new" + qs, method=method)
+            break
         except Exception:
             continue
-    return None
+    if tab is None:
+        return None
+    if url and url != "about:blank":
+        try:
+            c = CDP(tab["webSocketDebuggerUrl"], timeout=15)
+            try:
+                c.call("Page.navigate", {"url": url}, timeout=15)
+            finally:
+                c.close()
+        except Exception:
+            pass
+    return tab
 
 
 def find_tab(pattern=None):

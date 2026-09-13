@@ -1761,3 +1761,27 @@ prober), spaced_send.py (patient retry loop), launch_detached.py
     against the merged-PR record BEFORE and DURING assaults; void stale
     dupes with the merged-PR SHA as the recorded reason. Freeing one
     slot can be the difference between a phantom-storm and a landing.
+
+99. **Server-verify must be LIST-first, never single-detail-shot (lesson
+    89(e) re-offense).** During deep-peak, GET /api/v1/chats/<id> flaps
+    200/500 per-request AND real chats can lag propagation — a single
+    detail-500 voided sessions on false phantoms. Patched
+    dispatch_worker.create (2026-09-13): verify = chats LIST string-
+    search with 3 retries (2s apart) → presence = REAL (userLen||1000);
+    detail GET is corroboration/userLen only (2 tries, flap-tolerant);
+    absent-from-list after retries = phantom. Log line says
+    'absent-from-list' (new code) vs 'http-500' (old code) — the message
+    tells you which generation of the verify is running.
+
+100. **Chat deletion is the dead-open-turn kill switch: DELETE
+    /api/v1/chats/<id> returns 200 "true" and tears the hung turn down
+    immediately.** 2026-09-13: chat 05127280 (the original swallowed
+    DEP-006 dispatch) held a dead-open assistant turn (content=None,
+    frozen 04:12 UTC) + an is_active workspace for 5h through the entire
+    peak crisis. DELETE killed the turn; the workspace entry lingers as
+    stale bookkeeping (async GC; the modal-Release path only exists over
+    the workspace limit, and DELETE /web-dev/workspaces/<fn> answers
+    "workspace not found"). Also: channel.new_tab() now navigates
+    explicitly (Chrome 151 /json/new ignores ?url= — the 1872530
+    vpn_connect fix generalized into channel.py; a fresh tab without
+    navigation stays about:blank and every fetch SecurityErrors).
