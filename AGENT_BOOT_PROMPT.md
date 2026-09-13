@@ -1527,3 +1527,42 @@ prober), spaced_send.py (patient retry loop), launch_detached.py
     VPN route); the files API roots at the sandbox project root (root
     files need a custom fetch — harvest_robust.py appends '/' to its
     prefix argument and misses them).
+
+83. **The frontier claim is NOT an exclusivity lock across parallel Lead
+    sessions — re-fetch origin immediately before ANY harvest/PR.**
+    (2026-09-13, VAL-024 merge-race: session B merged its own PR #88 +
+    finalized + claimed VAL-025 while session A was still monitoring its
+    duplicate worker of the same WO; session A's 15-min-stale fetch cost
+    a full duplicate battery + duplicate PR #90, closed unmerged.)
+    Protocol: (a) `git fetch origin` + check the WO's status on
+    origin/main RIGHT BEFORE opening a PR — if already complete there,
+    close/skip, void the worker session, and take the next claimable
+    item instead; (b) when a duplicate PR already exists, close it with
+    an explanatory comment IMMEDIATELY (a second merge of a different
+    implementation of a finalized WO corrupts program state); (c) the
+    two-session team partitions by the CURRENT frontier-state.json
+    (inFlight[]) — read it fresh, claim the other lane, never both
+    dispatch the same WO. The dispatch packet base pin is the anchor:
+    a worker whose base is already an ancestor of a finalized WO commit
+    is delivering into a closed lane.
+
+84. **Workers do NOT reliably use the pinned report headline — pin it
+    VERBATIM in the packet, and know the manual retirement path.**
+    (2026-09-13: the VAL-024 worker answered with "# FINAL REPORT —
+    VAL-024:" instead of the "=== VAL-024 COMPLETION REPORT ==="
+    convention; the watcher's filled-regex never fired; without manual
+    intervention the stuck-assault would have VOIDED a completed
+    session.) Fixes: (a) NEW PACKETS must show the exact headline +
+    identity layout in the delivery protocol section ("use EXACTLY this
+    headline ... the orchestrator's watcher greps it verbatim") — the
+    VAL-026 packet carries it; (b) the manual retirement path when the
+    regex misses but the turn is done: verify via the chats API
+    (messages/batch → content_blocks count STABLE across two reads ~1
+    min apart + the report present in the LAST text block + staged
+    delivery path lines) → then write flags/<name>-complete.marker,
+    remove the queue_watch spec + heartbeat, kill the watcher pid; (c)
+    a future watcher patch should add a fifth filled-regex alternative
+    for the "# FINAL REPORT — <ID>:" layout. NOTE: mid-generation DOM
+    collapse (body length dropping 200K→10K chars) is the site's
+    compact-card rendering of an ACTIVE turn, not a destroyed session —
+    never treat the drop alone as loss; the chats API is the truth.
