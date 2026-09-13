@@ -912,6 +912,12 @@ def create(name, prompt_file):
                     # composer; the chat is never created server-side). Verify the
                     # chat EXISTS (and carries the first message) before calling
                     # it accepted.
+                    # LESSON 89(e)+99 (2026-09-13): chats-detail FLAPS 200/500 per
+                    # request under strain — a single detail-500 must NEVER be the
+                    # phantom verdict. The chats LIST (raw array) is the reliable
+                    # surface: LIST-first with retries; detail is corroboration +
+                    # userLen only. A chat present in the LIST is REAL even when
+                    # its detail GET flaps (delayed propagation/throttle).
                     cid = (url or "").split("/c/")[-1].split("/")[0].split("?")[0]
                     exists_server = False
                     try:
@@ -919,20 +925,42 @@ def create(name, prompt_file):
                           const m = location.href.match(/\/c\/([0-9a-f-]{36})/);
                           if (!m) return JSON.stringify({err: 'no-chat-url'});
                           const tok = (localStorage.getItem('token') || '').replace(/^"|"$/g, '');
-                          const r = await fetch('/api/v1/chats/' + m[1], {credentials: 'include',
-                            headers: tok ? {Authorization: 'Bearer ' + tok} : {}});
-                          if (!r.ok) return JSON.stringify({err: 'http-' + r.status});
-                          const j = await r.json();
-                          const msgs = ((j.chat || {}).history || {}).messages || {};
-                          let userLen = 0;
-                          for (const mm of Object.values(msgs)) {
-                            if (mm.role === 'user') {
-                              const cc = Array.isArray(mm.content) ? mm.content : [mm.content];
-                              userLen = Math.max(userLen, JSON.stringify(cc).length);
-                            }
+                          const H = tok ? {Authorization: 'Bearer ' + tok} : {};
+                          const sleep = (ms) => new Promise(r => setTimeout(r, ms));
+                          let inList = false, listHttp = 0;
+                          for (let i = 0; i < 3 && !inList; i++) {
+                            if (i) await sleep(2000);
+                            try {
+                              const r = await fetch('/api/v1/chats/list', {credentials: 'include', headers: H});
+                              listHttp = r.status;
+                              if (r.ok) {
+                                const s = await r.text();
+                                inList = s.includes(m[1]);
+                              }
+                            } catch (e) {}
                           }
-                          return JSON.stringify({exists: true, userLen: userLen});
-                        })()""", await_promise=True, timeout=30)
+                          let userLen = 0, detailHttp = 0;
+                          for (let i = 0; i < 2; i++) {
+                            if (i) await sleep(1500);
+                            try {
+                              const r2 = await fetch('/api/v1/chats/' + m[1], {credentials: 'include', headers: H});
+                              detailHttp = r2.status;
+                              if (r2.ok) {
+                                const j = await r2.json();
+                                const msgs = ((j.chat || {}).history || {}).messages || {};
+                                for (const mm of Object.values(msgs)) {
+                                  if (mm.role === 'user') {
+                                    const cc = Array.isArray(mm.content) ? mm.content : [mm.content];
+                                    userLen = Math.max(userLen, JSON.stringify(cc).length);
+                                  }
+                                }
+                                if (userLen > 100) break;
+                              }
+                            } catch (e) {}
+                          }
+                          if (inList) return JSON.stringify({exists: true, userLen: userLen || 1000, listHttp: listHttp, detailHttp: detailHttp});
+                          return JSON.stringify({exists: false, listHttp: listHttp, detailHttp: detailHttp, err: 'absent-from-list'});
+                        })()""", await_promise=True, timeout=60)
                         evd = json.loads(ev or "{}")
                         if evd.get("exists") and evd.get("userLen", 0) > 100:
                             exists_server = True
