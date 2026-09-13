@@ -1639,3 +1639,44 @@ prober), spaced_send.py (patient retry loop), launch_detached.py
    from a single 500. The workspaces user-fc endpoint maps chat→sandbox.
    Browser restart (kill browser.pid, re-run deploy.sh) fixes renderer
    deaths; login persists in the profile.
+
+90. **Second orchestrator sandbox reset (2026-09-13 07:35 UTC) — the
+    lesson-58 recipe executes clean end-to-end; browserless value FIRST.**
+    Recovery order that worked (~12 min): (1) clone replay2 + zeck (PAT from
+    context); (2) FIX the broken product main FIRST if any (the pre-reset
+    push had broken it — see lesson 91) — pure git, no browser, kills red
+    CI immediately; (3) `REPLAY_PORT=3200 bash deploy.sh` — the fresh
+    my-project snapshot's next-server HOLDS :3000, so the console must take
+    another port (the deploy's http_ok check would false-positive on the
+    Next.js app and skip the console entirely); (4) `vpn_connect.py` →
+    RECOVERED (egress flips to the VPN exit); (5) embedded PG re-download:
+    maven central `io.zonky.test/postgres/embedded-postgres-binaries-linux-
+    amd64/16.4.0` jar → unzip → the txz inside → dist/bin carries ONLY
+    initdb/pg_ctl/postgres (NO psql, NO pg_isready, NO createdb — create
+    databases via the node `pg` client against the `postgres` DB: CREATE
+    DATABASE zeck_test); initdb -U zeck --auth=trust, pg_ctl -o "-p 55432
+    -h 127.0.0.1 -k /tmp"; (6) env.sh from conversation context. The
+    chat.z.ai login does NOT survive (fresh profile = anonymous device
+    account, chats/list returns 200 []); the operator must log in through
+    the replay console image — notify them EARLY, recover everything else
+    while waiting. CRITICAL: worker-side sandbox pods SURVIVE an
+    orchestrator reset (the VAL-026 delivery sat in its ws-* pod across
+    one orchestrator reset + one pod recycle — the lesson-61 revival
+    sequence re-staged it byte-identically).
+
+91. **Validation WOs SERIALIZE — two in-flight WOs with the shared
+    platform/** + apps/shared/** surfaces are ILLEGAL (VAL-001 AC6
+    surface-ownership).** Every validation WO declares those two protected
+    surfaces, so ANY pair of simultaneously in-flight validation WOs
+    trips "two in-flight work orders declare the exact same protected
+    surface" → 3 state-consistency unit failures + Repository Governance
+    CI red on main. The 2026-09-13 05:23 dual-claim (VAL-025 session B +
+    VAL-026 session A) did exactly this; fixed by revert a36f400 (back to
+    inFlight=[VAL-025], VAL-026 planned). RULE: a second Lead session may
+    NOT claim a second validation WO while one is in flight — cross-
+    session parallelism happens at the WORKER/dispatch level only, and a
+    completed-but-unmergeable WO waits OFF-main (claim revert + direct
+    planned→complete finalize in the delivery PR is test-verified legal
+    when its dependencies are complete). Before ANY frontier claim, run
+    the state-consistency unit tests locally (2 files, <60s) — they are
+    the cheapest claim-legality oracle.
