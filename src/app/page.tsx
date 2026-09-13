@@ -20,6 +20,7 @@ const CONSOLE_VERSION = "v6.1 · realtime drag";
 const START_URL = "https://chat.z.ai/";
 const FRAME_FAST_MS = 220; // while dragging / right after an event
 const FRAME_IDLE_MS = 1300; // steady state
+const FRAME_FAIL_MS = 700; // quick retry while frames are failing
 const MOVE_MIN_INTERVAL_MS = 45; // dragmove throttle
 const DRAG_START_THRESHOLD = 0.004; // fraction of viewport before dragstart fires
 
@@ -67,17 +68,24 @@ export default function Console() {
     fastUntilRef.current = Date.now() + 1600;
   }, []);
 
-  const refreshFrame = useCallback(async () => {
+  const refreshFrame = useCallback(async (): Promise<boolean> => {
     try {
-      const r = await fetch("/api/frame", { cache: "no-store" });
-      if (!r.ok) return;
+      // bounded request: a hung /api/frame must never stall the loop forever
+      // (lesson 73 — one stuck request froze the replay at "connecting…")
+      const r = await fetch("/api/frame", {
+        cache: "no-store",
+        signal: AbortSignal.timeout(12000),
+      });
+      if (!r.ok) return false;
       const blob = await r.blob();
       setFrame((old) => {
         if (old) URL.revokeObjectURL(old);
         return URL.createObjectURL(blob);
       });
+      return true;
     } catch {
       /* keep last frame */
+      return false;
     }
   }, []);
 
@@ -133,9 +141,10 @@ export default function Console() {
     const sleep = (ms: number) => new Promise<void>((res) => setTimeout(res, ms));
     (async () => {
       while (!cancelled) {
-        await refreshFrame();
+        const ok = await refreshFrame();
         const fast = dragRef.current !== null || fastUntilRef.current > Date.now();
-        await sleep(fast ? FRAME_FAST_MS : FRAME_IDLE_MS);
+        // failed frame -> retry quickly instead of idling (lesson 73)
+        await sleep(!ok ? FRAME_FAIL_MS : fast ? FRAME_FAST_MS : FRAME_IDLE_MS);
       }
     })();
     return () => {

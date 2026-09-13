@@ -1723,3 +1723,41 @@ prober), spaced_send.py (patient retry loop), launch_detached.py
     listing (curl :9222/json) cross-referenced with the registry + message
     trees. Close phantom-shell tabs only when their trees stay empty AND
     no dispatch is mid-assault on them (the creates own their tabs).
+
+96. **Replay Console frame-loop stall — the "connecting to browser…"
+    freeze.** The client's sequential frame loop (`while { await
+    refreshFrame(); sleep() }`) dies for MINUTES on a single hung
+    /api/frame request; server worst case was 9s (replayd timeout) + 25s
+    (bridge.py spawn fallback) per attempt, and the bridge spawn opens a
+    SECOND concurrent CDP screenshot client which corrupts the daemon's
+    capture session (the -32603 Internal error storms). Symptom
+    signature: status/tabs/inbox keep updating (separate setInterval
+    loops) while the frame pane freezes on the placeholder. Fix triplet
+    (v6.1.1, 2026-09-13): client fetch bounded by
+    AbortSignal.timeout(12s) + 700ms fail-retry cadence; server route:
+    replayd timeout 4s, replayd-reachable-but-erroring → immediate 503
+    (NEVER the bridge fallback when the daemon answers — it owns CDP
+    screenshots exclusively); bridge fallback only on daemon-unreachable,
+    capped 8s.
+
+97. **True-phantom vs false-phantom under API strain — existence truth
+    is the chats LIST, never the direct GET.** During deep-peak,
+    GET /api/v1/chats/<id> returns http-500 for BOTH nonexistent chats
+    AND strained real ones; /api/v1/chats/list returning 200 and
+    CONTAINING the id is the ground truth for existence (string-search
+    the raw response). A transcript-rendered prompt in a tab proves
+    nothing (optimistic client render that never materialized server-
+    side). Real = present in the list AND userLen>100 in the tree;
+    phantom = absent from the list (the direct GET's 500 is corroboration
+    only, never the verdict).
+
+98. **During any capacity crisis, FIRST sweep for sessions running
+    already-MERGED work orders and void them — they eat the exact
+    GLM-5.3 capacity the frontier needs.** 2026-09-13: a stale dep-006
+    dupe (chat f36968d4, created 07:01 by a phantom-era watcher) burned a
+    generation slot for ~45 min on work already merged (PR #37) while
+    every SYS-001 send from 07:29 starved — 12 assault rounds, all
+    swallowed as phantoms. Doctrine: sweep the chats list + registry
+    against the merged-PR record BEFORE and DURING assaults; void stale
+    dupes with the merged-PR SHA as the recorded reason. Freeing one
+    slot can be the difference between a phantom-storm and a landing.
