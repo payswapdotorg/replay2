@@ -25,8 +25,19 @@ POPUP_URL = f"chrome-extension://{EXT_ID}/dist/popup/index.html"
 def popup_tab():
     t = next((x for x in channel.list_tabs() if EXT_ID in (x.get("url") or "")), None)
     if t is None:
-        t = channel.new_tab(POPUP_URL)
-        time.sleep(4)
+        t = channel.new_tab("about:blank")
+        time.sleep(2)
+        if t:
+            # /json/new?url=... no longer navigates (Chrome 151): do it via CDP
+            try:
+                cdp = channel.CDP(t["webSocketDebuggerUrl"], timeout=60)
+                try:
+                    cdp.call("Page.navigate", {"url": POPUP_URL}, timeout=30)
+                finally:
+                    cdp.close()
+            except Exception:
+                pass
+            time.sleep(6)
     return t
 
 
