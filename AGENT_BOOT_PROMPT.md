@@ -2099,3 +2099,29 @@ prober), spaced_send.py (patient retry loop), launch_detached.py
     SEND BUTTON (aria-label send / first enabled button below the
     composer) rather than Enter — Enter does not dispatch on this
     composer. A send is only real when the server message count grows.
+
+## Lesson 118 (2026-09-14 02:05 UTC — full sandbox reset: the recovery is chats HTTP + env restore + re-arm)
+
+118. **A sandbox reset that wipes /home/z (sporta clone, replay2, ~/.secrets,
+    /tmp) loses NOTHING that matters IF three artifacts survive: the GitHub
+    repos, the chat.z.ai account (server-side conversations), and the
+    operator.** Verified recovery path (~45 min, 2026-09-14 01:11 reset):
+    (1) re-clone replay2 + ./deploy.sh (Xvfb/CDP/replayd/console all
+    self-heal); the browser profile is FRESH — the operator must log in
+    via the replay image once (LOGIN_READY flag appears). (2) restore
+    ~/.secrets/env.sh from the operator (PAT + provider keys; chmod 600;
+    hook into ~/.bashrc), then `git remote set-url --push origin
+    https://x-access-token:$PAT@github.com/<org>/<repo>.git` and push the
+    local merge backlog. (3) DEAD dispatch prompts are NOT lost: the full
+    worker-spec prompt sits as the first USER message of the dead chat —
+    extract it via the lesson-107 HTTP rail (`chats_http.py` style token
+    extraction; note the API returns the record directly — unwrap
+    `rec.get('data', rec)`), substitute the real PAT for the
+    `[REDACTED:github_token]` placeholder (lesson 117), and re-dispatch
+    with `dispatch_worker.py create`. (4) Re-arm `launch_queue_watch` —
+    the watcher/spec/heartbeat flags were wiped with /home/z, and the old
+    registry is gone (names can be reused). Concurrency: release stale
+    sandboxes (create() does this) — the dead workers' sandboxes idle
+    forever otherwise. The only unrecoverable loss is a worker sandbox
+    that expired mid-work (lesson 116) — that work item restarts from
+    NOT_STARTED.
