@@ -2125,3 +2125,24 @@ prober), spaced_send.py (patient retry loop), launch_detached.py
     forever otherwise. The only unrecoverable loss is a worker sandbox
     that expired mid-work (lesson 116) — that work item restarts from
     NOT_STARTED.
+
+## Lesson 119 (2026-09-14 05:45 UTC — queue_watch never retires on foreign report formats: retire it YOURSELF, in order)
+
+119. **Two dispatch-day disciplines from the sporta campaign.** (1)
+    queue_watch's completion gate is the VAL/VWO/WO-style filled-regex —
+    a worker whose final report uses ANY other format (e.g. numbered
+    "1. Summary" sections) NEVER satisfies it: the watcher stays on duty
+    forever, sees your done-closed tab as "tablost", and re-dispatches a
+    REDUNDANT session doing completed work (observed: W206 re-created in
+    tab 059C6874 after the merge). THE ORDER MATTERS: when a worker
+    lands, FIRST kill the watcher (ps + kill), THEN rm
+    flags/queue_watch.spec.<name> + queue_watch_heartbeat.<name> (so the
+    supervisor does not resurrect it), THEN dispatch_worker.py done (or
+    void). (2) An ACCOUNT RATE-LIMIT sighting is not a capacity popup:
+    the churn guard defers assaults (default ~65 min from the LAST
+    sighting — ratelimit_age); sends during the window phantom-fail and
+    burn allowance. Let the watcher defer; do NOT manually resend into
+    a rate-limited account. Chrome death mid-campaign: the supervisor
+    restarts the stack; sessions survive via registry tab-id re-aim with
+    a rolled chat-id (lesson 52's fresh-tab re-sync stays the definitive
+    state probe; the chats HTTP rail lags turn-close).
