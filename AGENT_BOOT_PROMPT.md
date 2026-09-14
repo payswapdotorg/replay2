@@ -2146,3 +2146,38 @@ prober), spaced_send.py (patient retry loop), launch_detached.py
     restarts the stack; sessions survive via registry tab-id re-aim with
     a rolled chat-id (lesson 52's fresh-tab re-sync stays the definitive
     state probe; the chats HTTP rail lags turn-close).
+
+## Lesson 120 (2026-09-14 16:20 UTC — Task-tool subagent dispatch: the local-worker alternative to the agents tab)
+
+120. **When the sandbox provides a Task/subagent tool (Z.ai Code style),
+    worker dispatch can run LOCALLY without chat.z.ai at all — and it
+    carried the S004-S005 sporta waves (W302/W504/W702/G4 and the M5/M6
+    wave).** The protocol that worked: (1) one git WORKTREE per worker
+    (`git worktree add /home/z/sporta-wXXX -b wXXX-<slug> main` + `bun
+    install` inside it) — workers never touch main or each other's
+    worktrees; the branch push IS the delivery. (2) The prompt must be
+    fully self-contained (the subagent sees nothing else): worklog path
+    (/home/z/my-project/worklog.md — read ALL, append own entry at END
+    with Task ID), the five-command battery, constitution, exact commit
+    message prefix, "never print the remote URL/token" (the worktree's
+    origin carries the PAT in .git/config — never committed). (3)
+    SEQUENTIAL dispatch beats parallel: parallel Task calls failed
+    2/2 times with "context deadline exceeded" while single calls
+    succeeded. (4) CRITICAL FAILURE MODE: a Task call that ERRORS may
+    STILL have started the agent — the result channel died, the worker
+    lives on. Before re-dispatching, CHECK FOR LIFE (find
+    <worktree>/packages -newer <marker> -printf mtime; git status):
+    re-dispatching onto a live agent double-books the worktree. A
+    flight whose files stopped changing for 15+ min AND has no branch
+    commit is dead — re-dispatch with an AUDIT-FIRST prompt (the
+    uncommitted files are inherited work: audit line-by-line, complete
+    rather than rewrite, fix real bugs, pin fixes with tests). (5)
+    Completion markers for a detached (error-returned) agent: branch
+    commit `feat(wXXX)/test(gX): …` + `git push` + worklog Task-ID
+    entry; the TL then re-runs the battery itself. (6) TL verification
+    lessons: root `bun run typecheck` does NOT propagate per-package
+    exit codes — grep the FULL output for `error TS` (count must be 0);
+    after every merge run `bun install` (re-link) before the battery;
+    merge-seam defects surface only on merged main (each branch green
+    on its own base — e.g. W504's new `unknown-segment` error class vs
+    W702's viewer failure-class union) and are TL-owned fixes.
