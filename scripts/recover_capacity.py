@@ -23,9 +23,11 @@ Legacy flags {"uuid": ...} are resolved through the session registry.
 """
 import json
 import os
+import re
 import subprocess
 import sys
 import time
+import urllib.request
 
 BASE = os.path.dirname(os.path.abspath(__file__))
 # argv[1] = flag path (supervisor passes the per-session flag); argv[1] may
@@ -76,6 +78,93 @@ def _spec():
     return None
 
 
+def _chat_live_server_side(name):
+    """Lesson-98/106: the ONLY landing truth is the server chats list.
+
+    Walks the registry in order (a later void/failed/done row invalidates
+    earlier create rows) to find the current live row's /c/ URL, then checks
+    the chats list over plain HTTP (lesson-107 token pattern). Returns
+    True (chat exists), False (phantom — absent from list / detail dead),
+    or None (tooling failure — caller should PRESERVE legacy registry-trust
+    behavior so a broken token never dead-locks or infinite-loops).
+    """
+    url = None
+    live = False
+    try:
+        for line in open(REG).read().split("\n"):
+            if not line.strip():
+                continue
+            try:
+                r = json.loads(line)
+            except Exception:
+                continue
+            if r.get("name") != name:
+                continue
+            if r.get("action") in ("void", "voided", "failed", "done"):
+                live = False
+                url = None
+            elif r.get("sent") and r.get("url"):
+                live = True
+                url = r.get("url")
+    except Exception:
+        return None
+    if not live or not url:
+        return False
+    m = re.search(r"/c/([0-9a-f-]{36})", url)
+    if not m:
+        return None
+    tok = ""
+    cache = os.path.join(BASE, "flags", "chat_token")
+    if os.path.isfile(cache):
+        try:
+            tok = open(cache).read().strip().strip('"')
+        except Exception:
+            tok = ""
+    if not tok:
+        return None
+    try:
+        req = urllib.request.Request(
+            "https://chat.z.ai/api/v1/chats/list?limit=100",
+            headers={"Authorization": f"Bearer {tok}", "Accept": "application/json"},
+        )
+        with urllib.request.urlopen(req, timeout=20) as r:
+            data = json.loads(r.read().decode())
+    except Exception:
+        return None
+    items = data.get("data", data) if isinstance(data, dict) else data
+    if isinstance(items, dict):
+        items = items.get("items", [])
+    return any((it.get("id") or "") == m.group(1) for it in items)
+
+
+def _last_sent_url(name):
+    """The most recent sent=true row's URL for `name` (for void notes)."""
+    url = None
+    try:
+        for line in open(REG).read().split("\n"):
+            if not line.strip():
+                continue
+            try:
+                r = json.loads(line)
+            except Exception:
+                continue
+            if r.get("name") == name and r.get("sent") and r.get("url"):
+                url = r.get("url")
+    except Exception:
+        pass
+    return url or "unknown-url"
+
+
+def _void_phantom(name, url):
+    """Invalidate a phantom sent-row so later scans do not steal it."""
+    try:
+        with open(REG, "a") as f:
+            f.write(json.dumps({"action": "void", "name": name,
+                                "note": f"phantom send: chat {url} absent from chats list — capacity-swallowed (poller auto-void, lesson 98/106)"}) + "\n")
+    except Exception:
+        pass
+
+
 def main():
     spec = _spec()
     if not spec or not spec.get("name") or not spec.get("prompt_file"):
@@ -98,6 +187,17 @@ def main():
                               "create", name, prompt_file])
         print(f"[{attempt}] create rc={rc}", flush=True)
         if rc == 0:
+            # Lesson-98/106 hardening: a create can exit 0 on a PHANTOM send
+            # (chat destroyed server-side). Verify against the chats list
+            # before clearing the flag; on phantom, void the row and keep
+            # fighting (observed: wfx-030d poller self-cleared on its own
+            # phantom and silently disarmed the item).
+            server_live = _chat_live_server_side(name)
+            if server_live is False:
+                print("rc=0 but chat ABSENT from server list — phantom; voiding + continuing assault", flush=True)
+                _void_phantom(name, _last_sent_url(name))
+                time.sleep(20)
+                continue
             _clear_flag()
             return 0
         if rc == 1:
@@ -130,6 +230,12 @@ def main():
             except Exception:
                 pass
             if live:
+                server_live = _chat_live_server_side(name)
+                if server_live is False:
+                    print("registry says live but chat ABSENT from server list — phantom; voiding + retrying", flush=True)
+                    _void_phantom(name, _last_sent_url(name))
+                    time.sleep(20)
+                    continue
                 print("session already live — recovered elsewhere", flush=True)
                 _clear_flag()
                 return 0
