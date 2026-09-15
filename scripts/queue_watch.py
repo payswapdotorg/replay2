@@ -181,6 +181,15 @@ def state(tab_prefix):
         r"===?\s*(?:VAL|VWO|RWO|WO)-\d+\s*(?:COMPLETION\s*REPORT|完成报告)\s*===?"
         r"[\s\S]{0,300}?(?:Base\s*SHA|基础\s*SHA)\s*[:：]\s*(?:main\s*@?\s*)?[0-9a-f]{40}",
         body, re.IGNORECASE))
+    # 2026-09-15 (sporta campaign, lesson 121): sporta worker prompts use
+    # "SPORTA W305 COMPLETION REPORT" + "Branch: w305-… @ <final-sha>" —
+    # the template placeholder <final-sha> is not hex, so prompt echoes
+    # (and worker plan echoes of the template) never satisfy this gate;
+    # a genuine report always carries the pushed commit sha.
+    filled = filled or bool(re.search(
+        r"SPORTA\s+W\d+\s+COMPLETION\s+REPORT"
+        r"[\s\S]{0,300}?Branch\s*[:：]\s*[\w.-]+\s*@\s*[0-9a-f]{7,40}",
+        body, re.IGNORECASE))
     gen = bool(re.search(r"\b(Stop|Pause|Halt)\b", body[-1500:]))
     cap = "currently at capacity" in body or "peak hours" in body
     # RATE-LIMITED text (operator 2026-09-12): these notifications DO NOT
