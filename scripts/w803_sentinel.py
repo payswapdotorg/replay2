@@ -163,9 +163,11 @@ def dispatch(tries=3):
 
 def main():
     log("w803_sentinel online (waiting on W605 merge; W806-unblock watch armed)")
-    outbox("Final-stretch sentinel armed: the moment W605 merges into main I dispatch "
-           "W803 (visual quality gates) as a watchable console session, then watch for "
-           "its marker + branch. I also alert when W806 unblocks (W801-W805 all merged).")
+    if not os.path.exists(flag("W803_SENTINEL_ARMED")):
+        open(flag("W803_SENTINEL_ARMED"), "w").write(time.strftime("%H:%M:%S"))
+        outbox("Final-stretch sentinel armed: the moment W605 merges into main I dispatch "
+               "W803 (visual quality gates) as a watchable console session, then watch for "
+               "its marker + branch. I also alert when W806 unblocks (W801-W805 all merged).")
     deadline = time.time() + DEADLINE_H * 3600
     dispatched = os.path.exists(flag("W803_DISPATCHED"))
     w806_alerted = os.path.exists(flag("W806_UNBLOCKED"))
