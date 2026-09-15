@@ -2181,3 +2181,25 @@ prober), spaced_send.py (patient retry loop), launch_detached.py
     merge-seam defects surface only on merged main (each branch green
     on its own base — e.g. W504's new `unknown-segment` error class vs
     W702's viewer failure-class union) and are TL-owned fixes.
+
+## Lesson 121 (2026-09-15 05:00 UTC — operator ruling: dispatch ONLY from inside the replay)
+
+121. **The operator ruled (2026-09-15): "fix the replay so I can watch you work
+    from within, you should only dispatch workers from inside the replay."**
+    The replay console (port 3000) is the operator's observation surface —
+    every worker session must be a watchable agents-tab chat session
+    (GLM-5.3 + Full-Stack) created via `dispatch_worker.py`, so the operator
+    sees dispatch, generation, and reports live in the mirrored browser. The
+    local Task-tool dispatch mode (lesson 120) is RETIRED as the primary
+    surface; it may only return as an explicitly operator-authorized fallback
+    when the replay stack itself is dead. Transit corollary: when local
+    dead-flight work (uncommitted files in a worktree) must be handed to a
+    REMOTE replay worker, the TL first commits it as a labeled
+    `wip(<branch>): inherited flight-1 work preserved by TL` commit, pushes
+    the branch, and points the worker's audit-first prompt at that HEAD —
+    git is the transit for inherited state exactly as it is for delivery
+    (lessons 5/116/117). Worker report gating for replay-dispatched sporta
+    workers: the prompt mandates a literal final line
+    `SPORTA-COMPLETION-REPORT <WID> END`; do NOT arm queue_watch for foreign
+    report formats (lesson 119) — poll with `dispatch_worker.py check`
+    yourself and retire watchers by hand, in order, if any were armed.
