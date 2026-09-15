@@ -27,7 +27,7 @@ completion report. Nothing else counts.
 ```bash
 git clone https://github.com/payswapdotorg/sporta.git sporta-w804
 cd sporta-w804
-git checkout 706ba9fa23   # verified main tip
+git checkout d734fb2337   # verified main tip
 git checkout -b w804-product-analytics
 bun install
 ```
@@ -152,7 +152,7 @@ Use the token ONLY in that push command. Never print the URL.
 SPORTA W804 COMPLETION REPORT
 Work item: W804 Product analytics
 Branch: w804-product-analytics @ <final-commit-sha>
-Base: 706ba9fa23
+Base: d734fb2337
 Battery: typecheck 0 errors / lint clean / format clean / bun test <N>/<N> green
 Package: packages/product-analytics (<files> files, <tests> tests)
 Funnel: <stages> stages named from the real W706 status vocabulary;

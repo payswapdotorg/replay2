@@ -276,25 +276,37 @@ def cmd_event(payload):
 
 def _env_conf():
     """Optional runtime config from scripts/env.sh (gitignored, no secrets
-    in the repo). Recognized: REPO=owner/name, OPERATOR_PAT=ghp_... (only
-    needed for private repos or API rate limits)."""
+    in the repo) with ~/.secrets/env.sh as the credential fallback (the
+    canonical operator-credential location since 2026-09-12; the anonymous
+    API rate limit on this box's IP exhausts within an hour, so the PAT
+    fallback keeps the console's repo card alive). Recognized:
+    REPO=owner/name, OPERATOR_PAT/GITHUB_TOKEN/PAYSWAP_PAT (ghp_ or
+    github_pat_)."""
     conf = {"repo": "", "pat": ""}
     import re
-    try:
-        env = open(os.path.join(os.path.dirname(os.path.abspath(__file__)), "env.sh")).read()
+    here = os.path.join(os.path.dirname(os.path.abspath(__file__)), "env.sh")
+    secret = os.path.expanduser("~/.secrets/env.sh")
+    env = ""
+    for path in (here, secret):
+        try:
+            env += "\n" + open(path).read()
+        except Exception:
+            continue
+    if env:
         m = re.search(r"^\s*(?:export\s+)?REPO=([\w./-]+)", env, re.M)
         if m:
             conf["repo"] = m.group(1).strip().strip("\"'")
-        m = re.search(r"^\s*(?:export\s+)?(?:OPERATOR_PAT|GITHUB_TOKEN)=(ghp_\w+)", env, re.M)
+        m = re.search(
+            r"^\s*(?:export\s+)?(?:OPERATOR_PAT|GITHUB_TOKEN|PAYSWAP_PAT)="
+            r"(ghp_[A-Za-z0-9]+|github_pat_[A-Za-z0-9_]+)", env, re.M)
         if m:
             conf["pat"] = m.group(1)
-    except Exception:
-        pass
     if not conf["repo"]:
         conf["repo"] = os.environ.get("REPO", "")
     if not conf["pat"]:
-        p = os.environ.get("OPERATOR_PAT") or os.environ.get("GITHUB_TOKEN") or ""
-        if p.startswith("ghp_"):
+        p = (os.environ.get("OPERATOR_PAT") or os.environ.get("GITHUB_TOKEN")
+             or os.environ.get("PAYSWAP_PAT") or "")
+        if p.startswith(("ghp_", "github_pat_")):
             conf["pat"] = p
     return conf
 

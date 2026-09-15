@@ -27,7 +27,7 @@ completion report. Nothing else counts.
 ```bash
 git clone https://github.com/payswapdotorg/sporta.git sporta-w802
 cd sporta-w802
-git checkout 706ba9fa23   # verified main tip
+git checkout d734fb2337   # verified main tip
 git checkout -b w802-latency-slos
 bun install
 ```
@@ -146,7 +146,7 @@ Use the token ONLY in that push command. Never print the URL.
 SPORTA W802 COMPLETION REPORT
 Work item: W802 Latency SLOs
 Branch: w802-latency-slos @ <final-commit-sha>
-Base: 706ba9fa23
+Base: d734fb2337
 Battery: typecheck 0 errors / lint clean / format clean / bun test <N>/<N> green
 Policy: <objectives> objectives, all evidence-cited (profile w306-candidate-v1);
         <alerts> alert levels; <mappings> degradation mappings keyed to

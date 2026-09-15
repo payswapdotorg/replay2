@@ -27,7 +27,7 @@ completion report. Nothing else counts.
 ```bash
 git clone https://github.com/payswapdotorg/sporta.git sporta-w605
 cd sporta-w605
-git checkout 706ba9fa23   # verified main tip (docs row "W604 + W306 COMPLETE")
+git checkout d734fb2337   # verified main tip (docs row "W704 COMPLETE — M5 GATE 7/7")
 git checkout -b w605-3d-output-evaluation
 bun install
 ```
@@ -171,7 +171,7 @@ is rejected, re-run it; do not rewrite history.
 SPORTA W605 COMPLETION REPORT
 Work item: W605 3D output evaluation
 Branch: w605-3d-output-evaluation @ <final-commit-sha>
-Base: 706ba9fa23
+Base: d734fb2337
 Battery: typecheck 0 errors / lint clean / format clean / bun test <N>/<N> green
 Package: packages/output-evaluation (<files> files, <tests> tests)
 Axes: score / clock / identity-continuity / event-ordering / scene-state —
