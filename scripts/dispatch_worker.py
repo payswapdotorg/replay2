@@ -313,7 +313,12 @@ JS_SANDBOX_ROWS = r"""(() => {
       const row = b.closest('tr, div');
       const txt = (row ? row.innerText : '') || '';
       const lines = txt.split('\n').map(s => s.trim()).filter(Boolean);
-      rows.push({name: lines[0] || '?', meta: lines.slice(1, 4).join(' | ').substring(0, 120)});
+      // 2026-09-13 hardening: the row's chat TITLE can be generic — collect
+      // every anchor href so the chat UUID keeps live sandboxes safe.
+      const links = row ? [...row.querySelectorAll('a')]
+        .map(a => (a.getAttribute('href') || '')).filter(Boolean) : [];
+      rows.push({name: lines[0] || '?', meta: lines.slice(1, 4).join(' | ').substring(0, 120),
+                 links: links.join(' ').substring(0, 200)});
     }
   });
   return JSON.stringify({present: true, rows: rows});
@@ -422,8 +427,10 @@ def _row_is_idle(row, keep_kws):
     import re
     name = (row.get("name") or "")
     meta = (row.get("meta") or "")
+    links = (row.get("links") or "")
+    haystack = f"{name}\n{meta}\n{links}".lower()
     for k in keep_kws:
-        if k and k.lower() in name.lower():
+        if k and k.lower() in haystack:
             return False  # one of our active jobs
     # a job that started seconds/minutes ago may be the session being
     # created right now (sandbox provisions right after the prompt send)
@@ -822,6 +829,15 @@ def create(name, prompt_file):
                 print("[2/7] waiting for page shell ...")
                 try:
                     ok_shell, last = _wait(c, JS_AGENT_PRESENT, "found", tries=25, sleep=1.5, desc="shell")
+                    if not ok_shell:
+                        # 2026-09-13 lesson: fresh tabs intermittently land in a
+                        # network-error opaque-origin state — one reload recovers.
+                        print("      shell not found — reload retry (opaque-origin recovery)")
+                        try:
+                            c.call("Page.reload", {}, timeout=30)
+                        except Exception:
+                            pass
+                        ok_shell, last = _wait(c, JS_AGENT_PRESENT, "found", tries=20, sleep=1.5, desc="shell-reload")
                     if not ok_shell:
                         print(f"ERROR: page shell never loaded (last={last}); login may be expired")
                         _save({"name": name, "action": "failed", "stage": "shell", "tab_id": tab["id"],
