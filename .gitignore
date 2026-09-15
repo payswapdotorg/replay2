@@ -12,7 +12,8 @@ scripts/*.log
 scripts/watcher.out
 
 # program scratch (generated per-deployment by build_prompt/harvest)
-scripts/worker-prompts/
+scripts/worker-prompts/*
+!scripts/worker-prompts/*.template.md
 scripts/worker-reports/
 
 next-env.d.ts

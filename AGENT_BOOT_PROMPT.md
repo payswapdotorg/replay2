@@ -2203,3 +2203,37 @@ prober), spaced_send.py (patient retry loop), launch_detached.py
     `SPORTA-COMPLETION-REPORT <WID> END`; do NOT arm queue_watch for foreign
     report formats (lesson 119) — poll with `dispatch_worker.py check`
     yourself and retire watchers by hand, in order, if any were armed.
+
+## Lesson 122 (2026-09-15 13:30 UTC — reset #3: hardening reaches GitHub; the wave sentinel)
+
+122. **Third full sandbox reset in 30 hours (12:31 UTC). Everything outside
+    the scaffold project died again — including the re-applied watcher fixes
+    and the armed sentinels, both times working-copy-only. THE FIX IS NOW IN
+    THIS REPO:** (1) `watcher.py` carries the guest-discrimination login
+    check (decode the operator email from the JWT inside the open CDP
+    connection; token LENGTH alone is retired — a fresh profile's GUEST
+    session carries a >100-char token and produced the reset-1 false
+    LOGIN_READY), the sporta branch/write targets with an ANONYMOUS
+    `git ls-remote` fallback (branch watching survives credential loss —
+    the repos are public), fine-grained `github_pat_` support, and a
+    per-cycle PAT re-read. (2) `wave_sentinel.py` is the wave-dispatch
+    sentinel: on LOGIN_READY + PAT it dispatches the current wave as
+    watchable agents-tab sessions (lesson-121 ruling), arms a queue_watch
+    per session, polls markers via the lesson-107 HTTP rail (marker counted
+    >=2 = prompt echo + answer) and branches via ls-remote; wave definition
+    is a WAVE list at the top — EDIT IT EACH WAVE. (3) The PAT-free packet
+    templates live in `scripts/worker-prompts/*.template.md` (the rendered
+    `.md` with the real PAT stays gitignored; `__PAT__` is the placeholder).
+    **Reset recovery is now four commands:** clone this repo →
+    `cp <scaffold>/.secrets/env.sh ~/.secrets/env.sh && chmod 600 ...` (the
+    scaffold project survives resets and holds the gitignored credential
+    backup — RESTORE IT, the operator will not resend) → `./deploy.sh` →
+    `python3 scripts/launch_detached.py scripts/logs/wave_sentinel.log
+    <python> scripts/wave_sentinel.py`. Then read the worklog for the wave
+    state. (4) Credentials handling: the operator's PAT + Composio keys are
+    exported from `~/.secrets/env.sh` (PAYSWAP_PAT/GITHUB_TOKEN/
+    COMPOSIO_API_KEY/COMPOSIO_MCP_API_KEY) — source it in shells that need
+    it; NEVER commit, echo, or log the values; the only sanctioned use of
+    the raw PAT is the rendered worker push URLs and TL merge pushes.
+    (5) Composio keys are held for app integrations the operator may
+    request (github/vercel etc.); plain git+PAT remains the primary rail.

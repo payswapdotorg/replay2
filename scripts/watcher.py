@@ -55,16 +55,36 @@ def log(msg):
 def get_pat():
     # 2026-09-12: credentials live in ~/.secrets/env.sh (never committed);
     # scripts/env.sh remains as a fallback for stack defaults.
+    # 2026-09-15: accept github_pat_ (fine-grained) tokens too.
     for path in (os.path.expanduser("~/.secrets/env.sh"), os.path.join(BASE, "env.sh")):
         try:
             env = open(path).read()
         except Exception:
             continue
         for var in ("PAYSWAP_PAT", "GITHUB_TOKEN", "OPERATOR_PAT"):
-            m = re.search(rf"{var}=(ghp_\w+)", env)
+            m = re.search(rf"{var}=(ghp_[A-Za-z0-9]+|github_pat_[A-Za-z0-9_]+)", env)
             if m:
                 return m.group(1)
     return ""
+
+
+def _jwt_email(tok):
+    """Decode any email-looking string from a JWT payload (guest discrimination).
+    A fresh browser profile auto-creates a GUEST session that ALSO has a
+    token — token presence alone is NOT an operator login (2026-09-15
+    reset-2 lesson: fresh profile classified logged-in on token length)."""
+    try:
+        import base64
+        parts = str(tok).split(".")
+        if len(parts) < 2:
+            return ""
+        seg = parts[1]
+        seg += "=" * (-len(seg) % 4)
+        payload = base64.urlsafe_b64decode(seg.encode()).decode("utf-8", "replace")
+        m = re.search(r"[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}", payload)
+        return m.group(0) if m else ""
+    except Exception:
+        return ""
 
 
 def check_login():
@@ -86,21 +106,27 @@ def check_login():
                     body = cdp.eval("document.body.innerText || ''", timeout=10) or ""
                     tok = ""
                     try:
-                        tok = cdp.eval("(localStorage.getItem('token')||'').length", timeout=8) or ""
+                        tok = cdp.eval(
+                            "(localStorage.getItem('token')||'').replace(/^\"|\"$/g,'')",
+                            timeout=8) or ""
                     except Exception:
                         tok = ""
+                    # 2026-09-14/15 fixes: the email decode MUST run INSIDE the
+                    # open CDP connection (decode-after-close made logged-in(token)
+                    # unreachable), and a token alone is NOT a login — a fresh
+                    # profile carries a GUEST token. Discriminate on the JWT email.
+                    email = _jwt_email(tok)
                 finally:
                     cdp.close()
                 if "tepa" in body:
                     return "logged-in(tepa)"
-                # 2026-09-12: token presence is the authoritative session probe — the
-                # body marker only appears on some pages, which made the resident
-                # agent report a stale "logged-out" while actually signed in.
-                try:
-                    if int(str(tok).strip() or "0") > 100:
-                        return "logged-in(token)"
-                except Exception:
-                    pass
+                if email:
+                    if "guest" in email.lower():
+                        return "logged-out(guest)"
+                    return f"logged-in({email.split('@')[0]})"
+                # NOTE (2026-09-15): no decoded email => this tab contributes no
+                # positive login signal. Token LENGTH alone was retired — a guest
+                # session carries a >100-char token too. Keep probing other tabs.
                 if "Sign in" in body or "Log in" in body:
                     saw_signin = True
             except Exception:
@@ -115,21 +141,40 @@ def check_login():
 
 
 def check_branches(pat):
-    r = subprocess.run(["curl", "-s", "--max-time", "15",
-                        "-H", f"Authorization: token {pat}",
-                        "https://api.github.com/repos/payswapdotorg/Zeck/branches?per_page=100"],
-                       capture_output=True, text=True)
+    """2026-09-15: watch payswapdotorg/sporta (the active program). With a PAT
+    use the API; WITHOUT one fall back to anonymous `git ls-remote` — the repo
+    is public, so branch watching survives credential loss (reset-2 lesson)."""
+    if pat:
+        r = subprocess.run(["curl", "-s", "--max-time", "15",
+                            "-H", f"Authorization: token {pat}",
+                            "https://api.github.com/repos/payswapdotorg/sporta/branches?per_page=100"],
+                           capture_output=True, text=True)
+        try:
+            bs = json.loads(r.stdout)
+            if isinstance(bs, list):
+                return {b["name"]: b["commit"]["sha"][:10] for b in bs if isinstance(b, dict)}
+        except Exception:
+            pass
     try:
-        bs = json.loads(r.stdout)
-        return {b["name"]: b["commit"]["sha"][:10] for b in bs if isinstance(b, dict)}
+        r = subprocess.run(
+            ["git", "ls-remote", "--heads", "https://github.com/payswapdotorg/sporta"],
+            capture_output=True, text=True, timeout=30)
+        out = {}
+        for line in r.stdout.splitlines():
+            if "\t" in line:
+                sha, ref = line.split("\t", 1)
+                out[ref.replace("refs/heads/", "")] = sha[:10]
+        return out or None
     except Exception:
         return None
 
 
 def check_write(pat):
+    if not pat:
+        return STATE["write"]  # unknown without a PAT — never claim it
     r = subprocess.run(["curl", "-s", "--max-time", "10",
                         "-H", f"Authorization: token {pat}",
-                        "https://api.github.com/repos/payswapdotorg/codex"],
+                        "https://api.github.com/repos/payswapdotorg/sporta"],
                        capture_output=True, text=True)
     try:
         d = json.loads(r.stdout)
@@ -303,9 +348,17 @@ def main():
     log("watcher online (login + branches + write-access + dialogs + operator-inbox)")
     pat = get_pat()
     if not pat:
-        log("NO PAT in env.sh — watcher runs in degraded mode")
+        log("NO PAT in env.sh — watcher runs in degraded mode "
+            "(branches still watched via anonymous git ls-remote)")
     while True:
         try:
+            # 2026-09-15: re-read the PAT every cycle — the operator may drop
+            # it into ~/.secrets/env.sh mid-flight (console-thread PAT relay);
+            # the watcher must not need a restart to notice.
+            pat_now = get_pat()
+            if pat_now and pat_now != pat:
+                pat = pat_now
+                log("PAT appeared in env — full mode (API branches + write check)")
             # 1. login state
             login = check_login()
             if login != STATE["login"]:
