@@ -73,9 +73,21 @@ def main_sha():
 
 
 def merged(wid):
-    """True if origin/main history contains the item's merge commit."""
-    r = git(["log", "--grep", f"merge: {wid} ", "--oneline", "-1", "origin/main"])
-    return bool(r.stdout.strip())
+    """True if origin/main shows the item COMPLETE. Two signals, OR'd:
+    the evidence-row commit message ('<WID> COMPLETE' — the session-B
+    convention, e.g. 2ef2be9 'W804 COMPLETE' landed with NO merge commit)
+    or the ledger row itself reading COMPLETE (catches any landing style)."""
+    r = git(["log", "--grep", f"{wid} COMPLETE", "--oneline", "-1", "origin/main"])
+    if r.stdout.strip():
+        return True
+    try:
+        r2 = git(["show", f"origin/main:docs/status/work-item-status.md"])
+        for line in r2.stdout.splitlines():
+            if line.startswith(f"| {wid} "):
+                return "COMPLETE" in line
+    except Exception:
+        pass
+    return False
 
 
 def branch_exists():
@@ -116,18 +128,29 @@ def dispatch(tries=3):
                    "a watch tab is opening. I verify + merge when the branch lands.")
             try:
                 reg = os.path.join(FLAGS, "session_registry.jsonl")
+                tab_id = url = None
                 if os.path.exists(reg):
                     last = [l for l in open(reg).read().splitlines() if l.strip()][-1:]
-                    url = json.loads(last[0]).get("url") if last else None
-                    if url:
-                        subprocess.run(
-                            ["/home/z/.venv/bin/python3", "-c",
-                             f"import sys;sys.path.insert(0,'{HERE}');"
-                             f"from channel import new_tab;t=new_tab({url!r});"
-                             "print('watch tab', bool(t))"],
-                            capture_output=True, text=True, timeout=60)
+                    if last:
+                        rec = json.loads(last[0])
+                        tab_id, url = rec.get("tab_id"), rec.get("url")
+                if url:
+                    subprocess.run(
+                        ["/home/z/.venv/bin/python3", "-c",
+                         f"import sys;sys.path.insert(0,'{HERE}');"
+                         f"from channel import new_tab;t=new_tab({url!r});"
+                         "print('watch tab', bool(t))"],
+                        capture_output=True, text=True, timeout=60)
+                if tab_id:
+                    subprocess.Popen(
+                        ["/home/z/.venv/bin/python3",
+                         os.path.join(HERE, "queue_watch.py"), NAME, tab_id, MARKER],
+                        stdout=open(os.path.join(HERE, "logs", f"queue_watch.{NAME}.log"), "a"),
+                        stderr=subprocess.STDOUT,
+                        start_new_session=True, cwd=HERE)
+                    log(f"queue_watch armed for {NAME} (tab {str(tab_id)[:8]})")
             except Exception as e:
-                log(f"watch tab: {e!r}")
+                log(f"watch tab/queue_watch: {e!r}")
             return True
         if r.returncode == 3:
             outbox("W803 dispatch hit the capacity wall — supervisor recover_capacity "
