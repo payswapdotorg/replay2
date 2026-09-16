@@ -39,8 +39,24 @@ def main():
         raise SystemExit("no files requested")
     outdir = os.path.join(OUTROOT, chat[:8])
     os.makedirs(outdir, exist_ok=True)
-    tab = channel.find_tab("chat.z.ai")
-    cdp = channel.CDP(tab["webSocketDebuggerUrl"], timeout=90)
+    # wedge-proof (2026-09-15): iterate chat.z.ai tabs until one answers a
+    # cheap probe — long-lived tabs can be CDP-dead under renderer thrash.
+    cdp = None
+    for _t in channel.list_tabs():
+        if "chat.z.ai" not in (_t.get("url") or ""):
+            continue
+        try:
+            _c = channel.CDP(_t["webSocketDebuggerUrl"], timeout=20)
+            _c.eval("1+1", await_promise=False, timeout=8)
+            cdp = _c
+            break
+        except Exception:
+            try:
+                _c.close()
+            except Exception:
+                pass
+    if cdp is None:
+        raise SystemExit("no responsive chat.z.ai tab for harvest")
     try:
         for fp in files:
             js = (FETCH_JS.replace("__CHAT__", json.dumps(chat))

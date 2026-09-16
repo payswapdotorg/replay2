@@ -1,6 +1,6 @@
 import { promises as fsp } from "fs";
 import { join } from "path";
-import { FLAGS, WATCHER_LOG } from "@/lib/replay";
+import { FLAGS, WATCHER_HEARTBEAT } from "@/lib/replay";
 
 const INBOX = join(FLAGS, "operator_inbox.jsonl");
 const OUTBOX = join(FLAGS, "agent_outbox.jsonl");
@@ -47,10 +47,13 @@ export async function GET() {
     /* no heartbeat yet */
   }
   try {
-    const st = await fsp.stat(WATCHER_LOG);
+    // watcher.py writes flags/watcher_heartbeat every cycle — the canonical
+    // liveness oracle. (watcher.log only records significant events and can
+    // sit quiet for hours while the watcher is perfectly healthy.)
+    const st = await fsp.stat(WATCHER_HEARTBEAT);
     watcherAlive = Date.now() - st.mtimeMs < 300000;
   } catch {
-    /* no watcher log */
+    /* no watcher heartbeat yet */
   }
   return Response.json(
     {

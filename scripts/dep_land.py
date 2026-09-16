@@ -146,12 +146,12 @@ def main():
         print(f"[{name}] {stamp} round {rnd}/{max_rounds}: create (current tab chat: {str(cid)[:10]})", flush=True)
         try:
             p = subprocess.run([sys.executable, DW, "create", name, prompt],
-                               cwd=BASE, capture_output=True, text=True, timeout=420)
+                               cwd=BASE, capture_output=True, text=True, timeout=900)
             out = (p.stdout or "") + (p.stderr or "")
             tail = [l for l in out.split("\n") if l.strip()][-1:] or ["rc=%s" % p.returncode]
             print(f"[{name}] {stamp} create rc={p.returncode}: {tail[0][:130]}", flush=True)
         except subprocess.TimeoutExpired:
-            print(f"[{name}] {stamp} create timed out (420s) — void + next round", flush=True)
+            print(f"[{name}] {stamp} create timed out (900s) — void + next round", flush=True)
         time.sleep(settle)
         srv = server_chats()
         cid = live_tab_chat_id(name)

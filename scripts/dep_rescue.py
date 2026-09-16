@@ -39,19 +39,21 @@ VERIFY_WITHIN_S = 10 * 60      # transcript must grow within this after nudge
 VERIFY_GROWTH = 300            # ... by at least this many chars
 
 CHATS = {
-    "dep-001": "4e2f61fd-5c76-4fce-b32b-110133cb8c0b",
-    "dep-010": "5c355d3c-1aaa-40f0-826c-27207e0c81c4",
-    "dep-020": "003f515c-c3e7-468b-8665-7e1463d7df2d",
+    "dep-001": "6999d433-9206-499c-8974-564ea879a7f6",
+    "dep-010": "e6375f3c-370c-44f1-ad25-00e2db80eb32",
+    "dep-025": "340016bf-7dc2-4057-9756-a6cb6351bf3c",
+    "dep-012": "8e1ef7e0-b5b3-4083-810f-682c02e860cf",
 }
 
 NUDGE_TEXT = (
     "Continue your DEP work order now, exactly per the worker guide above in this "
     "chat. Your previous sandbox pod expired mid-work; this message provisions a "
     "fresh one. If /home/z/Zeck is missing or stale: re-clone "
-    "https://github.com/payswapdotorg/Zeck.git and reset to base "
-    "6fbe6cb4c3c15115f72b297700e09485f9bda050. Then implement your assigned "
-    "surface, run the FULL verification battery, and deliver the completion "
-    "report + tarball exactly per the delivery contract. Begin immediately."
+    "https://github.com/payswapdotorg/Zeck.git and reset to the CURRENT frontier "
+    "base cc49adbaec10da1ca3657bdb8fa11d5459adf1ba (main after the DEP-020 merge — "
+    "docs/developer/** and examples/** now exist; do not touch them). Then implement "
+    "your assigned surface, run the FULL verification battery, and deliver the "
+    "completion report + tarball exactly per the delivery contract. Begin immediately."
 )
 
 
@@ -69,8 +71,12 @@ def complete(name):
     return os.path.exists(os.path.join(FLAGS, f"{name}-complete.marker"))
 
 
-def transcript_len(cid):
-    """Live DOM text length of the chat's tab; None if tab missing."""
+def transcript_len(cid, fresh_ok=True):
+    """Live DOM text length of the chat's tab; None if tab missing.
+
+    Wedge-proof (2026-09-15): if the chat's own tab is wedged (CDP timeout),
+    fall back to a FRESH tab loading the chat URL (dep_watch pattern).
+    """
     for t in channel.list_tabs():
         if cid in (t.get("url") or ""):
             try:
@@ -81,13 +87,46 @@ def transcript_len(cid):
                 finally:
                     c.close()
             except Exception as e:
-                log(f"  {cid[:8]} transcript probe ERR: {str(e)[:60]}")
-                return None
+                log(f"  {cid[:8]} transcript probe ERR: {str(e)[:60]} — fresh-tab fallback")
+                break  # wedged own tab -> fresh fallback below
+    if not fresh_ok:
+        return None
+    # fresh-tab fallback: open the chat URL in a new tab, measure, close
+    try:
+        t = channel.new_tab(f"https://chat.z.ai/c/{cid}")
+        try:
+            c = channel.CDP(t["webSocketDebuggerUrl"], timeout=25)
+            try:
+                for _ in range(20):
+                    try:
+                        if c.eval("document.readyState", await_promise=False,
+                                  timeout=8) in ("interactive", "complete"):
+                            break
+                    except Exception:
+                        pass
+                    time.sleep(1.5)
+                return int(c.eval("document.body.innerText.length",
+                                  await_promise=False, timeout=20))
+            finally:
+                c.close()
+        finally:
+            try:
+                channel.CDP(t["webSocketDebuggerUrl"], timeout=10).call(
+                    "Target.closeTarget", {"targetId": t.get("id")}, timeout=8)
+            except Exception:
+                pass
+    except Exception as e:
+        log(f"  {cid[:8]} fresh-tab probe ERR: {str(e)[:60]}")
     return None
 
 
 def pod_status(cid):
-    """'Running' | 'gone' | 'unknown' via in-page workspaces API."""
+    """'Running' | 'gone' | 'probe-err:<why>' via in-page workspaces API.
+
+    CRITICAL (2026-09-15 fix): CDP/socket timeouts are PROBE ERRORS, not
+    evidence of expiry — they must never start the expiry clock. Only an
+    explicit non-Running server answer (4xx/5xx or empty pod) counts.
+    """
     js = """
     (async () => {
       try {
@@ -117,24 +156,54 @@ def pod_status(cid):
                     return "gone"
                 if s.startswith("4") or s.startswith("5"):
                     return "gone"
-                return "unknown:" + s[:60]
+                return "probe-err:" + s[:60]
             except Exception as e:
-                log(f"  {cid[:8]} pod probe ERR: {str(e)[:60]}")
-                return "unknown"
-    return "unknown"
+                log(f"  {cid[:8]} pod probe ERR on one tab: {str(e)[:60]} — trying next tab")
+                continue  # wedged tab: try the NEXT chat tab
+    return "probe-err"
 
 
-def house_send(name, text):
-    """Send via the house machinery (capacity assault + verification)."""
+def house_send(name, text, cid=None):
+    """Send via the house machinery (capacity assault + verification).
+
+    Wedge cure (2026-09-15): if the send fails AND the chat's own tab is
+    wedged (CDP-dead), Page.reload that tab (the known unwedging move),
+    wait for it to come back, then retry the send once.
+    """
     cmd = [sys.executable, os.path.join(BASE, "dispatch_worker.py"), "send", name, text]
     try:
         p = subprocess.run(cmd, capture_output=True, text=True, timeout=420, cwd=BASE)
         out = (p.stdout or "") + (p.stderr or "")
         log(f"  house send rc={p.returncode} out={out[-400:]}")
-        return p.returncode == 0
+        if p.returncode == 0:
+            return True
     except Exception as e:
         log(f"  house send EXC {str(e)[:100]}")
+    # retry path: reload the (possibly wedged) chat tab, then resend once
+    if not cid:
         return False
+    for t in channel.list_tabs():
+        if cid in (t.get("url") or ""):
+            try:
+                c = channel.CDP(t["webSocketDebuggerUrl"], timeout=15)
+                try:
+                    c.call("Page.reload", {}, timeout=15)
+                    log(f"  wedge cure: Page.reload on {cid[:8]} tab")
+                finally:
+                    c.close()
+            except Exception as e:
+                log(f"  wedge cure reload failed: {str(e)[:60]}")
+                return False
+            time.sleep(25)  # let the SPA re-render
+            try:
+                p = subprocess.run(cmd, capture_output=True, text=True, timeout=420, cwd=BASE)
+                out = (p.stdout or "") + (p.stderr or "")
+                log(f"  house send RETRY rc={p.returncode} out={out[-300:]}")
+                return p.returncode == 0
+            except Exception as e:
+                log(f"  house send RETRY EXC {str(e)[:100]}")
+            break
+    return False
 
 
 def main():
@@ -154,15 +223,27 @@ def main():
             n = transcript_len(cid)
             ps = pod_status(cid)
             now = time.time()
-            if n is not None and n != s["len"]:
-                s["len"] = n
-                s["since"] = now          # streaming: refresh frozen clock
+            if n is not None:
+                # tolerance: render jitter (<200 chars) does NOT count as
+                # growth; only real streaming (>200 chars) refreshes the
+                # frozen clock. Survives instrument switches (own tab ->
+                # fresh tab) without false refreshes.
+                if s["len"] is None or abs(n - s["len"]) > 200:
+                    s["len"] = n
+                    s["since"] = now          # streaming: refresh frozen clock
             frozen_s = now - s["since"]
+            gone = (ps == "gone")
             if ps == "Running":
                 s["expired_since"] = None
-            elif s["expired_since"] is None:
-                s["expired_since"] = now
-                log(f"{name}: pod NOT Running ({ps}) — expiry clock started")
+                s["gone_streak"] = 0
+            elif gone:
+                s["gone_streak"] = s.get("gone_streak", 0) + 1
+                # debounce: require TWO consecutive 'gone' probes (~3 min)
+                if s["gone_streak"] >= 2 and s["expired_since"] is None:
+                    s["expired_since"] = now
+                    log(f"{name}: pod GONE x{s['gone_streak']} — expiry clock started")
+            else:
+                s["gone_streak"] = 0   # probe-err: no expiry evidence, keep clock as-is
             log(f"{name}: len={n} frozen={int(frozen_s)}s pod={ps} nudges={s['nudges']}")
             # nudge condition: frozen long enough AND pod gone AND spacing OK
             if (frozen_s >= FROZEN_MIN and s["expired_since"] is not None
@@ -171,7 +252,7 @@ def main():
                     and now - s["last_nudge"] >= NUDGE_SPACING_S
                     and now > s["verifying_until"]):
                 log(f"{name}: STALL+EXPIRY confirmed — nudging (#{s['nudges']+1})")
-                if house_send(name, NUDGE_TEXT):
+                if house_send(name, NUDGE_TEXT, cid):
                     s["nudges"] += 1
                     s["last_nudge"] = now
                     s["verifying_until"] = now + VERIFY_WITHIN_S

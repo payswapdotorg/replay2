@@ -18,6 +18,7 @@ export const SCRIPTS = join(ROOT, "scripts");
 export const FLAGS = join(SCRIPTS, "flags");
 export const BRIDGE = join(SCRIPTS, "bridge.py");
 export const WATCHER_LOG = join(SCRIPTS, "watcher.log");
+export const WATCHER_HEARTBEAT = join(FLAGS, "watcher_heartbeat");
 export const REPLAYD_URL =
   process.env.REPLAYD_URL || "http://127.0.0.1:3100";
 
