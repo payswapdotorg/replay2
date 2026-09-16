@@ -25,6 +25,33 @@ say() { echo "[deploy $(date +%H:%M:%S)] $*"; }
 
 http_ok() { curl -sf -o /dev/null --max-time 4 "$1" && return 0 || return 1; }
 
+# Console identity check: :PORT must serve the REPLAY CONSOLE itself, not just
+# any http server. After a sandbox reset the boot hook auto-starts my-project's
+# `bun run dev` on :3000; accepting it blindly hands the operator a page that
+# can never show the replay or the login flow (root cause of the "can't login"
+# report, 2026-09-16).
+console_ok() {
+  curl -sf --max-time 5 "http://127.0.0.1:${1:-3000}/" 2>/dev/null \
+    | grep -q "Replay Console"
+}
+
+# Evict non-console listeners on :PORT (keep anything running from replay2).
+evict_squatters() {
+  local port="${1:-3000}" evicted=""
+  while read -r line; do
+    case "$line" in *":$port "*) ;; *) continue ;; esac
+    for tok in $(printf '%s\n' "$line" | grep -oE 'pid=[0-9]+' | cut -d= -f2); do
+      local cwd="" cmd=""
+      cwd=$(readlink "/proc/$tok/cwd" 2>/dev/null || true)
+      cmd=$(tr '\0' ' ' < "/proc/$tok/cmdline" 2>/dev/null || true)
+      case "$cwd$cmd" in *replay2*) continue ;; esac
+      kill "$tok" 2>/dev/null || true
+      evicted="$evicted pid $tok (${cwd:-${cmd:0:70}})"
+    done
+  done < <(ss -tlnp 2>/dev/null)
+  [ -n "$evicted" ] && say "PORT GUARD: evicted non-console squatter(s) on :$port -$evicted"
+}
+
 # ---------------------------------------------------------------- 1. python
 # The CDP stack needs a python with the `websocket` module (websocket-client).
 PY_BIN=""
@@ -88,21 +115,29 @@ fi
 http_ok "http://127.0.0.1:$REPLAYD_PORT/healthz" || say "WARN: replayd not healthy yet (watcher will keep trying)"
 
 # ---------------------------------------------------------------- 5. console
-if http_ok "http://127.0.0.1:$PORT"; then
-  say "console :$PORT already up"
+if console_ok "$PORT"; then
+  say "console :$PORT already up (identity verified)"
 else
+  if http_ok "http://127.0.0.1:$PORT"; then
+    say ":$PORT is up but NOT the replay console — evicting squatter…"
+    evict_squatters "$PORT"
+    for i in $(seq 1 15); do
+      http_ok "http://127.0.0.1:$PORT" || break
+      sleep 1
+    done
+  fi
   say "starting console dev server :$PORT…"
   (cd "$ROOT" && REPLAY_PORT="$PORT" "$PY_BIN" scripts/launch_dev.py)
 fi
 CONSOLE_OK=0
 for i in $(seq 1 60); do
-  if http_ok "http://127.0.0.1:$PORT"; then CONSOLE_OK=1; break; fi
+  if console_ok "$PORT"; then CONSOLE_OK=1; break; fi
   sleep 2
 done
 if [ "$CONSOLE_OK" = "1" ]; then
-  say "console :$PORT is live"
+  say "console :$PORT is live (Replay Console identity verified)"
 else
-  say "WARN: console :$PORT not responding yet — check scripts/dev.log"
+  say "WARN: console :$PORT not serving the Replay Console yet — check scripts/dev.log"
 fi
 
 # ---------------------------------------------------------------- 6. watchdogs

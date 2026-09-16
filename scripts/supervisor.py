@@ -71,6 +71,61 @@ def http_ok(url, timeout=4):
         return False
 
 
+def console_body_ok(port=3000, timeout=4):
+    """True only when :port serves the REPLAY CONSOLE itself.
+
+    http_ok() alone accepts ANY http server — after a sandbox reset the boot
+    hook auto-starts my-project's `bun run dev` on :3000, and the supervisor
+    would happily babysit the WRONG app while the operator stares at a page
+    that can never show the replay/login. This check reads the body and
+    demands the console identity marker.
+    """
+    try:
+        body = urllib.request.urlopen(
+            f"http://127.0.0.1:{port}/", timeout=timeout
+        ).read(8192).decode("utf-8", "ignore")
+        return "Replay Console" in body
+    except Exception:
+        return False
+
+
+def _port_listeners(port=3000):
+    """[(pid, cwd, cmdline)] for processes LISTENING on :port."""
+    out = []
+    try:
+        ss = subprocess.run(["ss", "-tlnp"], capture_output=True, text=True).stdout
+    except Exception:
+        return out
+    for line in ss.splitlines():
+        if f":{port} " not in line:
+            continue
+        import re
+        for m in re.finditer(r"pid=(\d+)", line):
+            pid = m.group(1)
+            try:
+                cwd = os.path.realpath(f"/proc/{pid}/cwd")
+            except Exception:
+                cwd = ""
+            try:
+                cmdline = open(f"/proc/{pid}/cmdline", "rb").read().replace(b"\0", b" ").decode(errors="replace").strip()
+            except Exception:
+                cmdline = ""
+            out.append((pid, cwd, cmdline))
+    return out
+
+
+def evict_port_squatters(port=3000):
+    """Kill non-console listeners on :port (e.g. my-project boot-hook dev
+    server). Returns human-readable list of evictions."""
+    evicted = []
+    for pid, cwd, cmdline in _port_listeners(port):
+        if "replay2" in cwd or "replay2" in cmdline:
+            continue  # our own console — keep
+        subprocess.run(["kill", pid], capture_output=True)
+        evicted.append(f"pid {pid} ({cwd or cmdline[:70]})")
+    return evicted
+
+
 def read_pid(path):
     try:
         return open(path).read().strip()
@@ -245,7 +300,27 @@ def _rm_devstate():
 
 def ensure_dev():
     if http_ok(f"http://127.0.0.1:3000"):
-        _rm_devstate()
+        if console_body_ok(3000):
+            _rm_devstate()
+            return False
+        # Port is up but it is NOT our console — a squatter holds :3000
+        # (sandbox boot hook auto-starts my-project's `bun run dev` there).
+        # The operator would see the WRONG app and could never reach the
+        # replay/login. Evict, wait for the port to free, then take over.
+        evicted = evict_port_squatters(3000)
+        if evicted:
+            log("PORT GUARD: :3000 held by non-console process(es): "
+                + "; ".join(evicted) + " — evicted, console taking over")
+            for _ in range(10):
+                if not http_ok("http://127.0.0.1:3000"):
+                    break
+                time.sleep(1)
+            subprocess.Popen([PY, os.path.join(BASE, "launch_dev.py")],
+                             stdout=open(os.path.join(LOGDIR, "dev_launch.log"), "a"),
+                             stderr=subprocess.STDOUT)
+            return True
+        # Port up, body check failed, but nobody evictable holds it — could be
+        # our console mid-compile (cold .next renders no body yet). Be patient.
         return False
     # Port down does NOT mean the process is dead: a cold compile (empty or
     # corrupted .next cache) can take a minute before the port binds. Spawning
