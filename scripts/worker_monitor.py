@@ -17,8 +17,8 @@ import channel
 
 POLL_S = 300
 WATCH = {
-    "2442b7bd-d8c7-43de-a593-141eca8c15c0": "dep-011",
-    "c96f689d-c234-45a8-9321-0d29ee2c9c8f": "dep-014",
+    "87847699-4e25-42d7-86b8-c9448bb6ccf6": "dep-014",
+    "12f83dcf-3e30-42db-9557-dad8565bd927": "dep-001",
 }
 LOG = "/home/z/replay2/scripts/logs/worker_monitor.log"
 
