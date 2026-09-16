@@ -19,6 +19,7 @@ import time
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 import channel
+import dep_chats
 
 BASE = os.path.dirname(os.path.abspath(__file__))
 FLAGS = os.path.join(BASE, "flags")
@@ -27,13 +28,10 @@ CYCLE_S = 150
 MAX_CYCLES = 240
 DONE_CHARS = 5000
 
-CHATS = {
-    "dep-001": "6999d433-9206-499c-8974-564ea879a7f6",
-    "dep-010": "e6375f3c-370c-44f1-ad25-00e2db80eb32",
-    "dep-020": "003f515c-c3e7-468b-8665-7e1463d7df2d",
-    "dep-025": "340016bf-7dc2-4057-9756-a6cb6351bf3c",
-    "dep-012": "8e1ef7e0-b5b3-4083-810f-682c02e860cf",
-}
+# 2026-09-16 (TL): chat ids are resolved DYNAMICALLY from the session
+# registry (dep_chats.resolve) — re-landing rounds no longer need manual
+# re-pointing. FALLBACK ids inside dep_chats keep the watch list non-empty.
+CHATS = dep_chats.resolve()
 
 
 def log(*args):
@@ -111,6 +109,15 @@ def main():
             log("all chats complete — exiting")
             return 0
         try:
+            # re-resolve every cycle: a fresh landing (new create row, no
+            # void after it) switches this name onto the new chat id within
+            # one cycle. Log the switch loudly.
+            fresh = dep_chats.resolve()
+            for n, cid in fresh.items():
+                if CHATS.get(n) != cid:
+                    log(f"RE-POINT {n}: {CHATS.get(n)} -> {cid} (registry live row)")
+            CHATS.clear()
+            CHATS.update(fresh)
             raw = eval_js(JS % json.dumps(CHATS))
             data = json.loads(raw) if isinstance(raw, str) else raw
             for k, v in data.items():

@@ -121,7 +121,17 @@ def _chat_live_server_side(name):
         except Exception:
             tok = ""
     if not tok:
-        return None
+        # 2026-09-16 (TL): an empty cache made every check return None and the
+        # callers' legacy trust-registry path DISARMED the assault on phantoms
+        # (observed: dep-001 poller cleared its flag on phantom 4328a88f with
+        # a 0-byte chat_token). Self-heal: extract a fresh token from a live
+        # chat.z.ai tab (chats_http.get_token writes the cache as a side effect).
+        try:
+            sys.path.insert(0, BASE)
+            import chats_http
+            tok = chats_http.get_token().strip().strip('"')
+        except Exception:
+            return None
     try:
         req = urllib.request.Request(
             "https://chat.z.ai/api/v1/chats/list?limit=100",
@@ -198,6 +208,14 @@ def main():
                 _void_phantom(name, _last_sent_url(name))
                 time.sleep(20)
                 continue
+            if server_live is None:
+                # 2026-09-16 (TL): tooling failure must NEVER disarm the
+                # assault (legacy trust-registry behavior cleared the flag on
+                # a phantom when the token cache was empty). Exit with the
+                # flag intact — the supervisor re-arms a fresh poller which
+                # re-reads/refreshes the token.
+                print("server check TOOLING FAILURE (None) — flag preserved, NOT disarming; supervisor will re-arm", flush=True)
+                return 5
             _clear_flag()
             return 0
         if rc == 1:
@@ -236,6 +254,10 @@ def main():
                     _void_phantom(name, _last_sent_url(name))
                     time.sleep(20)
                     continue
+                if server_live is None:
+                    # 2026-09-16 (TL): same tooling-failure guard as the rc=0 path.
+                    print("server check TOOLING FAILURE (None) — flag preserved, NOT disarming; supervisor will re-arm", flush=True)
+                    return 5
                 print("session already live — recovered elsewhere", flush=True)
                 _clear_flag()
                 return 0

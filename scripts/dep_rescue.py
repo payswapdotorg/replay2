@@ -26,6 +26,7 @@ import time
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 import channel
+import dep_chats
 
 BASE = os.path.dirname(os.path.abspath(__file__))
 FLAGS = os.path.join(BASE, "flags")
@@ -38,12 +39,7 @@ NUDGES_MAX = 3
 VERIFY_WITHIN_S = 10 * 60      # transcript must grow within this after nudge
 VERIFY_GROWTH = 300            # ... by at least this many chars
 
-CHATS = {
-    "dep-001": "6999d433-9206-499c-8974-564ea879a7f6",
-    "dep-010": "e6375f3c-370c-44f1-ad25-00e2db80eb32",
-    "dep-025": "340016bf-7dc2-4057-9756-a6cb6351bf3c",
-    "dep-012": "8e1ef7e0-b5b3-4083-810f-682c02e860cf",
-}
+CHATS = dep_chats.resolve()
 
 NUDGE_TEXT = (
     "Continue your DEP work order now, exactly per the worker guide above in this "
@@ -213,6 +209,17 @@ def main():
     t0 = time.time()
     log(f"rescue sentinel up; chats={list(CHATS)}")
     while time.time() - t0 < RUN_MAX_S:
+        # 2026-09-16 (TL): dynamic re-resolution — a fresh landing switches a
+        # name onto its new chat id within one loop; the stall-tracking state
+        # for that name RESETS (fresh session = fresh frozen clock, fresh
+        # nudge budget).
+        fresh = dep_chats.resolve()
+        for n, cid in fresh.items():
+            if CHATS.get(n) != cid:
+                log(f"RE-POINT {n}: {CHATS.get(n)} -> {cid} — resetting stall state")
+                CHATS[n] = cid
+                st[n] = {"len": None, "since": time.time(), "nudges": 0,
+                         "last_nudge": 0, "expired_since": None, "verifying_until": 0}
         live = [n for n in CHATS if not complete(n)]
         if not live:
             log("all chats complete — exiting")
