@@ -2316,3 +2316,47 @@ earlier "current state" section above):
   64-70, two sets of 97-101, two 109/110, items 71/72 misfiled under the
   Lesson 77 header; headerless groups 36-39 / 50-52 / 54-57. Locate a
   lesson by its text, not its number.
+
+## Lesson 123 (2026-09-18 13:00 UTC — frozen renderers masquerade as "no-browser"; the VPN survives Chrome restarts)
+
+Field-verified during the W044 final-delivery session (post-10:40-reset stack):
+
+- **bridge.py maps ANY tab-probe exception to `no-browser`** — a wedged
+  chat-tab renderer (the section-3.8 "tab wedged" state: even `1+1` times
+  out on the page target) presents identically to Chrome being down. Today
+  it hid a LOGGED-IN profile for ~1.5h: the console status said
+  `no-browser` while the operator's session was alive in the profile the
+  whole time; dispatch interlocks and TL decisions were being made blind.
+  **Differential before acting on any bridge failure verdict**:
+  (1) `curl -s http://127.0.0.1:9222/json/version` answers → Chrome alive;
+  (2) one page tab frozen while the extension popup tab still evals →
+  renderers wedged, NOT browser down;
+  (3) only then choose the fix ladder: section-3.8 tab-reopen first (close
+  + reopen the SAME session URL — lightest), Lesson-105 Chrome restart via
+  `launch_stack.py` second (identical flags, extensions auto-load).
+- **The TurboVPN tunnel SURVIVES a Chrome restart**: after a full
+  kill + relaunch the popup read CONNECTED immediately and the egress
+  stayed 169.150.210.53 (the extension's background service reconnects on
+  its own). The "restart kills state" fear is scoped to cold-profile LOGIN
+  COOKIES (lesson 114) — a warm profile also kept the login through
+  today's restart (`browser_login` flipped no-browser → logged-in the
+  moment fresh renderers could answer the probe). So: restart Chrome
+  freely when renderers wedge and the profile is warm; reconnect the VPN
+  afterwards only if the popup says otherwise (`vpn_connect.py`).
+- **`vpn_probe.py` is NOT in the daemon_keeper ring** — it was down for
+  ~2h10m after the 10:40 reset until manually relaunched
+  (`launch_vpn_probe.py`). Post-reset recovery checklist must include it,
+  or the keeper ring should adopt it.
+- **Lesson 13 reproduced on integrate.py**: a TL-started
+  `nohup integrate.py merge ... &` from a tool shell died silently within
+  ~90s (empty log, no process, no error surfaced). The ONLY reliable
+  pattern remains the immediate-exit launcher (`Popen(...,
+  start_new_session=True)` in a script that prints the pid and returns —
+  see `launch_merge_detached.py`, added to aurum-orchestration for exactly
+  this). Rule: every long-running child started from an agent tool call
+  goes through a launcher script; `nohup ... &` and `setsid ... &` are
+  reaped regardless.
+- Also verified this pass: the earlier 4-agent audit's claims hold (QWEN
+  fragment fully redacted — only incident references remain; dead refs
+  fixed; CURRENT MACHINERY accurate against the live tree, with one
+  correction from this lesson: the status-probe caveat above).
