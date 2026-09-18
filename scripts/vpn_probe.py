@@ -103,25 +103,26 @@ def dom_state(tab):
 
 
 def chat_api_state(tab):
-    """Server-side truth via in-page fetch. Returns 'n=<count>' or LOST/ERR."""
-    js = f"""
-    (async () => {{
-      try {{
-        const r = await fetch('/api/v1/chats/{CHAT_ID}',
-                               {{credentials: 'include'}});
+    """Server-side truth via in-page fetch. Returns 'chats=<count>' or LOST/ERR.
+
+    2026-09-18: the specific-chat history walk was replaced by the chats LIST
+    endpoint — the hardcoded CHAT_ID belonged to a pre-reset session that no
+    longer resolves (HTTP 500 HTML), producing a permanent false
+    SESSION-LOST. The list endpoint is session-scoped truth: 200 + JSON
+    array = alive; anything else = genuinely lost."""
+    js = """
+    (async () => {
+      try {
+        const t0 = localStorage.getItem('token') || '';
+        const r = await fetch('/api/v1/chats/list?keyword=',
+                               {credentials: 'include', cache: 'no-store',
+                                headers: t0 ? {'Authorization': 'Bearer ' + t0} : {}});
         const t = await r.text();
         if (!r.ok || t.slice(0, 1) === '<') return 'HTTP' + r.status + ':HTML';
         const d = JSON.parse(t);
-        const hist = ((d.chat) || {{}}).history || {{}};
-        const mmap = hist.messages;
-        if (!mmap) return 'n=?';
-        const roots = Object.values(mmap).filter(m => !m.parentId);
-        let n = 0, cur = roots[0];
-        while (cur) {{ n += 1; const kids = cur.childrenIds || [];
-            cur = kids.length ? mmap[kids[kids.length - 1]] : null; }}
-        return 'n=' + n;
-      }} catch (e) {{ return 'ERR:' + (e && e.message ? e.message : e); }}
-    }})()
+        return 'chats=' + (Array.isArray(d) ? d.length : '?');
+      } catch (e) { return 'ERR:' + (e && e.message ? e.message : e); }
+    })()
     """
     try:
         c = channel.CDP(tab["webSocketDebuggerUrl"], timeout=30)
