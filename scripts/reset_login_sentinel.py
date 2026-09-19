@@ -104,10 +104,8 @@ def logged_in_tabs():
             body = _body_of(t)
             if not body:
                 continue
-            if ("Sign in" in body) or ("Log in" in body):
+            if not _authed_body(body):
                 continue
-            if len(body) < 700:
-                continue  # loading/landing shells are ~420-550
             good.append((t, body))
     except Exception as e:  # noqa: BLE001
         log(f"login probe error (continuing): {e}")
@@ -130,6 +128,25 @@ def login_confirmed():
     return second[0][0]["id"]
 
 
+def _authed_body(body):
+    """True when a page body shows an AUTHENTICATED chat.z.ai shell.
+
+    Evidence autopsy (2026-09-19 11:28): signed-out shells ALWAYS render the
+    sidebar 'Sign in' entry (bodyLen 428-550); authenticated fresh tabs render
+    a COMPACT shell with sidebar history instead (observed 482 chars — below
+    the old 700 threshold that caused a false inheritance failure while the
+    operator was genuinely logged in). Length cannot discriminate; the
+    'no Sign in' + positive-marker combination does.
+    """
+    if not body:
+        return False
+    if ("Sign in" in body) or ("Log in" in body):
+        return False
+    # positive evidence: sidebar chat history ("Previous ..." grouping) or
+    # agent-mode marker, or a fully-poured app shell
+    return ("Previous" in body) or ("New Task" in body) or (len(body) >= 900)
+
+
 def new_tab_authed():
     """True when a FRESH tab inherits the login (the create-flow requirement)."""
     try:
@@ -145,7 +162,7 @@ def new_tab_authed():
             c.call("Page.navigate", {"url": "https://chat.z.ai/"}, timeout=30)
             time.sleep(8)
             body = dw._eval(c, "document.body.innerText || ''", timeout=20) or ""
-            ok = bool(body) and ("Sign in" not in body) and ("Log in" not in body) and len(body) >= 700
+            ok = _authed_body(body)
         finally:
             c.close()
     except Exception as e:  # noqa: BLE001
@@ -202,7 +219,7 @@ def _tab_signed_out_or_gone(tab_id_prefix):
         for t in channel.list_tabs():
             if t["id"].startswith(tab_id_prefix):
                 body = _body_of(t)
-                if body and ("Sign in" not in body) and ("Log in" not in body) and len(body) >= 700:
+                if body and _authed_body(body):
                     return False  # a live logged-in tab — NEVER touch it
                 return True
         return True  # tab gone
