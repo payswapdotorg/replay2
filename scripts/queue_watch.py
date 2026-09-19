@@ -190,6 +190,22 @@ def state(tab_prefix):
         r"SPORTA\s+W\d+\s+COMPLETION\s+REPORT"
         r"[\s\S]{0,300}?Branch\s*[:：]\s*[\w.-]+\s*@\s*[0-9a-f]{7,40}",
         body, re.IGNORECASE))
+    # 2026-09-19 (WebFlix R20/R21 campaigns): the R2x-Wx worker packets use
+    # "=== R20-W1 COMPLETION REPORT ===" + "Branch SHA pushed: <hex>". The
+    # placeholder in the packet ("<the branch SHA you pushed>" / prose) is
+    # never hex, so prompt echoes cannot satisfy this; a genuine report
+    # always carries the pushed hex. Accept English or Chinese labels.
+    filled = filled or bool(re.search(
+        r"===?\s*R\d+-W\d+\s*(?:COMPLETION\s*REPORT|完成报告)\s*===?"
+        r"[\s\S]{0,900}?(?:Branch\s*SHA\s*pushed|分支\s*SHA|推送的\s*分支)\s*[:：]\s*[0-9a-f]{7,40}",
+        body, re.IGNORECASE))
+    # Some R2x reports lead with the cloned-HEAD/base line instead ("cloned
+    # HEAD SHA:" / "Base: wfx/... @ <hex>") — accept that shape too.
+    filled = filled or bool(re.search(
+        r"===?\s*R\d+-W\d+\s*(?:COMPLETION\s*REPORT|完成报告)\s*===?"
+        r"[\s\S]{0,600}?(?:cloned\s*HEAD\s*SHA|Base)\s*[:：@]\s*[0-9a-f]{7,40}",
+        body, re.IGNORECASE))
+
     gen = bool(re.search(r"\b(Stop|Pause|Halt)\b", body[-1500:]))
     cap = "currently at capacity" in body or "peak hours" in body
     # RATE-LIMITED text (operator 2026-09-12): these notifications DO NOT
