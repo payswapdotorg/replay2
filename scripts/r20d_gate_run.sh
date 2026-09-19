@@ -28,7 +28,7 @@ run_gate(){
   fi
 }
 
-run_gate "install" bun install --frozen-lockfile
+run_gate "install" nice -n 19 bun install --frozen-lockfile
 run_gate "lint" bun run lint
 run_gate "typecheck" bun run typecheck
 run_gate "test" bun run test

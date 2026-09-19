@@ -1,15 +1,15 @@
 #!/usr/bin/env bash
 # r20_gate_run.sh — lead pre-harvest verification of wfx/r20/byof (six gates).
-# Runs detached; appends a verdict block to flags/r20_harvest_gates.log.
+# Runs detached; appends a verdict block to flags/r20w_harvest_gates.log.
 set -uo pipefail
 BR="wfx/r20/byof"
-WT="/home/z/r20-verify"
-LOG="/home/z/replay2/scripts/flags/r20_harvest_gates.log"
+WT="/home/z/r20w-verify"
+LOG="/home/z/replay2/scripts/flags/r20w_harvest_gates.log"
 PY=/home/z/.venv/bin/python3
 
 ts(){ date -u +%H:%M:%S; }
 {
-echo "=== R20 BRANCH GATE RUN start $(ts) UTC ==="
+echo "=== R20-WEB BRANCH GATE RUN start $(ts) UTC ==="
 echo "HEAD: $(git -C $WT rev-parse HEAD) ($(git -C $WT log -1 --format=%s | head -c 60))"
 } >> "$LOG"
 
@@ -39,4 +39,4 @@ run_gate "lane-check" bun run lane-check
 echo "--- test tally ---" >> "$LOG"
 rg -o "[0-9]+ pass|([0-9]+) skip|[0-9]+ fail" "$LOG" | tail -3 >> "$LOG" 2>/dev/null || true
 
-echo "=== R20 BRANCH GATE RUN done $(ts) UTC — verdict: $(rg -c 'GATE .*: PASS' "$LOG" | tail -1)/6 pass (cumulative count includes prior runs) ===" >> "$LOG"
+echo "=== R20-WEB BRANCH GATE RUN done $(ts) UTC — verdict: $(rg -c 'GATE .*: PASS' "$LOG" | tail -1)/6 pass (cumulative count includes prior runs) ===" >> "$LOG"

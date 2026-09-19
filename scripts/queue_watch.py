@@ -268,7 +268,15 @@ def main():
             print(f"[{name}] {stamp} {st} chars={ln} hits={hits} url={url[:60]}", flush=True)
             heartbeat(name)
             mk = os.path.join(FLAGS, f"{name}-complete.marker")
-            if hits >= 1000:   # filled-regex ONLY (see 2026-09-10 fix above)
+            # 2026-09-19 (lesson-64 completion): the DOM filled-regex is a
+            # HINT, the server batch-store probe is the GATE. Virtualized
+            # rendering can push the report's hex line outside the DOM view
+            # (w3 case: server-confirmed report, DOM regex never fired).
+            # Probe the server whenever the marker appears ANYWHERE (the
+            # packet echo counts — the probe filters truth), and declare
+            # COMPLETE only on reportInAssistant. The filled fast-path
+            # stays as the first branch for DOM-rendered reports.
+            if hits >= 1:
                 # SERVER-SIDE CONFIRMATION (lesson 64, 2026-09-12 21:19
                 # re-offense): a continuation directive quoting the literal
                 # headline + base SHA inoculates the DOM against the filled
@@ -288,8 +296,11 @@ def main():
                     except Exception:
                         server_ok = False
                 if not server_ok:
-                    print(f"[{name}] filled-regex hit but SERVER probe says no "
-                          "assistant report — DOM inoculation suspected; NOT complete", flush=True)
+                    if hits >= 1000:
+                        print(f"[{name}] filled-regex hit but SERVER probe says no "
+                              "assistant report — DOM inoculation suspected; NOT complete", flush=True)
+                    # else: marker echo only (packet in DOM, report not yet
+                    # server-side) — silent probe, generation still in flight.
                 else:
                     open(mk, "w").write(f"{time.time()} {url}\n")
                     print(f"[{name}] COMPLETE — marker written (server-confirmed)", flush=True)
