@@ -193,6 +193,13 @@ def wait_for_auth_inheritance(timeout_secs=180):
 
 
 def registry_chat_id(name, timeout_secs=300):
+    """Chat id for a session whose create has LANDED.
+
+    dispatch_worker.py never writes a literal chat_id field — the id lives in
+    the record's /c/<uuid> url. A record counts as landed when sent:true (the
+    stage 'queued-capacity' variant is the server-verified acceptance; the
+    plain sent record is the post-send save — both mean the prompt is in the
+    session, which check <name> can monitor)."""
     deadline = time.time() + timeout_secs
     while time.time() < deadline:
         beat()
@@ -203,8 +210,15 @@ def registry_chat_id(name, timeout_secs=300):
                     if not line:
                         continue
                     d = json.loads(line)
-                    if d.get("name") == name and d.get("chat_id"):
+                    if d.get("name") != name or not d.get("sent"):
+                        continue
+                    if d.get("chat_id"):
                         return d["chat_id"]
+                    url = d.get("url") or ""
+                    if "/c/" in url:
+                        cid = url.split("/c/")[-1].split("/")[0].split("?")[0]
+                        if len(cid) >= 30:
+                            return cid
         except (OSError, ValueError):
             pass
         time.sleep(10)
@@ -345,6 +359,37 @@ def dispatch_simple(name, prompt, marker):
     return chat_id
 
 
+def wave1_landed():
+    """True when a previous sentinel run already landed the r20w1 session.
+
+    Re-entry guard (2026-09-19 11:34): the sentinel died after the r20w1
+    create landed (capacity assault round 1) but before arming its watcher —
+    the lead armed the queue_watch manually. A relaunch must skip wave 1
+    (re-dispatching would void a LIVE session) and go straight to Phase 2.
+    Append-order truth: a later void/failed/done record invalidates.
+    """
+    landed = False
+    try:
+        with open(REGISTRY) as f:
+            for line in f:
+                line = line.strip()
+                if not line:
+                    continue
+                try:
+                    d = json.loads(line)
+                except ValueError:
+                    continue
+                if d.get("name") != "r20w1":
+                    continue
+                if d.get("action") in ("void", "failed", "done"):
+                    landed = False
+                elif d.get("sent") and "/c/" in (d.get("url") or ""):
+                    landed = True
+    except OSError:
+        pass
+    return landed
+
+
 def main():
     log(f"=== {TAG} sentinel armed (hardened: strict evidence + debounce + "
         "probe-tab inheritance + self-healing dispatch) ===")
@@ -354,20 +399,25 @@ def main():
         log(f"stand-down: {R20_BRANCH} already on remote ({state}) — lead handles the lane")
         return
 
-    wave1 = None
-    while time.time() - start < MAX_WAIT_SECS:
-        beat()
-        tab_id = login_confirmed()
-        if tab_id:
-            log(f"operator login CONFIRMED (tab {tab_id[:8]}, strict+debounced)")
-            if not wait_for_auth_inheritance():
-                log("auth inheritance never landed — continuing to watch login "
-                    "(operator may need to complete login)")
-                continue
-            log("fresh-tab auth inheritance verified — dispatching R20 wave 1")
-            wave1 = dispatch_with_retry("r20w1", "R20-W1.md", "R20-W1 COMPLETION REPORT")
-            break
-        time.sleep(POLL_SECS)
+    if wave1_landed():
+        log("wave 1 already landed (r20w1 session live from a prior sentinel run) — "
+            "skipping login wait, entering Phase 2 (R20-A checkpoint watch)")
+        wave1 = "already-landed"
+    else:
+        wave1 = None
+        while time.time() - start < MAX_WAIT_SECS:
+            beat()
+            tab_id = login_confirmed()
+            if tab_id:
+                log(f"operator login CONFIRMED (tab {tab_id[:8]}, strict+debounced)")
+                if not wait_for_auth_inheritance():
+                    log("auth inheritance never landed — continuing to watch login "
+                        "(operator may need to complete login)")
+                    continue
+                log("fresh-tab auth inheritance verified — dispatching R20 wave 1")
+                wave1 = dispatch_with_retry("r20w1", "R20-W1.md", "R20-W1 COMPLETION REPORT")
+                break
+            time.sleep(POLL_SECS)
     if not wave1:
         log("8h login window expired — sentinel standing down (lead re-arms on next wake)")
         outbox(f"[{TAG}] 8h login window expired without a usable session — "
