@@ -421,6 +421,33 @@ def _active_session_keywords(extra=None):
     return kws
 
 
+def _voided_uuids():
+    """UUIDs of create records later invalidated by void/failed/done.
+
+    2026-09-19 fix (r20 zombie sandbox): the queue_watch churn voided the
+    original r20w1 create (chat 45e71b01) and re-dispatched under the same
+    name — but the DEAD session's sandbox row (titled 'R20-W1 BYOF
+    Implementation Guide', UUID 45e71b01) stayed KEPT in the concurrency
+    modal because its title matched the LIVE session's prompt-head keyword
+    'r20-w1'. A zombie holder blocks the sandbox cap exactly when the
+    re-dispatch needs to provision. Rows carrying an invalidated session's
+    UUID are zombies regardless of title matches.
+    """
+    invalidated = []
+    pending = {}  # name -> uuid of latest non-terminal sent create
+    for s in _sessions():
+        n = s.get("name")
+        if not n:
+            continue
+        act = s.get("action")
+        if act in ("void", "failed", "done"):
+            if n in pending:
+                invalidated.append(pending.pop(n))
+        elif s.get("sent") and "/c/" in (s.get("url") or ""):
+            pending[n] = s["url"].split("/c/")[-1].split("?")[0].split("#")[0].strip("/")
+    return [u for u in invalidated if u]
+
+
 def _row_is_idle(row, keep_kws):
     """A sandbox row is idle (releasable) when it matches no active session
     and its recent-activity meta doesn't indicate a just-started job."""
@@ -429,6 +456,12 @@ def _row_is_idle(row, keep_kws):
     meta = (row.get("meta") or "")
     links = (row.get("links") or "")
     haystack = f"{name}\n{meta}\n{links}".lower()
+    # zombie-holder override: a row carrying an invalidated session's UUID is
+    # releasable even when its title matches a live session's keywords (the
+    # re-dispatch reuses the packet title; only the UUID distinguishes them)
+    for vu in _voided_uuids():
+        if vu and vu.lower() in haystack:
+            return True
     for k in keep_kws:
         if k and k.lower() in haystack:
             return False  # one of our active jobs
