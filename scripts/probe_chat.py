@@ -44,29 +44,63 @@ def main():
     try:
         js = """(async () => {
           const tok = (localStorage.getItem('token') || '').replace(/^"|"$/g, '');
-          const r = await fetch('/api/v1/chats/%s', {credentials: 'include',
-            headers: tok ? {Authorization: 'Bearer ' + tok} : {}});
+          const hdr = tok ? {Authorization: 'Bearer ' + tok} : {};
+          const r = await fetch('/api/v1/chats/%s', {credentials: 'include', cache: 'no-store', headers: hdr});
           if (!r.ok) return JSON.stringify({err: 'http-' + r.status});
           const j = await r.json();
           const msgs = ((j.chat || {}).history || {}).messages || {};
           const byTs = Object.values(msgs).sort((a, b) => (a.timestamp || 0) - (b.timestamp || 0));
           const last = [];
           for (const m of byTs.slice(-4)) {
-            const c = Array.isArray(m.content) ? m.content : [m.content];
+            const c = Array.isArray(m.content) ? m.content : (m.content || '');
             const txt = JSON.stringify(c);
             last.push({role: m.role, len: txt.length, ts: m.timestamp,
                        hasMarker: txt.indexOf(%s) >= 0});
           }
+          // Agents-tab chats keep the REAL content server-side in the
+          // messages/batch store: the chats-history view holds only the
+          // user prompt + an empty assistant stub (2026-09-19 forensics:
+          // w1 report present in DOM + batch, absent in history.messages).
+          // POST the history's message ids and search the batch payloads.
           let reportInAssistant = false;
           for (const m of byTs) {
             if (m.role !== 'assistant') continue;
-            const c = Array.isArray(m.content) ? m.content : [m.content];
+            const c = Array.isArray(m.content) ? m.content : (m.content || '');
             if (JSON.stringify(c).indexOf(%s) >= 0) reportInAssistant = true;
           }
+          const ids = byTs.map(m => m.id).filter(Boolean);
+          let batchMsgs = 0, batchAssistant = 0, batchChecked = false;
+          try {
+            if (ids.length) {
+              const br = await fetch('/api/v1/chats/%s/messages/batch', {
+                credentials: 'include', cache: 'no-store', method: 'POST',
+                headers: Object.assign({'Content-Type': 'application/json'}, hdr),
+                body: JSON.stringify({ids})});
+              if (br.ok) {
+                const bj = await br.json();
+                const data = (bj && (bj.data || bj.messages)) || {};
+                batchChecked = true;
+                for (const id of Object.keys(data)) {
+                  const m = data[id];
+                  if (!m) continue;
+                  batchMsgs++;
+                  const role = m.role || 'assistant';
+                  if (role === 'user') continue;
+                  // Agents-tab workers stream their whole work log into
+                  // content_blocks (content stays '[]'): search the ENTIRE
+                  // message object — the report lives in the blocks.
+                  const whole = JSON.stringify(m);
+                  if (whole.length > 400) batchAssistant++;
+                  if (whole.indexOf(%s) >= 0) reportInAssistant = true;
+                }
+              }
+            }
+          } catch (e) { /* batch store unavailable — history check stands */ }
           return JSON.stringify({alive: true, title: j.title, updated: j.updated_at,
             now: Math.floor(Date.now() / 1000), msgs: byTs.length,
-            last, reportInAssistant});
-        })()""" % (cid, json.dumps(marker), json.dumps(marker))
+            last, reportInAssistant,
+            batch: {checked: batchChecked, msgs: batchMsgs, assistantish: batchAssistant}});
+        })()""" % (cid, json.dumps(marker), json.dumps(marker), cid, json.dumps(marker))
         raw = ws.eval(js, await_promise=True, timeout=30)
         d = json.loads(raw)
         print(json.dumps(d))
