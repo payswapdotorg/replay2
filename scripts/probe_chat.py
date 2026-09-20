@@ -87,11 +87,28 @@ def main():
                   const role = m.role || 'assistant';
                   if (role === 'user') continue;
                   // Agents-tab workers stream their whole work log into
-                  // content_blocks (content stays '[]'): search the ENTIRE
-                  // message object — the report lives in the blocks.
+                  // content_blocks (content stays '[]'): search the message
+                  // object — the report lives in the blocks.
+                  // 2026-09-20 fix (prod021/prod012 forensics): the work log
+                  // also QUOTES the packet's report template (marker + real
+                  // base sha + placeholder fields), so a plain whole-payload
+                  // marker match can false-fire on a stalled turn, and a
+                  // tail-scope window cannot separate quote from report
+                  // (measured: quotes 5-8.6k from end, reports 5-8.6k too).
+                  // The reliable discriminator is the DOM filled-regex
+                  // doctrine applied per marker spot: a GENUINE report
+                  // carries filled header fields — a 40-hex sha and NO
+                  // placeholder tokens (<local commit sha> & co) in the
+                  // window right after the headline.
                   const whole = JSON.stringify(m);
                   if (whole.length > 400) batchAssistant++;
-                  if (whole.indexOf(%s) >= 0) reportInAssistant = true;
+                  let mi = -1;
+                  while ((mi = whole.indexOf(%s, mi + 1)) >= 0) {
+                    const win = whole.slice(mi, mi + 450);
+                    const hasHex = /\\b[0-9a-f]{40}\\b/.test(win);
+                    const hasPlaceholder = /<[a-zA-Z][^>]{2,60}>/.test(win);
+                    if (hasHex && !hasPlaceholder) reportInAssistant = true;
+                  }
                 }
               }
             }
