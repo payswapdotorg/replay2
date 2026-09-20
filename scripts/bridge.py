@@ -296,9 +296,11 @@ def _env_conf():
         m = re.search(r"^\s*(?:export\s+)?REPO=([\w./-]+)", env, re.M)
         if m:
             conf["repo"] = m.group(1).strip().strip("\"'")
+        # tolerate optional double/single quotes around the token (the
+        # canonical ~/.secrets/env.sh writes export PAT="ghp_...")
         m = re.search(
             r"^\s*(?:export\s+)?(?:OPERATOR_PAT|GITHUB_TOKEN|PAYSWAP_PAT)="
-            r"(ghp_[A-Za-z0-9]+|github_pat_[A-Za-z0-9_]+)", env, re.M)
+            r"[\"']?(ghp_[A-Za-z0-9]+|github_pat_[A-Za-z0-9_]+)[\"']?", env, re.M)
         if m:
             conf["pat"] = m.group(1)
     if not conf["repo"]:
