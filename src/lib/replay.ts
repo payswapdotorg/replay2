@@ -57,7 +57,7 @@ export async function runBridgeJson(cmd: string, arg?: string, timeoutMs = 25000
     timeout: timeoutMs,
     maxBuffer: 4 * 1024 * 1024,
   });
-  const text = stdout.toString("utf-8").trim().split("\n").pop() || "{}";
+  const text = String(stdout).trim().split("\n").pop() || "{}";
   return JSON.parse(text);
 }
 

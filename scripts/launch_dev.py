@@ -11,7 +11,14 @@ import subprocess
 
 BASE = os.path.dirname(os.path.abspath(__file__))
 ROOT = os.path.dirname(BASE)
-PORT = os.environ.get("REPLAY_PORT", "3000")
+PORT = os.environ.get("REPLAY_PORT", "")
+if not PORT:
+    # resurrection-proof port config: any spawner without env (supervisor,
+    # watcher, custodian) converges on the file written by deploy.sh.
+    try:
+        PORT = open(os.path.join(BASE, "flags", "console_port.txt")).read().strip()
+    except Exception:
+        PORT = "3000"
 
 env = dict(os.environ)
 env["NODE_OPTIONS"] = "--max-old-space-size=1024"  # FORCE: setdefault silently drops the cap if NODE_OPTIONS is preset

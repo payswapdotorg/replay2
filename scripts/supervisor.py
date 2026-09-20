@@ -28,6 +28,17 @@ import urllib.request
 
 BASE = os.path.dirname(os.path.abspath(__file__))
 FLAGS = os.path.join(BASE, "flags")
+
+# Resurrection-proof console port: env wins, then the deploy-written file,
+# then 3000. The ring (custodian/watcher) resurrects this script WITHOUT env,
+# so the file is what keeps every generation on the same port.
+def _console_port():
+    try:
+        return int(os.environ.get("REPLAY_PORT", "") or
+                   open(os.path.join(FLAGS, "console_port.txt")).read().strip())
+    except Exception:
+        return 3000
+CONSOLE_PORT = _console_port()
 LOGDIR = os.path.join(BASE, "logs")
 os.makedirs(FLAGS, exist_ok=True)
 os.makedirs(LOGDIR, exist_ok=True)
@@ -69,9 +80,6 @@ def http_ok(url, timeout=4):
         return True
     except Exception:
         return False
-
-
-CONSOLE_PORT = int(os.environ.get("REPLAY_PORT", "3000"))
 
 
 def console_body_ok(port=None, timeout=4):
@@ -309,6 +317,32 @@ def _rm_devstate():
     except Exception:
         pass
 
+def _console_pids():
+    """PIDs of THIS deployment's console: the tracked dev.pid (bun parent,
+    if alive) plus any replay2 next-server child. Never matches sibling apps."""
+    pids = []
+    try:
+        pid = open(os.path.join(FLAGS, "dev.pid")).read().strip()
+        if pid.isdigit() and os.path.exists("/proc/" + pid):
+            pids.append(pid)
+    except Exception:
+        pass
+    r = subprocess.run(["pgrep", "-f", "replay2/node_modules/.bin/next"],
+                       capture_output=True, text=True)
+    for p in (r.stdout.strip().split("\n") if r.stdout else []):
+        if p.strip() and p not in pids:
+            pids.append(p)
+    return pids
+
+
+def _spawn_dev():
+    env = dict(os.environ)
+    env["REPLAY_PORT"] = str(CONSOLE_PORT)
+    subprocess.Popen([PY, os.path.join(BASE, "launch_dev.py")],
+                     stdout=open(os.path.join(LOGDIR, "dev_launch.log"), "a"),
+                     stderr=subprocess.STDOUT, env=env)
+
+
 def ensure_dev():
     if http_ok(f"http://127.0.0.1:{CONSOLE_PORT}"):
         if console_body_ok(CONSOLE_PORT):
@@ -326,9 +360,7 @@ def ensure_dev():
                 if not http_ok(f"http://127.0.0.1:{CONSOLE_PORT}"):
                     break
                 time.sleep(1)
-            subprocess.Popen([PY, os.path.join(BASE, "launch_dev.py")],
-                             stdout=open(os.path.join(LOGDIR, "dev_launch.log"), "a"),
-                             stderr=subprocess.STDOUT)
+            _spawn_dev()
             return True
         # Port up, body check failed, but nobody evictable holds it — could be
         # our console mid-compile (cold .next renders no body yet). Be patient.
@@ -338,9 +370,13 @@ def ensure_dev():
     # a second dev server during that window creates a stampede (concurrent
     # next-server compiles -> OOM kills -> EADDRINUSE zombies). Guard on
     # process liveness first; force-restart only after DEV_PATIENCE seconds.
-    r = subprocess.run(["pgrep", "-f", "next dev|bun run dev|next-server"],
-                       capture_output=True, text=True)
-    pids = [p for p in r.stdout.strip().split("\n") if p.strip()]
+    # Scope: ONLY this deployment's console processes — the tracked dev.pid
+    # (bun parent) and its replay2 next-server child. NEVER pgrep all next/bun
+    # dev servers: sibling apps (e.g. the my-project mirror on another port)
+    # must survive a wedged-console restart. 2026-09-19 incident: the global
+    # pgrep killed the :3200 console + the mirror during a CPU-saturation
+    # health blip on :3000 and started a duplicate on the wrong port.
+    pids = _console_pids()
     if pids:
         first = _dev_down_since()
         if first and time.time() - first > DEV_PATIENCE:
@@ -354,9 +390,7 @@ def ensure_dev():
             return True
         return False  # still starting — be patient, do NOT stampede
     log(f"dev server :{CONSOLE_PORT} DEAD — restarting")
-    subprocess.Popen([PY, os.path.join(BASE, "launch_dev.py")],
-                     stdout=open(os.path.join(LOGDIR, "dev_launch.log"), "a"),
-                     stderr=subprocess.STDOUT)
+    _spawn_dev()
     return True
 
 

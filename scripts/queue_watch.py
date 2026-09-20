@@ -214,6 +214,22 @@ def state(tab_prefix):
         r"SPORTA\s+W\d+\s+COMPLETION\s+REPORT"
         r"[\s\S]{0,300}?Branch\s*[:：]\s*[\w.-]+\s*@\s*[0-9a-f]{7,40}",
         body, re.IGNORECASE))
+    # 2026-09-19 (WebFlix R20/R21 campaigns): the R2x-Wx worker packets use
+    # "=== R20-W1 COMPLETION REPORT ===" + "Branch SHA pushed: <hex>". The
+    # placeholder in the packet ("<the branch SHA you pushed>" / prose) is
+    # never hex, so prompt echoes cannot satisfy this; a genuine report
+    # always carries the pushed hex. Accept English or Chinese labels.
+    filled = filled or bool(re.search(
+        r"===?\s*R\d+-W\d+\s*(?:COMPLETION\s*REPORT|完成报告)\s*===?"
+        r"[\s\S]{0,900}?(?:Branch\s*SHA\s*pushed|分支\s*SHA|推送的\s*分支)\s*[:：]\s*[0-9a-f]{7,40}",
+        body, re.IGNORECASE))
+    # Some R2x reports lead with the cloned-HEAD/base line instead ("cloned
+    # HEAD SHA:" / "Base: wfx/... @ <hex>") — accept that shape too.
+    filled = filled or bool(re.search(
+        r"===?\s*R\d+-W\d+\s*(?:COMPLETION\s*REPORT|完成报告)\s*===?"
+        r"[\s\S]{0,600}?(?:cloned\s*HEAD\s*SHA|Base)\s*[:：@]\s*[0-9a-f]{7,40}",
+        body, re.IGNORECASE))
+
     gen = bool(re.search(r"\b(Stop|Pause|Halt)\b", body[-1500:]))
     cap = "currently at capacity" in body or "peak hours" in body
     # RATE-LIMITED text (operator 2026-09-12): these notifications DO NOT
@@ -276,7 +292,15 @@ def main():
             print(f"[{name}] {stamp} {st} chars={ln} hits={hits} url={url[:60]}", flush=True)
             heartbeat(name)
             mk = os.path.join(FLAGS, f"{name}-complete.marker")
-            if hits >= 1000:   # filled-regex ONLY (see 2026-09-10 fix above)
+            # 2026-09-19 (lesson-64 completion): the DOM filled-regex is a
+            # HINT, the server batch-store probe is the GATE. Virtualized
+            # rendering can push the report's hex line outside the DOM view
+            # (w3 case: server-confirmed report, DOM regex never fired).
+            # Probe the server whenever the marker appears ANYWHERE (the
+            # packet echo counts — the probe filters truth), and declare
+            # COMPLETE only on reportInAssistant. The filled fast-path
+            # stays as the first branch for DOM-rendered reports.
+            if hits >= 1:
                 # SERVER-SIDE CONFIRMATION (lesson 64, 2026-09-12 21:19
                 # re-offense): a continuation directive quoting the literal
                 # headline + base SHA inoculates the DOM against the filled
@@ -296,8 +320,11 @@ def main():
                     except Exception:
                         server_ok = False
                 if not server_ok:
-                    print(f"[{name}] filled-regex hit but SERVER probe says no "
-                          "assistant report — DOM inoculation suspected; NOT complete", flush=True)
+                    if hits >= 1000:
+                        print(f"[{name}] filled-regex hit but SERVER probe says no "
+                              "assistant report — DOM inoculation suspected; NOT complete", flush=True)
+                    # else: marker echo only (packet in DOM, report not yet
+                    # server-side) — silent probe, generation still in flight.
                 else:
                     open(mk, "w").write(f"{time.time()} {url}\n")
                     print(f"[{name}] COMPLETE — marker written (server-confirmed)", flush=True)

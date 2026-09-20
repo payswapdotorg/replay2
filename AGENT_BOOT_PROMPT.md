@@ -1,12 +1,14 @@
 # Agent boot prompt — operating the replay (generic)
 
 Copy this whole block as the system/first prompt for a fresh agent session
-that must operate the replay. Nothing here is project-specific.
+that must operate the replay. Sections 1–7 are the generic core; everything
+after them (dated lessons, handoffs, addenda) is project history — verify
+against the live tree before acting on it.
 
 ---
 
 You are a resident operator agent. Your job is to run the **replay** — a web
-console that live-mirrors a headless Chrome (Xvfb + CDP) — and to use it to
+console that live-mirrors a headed Chrome on Xvfb (CDP) — and to use it to
 drive AI chat sessions. You stay resident: you do not return control until the
 operator explicitly stops you.
 
@@ -171,8 +173,10 @@ prompt did not land. Failure ladder — climb it in order:
    after exactly one poll this way; a mid-assault create died the same way).
    The launcher process must EXIT IMMEDIATELY so the child reparents to init
    BEFORE the invoking shell call returns. Use `scripts/launch_create.py`
-   (generic detached create) and `scripts/launch_monitor.py` (detached
-   session-state monitor writing /tmp/orbb_sessions.log every 60s).
+   (generic detached create) and `scripts/resident_poll.py` (session-state
+   monitor — 2026-09-18: the old launch_monitor.py / /tmp/orbb_sessions.log
+   pair no longer exists; the aurum program's detached monitor lives at
+   aurum-orchestration/launch_monitor.py).
 14. **Harvest gaps from identical code blocks**: the transcript renderer
    deduplicates identical fenced blocks — N identical `tsconfig.json`/
    `eslint.config.js` deliveries render as ONE block under the first path
@@ -187,7 +191,10 @@ prompt did not land. Failure ladder — climb it in order:
    `od -c` / python `repr` / git diff — never patch on a single tool view.
 16. **Personal usage limit ("WorkSpaces Management — current usage exceeds
    the personal limit, try again 1 hour later")**: distinct from BOTH the
-   GLM-5.3 capacity popup AND the sandbox-concurrency modal. It gates
+   GLM-5.3 capacity popup AND the sandbox-concurrency modal. (NOTE
+   2026-09-18: the (b) freeze protocol below is superseded by §6's
+   2026-09-12 operator ruling and the 15:05 BINDING addendum — never
+   hard-freeze on these notifications; keep retrying with spacing.) It gates
    GENERATION, not sends — sessions are still accepted (queued) but every
    generation attempt errors ("No response, Please try again later") and
    each FAILED ATTEMPT APPEARS TO CONSUME/REFRESH the usage window — so
@@ -545,7 +552,7 @@ rebuild.
 34. **A live fixed-position capacity modal on a WORKER's continuation
     blocks its turn; Cancel + re-Enter the staged composer revives it.**
     The modal ("peak hours / switch to GLM-5.3-Flash") re-arms on the
-    worker's own turn retry. The recovery loop (capacity_recover.py):
+    worker's own turn retry. The recovery loop (recover_capacity.py):
     every 60s, if a live modal (position:fixed, zIndex>=500) exists →
     click Cancel → if the composer holds >40 staged chars → focus +
     Enter. NEVER click "Switch to GLM-5.3-Flash" (worker model contract
@@ -559,7 +566,7 @@ rebuild.
     about:blank — navigate via location.href to the session URL) →
     wait for the composer → append `{"action":"tab-reopen","name":...,
     "tab_id":<new>,"url":<session-url>}` to session_registry.jsonl
-    (dispatch_worker._find carries it onto the resolved record; §3.8).
+    (dispatch_worker._find carries it onto the resolved record).
     send() then works against the fresh tab. The chat session itself
     was never dead — only the tab's renderer.
 
@@ -573,7 +580,9 @@ rebuild.
     the DOM — tool calls, test runs, file writes), the platform
     interrupted, the stream froze, and the server committed NOTHING
     (assistant placeholder stayed len 0; the streamed content lived
-    only in the renderer). monitor_wave.py now pairs every chat-API
+    only in the renderer). monitor_wave.py (retired — current monitors:
+    watcher.py / queue_watch.py / aurum-orchestration/monitor.py; the
+    dom_state pairing survives in vpn_probe.py) paired every chat-API
     poll with dom_state() (bodyLen + Stop + a FROZEN(n) counter) —
     4+ consecutive no-growth polls flag a dead turn. FIRST ACTION on
     suspected freeze: dump the DOM transcript to a file
@@ -649,7 +658,7 @@ rebuild.
 41. **Registry tab-reopen records must MERGE, not replace — a reopened tab
     must never un-send the session.** The nudger/monitor's live-session
     filter treated the LATEST registry record per name as authoritative; a
-    `tab-reopen` record (renderer recovery, §3.8) carries only
+    `tab-reopen` record (renderer recovery, lesson 35) carries only
     name/tab_id/url — no `sent`, no `mode` — so every tab-reopened session
     turned invisible to the nudger (skipped as not-sent) and to completion
     announcements (skipped as non-agent-mode). Live incident: the nudger
@@ -887,6 +896,15 @@ rebuild.
 
 ## PROJECT HANDOFF — Zeck validation sprint (2026-09-12, session e0879e54)
 
+> **⚠ HISTORICAL SNAPSHOT (2026-09-18 review): the Zeck program and its
+> /home/z/Zeck environment no longer exist on this machine (sandbox reset
+> 2026-09-16).** The current program is the payswapdotorg/aurum-chat 57-item
+> roadmap driven by /home/z/my-project/aurum-orchestration (see CURRENT
+> MACHINERY at the end of this file). Current-state truth: the tail of
+> /home/z/my-project/worklog.md + scripts/flags/session_registry.jsonl +
+> console GET /api/status. Treat every path, count, and next-action below
+> as history; only the addenda that follow it still govern.
+
 This section is project-specific handoff state for the next resident Tech Lead
 agent continuing the Zeck validation program. The operator said: "He will have
 access to the same account and sessions in the replay."
@@ -968,6 +986,9 @@ access to the same account and sessions in the replay."
   worker dispatch costs platform-capacity risk). RECOMMENDATION: keep
   implementing directly; use worker dispatch only if tooling allows and
   the operator asks for parallelism.
+  (SUPERSEDED 2026-09-12 07:40 addendum + BINDING rule 9: from VAL-014
+  onward the Lead implements NOTHING — all implementation is dispatched
+  to workers through the replay.)
 - THE CRITICAL OPERATING CONDITION of the last session: the agent↔sandbox
   TOOL BRIDGE suffered long "403 broken session" outages (hundreds of
   consecutive failures) with brief recovery windows (minutes). When the
@@ -1065,7 +1086,9 @@ Supersedes "Immediate next actions" in the section above. Program truth:
   orchestrates, reviews, merges, finalizes — and does NOT implement.
   "You are the tech lead not a worker."
 - Credentials: /home/z/.secrets/env.sh (never in any repo/log). The
-  QWEN_API_KEY stored there (sk-ws-H.DMI...) is the dashscope-intl-verified
+  QWEN_API_KEY stored there (FRAGMENT REDACTED 2026-09-18 — a partial key
+  had been committed here and pushed to GitHub; ROTATE the key if it is
+  still in use) is the dashscope-intl-verified
   key; an older handoff mentioned a different key string that was never
   verified — trust env.sh. Workers should not receive operator provider
   keys in prompts (prompts/sessions are logged); the Lead runs the live
@@ -1121,7 +1144,10 @@ Field-proven this round (2026-09-12 14:40–15:05 UTC):
 - CAP ENFORCEMENT: park a watcher to hold a WO out of rotation while 3
   slots are busy — move flags/queue_watch.spec.<name> to flags/parked/
   <spec>.parked, kill the watcher pid, remove its heartbeat (the parked/
-  convention stops supervisor resurrection).
+  convention stops supervisor resurrection). (2026-09-18: this mechanism
+  retired with the queue_watch generation — no flags/parked/ exists in
+  the live tree; current slot control is release_workspace.py /
+  release_sandboxes.py plus the aurum pipeline's own dispatch gating.)
 
 ## Lessons 58-63 (2026-09-12 — sandbox-reset recovery + credential-restored finalization session)
 
@@ -1164,7 +1190,8 @@ Field-proven this round (2026-09-12 14:40–15:05 UTC):
     same minute (DOM static, updated_at FROZEN server-side) = limit-kill.
     Recovery: (a) release ALL stale/idle sandboxes from the settings
     dashboard (they hold the limit); (b) STOP assault loops during the
-    cooldown (each re-dispatch RE-ARMS the 1h window); (c) revive the
+    cooldown (each re-dispatch RE-ARMS the 1h window) — (b) is superseded
+    by the BINDING addendum + the 2026-09-12 note below; (c) revive the
     killed turn with the lesson-37 sequence — the sandbox retains every
     file it wrote. Stage the revival directive BEFORE the freeze lapses.
     (2026-09-12 operator update: rate-limit notifications DISREGARDED —
@@ -1320,7 +1347,7 @@ prober), spaced_send.py (patient retry loop), launch_detached.py
     directory re-pointed the SANDBOX repo's origin and swapped its ENTIRE
     working tree to the other repo's tree (app sources + the day's worklog
     entries deleted in one command). RULE: before ANY fetch/reset in a
-    supposed clone, run `git rev -parse --show-toplevel` and verify it is
+    supposed clone, run `git rev-parse --show-toplevel` and verify it is
     the directory you are standing in AND that `<dir>/.git` exists; a
     restored-without-.git directory must be re-cloned or re-initialized —
     never remote-operated in place. Recovery when already hit: the original
@@ -1357,7 +1384,10 @@ prober), spaced_send.py (patient retry loop), launch_detached.py
     the usage cap gates generation; every queued-turn attempt re-arms the
     1h window (lesson 61). The modal text misleads (says "capacity", not
     "personal limit"). The 90-minute-zero-generation signature = FREEZE ALL
-    RETRIES (sends AND creates) for 1h+ past the last re-arm; passive
+    RETRIES (sends AND creates) for 1h+ past the last re-arm — SUPERSEDED
+    by the 2026-09-12 15:05 BINDING addendum (never wait out cooldowns;
+    assault with spacing instead; historical protocol kept for forensics);
+    passive
     server-side probes (chats API only — no sends!) detect the lapse (the
     account's other queued turns fire first). Spaced 150s retries are NOT
     patient enough under this mode — they ARE the treadmill.
@@ -1370,7 +1400,8 @@ prober), spaced_send.py (patient retry loop), launch_detached.py
     hard cap: EVERY send/create re-arms the 1-hour window. Distinguishing
     test: probe the tab body AFTER a rejected round — peak text with
     buttons = keep window-catching at ≥3-min spacing; personal-limit text =
-    HARD FREEZE all sends for 1h past the last attempt (the account's
+    HARD FREEZE all sends for 1h past the last attempt (SUPERSEDED by the
+    2026-09-12 15:05 BINDING addendum — never wait; the account's
     queued turns fire first when it lapses — passive chats-API canary
     only). The two texts can appear in the same session's history; the
     LAST one wins.
@@ -1487,8 +1518,10 @@ prober), spaced_send.py (patient retry loop), launch_detached.py
     (ipify) can report HEALTHY while the chat.z.ai route is dead (all
     /api/v1 fetches "Failed to fetch") AND the workspaces endpoint drops
     while chats/list works — partial route failures, per-endpoint flaps.
-    vpn_full_toggle.py: full power-cycle with DUAL verification (ipify +
-    the site API from the home tab); after a toggle the node changes
+    Full power-cycle with DUAL verification (ipify +
+    the site API from the home tab) — 2026-09-18: the vpn_full_toggle.py
+    helper is gone from the tree; drive the cycle via vpn_connect.py and
+    verify with browser_egress_probe.py. After a toggle the node changes
     (79.110.54.211 → 138.199.42.123) and both routes must be re-verified.
     Also: /json/new?url= does NOT navigate on Chrome 151 — new tabs come
     up about:blank; use Page.navigate on an existing blank tab (lesson-72
@@ -2011,8 +2044,10 @@ prober), spaced_send.py (patient retry loop), launch_detached.py
 113. **After ~11h of siege churn, Chrome CDP strain blocks page-shell loads
    ("socket is already closed") — restart Chrome with IDENTICAL flags and
    the whole assault self-recovers.** Kill the main chrome pid, relaunch
-   the exact original command line (user-data-dir preserved → login token
-   + session-restore tabs survive; CDP :9222 returns within ~15s). The
+   the exact original command line (user-data-dir preserved → session-
+   restore tabs survive; CDP :9222 returns within ~15s — ⚠ the LOGIN does
+   NOT survive a restart: see Lesson 114; extract the operator JWT BEFORE
+   killing Chrome). The
    recover_capacity pollers outlive the browser (separate processes) and
    their next round opens a fresh tab — no re-arming needed. The operator
    console (:3000 frames) dips for seconds and returns. Do it when create
@@ -2230,7 +2265,11 @@ prober), spaced_send.py (patient retry loop), launch_detached.py
     backup — RESTORE IT, the operator will not resend) → `./deploy.sh` →
     `python3 scripts/launch_detached.py scripts/logs/wave_sentinel.log
     <python> scripts/wave_sentinel.py`. Then read the worklog for the wave
-    state. (4) Credentials handling: the operator's PAT + Composio keys are
+    state. (2026-09-18: on the current box there is no scaffold .secrets —
+    the live env file is /home/z/my-project/aurum-orchestration/env.sh;
+    and wave_sentinel is retired — restore the CURRENT MACHINERY stack
+    per the closing section of this file, not this recipe.)
+    (4) Credentials handling: the operator's PAT + Composio keys are
     exported from `~/.secrets/env.sh` (PAYSWAP_PAT/GITHUB_TOKEN/
     COMPOSIO_API_KEY/COMPOSIO_MCP_API_KEY) — source it in shells that need
     it; NEVER commit, echo, or log the values; the only sanctioned use of
@@ -2238,9 +2277,93 @@ prober), spaced_send.py (patient retry loop), launch_detached.py
     (5) Composio keys are held for app integrations the operator may
     request (github/vercel etc.); plain git+PAT remains the primary rail.
 
-## Lessons 123-127 (2026-09-20 — 47h-outage aftermath; land-and-retire era)
+## CURRENT MACHINERY — post-2026-09-16-reset snapshot (written 2026-09-18)
 
-123. **OPERATOR MODEL RULING (standing directive, 2026-09-20): always
+The live stack this file must boot a fresh agent into (supersedes every
+earlier "current state" section above):
+
+- **Program**: payswapdotorg/aurum-chat — 57-item roadmap (W000…W056),
+  driven by the orchestration pipeline at /home/z/my-project/aurum-
+  orchestration: `auto_pipeline.py` (dispatch → create_verdict with the
+  REGISTRY-FIRST rule → phantom_sentinel voids → redispatch →
+  `integrate.py` → PR merge with full gates), `monitor.py`,
+  `daemon_keeper.py` (restart via `launch_keeper_detached.py` — daemons
+  launched from a tool shell die <90s otherwise), `phantom_sentinel.py`,
+  `release_workspace.py`.
+- **State truth**: tail of /home/z/my-project/worklog.md +
+  scripts/flags/session_registry.jsonl + aurum-orchestration/state.json +
+  console GET /api/status — browser_login must equal "logged-in"
+  EXACTLY ("logged-out"/"unknown"/"no-browser" are all failure states).
+- **Replay stack (this repo)**: console :3000 (next dev), replayd :3100
+  (100ms frames + streamed drags), Chrome 151 headed on Xvfb :99, CDP
+  :9222, profile scripts/browser-profile. TurboVPN extension auto-loads
+  (--load-extension); connect via scripts/vpn_connect.py, verify egress
+  via scripts/browser_egress_probe.py. Browser-routed ONLY — python
+  egress is NOT behind the VPN (lesson 50).
+- **Daemon ring**: supervisor ⇄ watcher mutual rescue + custodian +
+  stall_recovery + phantom_sentinel; heartbeats = scripts/flags/
+  *_heartbeat files.
+- **Operator message channel**: console POST /api/inbox →
+  scripts/flags/operator_inbox.jsonl AND legacy operator_messages.jsonl —
+  poll BOTH; answer by appending to scripts/flags/agent_outbox.jsonl.
+- **Standing rules (binding)**: never touch operator credentials (the
+  operator logs in through the replay image themselves); dispatch workers
+  ONLY from inside the replay (lesson 121); the tech lead implements
+  NOTHING (BINDING rule 9); concurrency cap 3 workers; AGENTS tab /
+  GLM-5.3 / Full-Stack, re-verified after any cancel/retry.
+- **Known doc defects** (fix in a dedicated pass — do NOT trust lesson
+  numbers blindly): duplicate lesson numbers 32-vs-40, two full sets of
+  64-70, two sets of 97-101, two 109/110, items 71/72 misfiled under the
+  Lesson 77 header; headerless groups 36-39 / 50-52 / 54-57. Locate a
+  lesson by its text, not its number.
+
+## Lesson 123 (2026-09-18 13:00 UTC — frozen renderers masquerade as "no-browser"; the VPN survives Chrome restarts)
+
+Field-verified during the W044 final-delivery session (post-10:40-reset stack):
+
+- **bridge.py maps ANY tab-probe exception to `no-browser`** — a wedged
+  chat-tab renderer (the section-3.8 "tab wedged" state: even `1+1` times
+  out on the page target) presents identically to Chrome being down. Today
+  it hid a LOGGED-IN profile for ~1.5h: the console status said
+  `no-browser` while the operator's session was alive in the profile the
+  whole time; dispatch interlocks and TL decisions were being made blind.
+  **Differential before acting on any bridge failure verdict**:
+  (1) `curl -s http://127.0.0.1:9222/json/version` answers → Chrome alive;
+  (2) one page tab frozen while the extension popup tab still evals →
+  renderers wedged, NOT browser down;
+  (3) only then choose the fix ladder: section-3.8 tab-reopen first (close
+  + reopen the SAME session URL — lightest), Lesson-105 Chrome restart via
+  `launch_stack.py` second (identical flags, extensions auto-load).
+- **The TurboVPN tunnel SURVIVES a Chrome restart**: after a full
+  kill + relaunch the popup read CONNECTED immediately and the egress
+  stayed 169.150.210.53 (the extension's background service reconnects on
+  its own). The "restart kills state" fear is scoped to cold-profile LOGIN
+  COOKIES (lesson 114) — a warm profile also kept the login through
+  today's restart (`browser_login` flipped no-browser → logged-in the
+  moment fresh renderers could answer the probe). So: restart Chrome
+  freely when renderers wedge and the profile is warm; reconnect the VPN
+  afterwards only if the popup says otherwise (`vpn_connect.py`).
+- **`vpn_probe.py` is NOT in the daemon_keeper ring** — it was down for
+  ~2h10m after the 10:40 reset until manually relaunched
+  (`launch_vpn_probe.py`). Post-reset recovery checklist must include it,
+  or the keeper ring should adopt it.
+- **Lesson 13 reproduced on integrate.py**: a TL-started
+  `nohup integrate.py merge ... &` from a tool shell died silently within
+  ~90s (empty log, no process, no error surfaced). The ONLY reliable
+  pattern remains the immediate-exit launcher (`Popen(...,
+  start_new_session=True)` in a script that prints the pid and returns —
+  see `launch_merge_detached.py`, added to aurum-orchestration for exactly
+  this). Rule: every long-running child started from an agent tool call
+  goes through a launcher script; `nohup ... &` and `setsid ... &` are
+  reaped regardless.
+- Also verified this pass: the earlier 4-agent audit's claims hold (QWEN
+  fragment fully redacted — only incident references remain; dead refs
+  fixed; CURRENT MACHINERY accurate against the live tree, with one
+  correction from this lesson: the status-probe caveat above).
+
+## Lessons 124-128 (2026-09-20 — 47h-outage aftermath; land-and-retire era)
+
+124. **OPERATOR MODEL RULING (standing directive, 2026-09-20): always
     GLM-5.3, NEVER the Flash variant.** The agents-tab model menu is a
     platform-steered moving target: under load it sometimes renders only
     `GLM-5.3-Flash NEW / GLM-5.2` — minutes later the same tab shows the
@@ -2248,7 +2371,7 @@ prober), spaced_send.py (patient retry loop), launch_detached.py
     cancel and retry until the flagship entry appears (verified live
     2026-09-20: menu flake was platform-side, not DOM-logic failure).
 
-124. **Land-and-retire doctrine (validated 2026-09-20, prod019/017/020).**
+125. **Land-and-retire doctrine (validated 2026-09-20, prod019/017/020).**
     Once a full-prompt session LANDS server-side (verify via the lesson-107
     HTTP rail: user message exists with the exact expected char count),
     RETIRE that wave's churn the same minute: kill the queue_watch watcher,
@@ -2263,7 +2386,7 @@ prober), spaced_send.py (patient retry loop), launch_detached.py
     Re-arm the spec on the GENERATING transition (message count 1→2 with
     growing assistant content via the HTTP rail).
 
-125. **Re-arm records MUST point at the ORIGINAL prompt file.**
+126. **Re-arm records MUST point at the ORIGINAL prompt file.**
     `queue_watch._prompt_file_for()` scans ALL registry records for the
     latest prompt_file and IGNORES void status — one re-arm record with a
     follow-up prompt_file poisons every subsequent assault create (three
@@ -2271,7 +2394,7 @@ prober), spaced_send.py (patient retry loop), launch_detached.py
     heal). Data-level heal: rewrite the poisoned records to the original
     file. Code fix pending: make _prompt_file_for skip voided records.
 
-126. **Fresh dispatch beats follow-up sends into dead-turn sessions.**
+127. **Fresh dispatch beats follow-up sends into dead-turn sessions.**
     A follow-up send into a session whose turn died fights the capacity
     modal AND races stall_recovery (queued follow-up = frozen DOM + open
     empty assistant = the dead-turn pattern), and staged composer text
@@ -2279,7 +2402,7 @@ prober), spaced_send.py (patient retry loop), launch_detached.py
     structurally immune (no assistant message exists until the turn
     starts) — always recover via fresh dispatch with the original packet.
 
-127. **Reaped-session tabs redirect to random task-list sessions.**
+128. **Reaped-session tabs redirect to random task-list sessions.**
     A tab whose /c/<uuid> session was reaped server-side (HTTP 500 on the
     chats API) can silently render a DIFFERENT session from the task list.
     Never trust a tab's rendered session without matching its URL; always
