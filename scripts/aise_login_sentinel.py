@@ -416,10 +416,10 @@ def main():
         + " ===")
     start = time.time()
 
-    if already_dispatched_all():
+    watch_only = already_dispatched_all()
+    if watch_only:
         log("both queue sessions already landed (registry truth) — "
-            "standing down without re-dispatch")
-        return
+            "WATCH-ONLY mode: login detection + notify, no re-dispatch")
 
     confirmed = None
     while time.time() - start < MAX_WAIT_SECS:
@@ -440,11 +440,19 @@ def main():
     email, tok = confirmed
     log(f"OPERATOR LOGIN CONFIRMED — identity switched to {email} "
         "(debounced, fresh-tab check pending)")
-    outbox(f"[{TAG}] OPERATOR LOGIN DETECTED ({email}) — resuming the campaign: "
-           "dispatching prod021 (next-in-line) then prod012 (deployed-browser "
-           "verification) from inside the replay. The adapter-wave re-land "
-           "(prod017/019/020 packets on disk) stays your call — say the word "
-           "and they follow.")
+    if watch_only:
+        outbox(f"[{TAG}] OPERATOR LOGIN DETECTED ({email}) — welcome. "
+               "prod021 + prod012 are already live in the replay (re-entry "
+               "guard engaged; no duplicate dispatch). Watchers own the "
+               "runtime and the resident lead harvests their reports. The "
+               "adapter-wave re-land (prod017/019/020 packets on disk) stays "
+               "your call — say the word and they follow.")
+    else:
+        outbox(f"[{TAG}] OPERATOR LOGIN DETECTED ({email}) — resuming the campaign: "
+               "dispatching prod021 (next-in-line) then prod012 (deployed-browser "
+               "verification) from inside the replay. The adapter-wave re-land "
+               "(prod017/019/020 packets on disk) stays your call — say the word "
+               "and they follow.")
     refresh_token_cache(tok)
 
     if not wait_for_inheritance():
@@ -461,6 +469,18 @@ def main():
         else:
             log("inheritance never landed within the window — standing down")
             return
+    if watch_only:
+        log("fresh-tab inheritance verified — watch-only pass (queue already "
+            "landed; nothing to dispatch)")
+        outbox(f"[{TAG}] operator session confirmed on fresh tabs — watch-only "
+               "pass complete. prod021 + prod012 run with supervisor-"
+               "resurrectable watchers; the resident lead harvests their "
+               "COMPLETION REPORTs, runs the gates, and reports back here. "
+               "(Concurrency cap 3 observed; one slot held free.)")
+        log("watch-only pass complete — sentinel exiting (watchers + "
+            "supervisor own the runtime)")
+        return
+
     log("fresh-tab inheritance verified — dispatching the armed queue")
 
     for name, prompt, marker in QUEUE:
