@@ -47,7 +47,17 @@ HEARTBEAT = os.path.join(BASE, "flags", "aise_sentinel_heartbeat")
 LOCK = os.path.join(BASE, "flags", "aise_sentinel.lock")
 REGISTRY = os.path.join(BASE, "flags", "session_registry.jsonl")
 TOKEN_CACHE = os.path.join(BASE, "flags", "chat_token")
+OPERATOR_INBOX = os.path.join(BASE, "flags", "operator_inbox.jsonl")
 PARKED_ACCOUNT = "ali12@payswap.org"
+OPERATOR_EMAIL_FALLBACK = "ekontetevi@gmail.com"  # operator's own console post 2026-09-20 18:50
+
+# 2026-09-20 21:20 incident: clearing the parked ali12 session made the site
+# auto-mint a GUEST token (guest-...@guest.com); the old "!= ali12" trigger
+# false-fired a dispatch under the guest account (create failed harmlessly
+# on the auth page; sentinel killed in time). The trigger is now STRICT: the
+# identity must EQUAL the operator's email (latest email-shaped operator
+# message in flags/operator_inbox.jsonl, else the fallback constant). Guest,
+# ali12, and any other identity never trigger.
 
 POLL_SECS = 45
 MAX_WAIT_SECS = 12 * 3600
@@ -111,6 +121,33 @@ def _tab_token(tab):
         return None
 
 
+def operator_email():
+    """The operator's chat.z.ai email: the LATEST email-shaped operator
+    message in flags/operator_inbox.jsonl, else the fallback constant."""
+    import re
+    best = None
+    try:
+        with open(OPERATOR_INBOX) as f:
+            for line in f:
+                line = line.strip()
+                if not line:
+                    continue
+                try:
+                    d = json.loads(line)
+                except ValueError:
+                    continue
+                if d.get("from") != "operator":
+                    continue
+                m = re.search(
+                    r"[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}",
+                    str(d.get("text", "")))
+                if m:
+                    best = m.group(0).lower()  # latest wins
+    except OSError:
+        pass
+    return best or OPERATOR_EMAIL_FALLBACK
+
+
 def identity_state():
     """(email, token) of the CURRENT chat.z.ai session, or (None, None).
 
@@ -126,14 +163,17 @@ def identity_state():
 
 
 def operator_identity_confirmed():
-    """Debounced strict trigger: a NON-parked, NON-empty identity on two
-    probes IDENTITY_DEBOUNCE_SECS apart. Returns (email, token) or None."""
+    """Debounced STRICT trigger: the identity EQUALS the operator's email
+    (operator_email()) on two probes IDENTITY_DEBOUNCE_SECS apart. Guest
+    sessions, the parked ali12 account, and anything else never trigger.
+    Returns (email, token) or None."""
+    want = operator_email()
     email, tok = identity_state()
-    if not email or email == PARKED_ACCOUNT:
+    if not email or email != want:
         return None
     time.sleep(IDENTITY_DEBOUNCE_SECS)
     email2, tok2 = identity_state()
-    if email2 and email2 != PARKED_ACCOUNT and email2 == email:
+    if email2 and email2 == want:
         return email2, tok2 or tok
     return None
 
@@ -163,7 +203,7 @@ def new_tab_inherits_operator():
                 pass
             if tok:
                 email = _decode_jwt_email(tok)
-                ok = bool(email and email != PARKED_ACCOUNT)
+                ok = bool(email and email == operator_email())
         finally:
             c.close()
     except Exception as e:  # noqa: BLE001
