@@ -2237,3 +2237,53 @@ prober), spaced_send.py (patient retry loop), launch_detached.py
     the raw PAT is the rendered worker push URLs and TL merge pushes.
     (5) Composio keys are held for app integrations the operator may
     request (github/vercel etc.); plain git+PAT remains the primary rail.
+
+## Lessons 123-127 (2026-09-20 — 47h-outage aftermath; land-and-retire era)
+
+123. **OPERATOR MODEL RULING (standing directive, 2026-09-20): always
+    GLM-5.3, NEVER the Flash variant.** The agents-tab model menu is a
+    platform-steered moving target: under load it sometimes renders only
+    `GLM-5.3-Flash NEW / GLM-5.2` — minutes later the same tab shows the
+    full menu with `GLM-5.3`. NEVER settle for Flash to "make progress";
+    cancel and retry until the flagship entry appears (verified live
+    2026-09-20: menu flake was platform-side, not DOM-logic failure).
+
+124. **Land-and-retire doctrine (validated 2026-09-20, prod019/017/020).**
+    Once a full-prompt session LANDS server-side (verify via the lesson-107
+    HTTP rail: user message exists with the exact expected char count),
+    RETIRE that wave's churn the same minute: kill the queue_watch watcher,
+    `rm flags/queue_watch.spec.<name>`, `rm flags/capacity_recover.<name>.json`
+    (+ .pid) BEFORE killing recover_capacity (spec/flag removal first, or
+    the supervisor resurrects them). Reasons: (a) the churn's tablost path
+    voids landed sessions as "recovery retry" misclassifications; (b) a
+    hot create cadence (~1 per 2 min) correlates with the platform reaping
+    the account's queued sessions (54550cab reaped <4 min after landing).
+    Record the landing in the registry with the tab-less convention
+    `<prefix8>TABLESS000000000000000000` + server-verified prompt_chars.
+    Re-arm the spec on the GENERATING transition (message count 1→2 with
+    growing assistant content via the HTTP rail).
+
+125. **Re-arm records MUST point at the ORIGINAL prompt file.**
+    `queue_watch._prompt_file_for()` scans ALL registry records for the
+    latest prompt_file and IGNORES void status — one re-arm record with a
+    follow-up prompt_file poisons every subsequent assault create (three
+    prod020 sessions burned on a 1519-char follow-up before the 2026-09-20
+    heal). Data-level heal: rewrite the poisoned records to the original
+    file. Code fix pending: make _prompt_file_for skip voided records.
+
+126. **Fresh dispatch beats follow-up sends into dead-turn sessions.**
+    A follow-up send into a session whose turn died fights the capacity
+    modal AND races stall_recovery (queued follow-up = frozen DOM + open
+    empty assistant = the dead-turn pattern), and staged composer text
+    false-positives delivery_watch's marker rule. A FRESH dispatch is
+    structurally immune (no assistant message exists until the turn
+    starts) — always recover via fresh dispatch with the original packet.
+
+127. **Reaped-session tabs redirect to random task-list sessions.**
+    A tab whose /c/<uuid> session was reaped server-side (HTTP 500 on the
+    chats API) can silently render a DIFFERENT session from the task list.
+    Never trust a tab's rendered session without matching its URL; always
+    ground-truth "new sessions" server-side before acting on them. The
+    chats API detail call is the truth (1 user message = queued at API
+    level; user + empty assistant gen=None = turn accepted but dead; the
+    first state survives hours, the second is a corpse).

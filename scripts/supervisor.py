@@ -5,7 +5,7 @@ Single-instance daemon (flock-guarded). Every 10s it verifies and, when dead,
 automatically restarts:
   1. watcher.py        (login / branch / write-access / dialog / inbox monitor)
   2. Chrome CDP :9222  (+ Xvfb :99 via launch_stack.py)
-  3. dev server :3000  (operator console)
+  3. dev server :$REPLAY_PORT  (operator console; default 3000)
   4. replayd    :3100  (persistent CDP daemon — realtime frames + drags)
 
 Also rotates logs so nothing grows unbounded, and touches
@@ -71,7 +71,12 @@ def http_ok(url, timeout=4):
         return False
 
 
-def console_body_ok(port=3000, timeout=4):
+CONSOLE_PORT = int(os.environ.get("REPLAY_PORT", "3000"))
+
+
+def console_body_ok(port=None, timeout=4):
+    if port is None:
+        port = CONSOLE_PORT
     """True only when :port serves the REPLAY CONSOLE itself.
 
     http_ok() alone accepts ANY http server — after a sandbox reset the boot
@@ -212,13 +217,19 @@ def ensure_capacity_recovery():
 def ensure_tab_gc():
     """Close leaked chat-home tabs (crashed creates leak one tab each; they
     exhaust the renderer and cause the CDP websocket timeouts). Keeps the
-    newest 2 home tabs for in-flight dispatches; session tabs (/c/) never."""
+    newest home tabs for in-flight dispatches; session tabs (/c/) never.
+
+    2026-09-20 fix (lead): the /tabs listing is OLDEST-FIRST, so the old
+    `home[2:]` kept the two OLDEST (leaked stale tabs) and closed the NEWEST
+    — i.e. it killed live creates' tabs mid-shell-wait (the "err:socket is
+    already closed" shell-stage failure storm of 10:2x-10:5x UTC). Keep the
+    newest FOUR instead (three waves can assault concurrently + one spare)."""
     try:
         import urllib.request
         tabs = json.load(urllib.request.urlopen("http://127.0.0.1:3100/tabs", timeout=10))
         home = [t for t in tabs.get("tabs", [])
                 if (t.get("url") or "").rstrip("/") == "https://chat.z.ai"]
-        for t in home[2:]:
+        for t in home[:-4]:
             try:
                 urllib.request.urlopen(
                     "http://127.0.0.1:9222/json/close/" + t["id"], timeout=5).read()
@@ -299,20 +310,20 @@ def _rm_devstate():
         pass
 
 def ensure_dev():
-    if http_ok(f"http://127.0.0.1:3000"):
-        if console_body_ok(3000):
+    if http_ok(f"http://127.0.0.1:{CONSOLE_PORT}"):
+        if console_body_ok(CONSOLE_PORT):
             _rm_devstate()
             return False
         # Port is up but it is NOT our console — a squatter holds :3000
         # (sandbox boot hook auto-starts my-project's `bun run dev` there).
         # The operator would see the WRONG app and could never reach the
         # replay/login. Evict, wait for the port to free, then take over.
-        evicted = evict_port_squatters(3000)
+        evicted = evict_port_squatters(CONSOLE_PORT)
         if evicted:
-            log("PORT GUARD: :3000 held by non-console process(es): "
+            log(f"PORT GUARD: :{CONSOLE_PORT} held by non-console process(es): "
                 + "; ".join(evicted) + " — evicted, console taking over")
             for _ in range(10):
-                if not http_ok("http://127.0.0.1:3000"):
+                if not http_ok(f"http://127.0.0.1:{CONSOLE_PORT}"):
                     break
                 time.sleep(1)
             subprocess.Popen([PY, os.path.join(BASE, "launch_dev.py")],
@@ -333,7 +344,7 @@ def ensure_dev():
     if pids:
         first = _dev_down_since()
         if first and time.time() - first > DEV_PATIENCE:
-            log("dev server :3000 not up for " + str(int(time.time() - first)) + "s with process alive — killing wedged dev, restarting")
+            log(f"dev server :{CONSOLE_PORT} not up for " + str(int(time.time() - first)) + "s with process alive — killing wedged dev, restarting")
             for p in pids:
                 subprocess.run(["kill", p], capture_output=True)
             _rm_devstate()
@@ -342,7 +353,7 @@ def ensure_dev():
                              stderr=subprocess.STDOUT)
             return True
         return False  # still starting — be patient, do NOT stampede
-    log("dev server :3000 DEAD — restarting")
+    log(f"dev server :{CONSOLE_PORT} DEAD — restarting")
     subprocess.Popen([PY, os.path.join(BASE, "launch_dev.py")],
                      stdout=open(os.path.join(LOGDIR, "dev_launch.log"), "a"),
                      stderr=subprocess.STDOUT)

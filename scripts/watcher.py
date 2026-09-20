@@ -250,7 +250,7 @@ def check_procs():
             subprocess.run(["/home/z/.venv/bin/python3", os.path.join(base, "launch_stack.py")], timeout=120)
         # dev server dead => operator console unreachable
         try:
-            urllib.request.urlopen("http://127.0.0.1:3000", timeout=4).read(64)
+            urllib.request.urlopen(f"http://127.0.0.1:{int(os.environ.get('REPLAY_PORT', '3000'))}", timeout=4).read(64)
         except Exception:
             # liveness-guarded: a cold compile binds the port late; spawning
             # extra dev servers during that window stampedes memory (OOM).
@@ -259,7 +259,7 @@ def check_procs():
             r = subprocess.run(["pgrep", "-f", "next dev|bun run dev|next-server"],
                                capture_output=True, text=True)
             if not r.stdout.strip():
-                log("dev server :3000 dead — restarting")
+                log("dev server (console port) dead — restarting")
                 subprocess.Popen(["/home/z/.venv/bin/python3", os.path.join(base, "launch_dev.py")],
                                  stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
                 time.sleep(5)

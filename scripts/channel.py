@@ -48,14 +48,61 @@ def new_tab(url="about:blank"):
     if tab is None:
         return None
     if url and url != "about:blank":
-        try:
-            c = CDP(tab["webSocketDebuggerUrl"], timeout=15)
+        # 2026-09-20 fix (lead): Chrome 151 resets the DevTools socket when
+        # the renderer swaps in (about:blank -> real page). A caller that
+        # connects while the swap is in flight gets "socket is already
+        # closed" on its FIRST eval. Wait here until the navigation has
+        # committed and the document exists, so the returned tab is stable.
+        # Also: a brand-new tab can be discarded outright ("No such target
+        # id") — detect a dead tab and create a fresh one, up to 3 times.
+        import time as _time
+        for _attempt in range(3):
+            # tab still alive?
+            _alive = any(t.get("id") == tab.get("id") for t in list_tabs())
+            if not _alive:
+                try:
+                    _http_json("/json/close/" + tab.get("id", ""), method="PUT")
+                except Exception:
+                    pass
+                tab = None
+                for method in ("PUT", "GET"):
+                    try:
+                        tab = _http_json("/json/new" + qs, method=method)
+                        break
+                    except Exception:
+                        continue
+                if tab is None:
+                    continue
             try:
-                c.call("Page.navigate", {"url": url}, timeout=15)
-            finally:
-                c.close()
-        except Exception:
-            pass
+                c = CDP(tab["webSocketDebuggerUrl"], timeout=15)
+                try:
+                    c.call("Page.navigate", {"url": url}, timeout=15)
+                except Exception:
+                    pass
+                # poll until the doc is on a real URL with a body
+                for _i in range(20):
+                    try:
+                        href = c.eval("location.href", timeout=8)
+                        if href and href.startswith("http") and "about:blank" not in href:
+                            ready = c.eval(
+                                "(document.readyState === 'complete' || document.readyState === 'interactive') ? 'y' : 'n'",
+                                timeout=8)
+                            if ready == "y":
+                                c.close()
+                                return tab
+                    except Exception:
+                        break  # socket died mid-swap — reconnect and retry
+                    _time.sleep(0.75)
+                try:
+                    c.close()
+                except Exception:
+                    pass
+            except Exception:
+                pass
+            _time.sleep(1.0)
+        # final liveness gate: never return a dead tab dict
+        if not any(t.get("id") == tab.get("id") for t in list_tabs()):
+            return None
     return tab
 
 

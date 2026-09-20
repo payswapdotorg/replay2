@@ -55,6 +55,17 @@ MAX_RECOVERIES_PER_HOUR = 3
 WAIT_MARKERS = ("at capacity", "peak hours", "personal limit",
                 "try again 1 hour later")
 
+# 2026-09-19 OUTAGE-HOLD (resident-lead directive): while
+# flags/outage_hold.txt exists, NEVER close tabs. During the 2026-09-18/19
+# generation outage every queued session renders exactly like a dead turn
+# (frozen DOM + assistant turn open+empty — the turn is created at dispatch
+# and stays empty until the backend admits it). The close-tab path only
+# helps when queue_watch's assault ladder can answer with a fresh dispatch;
+# under the hold that ladder is suppressed, so closing just orphans live
+# queued sessions (observed: it killed the lead's live-session re-attachment,
+# tab CD43B2F0 at 20:31:53, and the original 017/020 tabs at 13:59/14:39).
+OUTAGE_HOLD_PATH = os.path.join(FLAGS, "outage_hold.txt")
+
 
 def log(msg):
     line = f"[{time.strftime('%Y-%m-%d %H:%M:%S')}] {msg}"
@@ -225,6 +236,16 @@ def main():
                 if count_recent(recs, name) >= MAX_RECOVERIES_PER_HOUR:
                     log(f"{name}: stall detected but recovery budget exhausted "
                         f"— leaving tab (manual review needed)")
+                    dom_len[name] = (time.time(), blen, tab["id"])
+                    continue
+                if os.path.exists(OUTAGE_HOLD_PATH):
+                    # OUTAGE-HOLD: suppressed — see note at OUTAGE_HOLD_PATH.
+                    # Reset the frozen clock so this logs once per STALL_AFTER
+                    # window instead of every 2-min cycle.
+                    log(f"{name}: DEAD TURN (frozen {int(frozen_for)}s, assistant "
+                        f"msg open+empty since ts={last.get('ts')}) — OUTAGE-HOLD: "
+                        f"tab close suppressed (queued sessions look like dead "
+                        f"turns during the outage; queue_watch ladder is held)")
                     dom_len[name] = (time.time(), blen, tab["id"])
                     continue
                 # RECOVER: close the tab; queue_watch assault re-dispatches

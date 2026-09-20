@@ -43,7 +43,31 @@ UNSTICK_MAX = 6              # bounded unsticks (cadence, not cooldown waits)
 STUCK_ASSAULT_AFTER = 900    # s of zero-progress stall (fresh) -> void+re-dispatch
 STUCK_ASSAULT_WORKRICH = 3600  # s for work-rich sessions (chars >= 15K)
 STUCK_ASSAULT_MAX = 4        # bounded re-dispatch churn
+QUEUED_STATIC_AFTER = 3600   # 2026-09-18 outage: plain "queued" zero-progress
+                            # before assault (dead-with-error sessions render
+                            # as plain queued; legit queues move within the hour)
 RL_DEFER_AFTER = 240         # minimal churn guard ONLY — never a cooldown wait
+
+# 2026-09-19 OUTAGE-HOLD (resident-lead directive): while
+# flags/outage_hold.txt exists, ALL send paths (unstick cancel+resend,
+# staleness assault, tablost/home re-dispatch) are suppressed — the watcher
+# degrades to a pure read-only monitor. Rationale: the platform began
+# reaping queued sessions during the 2026-09-18/19 generation outage and
+# every fresh dispatch wedges identically, so churn gains nothing while
+# feeding possible account-level anti-abuse blocks. The lead lifts the flag
+# only when backend_probe_watch reports HEALTHY (then watchers resume the
+# full ladder and fresh sessions generate immediately).
+OUTAGE_HOLD_PATH = os.path.join(FLAGS, "outage_hold.txt")
+_HOLD_LOG = {}
+
+def hold_active(name=""):
+    if not os.path.exists(OUTAGE_HOLD_PATH):
+        return False
+    now = time.time()
+    if now - _HOLD_LOG.get(name, 0) > 1800:
+        _HOLD_LOG[name] = now
+        print(f"[{name}] OUTAGE-HOLD active — senders suppressed (read-only watch)", flush=True)
+    return True
 
 
 def write_spec(name, tab_prefix, marker):
@@ -309,6 +333,8 @@ def main():
                     print(f"[{name}] {stamp} session destroyed ({st}) but capacity_recover flag "
                           f"present — recover_capacity.py owns the assault (serialized, lesson 89b)",
                           flush=True)
+                elif hold_active(name):
+                    print(f"[{name}] {stamp} session destroyed ({st}) — OUTAGE-HOLD: re-dispatch suppressed", flush=True)
                 else:
                     print(f"[{name}] {stamp} session destroyed ({st}) — re-dispatching (assault)", flush=True)
                     # the dead session's registry record would make create() bail
@@ -336,20 +362,25 @@ def main():
                 last_len = ln
             else:
                 rounds_since_progress += 1
-            if st in ("queued-capacity", "rate-limited"):
+            # 2026-09-18 outage lesson: plain "queued" MUST run the stuck-clock
+            # too — generation requests failing server-side (HTML error page,
+            # "No response, Please try again later.") render as plain queued
+            # with NO capacity banner; the old reset-to-zero let 3 workers sit
+            # dead for 5+ hours with zero auto-recovery.
+            if st in ("queued-capacity", "rate-limited", "queued"):
                 if rounds_since_progress == 0:
                     stuck_since = 0            # body still changing — not stuck
                 elif rounds_since_progress >= 2 and not stuck_since:
                     stuck_since = time.time()
                     print(f"[{name}] {stamp} stuck-clock started ({st}, no progress)", flush=True)
             else:
-                stuck_since = 0                # generating/queued/home all reset the clock
+                stuck_since = 0                # generating/home reset the clock
             # OPERATOR PROTOCOL (2026-09-12), first line: stuck with a
             # Cancel-modal -> dismiss (Cancel) + resend the prompt. Never
             # wait, never follow the popup's own instructions.
             if (st in ("queued-capacity", "rate-limited") and stuck_since and modal
                     and time.time() - stuck_since > UNSTICK_AFTER
-                    and unsticks < UNSTICK_MAX):
+                    and unsticks < UNSTICK_MAX and not hold_active(name)):
                 unsticks += 1
                 print(f"[{name}] {stamp} stuck {int(time.time() - stuck_since)}s with a "
                       f"Cancel-modal — unstick (cancel+resend) #{unsticks}/{UNSTICK_MAX}", flush=True)
@@ -363,19 +394,19 @@ def main():
                     print(f"[{name}] {stamp} unstick rc={rc} — escalation path below owns it", flush=True)
             # second line: void + fresh re-dispatch (rate-limit text included —
             # those notifications DO NOT APPLY per the operator).
-            if (st in ("queued-capacity", "rate-limited") and stuck_since
-                    and time.time() - stuck_since > (
-                        STUCK_ASSAULT_WORKRICH if ln >= 15000 else STUCK_ASSAULT_AFTER)
-                    and stuck_assaults < STUCK_ASSAULT_MAX):
+            _thresh = (QUEUED_STATIC_AFTER if st == "queued" else
+                       (STUCK_ASSAULT_WORKRICH if ln >= 15000 else STUCK_ASSAULT_AFTER))
+            if (st in ("queued-capacity", "rate-limited", "queued") and stuck_since
+                    and time.time() - stuck_since > _thresh
+                    and stuck_assaults < STUCK_ASSAULT_MAX and not hold_active(name)):
                 stuck_assaults += 1
                 stuck_since = 0
-                thresh = STUCK_ASSAULT_WORKRICH if ln >= 15000 else STUCK_ASSAULT_AFTER
-                print(f"[{name}] {stamp} STUCK {thresh}s in queued-capacity (chars={ln}) — "
+                print(f"[{name}] {stamp} STUCK {_thresh}s in {st} (chars={ln}) — "
                       f"assault #{stuck_assaults}/{STUCK_ASSAULT_MAX} (fresh dispatch beats a zombie session)",
                       flush=True)
                 run_with_hb(name, [sys.executable, os.path.join(BASE, "dispatch_worker.py"),
                                  "void", name,
-                                 f"stuck in queued-capacity {STUCK_ASSAULT_AFTER}s with zero progress; "
+                                 f"stuck in {st} {_thresh}s with zero progress; "
                                  f"staleness assault #{stuck_assaults}"])
                 _pf = _prompt_file_for(name)
                 if not _pf:

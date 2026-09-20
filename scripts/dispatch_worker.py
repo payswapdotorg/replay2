@@ -622,11 +622,27 @@ def _select_insert_send(c, tab, prompt, name, prompt_file):
             print(f"ERROR: could not open model menu ({res})")
             return False, None, 0, c
         time.sleep(1.5)
-        ok, _ = _wait(c, JS_CLICK_MODEL, "ok", tries=6, sleep=1.5, desc="model-option")
+        # 2026-09-20 fix (lead): cold fresh tabs need the SPA to hydrate + the
+        # model list to fetch before the menu renders; 6x1.5s=9s was too
+        # tight (the 10:5x-11:1x "option not found" storm). 15x2s=30s. If
+        # the platform hides GLM-5.3 under capacity pressure, the assault
+        # rounds keep retrying the WHOLE selection — never settle for Flash.
+        ok, _ = _wait(c, JS_CLICK_MODEL, "ok", tries=15, sleep=2.0, desc="model-option")
         if not ok:
             print("ERROR: GLM-5.3 option not found in the model menu")
             return False, None, 0, c
         time.sleep(1.0)
+        # 2026-09-20 fix (lead): the model-item click mutates the composer
+        # state and can reset the DevTools socket (Chrome 151); verify on a
+        # FRESH connection so a dead socket never poisons the check.
+        try:
+            c.close()
+        except Exception:
+            pass
+        try:
+            c = _reconnect(tab["id"])
+        except Exception:
+            return False, None, 0, c
         ok, cur = _wait(c, JS_MODEL_TEXT, WANT_MODEL, tries=10, sleep=1.0, desc="model-set")
         if not ok:
             print(f"ERROR: model still '{cur}' (wanted {WANT_MODEL})")
@@ -787,14 +803,27 @@ def create(name, prompt_file):
     _close_stale_tab(name)
 
     print(f"[1/7] new tab -> {CHAT_URL}")
-    tab = channel.new_tab()
+    # 2026-09-20 fix (lead): Chrome 151 ignores /json/new's url param — a
+    # bare new_tab() returns an about:blank target with NO renderer; the
+    # subsequent Page.navigate spawns the renderer, which RESETS the DevTools
+    # socket mid-shell-wait (the "err:socket is already closed" storm). Pass
+    # the URL so new_tab's temp-CDP navigation spawns the renderer FIRST.
+    tab = channel.new_tab(CHAT_URL)
     if not tab:
         print("ERROR: could not create tab")
         return 1
     print(f"      tab {tab['id'][:8]}")
     c = channel.CDP(tab["webSocketDebuggerUrl"], timeout=30)
     try:
-        c.call("Page.navigate", {"url": CHAT_URL}, timeout=30)
+        # 2026-09-20 fix (lead): new_tab(CHAT_URL) already navigated and
+        # waited for stability — re-navigating re-opens the renderer-swap
+        # socket-reset window. Navigate ONLY if the tab is not on CHAT_URL.
+        try:
+            _cur = c.eval("location.href", timeout=10) or ""
+        except Exception:
+            _cur = ""
+        if _cur.rstrip("/") != CHAT_URL.rstrip("/"):
+            c.call("Page.navigate", {"url": CHAT_URL}, timeout=30)
         ok, url, pct = False, CHAT_URL, 0
         for assault_round in range(CAPACITY_ROUNDS + 1):
             if assault_round:
@@ -811,16 +840,23 @@ def create(name, prompt_file):
                 try:
                     c = _reconnect(tab["id"])
                 except Exception:
-                    tab = channel.new_tab() or tab
+                    tab = channel.new_tab(CHAT_URL) or tab
                     c = channel.CDP(tab["webSocketDebuggerUrl"], timeout=30)
+                # 2026-09-20 fix (lead): navigate only when the rolled-back
+                # tab actually left CHAT_URL (a same-URL reload re-opens the
+                # renderer-swap socket-reset window).
                 try:
-                    c.call("Page.navigate", {"url": CHAT_URL}, timeout=30)
+                    _cur = c.eval("location.href", timeout=10) or ""
                 except Exception:
-                    # reconnect landed on a dead ws — force a brand-new tab
-                    # (2026-09-12: this call killed 4 consecutive creates)
-                    tab = channel.new_tab() or tab
-                    c = channel.CDP(tab["webSocketDebuggerUrl"], timeout=30)
-                    c.call("Page.navigate", {"url": CHAT_URL}, timeout=30)
+                    _cur = ""
+                if _cur.rstrip("/") != CHAT_URL.rstrip("/"):
+                    try:
+                        c.call("Page.navigate", {"url": CHAT_URL}, timeout=30)
+                    except Exception:
+                        # reconnect landed on a dead ws — force a brand-new tab
+                        # (2026-09-12: this call killed 4 consecutive creates)
+                        tab = channel.new_tab(CHAT_URL) or tab
+                        c = channel.CDP(tab["webSocketDebuggerUrl"], timeout=30)
                 print(f"[assault {assault_round}/{CAPACITY_ROUNDS}] popup cancelled — "
                       f"re-picking selections and re-sending")
 
@@ -887,8 +923,42 @@ def create(name, prompt_file):
                     try:
                         c = _reconnect(tab["id"])
                     except Exception:
-                        tab = channel.new_tab() or tab
+                        tab = channel.new_tab(CHAT_URL) or tab
                         c = channel.CDP(tab["webSocketDebuggerUrl"], timeout=30)
+                    # 2026-09-20 fix (lead): the composer's React state
+                    # survives the socket reset — if the staged prompt is
+                    # still there, press Enter and verify IN PLACE instead of
+                    # escalating to a full re-pick round (the model menu is
+                    # flaky under load; the re-pick loses ~half the time).
+                    try:
+                        _staged = _eval(c,
+                            "(() => { const i = document.querySelector('#chat-input, textarea');"
+                            " if (!i) return '-1';"
+                            " const v = (i.value !== undefined) ? i.value : (i.textContent || '');"
+                            " return String(v.length); })()",
+                            timeout=12)
+                        if _staged.isdigit() and int(_staged) >= int(len(prompt) * 0.9):
+                            print(f"      [staged-resume] composer holds {len(prompt)} chars — Enter")
+                            _eval(c, JS_FOCUS_COMPOSER, timeout=15)
+                            time.sleep(0.2)
+                            for _typ in ("keyDown", "keyUp"):
+                                c.call("Input.dispatchKeyEvent", {
+                                    "type": _typ, "key": "Enter", "code": "Enter",
+                                    "windowsVirtualKeyCode": 13, "nativeVirtualKeyCode": 13})
+                            time.sleep(4)
+                            try:
+                                c.close()
+                            except Exception:
+                                pass
+                            c = _reconnect(tab["id"])
+                            _url_now = _eval(c, "location.href", timeout=12) or ""
+                            if "/c/" in _url_now:
+                                print(f"      [staged-resume] LANDED: {_url_now[:70]}")
+                                ok, url, pct = True, _url_now, 100
+                                break
+                            print("      [staged-resume] Enter did not land — falling back to assault round")
+                    except Exception as _se:
+                        print(f"      [staged-resume] check failed ({type(_se).__name__}) — assault round")
                     time.sleep(5)
                     continue
 
@@ -1526,7 +1596,7 @@ def sandboxes(session_substr=None):
         return 1
     tab = _tab_for(s)
     if not tab:
-        tab = channel.new_tab()
+        tab = channel.new_tab((s.get("url") or CHAT_URL))
         c = channel.CDP(tab["webSocketDebuggerUrl"], timeout=30)
         try:
             c.call("Page.navigate", {"url": s["url"]}, timeout=30)
