@@ -1,0 +1,43 @@
+commit: e6cb78bca91d9c88688717ffb687f3f364b502d0
+base: 7d21d47147a3df14a0e6138131de6d9add672d27
+
+ apps/web/package.json                              |   5 +-
+ apps/web/src/app.ts                                |  41 +
+ apps/web/src/app/adapter-binding.ts                | 102 +++
+ apps/web/src/app/adapter-profile.ts                |  99 +++
+ apps/web/src/app/api.ts                            | 138 +++-
+ apps/web/src/app/conformance.test.tsx              | 360 +++++++++
+ apps/web/src/app/contract-objects.tsx              | 317 ++++++++
+ apps/web/src/app/create-forms.ts                   | 189 +++++
+ apps/web/src/app/evidence-picker.ts                |  34 +
+ apps/web/src/app/golden-journey.test.tsx           | 630 +++++++++++++++
+ apps/web/src/app/outcome-forms.ts                  |  79 ++
+ apps/web/src/app/surfaces/BoqLens.tsx              |   2 +
+ apps/web/src/app/surfaces/Dashboard.tsx            |  24 +-
+ apps/web/src/app/surfaces/EngineeringCase.tsx      |   2 +
+ apps/web/src/app/surfaces/InterventionStudio.tsx   |   2 +
+ apps/web/src/app/surfaces/ProjectOverview.tsx      |   2 +
+ apps/web/src/app/surfaces/SiteTwin.tsx             |   2 +
+ apps/web/src/app/task-contract.test.ts             | 236 ++++++
+ apps/web/src/app/task-contract.ts                  | 505 ++++++++++++
+ apps/web/src/app/task-dataset.ts                   | 301 +++++++
+ apps/web/src/app/task-first.test.tsx               | 181 +++++
+ apps/web/src/app/task-first.tsx                    | 872 +++++++++++++++++++++
+ apps/web/src/app/task-flow.test.ts                 | 188 +++++
+ apps/web/src/app/task-flow.ts                      | 418 ++++++++++
+ apps/web/src/app/task-intents.test.ts              | 259 ++++++
+ apps/web/src/styles/app.css                        |  73 ++
+ .../PROD-017/browser-task-trace.md                 | 153 ++++
+ .../PROD-017/conformance-report.md                 |  96 +++
+ .../PROD-017/render-trace/README.md                |  39 +
+ .../PROD-017/render-trace/landing-authorization.md |   9 +
+ .../PROD-017/render-trace/landing-full-panel.md    |   9 +
+ .../PROD-017/render-trace/landing-journey.md       |   9 +
+ .../PROD-017/render-trace/landing-negotiation.md   |   9 +
+ .../render-trace/landing-next-best-action.md       |   9 +
+ .../PROD-017/render-trace/operation-failed.md      |   9 +
+ .../PROD-017/render-trace/operation-succeeded.md   |   9 +
+ .../PROD-017/render-trace/strip-blocked.md         |   9 +
+ .../PROD-017/render-trace/strip-empty.md           |   9 +
+ .../PROD-017/render-trace/strip-no-action.md       |   9 +
+ 39 files changed, 5431 insertions(+), 8 deletions(-)

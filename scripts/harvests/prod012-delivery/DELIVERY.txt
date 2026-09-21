@@ -1,0 +1,12 @@
+commit: ef0a1e39922d512c6e9136ec03588ab3f6ee5c97
+
+ bun.lock                                           |  14 +-
+ .../PROD-012/run-2026-09-20.txt                    | 133 +++
+ package.json                                       |   2 +
+ tools/deployed-check.ts                            | 207 +++++
+ tools/deployed/browser.ts                          |  95 ++
+ tools/deployed/checks.ts                           | 974 +++++++++++++++++++++
+ tools/deployed/config.ts                           | 102 +++
+ tools/deployed/console-guard.ts                    | 251 ++++++
+ tools/deployed/verdict.ts                          |  83 ++
+ 9 files changed, 1860 insertions(+), 1 deletion(-)
