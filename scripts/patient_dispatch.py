@@ -58,7 +58,12 @@ def main():
     prompt = open(prompt_file, encoding="utf-8").read()
 
     # pick or open a chat.z.ai tab (reuse existing — fewer tabs, less load)
+    # PATIENT_TAB env: pin the dispatch to a specific tab id prefix (keeps
+    # other worker-chat tabs untouched — 2026-09-21 concurrent-wave usage).
     tabs = [t for t in channel.list_tabs() if "chat.z.ai" in (t.get("url") or "")]
+    pin = os.environ.get("PATIENT_TAB", "").strip()
+    if pin:
+        tabs = [t for t in tabs if (t.get("id") or "").upper().startswith(pin.upper())] or tabs
     if tabs:
         tab = tabs[0]
         c = reconnect(tab["id"])

@@ -70,6 +70,7 @@ def main() -> int:
         "alive": True,
         "title": (chat.get("chat") or chat).get("title") or chat.get("title"),
         "updated": (chat.get("chat") or chat).get("updated_at") or chat.get("updated_at"),
+        "models": (chat.get("chat") or chat).get("models") or chat.get("models") or [],
         "history_msgs": len(by_ts),
         "batch": {"checked": False, "msgs": 0},
         "messages": [],
