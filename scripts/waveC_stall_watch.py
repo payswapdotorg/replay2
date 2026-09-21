@@ -31,6 +31,7 @@ CANARY = "3b8cebf6-7740-4971-9159-cd99ef795e08"
 WORKERS = {
     "prod025": "adbb8683-463c-42be-bd26-a24381776c60",
     "prod024": "a33b7555-e27b-411c-bdab-6f751d487ced",
+    "prod012r": "88db200c-6169-4ce4-93d9-9cbcaaca6360",
 }
 
 
