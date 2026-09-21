@@ -181,19 +181,33 @@ def main():
         print(__doc__)
         return 2
     log("daemon", f"wave={ [n for n, _ in jobs] } every={every}s watch={watch}s rounds={rounds_max}")
-    failed = []
-    for name, prompt_file in jobs:
-        prompt_chars = len(open(prompt_file, encoding="utf-8").read())
-        done = False
-        for rnd in range(1, rounds_max + 1):
+    # ROTATION MODE (2026-09-21 lesson: a name must never starve during a long
+    # capacity outage — serial per-name exhaustion would skip later names once
+    # earlier ones burn their rounds). One round per name per turn; a name that
+    # hits generating leaves the rotation; a name that exhausts its per-name
+    # budget goes to the back with its counter reset ONLY if other names still
+    # progress (the daemon never exits while wave members remain). 
+    state = {n: {"pf": pf, "rounds": 0, "done": False} for n, pf in jobs}
+    while True:
+        pending = [n for n in state if not state[n]["done"]]
+        if not pending:
+            break
+        progressed_any = False
+        for name in pending:
+            s = state[name]
+            prompt_file = s["pf"]
+            prompt_chars = len(open(prompt_file, encoding="utf-8").read())
+            s["rounds"] += 1
+            rnd = s["rounds"]
             # 1. adopt a live earlier chat if it ever fires
             rec = last_record(name)
             if rec and rec.get("url"):
                 cid = rec["url"].split("/c/")[-1]
                 if chat_generating(cid, samples=1):
                     log(name, f"ADOPTED earlier chat {cid[:8]} (now generating)")
-                    done = True
-                    break
+                    s["done"] = True
+                    progressed_any = True
+                    continue
             # 2. fresh dispatch
             url = run_dispatch(name, prompt_file)
             if not url:
@@ -233,18 +247,20 @@ def main():
                     register(name, url, (tab or {}).get("id", "unknown-tab"),
                              prompt_file, prompt_chars)
                     log(name, f"GENERATING in {cid[:8]} — registered + marker written")
-                    done = True
-                    break
+                    s["done"] = True
+                    progressed_any = True
+                    continue
                 log(name, "growth unconfirmed — continuing to watch this round")
             else:
                 log(name, f"round {rnd}: blocked (capacity gate) — cadence sleep {every}s")
                 time.sleep(every)
-        if not done:
-            log(name, f"EXHAUSTED {rounds_max} rounds — surfacing to lead")
-            failed.append(name)
-    if failed:
-        log("daemon", f"FAILED names: {failed}")
-        return 3
+            # per-name budget: surface + demote (rotation keeps it alive only
+            # while others progress — the daemon cannot spin on one name alone)
+            if s["rounds"] >= rounds_max and not progressed_any:
+                log(name, f"budget exhausted ({rounds_max} rounds, no wave progress) — "
+                          f"surfacing to lead; name stays pending for adoption")
+                time.sleep(max(every, 300))
+                s["rounds"] = 0  # reset: rotation continues (never starves)
     log("daemon", "whole wave generating")
     return 0
 

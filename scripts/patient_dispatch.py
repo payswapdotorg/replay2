@@ -205,8 +205,20 @@ def main():
         return 1
     print(f"      insert verified ({pct}%)")
 
-    # 7. send — Enter then arrow-up fallback
-    print("[7/7] sending ...")
+    # 7. send — form.requestSubmit (SUBMIT_JS) PRIMARY, Enter + button fallbacks.
+    # 2026-09-21 12:5x: the site's new build silently ignores synthetic Enter
+    # keypresses AND coordinate clicks on the send button from the New Task
+    # surface (composer keeps its text, no chat is created, no popup). The
+    # DOM-level form.requestSubmit() is the only proven path (verified live:
+    # composer cleared + /c/<id> navigation). Fallbacks kept for older builds.
+    print("[7/7] sending (form.requestSubmit primary) ...")
+
+    def _cleared_len(conn):
+        return ev(conn, r"""(() => {
+          const i = document.querySelector('#chat-input');
+          return i ? String((i.value||'').length) : 'gone';
+        })()""")
+
     try:
         fp = json.loads(ev(c, DW.JS_COMPOSER) or '{"x":0,"y":0}')
         c.call("Input.dispatchMouseEvent", {"type": "mousePressed", "x": fp["x"], "y": fp["y"],
@@ -216,36 +228,57 @@ def main():
         time.sleep(0.5)
     except Exception:
         pass
-    ev(c, DW.JS_FOCUS_COMPOSER)
-    for typ in ("keyDown", "keyUp"):
-        c.call("Input.dispatchKeyEvent", {"type": typ, "key": "Enter", "code": "Enter",
-                                          "windowsVirtualKeyCode": 13, "nativeVirtualKeyCode": 13})
+    send_report = []
+    try:
+        r = ev(c, channel.SUBMIT_JS)
+        send_report.append(f"submit-js:{r}")
+    except Exception as e:
+        send_report.append(f"submit-js-err:{str(e)[:40]}")
     time.sleep(5)
     try:
         c.close()
     except Exception:
         pass
     c = reconnect(tab["id"])
-    cleared = ev(c, r"""(() => {
-          const i = document.querySelector('#chat-input');
-          return i ? String((i.value||'').length) : 'gone';
-        })()""")
+    cleared = _cleared_len(c)
     if cleared not in ("0", "gone"):
-        # arrow-up send button fallback
-        sb = ev(c, DW.JS_SEND_BUTTON)
-        if sb:
-            spt = json.loads(sb)
-            if not spt.get("disabled"):
-                c.call("Input.dispatchMouseEvent", {"type": "mousePressed", "x": spt["x"], "y": spt["y"],
-                                                    "button": "left", "clickCount": 1})
-                c.call("Input.dispatchMouseEvent", {"type": "mouseReleased", "x": spt["x"], "y": spt["y"],
-                                                    "button": "left", "clickCount": 1})
-                time.sleep(5)
-                try:
-                    c.close()
-                except Exception:
-                    pass
-                c = reconnect(tab["id"])
+        # fallback 1: synthetic Enter (legacy build path)
+        try:
+            ev(c, DW.JS_FOCUS_COMPOSER)
+            for typ in ("keyDown", "keyUp"):
+                c.call("Input.dispatchKeyEvent", {"type": typ, "key": "Enter", "code": "Enter",
+                                                  "windowsVirtualKeyCode": 13, "nativeVirtualKeyCode": 13})
+            send_report.append("enter-key")
+            time.sleep(5)
+            try:
+                c.close()
+            except Exception:
+                pass
+            c = reconnect(tab["id"])
+            cleared = _cleared_len(c)
+        except Exception as e:
+            send_report.append(f"enter-err:{str(e)[:40]}")
+    if cleared not in ("0", "gone"):
+        # fallback 2: send-button coordinate click
+        try:
+            sb = ev(c, DW.JS_SEND_BUTTON)
+            if sb:
+                spt = json.loads(sb)
+                if not spt.get("disabled"):
+                    c.call("Input.dispatchMouseEvent", {"type": "mousePressed", "x": spt["x"], "y": spt["y"],
+                                                        "button": "left", "clickCount": 1})
+                    c.call("Input.dispatchMouseEvent", {"type": "mouseReleased", "x": spt["x"], "y": spt["y"],
+                                                        "button": "left", "clickCount": 1})
+                    send_report.append("btn-click")
+                    time.sleep(5)
+                    try:
+                        c.close()
+                    except Exception:
+                        pass
+                    c = reconnect(tab["id"])
+        except Exception as e:
+            send_report.append(f"btn-err:{str(e)[:40]}")
+    print("      send paths: " + "; ".join(send_report) + f" | composer={_cleared_len(c)}")
     url = ev(c, "location.href")
     print(f"      post-send url: {url[:70]}")
 
