@@ -46,15 +46,15 @@ BEFORE writing anything.
 ```bash
 git clone https://github.com/payswapdotorg/AISE.git
 cd AISE
-git checkout __BASE_COMMIT__   # public GitHub main (adapter wave + PROD-022 + PROD-023 merged)
-git rev-parse HEAD   # must print __BASE_COMMIT__
+git checkout deb46cb29948f348079c803c1e81cb5831c62c8c   # public GitHub main (adapter wave + PROD-018 + 022 + 023 merged)
+git rev-parse HEAD   # must print deb46cb29948f348079c803c1e81cb5831c62c8c
 BASE=$(git rev-parse HEAD)   # record this — your delivery diff base
 bun install
 git checkout -b prod-024/solution-workspace
 bun run verify
 ```
 
-Baseline expectation: **__BASELINE__ pass / 0 fail, VERIFY: PASS** (includes
+Baseline expectation: **4323 pass / 0 fail, VERIFY: PASS** (includes
 the solution-engine suite and the reasoning-solution suite). If the baseline
 is red, STOP and report (do not try to fix the baseline).
 

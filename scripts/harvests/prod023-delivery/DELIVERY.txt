@@ -1,0 +1,25 @@
+commit: 8a27af850e016a456b12ea26a3fa4063389488a7
+base: 36acb217dcd5142ab920f0ad860068f457c5879e
+
+ backend/api/package.json                           |    1 +
+ .../src/reasoning/solution/clarification.test.ts   |  298 ++++
+ .../api/src/reasoning/solution/compiler.test.ts    |  571 +++++++
+ backend/api/src/reasoning/solution/compiler.ts     | 1571 ++++++++++++++++++++
+ backend/api/src/reasoning/solution/corpus.test.ts  |  229 +++
+ backend/api/src/reasoning/solution/corpus.ts       | 1024 +++++++++++++
+ backend/api/src/reasoning/solution/index.ts        |  190 +++
+ .../api/src/reasoning/solution/interaction.test.ts |  420 ++++++
+ backend/api/src/reasoning/solution/interaction.ts  |  351 +++++
+ backend/api/src/reasoning/solution/model.ts        |  526 +++++++
+ backend/api/src/reasoning/solution/quantities.ts   |  191 +++
+ backend/api/src/reasoning/solution/router.test.ts  |  171 +++
+ backend/api/src/reasoning/solution/router.ts       |  185 +++
+ backend/api/src/reasoning/solution/testkit.ts      |  212 +++
+ backend/api/src/reasoning/solution/tools.test.ts   |  391 +++++
+ backend/api/src/reasoning/solution/tools.ts        |  599 ++++++++
+ backend/api/src/reasoning/solution/vocabulary.ts   |  676 +++++++++
+ .../PROD-023/command-corpus.md                     |   97 ++
+ .../PROD-023/compiler-artifacts.md                 |  124 ++
+ .../PROD-023/equivalence-and-refusal.md            |   97 ++
+ .../productization-evidence/PROD-023/tool-trace.md |  133 ++
+ 21 files changed, 8057 insertions(+)

@@ -1,0 +1,44 @@
+commit: edc074911d4ef5a21c1cedf16117b268eb61af78
+base: 36acb217dcd5142ab920f0ad860068f457c5879e
+
+ backend/api/package.json                           |   2 +
+ backend/api/src/solution/index.ts                  |  37 +
+ backend/api/src/solution/model.test.ts             | 160 +++++
+ backend/api/src/solution/model.ts                  | 293 ++++++++
+ backend/api/src/solution/router.test.ts            | 444 ++++++++++++
+ backend/api/src/solution/router.ts                 | 229 ++++++
+ backend/api/src/solution/service.test.ts           | 344 +++++++++
+ backend/api/src/solution/service.ts                | 246 +++++++
+ .../PROD-022/determinism.md                        | 106 +++
+ .../PROD-022/engine-artifacts.md                   | 126 ++++
+ .../PROD-022/mutation-protection.md                | 105 +++
+ .../PROD-022/quantity-tests.md                     | 139 ++++
+ packages/solution-engine/README.md                 | 283 ++++++++
+ .../fixtures/baseline-geometry.json                |   6 +
+ .../fixtures/engine-quantity-expectations.json     | 222 ++++++
+ .../fixtures/wall-upgrade-expected.json            | 435 +++++++++++
+ packages/solution-engine/package.json              |  17 +
+ .../solution-engine/scripts/generate-golden.ts     | 204 ++++++
+ packages/solution-engine/src/apply.test.ts         | 800 +++++++++++++++++++++
+ packages/solution-engine/src/apply.ts              | 486 +++++++++++++
+ packages/solution-engine/src/baseline.ts           |  78 ++
+ packages/solution-engine/src/engine-version.ts     |  36 +
+ packages/solution-engine/src/errors.ts             |  78 ++
+ packages/solution-engine/src/fixtures.test.ts      | 171 +++++
+ packages/solution-engine/src/index.ts              | 149 ++++
+ packages/solution-engine/src/mutation.test.ts      | 343 +++++++++
+ packages/solution-engine/src/quantities.test.ts    | 253 +++++++
+ packages/solution-engine/src/quantities.ts         | 174 +++++
+ packages/solution-engine/src/quantity-models.ts    | 759 +++++++++++++++++++
+ packages/solution-engine/src/replay.test.ts        | 374 ++++++++++
+ packages/solution-engine/src/replay.ts             | 219 ++++++
+ packages/solution-engine/src/revise.test.ts        | 293 ++++++++
+ packages/solution-engine/src/revise.ts             | 290 ++++++++
+ packages/solution-engine/src/states.ts             | 154 ++++
+ packages/solution-engine/src/testkit.ts            | 180 +++++
+ packages/solution-engine/src/units.test.ts         | 147 ++++
+ packages/solution-engine/src/units.ts              | 238 ++++++
+ packages/solution-engine/src/validation.test.ts    | 299 ++++++++
+ packages/solution-engine/src/validation.ts         | 410 +++++++++++
+ packages/solution-engine/tsconfig.json             |   7 +
+ 40 files changed, 9336 insertions(+)

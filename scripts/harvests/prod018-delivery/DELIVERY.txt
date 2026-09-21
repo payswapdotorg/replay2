@@ -1,0 +1,35 @@
+commit: 4fdfd817c7b2ee15af6e14a7c77832fb0f2a4894
+base: 36acb217dcd5142ab920f0ad860068f457c5879e
+
+ apps/web/src/app/App.tsx                           |   9 +
+ apps/web/src/app/AppShell.tsx                      |   5 +
+ apps/web/src/app/components.tsx                    |   2 +-
+ apps/web/src/app/router.test.ts                    |  21 +
+ apps/web/src/app/router.ts                         |  20 +-
+ apps/web/src/app/surfaces/BoqLens.tsx              |  20 +-
+ apps/web/src/app/surfaces/EngineeringCase.tsx      |  12 +
+ apps/web/src/app/surfaces/Outcomes.tsx             | 689 +++++++++++++++++++++
+ apps/web/src/app/surfaces/ProjectOverview.tsx      |  15 +
+ apps/web/src/app/surfaces/SiteTwin.tsx             |  30 +-
+ apps/web/src/app/task-first.tsx                    |  11 +-
+ apps/web/src/parity/action-labels.ts               | 296 +++++++++
+ apps/web/src/parity/boundary-labels.ts             | 258 ++++++++
+ apps/web/src/parity/components.tsx                 | 610 ++++++++++++++++++
+ apps/web/src/parity/composition-model.test.ts      | 454 ++++++++++++++
+ apps/web/src/parity/composition.test.tsx           | 291 +++++++++
+ apps/web/src/parity/cross-links.ts                 | 446 +++++++++++++
+ apps/web/src/parity/golden-journey.test.tsx        | 500 +++++++++++++++
+ apps/web/src/parity/plan-reality.ts                | 281 +++++++++
+ apps/web/src/parity/task-composition.tsx           |  34 +
+ .../PROD-018/capability-matrix.md                  |  48 ++
+ .../PROD-018/competitive-simulation-rerun.md       | 303 +++++++++
+ .../PROD-018/equivalence-summary.md                |  98 +++
+ .../PROD-018/golden-journey.md                     | 123 ++++
+ tools/competitive-parity/README.md                 |  86 +++
+ tools/competitive-parity/adapters.ts               | 231 +++++++
+ tools/competitive-parity/corpus.ts                 | 226 +++++++
+ tools/competitive-parity/equivalence.test.ts       | 255 ++++++++
+ tools/competitive-parity/equivalence.ts            | 484 +++++++++++++++
+ .../fixtures/equivalence-report.json               |   1 +
+ tools/competitive-parity/report.ts                 |  45 ++
+ 31 files changed, 5896 insertions(+), 8 deletions(-)
