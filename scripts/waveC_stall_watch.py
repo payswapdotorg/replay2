@@ -72,7 +72,7 @@ def main():
             every = int(a.split("=", 1)[1])
         elif a.startswith("--max-hours="):
             max_h = int(a.split("=", 1)[1])
-    state = {"canary": "staged", "prod025": "staged", "prod024": "staged"}
+    state = {"canary": "staged", **{n: "staged" for n in WORKERS}}
     log(f"watching canary + {sorted(WORKERS)}; every={every}s max={max_h}h")
     t0 = time.time()
     while time.time() - t0 < max_h * 3600:
