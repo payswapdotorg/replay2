@@ -1,0 +1,36 @@
+commit: 0429c5132661f4056075f49755fa48330b8af1bc
+base: 7d21d47147a3df14a0e6138131de6d9add672d27
+
+ apps/android/README.md                             | 116 ++++-
+ .../kotlin/org/payswap/aise/app/AppContainer.kt    |  40 +-
+ .../aise/app/capture/CaptureSessionController.kt   |  24 +
+ .../payswap/aise/app/field/FieldJourneyRuntime.kt  | 250 ++++++++++
+ .../main/kotlin/org/payswap/aise/app/ui/AiseApp.kt |   7 +
+ .../payswap/aise/app/ui/screen/CaptureScreen.kt    | 261 +++++++++-
+ .../payswap/aise/app/ui/screen/CaptureViewModel.kt |   4 +-
+ .../aise/app/ui/screen/FieldJourneyViewModel.kt    | 112 +++++
+ .../aise/app/field/FieldJourneyRuntimeTest.kt      | 262 +++++++++++
+ .../aise/core/adapter/AdapterConformance.kt        | 286 +++++++++++
+ .../aise/core/adapter/AdapterContractVersion.kt    | 120 +++++
+ .../aise/core/adapter/AuthoritativeFields.kt       | 139 ++++++
+ .../aise/core/adapter/CapabilityNegotiation.kt     | 514 ++++++++++++++++++++
+ .../aise/core/adapter/ClientCapabilityProfile.kt   | 443 +++++++++++++++++
+ .../core/adapter/CompatibilityCheckerAlignment.kt  | 114 +++++
+ .../org/payswap/aise/core/adapter/FieldJourney.kt  | 464 ++++++++++++++++++
+ .../aise/core/adapter/MobileAdapterBinding.kt      |  98 ++++
+ .../aise/core/adapter/MobileFieldAdapterProfile.kt | 231 +++++++++
+ .../core/adapter/TaskCapabilityRequirements.kt     | 246 ++++++++++
+ .../payswap/aise/core/adapter/TaskIntentWire.kt    |  76 +++
+ .../core/adapter/AdapterContractVersionTest.kt     | 105 +++++
+ .../org/payswap/aise/core/adapter/AdapterCorpus.kt | 122 +++++
+ .../core/adapter/AdapterCorpusConformanceTest.kt   | 241 ++++++++++
+ .../core/adapter/AuthoritativeFieldsMirrorTest.kt  |  91 ++++
+ .../aise/core/adapter/CapabilityNegotiationTest.kt | 252 ++++++++++
+ .../core/adapter/ClientCapabilityProfileTest.kt    | 241 ++++++++++
+ .../adapter/CompatibilityCheckerAlignmentTest.kt   | 110 +++++
+ .../payswap/aise/core/adapter/FieldJourneyTest.kt  | 524 +++++++++++++++++++++
+ .../aise/core/adapter/TaskIntentWireTest.kt        |  75 +++
+ .../PROD-019/conformance-report.md                 | 150 ++++++
+ .../PROD-019/field-journey.md                      | 212 +++++++++
+ .../PROD-019/gradle-trace.md                       | 120 +++++
+ 32 files changed, 6031 insertions(+), 19 deletions(-)
