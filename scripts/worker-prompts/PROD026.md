@@ -44,15 +44,15 @@ BEFORE writing anything.
 ```bash
 git clone https://github.com/payswapdotorg/AISE.git
 cd AISE
-git checkout __BASE_COMMIT__   # public GitHub main (adapter wave + PROD-018 + 022 + 023 + 025 + 024 merged)
-git rev-parse HEAD   # must print __BASE_COMMIT__
+git checkout c7951e1c30e58d054a08bc2a164117347c47f1b8   # public GitHub main (adapter wave + PROD-018 + 022 + 023 + 025 + 024 merged)
+git rev-parse HEAD   # must print c7951e1c30e58d054a08bc2a164117347c47f1b8
 BASE=$(git rev-parse HEAD)   # record this — your delivery diff base
 bun install
 git checkout -b prod-026/e2e-composition
 bun run verify
 ```
 
-Baseline expectation: **__BASELINE__ pass / 0 fail, VERIFY: PASS** (includes
+Baseline expectation: **4503 pass / 0 fail, VERIFY: PASS** (includes
 the solution-engine, reasoning-solution, solution-boq and solution-workspace
 suites). If the baseline is red, STOP and report (do not try to fix the
 baseline).
@@ -178,7 +178,7 @@ equivalence + provenance audit.
 ## 5. Quality gates (run all; paste the exact summary lines)
 
 ```bash
-bun run verify        # EXPECT: (__BASELINE__ + N) pass / 0 fail, boundaries clean
+bun run verify        # EXPECT: (4503 + N) pass / 0 fail, boundaries clean
 bun run typecheck     # EXPECT: VERIFY: PASS
 bun run lint          # EXPECT: VERIFY: PASS
 ```
@@ -190,8 +190,10 @@ bun run lint          # EXPECT: VERIFY: PASS
 
 ## 6. Delivery
 
-Stage your complete delivery under `delivery/` in the workspace (the house
-convention — see AGENTS.md), including:
+Stage your complete delivery under `delivery/` in the PROJECT directory
+that the platform's files API serves — the directory containing package.json
+and src/ (the web-dev workspace root), NOT inside your AISE clone. The
+harvest API cannot see your clone. Including:
 
 ```text
 delivery/DELIVERY.txt          # git diffstat vs BASE + commit sha + file list
@@ -203,7 +205,7 @@ delivery/docs/productization-evidence/PROD-026/*.md
 
 ```text
 commit: <your 40-hex commit sha>
-base: __BASE_COMMIT__
+base: c7951e1c30e58d054a08bc2a164117347c47f1b8
 
  <diffstat>
 ```
