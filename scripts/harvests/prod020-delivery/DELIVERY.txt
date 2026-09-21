@@ -1,0 +1,36 @@
+commit: 14d4d10d039042c963f1da6dc284da7ea04891a2
+base: 0bbcb1fb11765ea5fcd9db7198210b7dd5975363
+
+ apps/desktop/README.md                             | 166 ++++++++
+ apps/desktop/package.json                          |  24 ++
+ apps/desktop/scripts/build.ts                      |  51 +++
+ apps/desktop/src/adapter/binding.ts                | 105 +++++
+ apps/desktop/src/adapter/client.test.ts            | 466 ++++++++++++++++++++
+ apps/desktop/src/adapter/client.ts                 | 441 +++++++++++++++++++
+ apps/desktop/src/adapter/conformance.test.ts       | 429 +++++++++++++++++++
+ apps/desktop/src/adapter/convenience-store.test.ts | 225 ++++++++++
+ apps/desktop/src/adapter/convenience-store.ts      | 271 ++++++++++++
+ apps/desktop/src/adapter/corpus-world.test.ts      |  95 +++++
+ apps/desktop/src/adapter/corpus-world.ts           | 267 ++++++++++++
+ apps/desktop/src/adapter/index.ts                  | 118 ++++++
+ .../desktop/src/adapter/local-integrations.test.ts | 145 +++++++
+ apps/desktop/src/adapter/local-integrations.ts     | 205 +++++++++
+ apps/desktop/src/adapter/profile.test.ts           | 160 +++++++
+ apps/desktop/src/adapter/profile.ts                | 121 ++++++
+ apps/desktop/src/adapter/render-registry.ts        | 243 +++++++++++
+ apps/desktop/src/adapter/review-layout.test.ts     | 234 +++++++++++
+ apps/desktop/src/adapter/review-layout.ts          | 402 ++++++++++++++++++
+ apps/desktop/src/adapter/seam.test.ts              | 348 +++++++++++++++
+ apps/desktop/src/adapter/seam.ts                   | 468 +++++++++++++++++++++
+ apps/desktop/src/adapter/shortcuts.test.ts         | 148 +++++++
+ apps/desktop/src/adapter/shortcuts.ts              | 258 ++++++++++++
+ apps/desktop/src/journey/desktop-journey.test.ts   | 372 ++++++++++++++++
+ apps/desktop/src/shell/main.ts                     | 277 ++++++++++++
+ apps/desktop/src/shell/policy.test.ts              | 278 ++++++++++++
+ apps/desktop/src/shell/policy.ts                   | 368 ++++++++++++++++
+ apps/desktop/tsconfig.json                         |   7 +
+ .../PROD-020/build-run-transcript.md               |  77 ++++
+ .../PROD-020/conformance-report.md                 | 102 +++++
+ .../PROD-020/desktop-smoke-trace.md                | 143 +++++++
+ .../PROD-020/supported-platforms.md                |  71 ++++
+ 32 files changed, 7085 insertions(+)
