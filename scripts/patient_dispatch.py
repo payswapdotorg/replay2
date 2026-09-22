@@ -35,13 +35,33 @@ def ev(c, js, timeout=EVAL_T):
     return DW._eval(c, js, timeout=timeout)
 
 
+_CUR = None  # the single live CDP connection for this dispatch process
+
+
 def reconnect(tab_id):
+    """2026-09-22 leak fix: keep ONE live connection per dispatch process —
+    the previous connection is closed before a new one is adopted (the old
+    code abandoned one per call; ~20 accumulated per grinding attempt and
+    wedged every other CDP client on the box)."""
+    global _CUR
     for _ in range(5):
+        c = None
         try:
             c = DW._reconnect(tab_id)
             ev(c, "1", timeout=15)
+            old, _CUR = _CUR, c
+            if old is not None:
+                try:
+                    old.close()
+                except Exception:
+                    pass
             return c
         except Exception:
+            if c is not None:
+                try:
+                    c.close()
+                except Exception:
+                    pass
             time.sleep(4)
     raise RuntimeError("reconnect failed")
 

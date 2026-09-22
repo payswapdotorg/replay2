@@ -35,6 +35,8 @@ MARKERS = {
     # against packet-template echoes: hex40 in window + no placeholder).
     "prod030": ["PROD-030 COMPLETION REPORT", "PROD-030 完成报告"],
     "prod031": ["PROD-031 COMPLETION REPORT", "PROD-031 完成报告", "WORKER_COMMIT"],
+    "hfx204": ["HFX-204 COMPLETION REPORT", "HFX-204 完成报告", "WORKER_COMMIT"],
+    "hfx301": ["HFX-301 COMPLETION REPORT", "HFX-301 完成报告", "WORKER_COMMIT"],
 }
 
 

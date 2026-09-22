@@ -551,18 +551,36 @@ def _eval(c, js, timeout=20):
 
 
 def _reconnect(tab_id, tries=8, sleep=1.5):
-    """Re-open a CDP connection to a tab (after a send-triggered navigation)."""
+    """Re-open a CDP connection to a tab (after a send-triggered navigation).
+
+    2026-09-22 leak fix: a failed smoke-eval used to ABANDON the just-opened
+    connection (no close on the exception path) — one grinding dispatch
+    accumulated ~20 live websockets and strangled Chrome's DevTools for
+    every other daemon (the both-tabs-wedged incident, pass 17). Failed
+    connections are now closed before each retry.
+    """
     last = None
     for _ in range(tries):
         try:
             for t in channel.list_tabs():
                 if t["id"] == tab_id:
+                    if last is not None:
+                        try:
+                            last.close()
+                        except Exception:
+                            pass
+                        last = None
                     last = channel.CDP(t["webSocketDebuggerUrl"], timeout=30)
                     # smoke test: the page responds
                     last.eval("1", timeout=15)
                     return last
         except Exception:
-            pass
+            if last is not None:
+                try:
+                    last.close()
+                except Exception:
+                    pass
+                last = None
         time.sleep(sleep)
     if last is None:
         raise RuntimeError(f"tab {tab_id[:8]} unreachable after send")

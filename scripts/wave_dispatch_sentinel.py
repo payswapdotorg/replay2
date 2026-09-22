@@ -33,6 +33,7 @@ import re
 import subprocess
 import sys
 import time
+import urllib.request
 
 BASE = os.path.dirname(os.path.abspath(__file__))
 sys.path.insert(0, BASE)
@@ -141,6 +142,65 @@ def dom_state(chat_url):
         return None
 
 
+def tab_hygiene():
+    """2026-09-22 doctrine (the recurring tab-wedge): tabs left sitting on
+    /c/<chat> pages after failed sends accumulate hung generation streams
+    until the renderer dies (CDP connection timeouts). Every round starts
+    from a HEALTHY pin: navigate the pinned tab to the light home page; if
+    the renderer is already dead, close it and mint a fresh tab, updating
+    the PATIENT_TAB pin in THIS process's environment (children inherit it
+    at fork time). Returns a short status string for the log."""
+    pin = (os.environ.get("PATIENT_TAB") or "").strip()
+    home = "https://chat.z.ai/"
+    try:
+        tabs = [t for t in channel.list_tabs() if "chat.z.ai" in (t.get("url") or "")]
+    except Exception as e:
+        return f"tab list failed ({str(e)[:40]})"
+    tab = None
+    if pin:
+        tab = next((t for t in tabs if (t.get("id") or "").upper().startswith(pin.upper())), None)
+    if tab is not None:
+        url = tab.get("url") or ""
+        if "/c/" not in url:
+            return "pin already light"  # home page: nothing to do
+        # on a chat page: navigate home (best-effort)
+        try:
+            c = channel.CDP(tab["webSocketDebuggerUrl"], timeout=12)
+            try:
+                c.call("Page.navigate", {"url": home}, timeout=12)
+            finally:
+                c.close()
+            return "navigated pin home"
+        except Exception:
+            pass  # renderer dead — fall through to replacement
+        # close the dead tab
+        try:
+            urllib.request.urlopen(
+                "http://localhost:9222/json/close/" + tab["id"], timeout=8).read()
+        except Exception:
+            pass
+    # mint a fresh pinned tab
+    try:
+        r = urllib.request.urlopen(
+            urllib.request.Request("http://localhost:9222/json/new", method="PUT"),
+            timeout=12)
+        t = json.loads(r.read().decode())
+        new_id = t.get("id", "")
+        time.sleep(1.5)
+        for tb in channel.list_tabs():
+            if tb.get("id") == new_id:
+                c = channel.CDP(tb["webSocketDebuggerUrl"], timeout=15)
+                try:
+                    c.call("Page.navigate", {"url": home}, timeout=15)
+                finally:
+                    c.close()
+                break
+        os.environ["PATIENT_TAB"] = new_id
+        return f"fresh pin {new_id[:8]}"
+    except Exception as e:
+        return f"fresh-tab failed ({str(e)[:40]})"
+
+
 def run_dispatch(name, prompt_file):
     """One patient_dispatch attempt; returns the post-send chat url or None."""
     env = dict(os.environ)
@@ -199,6 +259,10 @@ def main():
             prompt_chars = len(open(prompt_file, encoding="utf-8").read())
             s["rounds"] += 1
             rnd = s["rounds"]
+            # 0. tab hygiene (2026-09-22 doctrine): every round starts from a
+            #    light, responsive pinned tab — never a chat page left over
+            #    from a failed send (hung streams wedge renderers).
+            log(name, f"tab hygiene: {tab_hygiene()}")
             # 1. adopt a live earlier chat if it ever fires
             rec = last_record(name)
             if rec and rec.get("url"):
