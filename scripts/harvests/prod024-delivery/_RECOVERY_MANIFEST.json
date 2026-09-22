@@ -1,0 +1,196 @@
+{
+ "files": [
+  {
+   "path": "AISE/DELIVERY.txt",
+   "chars": 1671,
+   "source": "write"
+  },
+  {
+   "path": "AISE/apps/web/src/solution/SolutionWorkspace.tsx",
+   "chars": 17281,
+   "source": "write"
+  },
+  {
+   "path": "AISE/apps/web/src/solution/agent/AgentPanel.tsx",
+   "chars": 6852,
+   "source": "write"
+  },
+  {
+   "path": "AISE/apps/web/src/solution/agent/port.test.ts",
+   "chars": 9440,
+   "source": "write"
+  },
+  {
+   "path": "AISE/apps/web/src/solution/agent/port.ts",
+   "chars": 22585,
+   "source": "write"
+  },
+  {
+   "path": "AISE/apps/web/src/solution/boq.ts",
+   "chars": 6189,
+   "source": "write"
+  },
+  {
+   "path": "AISE/apps/web/src/solution/fallback/AccessibleScenePane.tsx",
+   "chars": 3539,
+   "source": "write"
+  },
+  {
+   "path": "AISE/apps/web/src/solution/fallback/fallback.test.tsx",
+   "chars": 15977,
+   "source": "write"
+  },
+  {
+   "path": "AISE/apps/web/src/solution/fixtures.ts",
+   "chars": 6261,
+   "source": "write"
+  },
+  {
+   "path": "AISE/apps/web/src/solution/index.ts",
+   "chars": 3160,
+   "source": "write"
+  },
+  {
+   "path": "AISE/apps/web/src/solution/model.test.ts",
+   "chars": 6863,
+   "source": "write"
+  },
+  {
+   "path": "AISE/apps/web/src/solution/model.ts",
+   "chars": 13835,
+   "source": "write"
+  },
+  {
+   "path": "AISE/apps/web/src/solution/operations.test.ts",
+   "chars": 9280,
+   "source": "write"
+  },
+  {
+   "path": "AISE/apps/web/src/solution/operations.ts",
+   "chars": 39990,
+   "source": "write"
+  },
+  {
+   "path": "AISE/apps/web/src/solution/panes/BoqPane.tsx",
+   "chars": 5529,
+   "source": "write"
+  },
+  {
+   "path": "AISE/apps/web/src/solution/panes/DetailInspectorPane.tsx",
+   "chars": 6769,
+   "source": "write"
+  },
+  {
+   "path": "AISE/apps/web/src/solution/panes/ManipulationControlsPane.tsx",
+   "chars": 6947,
+   "source": "write"
+  },
+  {
+   "path": "AISE/apps/web/src/solution/panes/NoticePane.tsx",
+   "chars": 2226,
+   "source": "write"
+  },
+  {
+   "path": "AISE/apps/web/src/solution/panes/OperationListPane.tsx",
+   "chars": 2860,
+   "source": "write"
+  },
+  {
+   "path": "AISE/apps/web/src/solution/panes/QuantitiesPane.tsx",
+   "chars": 2858,
+   "source": "write"
+  },
+  {
+   "path": "AISE/apps/web/src/solution/panes/TimelinePane.tsx",
+   "chars": 4179,
+   "source": "write"
+  },
+  {
+   "path": "AISE/apps/web/src/solution/panes/labels.ts",
+   "chars": 2941,
+   "source": "write"
+  },
+  {
+   "path": "AISE/apps/web/src/solution/service.test.ts",
+   "chars": 8094,
+   "source": "write"
+  },
+  {
+   "path": "AISE/apps/web/src/solution/service.ts",
+   "chars": 12177,
+   "source": "write"
+  },
+  {
+   "path": "AISE/apps/web/src/solution/styles.ts",
+   "chars": 5876,
+   "source": "write"
+  },
+  {
+   "path": "AISE/apps/web/src/solution/viewer/SceneView.tsx",
+   "chars": 4923,
+   "source": "write"
+  },
+  {
+   "path": "AISE/apps/web/src/solution/viewer/format.ts",
+   "chars": 3005,
+   "source": "write"
+  },
+  {
+   "path": "AISE/apps/web/src/solution/viewer/model.ts",
+   "chars": 13126,
+   "source": "write"
+  },
+  {
+   "path": "AISE/apps/web/src/solution/viewer/projection.ts",
+   "chars": 2461,
+   "source": "write"
+  },
+  {
+   "path": "AISE/apps/web/src/solution/viewer/svg.ts",
+   "chars": 8005,
+   "source": "write"
+  },
+  {
+   "path": "AISE/apps/web/src/solution/viewer/viewer.test.ts",
+   "chars": 13323,
+   "source": "write"
+  },
+  {
+   "path": "AISE/apps/web/src/solution/workspace.test.tsx",
+   "chars": 31834,
+   "source": "write"
+  },
+  {
+   "path": "AISE/docs/productization-evidence/PROD-024/accessibility-fallback-trace.md",
+   "chars": 4916,
+   "source": "write"
+  },
+  {
+   "path": "AISE/docs/productization-evidence/PROD-024/adapter-conformance.md",
+   "chars": 4377,
+   "source": "write"
+  },
+  {
+   "path": "AISE/docs/productization-evidence/PROD-024/interactive-solution-recording.md",
+   "chars": 8350,
+   "source": "write"
+  },
+  {
+   "path": "AISE/docs/productization-evidence/PROD-024/mutation-protection-evidence.md",
+   "chars": 4937,
+   "source": "write"
+  },
+  {
+   "path": "AISE/docs/productization-evidence/PROD-024/operation-trace.md",
+   "chars": 7509,
+   "source": "write"
+  }
+ ],
+ "repo_prefix": "/home/z/",
+ "counts": {
+  "write": 37,
+  "heredoc": 0,
+  "echo": 0,
+  "total": 37
+ }
+}

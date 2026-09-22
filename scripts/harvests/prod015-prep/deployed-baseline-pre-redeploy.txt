@@ -1,0 +1,9 @@
+BASELINE (pre-redeploy, 2026-09-22 ~04:4x UTC) — tools/deployed-check.ts vs https://aise-tan.vercel.app
+Deployed commit at baseline: eb953b2 (56 commits behind main at 7b90d70)
+Result: DEPLOYED: FAIL — exactly the two known PROD-012 FAILs (fixes merged in main via PROD-012-R, NOT yet deployed):
+  FAIL responsive-mobile — horizontal overflow scrollWidth 469 vs innerWidth 390 (the 79px overflow, budget +1)
+  FAIL accessibility — [serious] color-contrast 4 nodes (.journey-hint spans; WCAG 1.4.3, 3.64:1)
+  PASS availability / shell-renders / session-lifecycle / responsive-desktop / console-runtime-errors
+  Deferred (recorded in PROD-012-R state): landmark-main moderates (index.html main#app nesting, outside surface)
+Re-verification expectation after redeploy at final SHA F: both FAILs flip to PASS (CSS-only fixes in main).
+Instrument verified at Lead station: chromium-1208 preflight OK, full 7-check run ~5min.

@@ -1,0 +1,26 @@
+commit: 3fae25956b2b8ab6a531e0706de9029f8b2f48fa
+base: 0a9aa811aec973f121514e291a293644ec9e1dda
+
+ backend/api/src/reality-eval/golden.test.ts        |  214 +++
+ backend/api/src/reality-eval/harness.test.ts       |  676 +++++++
+ backend/api/src/reality-eval/harness.ts            | 1043 +++++++++++
+ backend/api/src/reality-eval/index.ts              |  118 ++
+ backend/api/src/reality-eval/model.test.ts         |  368 ++++
+ backend/api/src/reality-eval/model.ts              |  883 ++++++++++
+ backend/api/src/reality-eval/regenerate.ts         |   57 +
+ backend/api/src/reality-eval/router.test.ts        |  292 +++
+ backend/api/src/reality-eval/router.ts             |  236 +++
+ backend/api/src/reality-eval/service.test.ts       |  248 +++
+ backend/api/src/reality-eval/service.ts            |  425 +++++
+ backend/api/src/reality-eval/testkit.test.ts       |  387 ++++
+ backend/api/src/reality-eval/testkit.ts            | 1049 +++++++++++
+ .../PROD-027/evaluation-entry-point.md             |  160 ++
+ .../PROD-027/fixture-map.md                        |  104 ++
+ .../PROD-027/hardening-report.md                   |  195 +++
+ .../PROD-027/integration-notes.md                  |  173 ++
+ tools/reality-eval/README.md                       |  110 ++
+ tools/reality-eval/benchmark.test.ts               |  252 +++
+ tools/reality-eval/fixtures/expected-outcomes.json | 1850 ++++++++++++++++++++
+ tools/reality-eval/runner.ts                       |  578 ++++++
+ tools/reality-eval/scenario.json                   |  804 +++++++++
+ 22 files changed, 10222 insertions(+)

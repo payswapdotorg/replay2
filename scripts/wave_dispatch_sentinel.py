@@ -84,7 +84,7 @@ def probe_chat(chat_id):
         return False, 0, 0 and False or False, False
 
 
-def chat_generating(chat_id, samples=2, gap=25, min_chars=400):
+def chat_generating(chat_id, samples=2, gap=25, min_chars=2000):
     """True when the assistant turn is growing or already substantial,
     AND the chat runs the mandated glm-5.3 model."""
     ok1, c1, g1, m1 = probe_chat(chat_id)

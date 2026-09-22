@@ -1,0 +1,25 @@
+commit: 94cd833b419637361a44be784aa1d822d8c7961d
+base: 0a9aa811aec973f121514e291a293644ec9e1dda
+
+ backend/api/src/reasoning-eval/golden.test.ts      |   45 +
+ backend/api/src/reasoning-eval/harness.test.ts     |  569 ++++++
+ backend/api/src/reasoning-eval/harness.ts          |  917 ++++++++++
+ backend/api/src/reasoning-eval/index.ts            |  129 ++
+ backend/api/src/reasoning-eval/model.test.ts       |  298 ++++
+ backend/api/src/reasoning-eval/model.ts            | 1006 +++++++++++
+ backend/api/src/reasoning-eval/router.test.ts      |  238 +++
+ backend/api/src/reasoning-eval/router.ts           |  224 +++
+ backend/api/src/reasoning-eval/service.test.ts     |  167 ++
+ backend/api/src/reasoning-eval/service.ts          |  226 +++
+ backend/api/src/reasoning-eval/testkit.ts          | 1810 ++++++++++++++++++++
+ .../PROD-028/envelope-fixture-map.md               |   95 +
+ .../PROD-028/evaluation-entry-point.md             |  118 ++
+ .../PROD-028/failure-discrimination.md             |   95 +
+ .../PROD-028/hardening-report.md                   |  154 ++
+ .../PROD-028/integration-notes.md                  |  166 ++
+ tools/reasoning-eval/README.md                     |  101 ++
+ tools/reasoning-eval/benchmark.test.ts             |  185 ++
+ .../reasoning-eval/fixtures/expected-outcomes.json |  729 ++++++++
+ tools/reasoning-eval/runner.ts                     |  548 ++++++
+ tools/reasoning-eval/scenario.json                 | 1392 +++++++++++++++
+ 21 files changed, 9212 insertions(+)

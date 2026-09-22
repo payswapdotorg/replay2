@@ -1,0 +1,2 @@
+[07:08:05] attempt 1: rc=1 tail=Vercel CLI 59.25.0 (Node.js 24.19.0) | Error: You defined "--token", but its contents are invalid. Must not contain: "\"" | Learn More: https://err.sh/vercel/invalid-token-value
+[07:08:16] attempt 1: quota still limited — sleeping 1500s

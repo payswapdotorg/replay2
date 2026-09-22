@@ -1,0 +1,22 @@
+{
+  "name": "@aise/api",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "AISE backend API — health/readiness plumbing plus the capture ingestion gateway (AISE-004): content-addressed asset intake and idempotent session sync.",
+  "scripts": {
+    "start": "bun run src/main.ts",
+    "dev": "bun --watch run src/main.ts"
+  },
+  "dependencies": {
+    "@aise/shared-contracts": "workspace:*",
+    "@aise/solution-contract": "workspace:*",
+    "@aise/solution-engine": "workspace:*",
+    "@aise/solution-boq": "workspace:*",
+    "@aise/provider-registry": "workspace:*",
+    "postgres": "3.4.5"
+  },
+  "exports": {
+    "./runtime": "./src/runtime/index.ts"
+  }
+}

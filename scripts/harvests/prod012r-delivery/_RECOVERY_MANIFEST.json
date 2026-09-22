@@ -1,0 +1,26 @@
+{
+ "files": [
+  {
+   "path": "AISE/apps/web/src/styles/tokens.test.ts",
+   "chars": 7657,
+   "source": "write"
+  },
+  {
+   "path": "AISE/docs/productization-evidence/PROD-012-R/remediation.md",
+   "chars": 14245,
+   "source": "write"
+  },
+  {
+   "path": "AISE/docs/productization-evidence/PROD-012-R/repro-harness.ts",
+   "chars": 23876,
+   "source": "write"
+  }
+ ],
+ "repo_prefix": "/home/z/",
+ "counts": {
+  "write": 3,
+  "heredoc": 0,
+  "echo": 0,
+  "total": 3
+ }
+}

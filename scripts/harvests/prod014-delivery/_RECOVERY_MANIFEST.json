@@ -1,0 +1,41 @@
+{
+ "files": [
+  {
+   "path": "AISE/docs/EVALUATOR-GUIDE.md",
+   "chars": 17819,
+   "source": "write"
+  },
+  {
+   "path": "AISE/docs/productization-evidence/PROD-014/docs-audit.md",
+   "chars": 7622,
+   "source": "write"
+  },
+  {
+   "path": "AISE/docs/productization-evidence/PROD-014/evaluator-journey.md",
+   "chars": 6749,
+   "source": "write"
+  },
+  {
+   "path": "AISE/docs/productization-evidence/PROD-014/integration-notes.md",
+   "chars": 6948,
+   "source": "write"
+  },
+  {
+   "path": "AISE/tools/bootstrap.test.ts",
+   "chars": 26703,
+   "source": "write"
+  },
+  {
+   "path": "AISE/tools/bootstrap.ts",
+   "chars": 37938,
+   "source": "write"
+  }
+ ],
+ "repo_prefix": "/home/z/",
+ "counts": {
+  "write": 6,
+  "heredoc": 0,
+  "echo": 0,
+  "total": 6
+ }
+}

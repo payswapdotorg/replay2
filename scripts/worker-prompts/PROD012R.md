@@ -32,15 +32,15 @@ packet — follow it exactly.
 ```bash
 git clone https://github.com/payswapdotorg/AISE.git
 cd AISE
-git checkout __BASE_COMMIT__   # public GitHub main
-git rev-parse HEAD   # must print __BASE_COMMIT__
+git checkout deb46cb29948f348079c803c1e81cb5831c62c8c   # public GitHub main (adapter wave + 018 + 022 + 023 merged)
+git rev-parse HEAD   # must print deb46cb29948f348079c803c1e81cb5831c62c8c
 BASE=$(git rev-parse HEAD)
 bun install
 git checkout -b prod-012r/a11y-responsive
 bun run verify
 ```
 
-Baseline expectation: **__BASELINE__ pass / 0 fail, VERIFY: PASS**. If the
+Baseline expectation: **4323 pass / 0 fail, VERIFY: PASS**. If the
 baseline is red, STOP and report.
 
 ## 2. Mandatory reading
@@ -111,7 +111,7 @@ baseline is red, STOP and report.
 ## 5. Quality gates (run all; paste the exact summary lines)
 
 ```bash
-bun run verify        # EXPECT: (__BASELINE__ + N) pass / 0 fail
+bun run verify        # EXPECT: (4323 + N) pass / 0 fail
 bun run typecheck     # EXPECT: VERIFY: PASS
 bun run lint          # EXPECT: VERIFY: PASS
 ```
@@ -131,7 +131,7 @@ delivery/docs/productization-evidence/PROD-012-R/remediation.md
 
 ```text
 commit: <your 40-hex commit sha>
-base: __BASE_COMMIT__
+base: deb46cb29948f348079c803c1e81cb5831c62c8c
 
  <diffstat>
 ```

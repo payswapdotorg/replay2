@@ -1,0 +1,27 @@
+commit: 50c1c6e7f2ad7b0cb117c526a009dac3a1bba3e9
+base: 0a9aa811aec973f121514e291a293644ec9e1dda
+
+ backend/api/src/solution-eval/fixtures.test.ts     |  425 ++++++
+ backend/api/src/solution-eval/fixtures.ts          | 1495 ++++++++++++++++++++
+ backend/api/src/solution-eval/golden.test.ts       |   46 +
+ backend/api/src/solution-eval/harness.test.ts      |  382 +++++
+ backend/api/src/solution-eval/harness.ts           | 1358 ++++++++++++++++++
+ backend/api/src/solution-eval/index.ts             |  113 ++
+ backend/api/src/solution-eval/model.test.ts        |  336 +++++
+ backend/api/src/solution-eval/model.ts             |  998 +++++++++++++
+ backend/api/src/solution-eval/router.test.ts       |  197 +++
+ backend/api/src/solution-eval/router.ts            |  167 +++
+ backend/api/src/solution-eval/service.test.ts      |  120 ++
+ backend/api/src/solution-eval/service.ts           |  189 +++
+ backend/api/src/solution-eval/testkit.ts           |  367 +++++
+ .../PROD-029/divergence-analysis.md                |  190 +++
+ .../PROD-029/evaluation-entry-point.md             |  159 +++
+ .../PROD-029/hardening-report.md                   |  177 +++
+ .../PROD-029/integration-notes.md                  |  176 +++
+ .../PROD-029/substitution-matrix.md                |   79 ++
+ tools/solution-eval/README.md                      |  109 ++
+ tools/solution-eval/benchmark.test.ts              |  115 ++
+ .../solution-eval/fixtures/expected-outcomes.json  |  424 ++++++
+ tools/solution-eval/runner.ts                      |  522 +++++++
+ tools/solution-eval/scenario.json                  |  496 +++++++
+ 23 files changed, 8640 insertions(+)

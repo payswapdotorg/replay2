@@ -1,0 +1,44 @@
+commit: 791b6676c0ebb83780a15b333d86a495659f588d
+base: deb46cb29948f348079c803c1e81cb5831c62c8c
+
+ backend/api/package.json                           |    1 +
+ backend/api/src/solution-boq/index.ts              |   35 +
+ backend/api/src/solution-boq/model.test.ts         |  119 +
+ backend/api/src/solution-boq/model.ts              |  263 ++
+ backend/api/src/solution-boq/router.test.ts        |  259 ++
+ backend/api/src/solution-boq/router.ts             |  245 ++
+ backend/api/src/solution-boq/service.test.ts       |  247 ++
+ backend/api/src/solution-boq/service.ts            |  268 ++
+ .../src/solution-boq/source-distinction.test.ts    |  195 ++
+ backend/api/src/solution-boq/testkit.ts            |  127 +
+ .../PROD-025/bidirectional-navigation.md           |  113 +
+ .../PROD-025/building-fixture-boq.md               |  119 +
+ .../PROD-025/derivation-artifacts.md               |  116 +
+ .../PROD-025/source-vs-generated.md                |  102 +
+ packages/solution-boq/README.md                    |  245 ++
+ .../fixtures/two-pass-boq-expected.json            |  931 +++++++
+ .../fixtures/version-pair-expected.json            | 2841 ++++++++++++++++++++
+ .../fixtures/wall-upgrade-boq-expected.json        |  807 ++++++
+ packages/solution-boq/package.json                 |   18 +
+ packages/solution-boq/scripts/generate-golden.ts   |   67 +
+ packages/solution-boq/src/assumptions.test.ts      |  171 ++
+ packages/solution-boq/src/assumptions.ts           |  137 +
+ packages/solution-boq/src/boq-version.ts           |   25 +
+ packages/solution-boq/src/delta.test.ts            |  183 ++
+ packages/solution-boq/src/delta.ts                 |  184 ++
+ packages/solution-boq/src/derive.test.ts           |  332 +++
+ packages/solution-boq/src/derive.ts                |  677 +++++
+ packages/solution-boq/src/elements.ts              |   85 +
+ packages/solution-boq/src/errors.ts                |   42 +
+ packages/solution-boq/src/fixtures.test.ts         |  100 +
+ packages/solution-boq/src/identity.ts              |  155 ++
+ packages/solution-boq/src/index.ts                 |  150 ++
+ packages/solution-boq/src/model.ts                 |  281 ++
+ packages/solution-boq/src/navigate.ts              |  221 ++
+ packages/solution-boq/src/navigation.test.ts       |  187 ++
+ packages/solution-boq/src/sections.ts              |   71 +
+ packages/solution-boq/src/source.test.ts           |  163 ++
+ packages/solution-boq/src/testkit.ts               |  498 ++++
+ packages/solution-boq/src/verify.ts                |  262 ++
+ packages/solution-boq/tsconfig.json                |    7 +
+ 40 files changed, 11049 insertions(+)

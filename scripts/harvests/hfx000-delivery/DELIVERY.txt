@@ -1,0 +1,46 @@
+commit: 50e752e655b770873c625253d4ad0fb40324a263
+base: 061d49e23931745b2abe5c0de595963911429541
+
+ backend/api/package.json                           |    1 +
+ backend/api/src/providers/index.ts                 |   51 +
+ backend/api/src/providers/model.test.ts            |  142 +++
+ backend/api/src/providers/model.ts                 |  376 +++++++
+ backend/api/src/providers/router.test.ts           |  340 +++++++
+ backend/api/src/providers/router.ts                |  344 +++++++
+ backend/api/src/providers/service.test.ts          |  265 +++++
+ backend/api/src/providers/service.ts               |  397 ++++++++
+ backend/api/src/providers/testkit.ts               |  120 +++
+ .../HFX-000/control-plane.md                       |  202 ++++
+ .../HFX-000/failure-vocabulary.md                  |  108 ++
+ .../HFX-000/integration-notes.md                   |  167 ++++
+ .../HFX-000/reference-lifecycle.md                 |  115 +++
+ packages/provider-registry/README.md               |  186 ++++
+ .../fixtures/reference-lifecycle.json              | 1053 ++++++++++++++++++++
+ .../reference-provider-v1.benchmark-record.json    |   46 +
+ .../fixtures/reference-provider-v1.profile.json    |  134 +++
+ .../reference-provider-v1.provenance-manifest.json |   31 +
+ .../reference-provider-v2.benchmark-record.json    |   46 +
+ .../fixtures/reference-provider-v2.profile.json    |  139 +++
+ .../reference-provider-v2.provenance-manifest.json |   31 +
+ packages/provider-registry/package.json            |   16 +
+ .../provider-registry/scripts/generate-golden.ts   |   97 ++
+ packages/provider-registry/src/benchmark.test.ts   |  154 +++
+ packages/provider-registry/src/benchmark.ts        |  333 +++++++
+ packages/provider-registry/src/digest.ts           |   36 +
+ packages/provider-registry/src/discipline.test.ts  |  124 +++
+ packages/provider-registry/src/failures.test.ts    |   68 ++
+ packages/provider-registry/src/failures.ts         |  107 ++
+ packages/provider-registry/src/index.ts            |  218 ++++
+ packages/provider-registry/src/io.test.ts          |  307 ++++++
+ packages/provider-registry/src/io.ts               |  567 +++++++++++
+ packages/provider-registry/src/lifecycle.test.ts   |  223 +++++
+ packages/provider-registry/src/profile.test.ts     |  247 +++++
+ packages/provider-registry/src/profile.ts          |  779 +++++++++++++++
+ packages/provider-registry/src/provenance.test.ts  |  183 ++++
+ packages/provider-registry/src/provenance.ts       |  344 +++++++
+ packages/provider-registry/src/registry.test.ts    |  628 ++++++++++++
+ packages/provider-registry/src/registry.ts         |  846 ++++++++++++++++
+ packages/provider-registry/src/testkit.test.ts     |  133 +++
+ packages/provider-registry/src/testkit.ts          |  632 ++++++++++++
+ packages/provider-registry/tsconfig.json           |    7 +
+ 42 files changed, 10343 insertions(+)

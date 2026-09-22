@@ -1,0 +1,56 @@
+commit: d0cb12a4253460e61f73a7ec0d1b332bec6f60d5
+base: c7951e1c30e58d054a08bc2a164117347c47f1b8
+
+ apps/web/src/app/App.tsx                           |   17 +
+ apps/web/src/app/AppShell.tsx                      |    5 +
+ apps/web/src/app/components.tsx                    |    9 +-
+ apps/web/src/app/demo.ts                           |   98 +
+ apps/web/src/app/router.ts                         |  117 +-
+ apps/web/src/app/solution-benchmark.test.ts        |  103 +
+ apps/web/src/app/solution-benchmark.ts             |  267 +++
+ .../src/app/solution-composition-model.test.tsx    |  820 +++++++
+ apps/web/src/app/solution-composition.tsx          |  639 ++++++
+ apps/web/src/app/solution-journey.ts               | 1453 ++++++++++++
+ apps/web/src/app/solution-links.ts                 |  256 +++
+ apps/web/src/app/solution-mount.tsx                |  162 ++
+ apps/web/src/app/surfaces/BoqLens.tsx              |   13 +
+ apps/web/src/app/surfaces/EngineeringCase.tsx      |   15 +
+ apps/web/src/app/surfaces/InterventionStudio.tsx   |   10 +
+ apps/web/src/app/surfaces/Solution.tsx             |  159 ++
+ .../PROD-026/building-benchmark.md                 |   89 +
+ .../PROD-026/end-to-end-journey.md                 |  126 ++
+ .../PROD-026/equivalence-proof.md                  |  103 +
+ .../PROD-026/provenance-audit.md                   |   93 +
+ .../PROD-026/reality-seal.md                       |  103 +
+ tools/building-benchmark/README.md                 |   97 +
+ tools/building-benchmark/benchmark.test.ts         |  582 +++++
+ .../fixtures/expected-outcomes.json                | 2356 ++++++++++++++++++++
+ tools/building-benchmark/scenario.json             |  252 +++
+ 25 files changed, 7942 insertions(+), 2 deletions(-)
+
+File list (delivery file count excluding DELIVERY.txt: 25):
+apps/web/src/app/App.tsx
+apps/web/src/app/AppShell.tsx
+apps/web/src/app/components.tsx
+apps/web/src/app/demo.ts
+apps/web/src/app/router.ts
+apps/web/src/app/solution-benchmark.test.ts
+apps/web/src/app/solution-benchmark.ts
+apps/web/src/app/solution-composition-model.test.tsx
+apps/web/src/app/solution-composition.tsx
+apps/web/src/app/solution-journey.ts
+apps/web/src/app/solution-links.ts
+apps/web/src/app/solution-mount.tsx
+apps/web/src/app/surfaces/BoqLens.tsx
+apps/web/src/app/surfaces/EngineeringCase.tsx
+apps/web/src/app/surfaces/InterventionStudio.tsx
+apps/web/src/app/surfaces/Solution.tsx
+docs/productization-evidence/PROD-026/building-benchmark.md
+docs/productization-evidence/PROD-026/end-to-end-journey.md
+docs/productization-evidence/PROD-026/equivalence-proof.md
+docs/productization-evidence/PROD-026/provenance-audit.md
+docs/productization-evidence/PROD-026/reality-seal.md
+tools/building-benchmark/README.md
+tools/building-benchmark/benchmark.test.ts
+tools/building-benchmark/fixtures/expected-outcomes.json
+tools/building-benchmark/scenario.json

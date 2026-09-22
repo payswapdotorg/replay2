@@ -1,0 +1,31 @@
+commit: 1401f056b49595bc2c16b8ee625968b78ac7dc1f
+base: 7b90d70bc0309bbac790af9713fad4de17c9e984
+
+ backend/api/src/vlm-eval/checks.test.ts            |  275 ++++
+ backend/api/src/vlm-eval/checks.ts                 |  688 ++++++++
+ backend/api/src/vlm-eval/compare.test.ts           |  116 ++
+ backend/api/src/vlm-eval/compare.ts                |  226 +++
+ backend/api/src/vlm-eval/corpus.test.ts            |  151 ++
+ backend/api/src/vlm-eval/corpus.ts                 | 1099 +++++++++++++
+ backend/api/src/vlm-eval/doubles.test.ts           |  103 ++
+ backend/api/src/vlm-eval/doubles.ts                |  138 ++
+ backend/api/src/vlm-eval/golden.test.ts            |   39 +
+ backend/api/src/vlm-eval/golden.ts                 |  186 +++
+ backend/api/src/vlm-eval/harness.test.ts           |  348 ++++
+ backend/api/src/vlm-eval/harness.ts                |  168 ++
+ backend/api/src/vlm-eval/index.ts                  |  179 ++
+ backend/api/src/vlm-eval/model.test.ts             |  439 +++++
+ backend/api/src/vlm-eval/model.ts                  | 1482 +++++++++++++++++
+ backend/api/src/vlm-eval/registry.test.ts          |  204 +++
+ backend/api/src/vlm-eval/registry.ts               |  433 +++++
+ backend/api/src/vlm-eval/service.test.ts           |   98 ++
+ backend/api/src/vlm-eval/service.ts                |  159 ++
+ docs/productization-evidence/HFX-201/README.md     |  224 +++
+ .../HFX-201/benchmark-report.md                    |  104 ++
+ .../HFX-201/provider-comparison.md                 |   85 +
+ tools/vlm-eval/README.md                           |  112 ++
+ tools/vlm-eval/benchmark.test.ts                   |  237 +++
+ tools/vlm-eval/fixtures/expected-outcomes.json     | 1357 +++++++++++++++
+ tools/vlm-eval/runner.ts                           |  649 ++++++++
+ tools/vlm-eval/scenario.json                       | 1730 ++++++++++++++++++++
+ 27 files changed, 11029 insertions(+)
