@@ -29,6 +29,12 @@ MARKERS = {
     "prod022": "PROD-022 COMPLETION REPORT",
     "prod023": "PROD-023 COMPLETION REPORT",
     "prod018": "PROD-018 COMPLETION REPORT",
+    # 2026-09-22 lesson (prod030): a worker may TRANSLATE the packet's report
+    # template (prod030 posted "PROD-030 完成报告"). The watch value is now a
+    # list — ANY member fires (the filled-report gate itself still protects
+    # against packet-template echoes: hex40 in window + no placeholder).
+    "prod030": ["PROD-030 COMPLETION REPORT", "PROD-030 完成报告"],
+    "prod031": ["PROD-031 COMPLETION REPORT", "PROD-031 完成报告", "WORKER_COMMIT"],
 }
 
 
@@ -45,19 +51,25 @@ def post_outbox(text):
 
 
 def probe(name, cid):
-    """Run batch_probe; returns (ok, report, err) — err None unless tooling failed."""
-    marker = MARKERS.get(name, f"{name.upper()} COMPLETION REPORT")
-    try:
-        out = subprocess.run(
-            [sys.executable, os.path.join(BASE, "batch_probe.py"), cid, marker],
-            capture_output=True, text=True, timeout=120)
-        txt = out.stdout.strip() or out.stderr.strip()
-        if '"err"' in txt:
-            return False, False, txt[:80]
-        d = json.loads(txt)
-        return True, bool(d.get("report")), None
-    except Exception as e:
-        return False, False, str(e)[:80]
+    """Run batch_probe for each marker variant; returns (ok, report, err)."""
+    markers = MARKERS.get(name, [f"{name.upper()} COMPLETION REPORT", f"{name.upper()} 完成报告"])
+    if isinstance(markers, str):
+        markers = [markers]
+    last_err = None
+    for marker in markers:
+        try:
+            out = subprocess.run(
+                [sys.executable, os.path.join(BASE, "batch_probe.py"), cid, marker],
+                capture_output=True, text=True, timeout=120)
+            txt = out.stdout.strip() or out.stderr.strip()
+            if '"err"' in txt:
+                last_err = txt[:80]
+                continue
+            d = json.loads(txt)
+            return True, bool(d.get("report")), None
+        except Exception as e:
+            last_err = str(e)[:80]
+    return False, False, last_err
 
 
 def main():

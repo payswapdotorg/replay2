@@ -14,7 +14,7 @@ cycle until it lands:
 
 Usage: deploy_retry_sentinel.py [--every 1500] [--max-hours 20]
 """
-import os, subprocess, sys, time
+import json, os, subprocess, sys, time
 
 BASE = os.path.dirname(os.path.abspath(__file__))
 FLAGS = os.path.join(BASE, "flags")
@@ -49,6 +49,21 @@ def main():
         log(f"token load err: {e}"); return 3
     while time.time() < deadline:
         attempt += 1
+        # 2026-09-22 guard (pass-15 lesson: this daemon once deployed a dirty
+        # mid-merge tree): only ever deploy a CLEAN main working tree.
+        try:
+            st = subprocess.run(["git", "-C", REPO, "status", "--porcelain"],
+                                capture_output=True, text=True, timeout=30)
+            br = subprocess.run(["git", "-C", REPO, "rev-parse", "--abbrev-ref", "HEAD"],
+                                capture_output=True, text=True, timeout=30)
+            if st.stdout.strip() or br.stdout.strip() != "main":
+                log(f"attempt {attempt}: repo not clean-on-main (branch={br.stdout.strip()!r}, dirty={len(st.stdout.splitlines())}) — sleeping {every}s")
+                time.sleep(every)
+                continue
+        except Exception as e:
+            log(f"attempt {attempt}: git guard err {str(e)[:80]} — sleeping")
+            time.sleep(every)
+            continue
         try:
             r = subprocess.run(["bunx", "vercel", "deploy", "--prod", "--yes"],
                                capture_output=True, text=True, timeout=560,

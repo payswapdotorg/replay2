@@ -204,7 +204,15 @@ def main():
             if rec and rec.get("url"):
                 cid = rec["url"].split("/c/")[-1]
                 if chat_generating(cid, samples=1):
-                    log(name, f"ADOPTED earlier chat {cid[:8]} (now generating)")
+                    # 2026-09-22 lesson (prod030): the adopt path used to mark
+                    # done WITHOUT register/marker — the follow-up chain
+                    # (completion watch + redispatch watchers keyed on
+                    # flags/<name>-dispatched.marker) never fired. Adoption
+                    # must be registry + marker visible, exactly like the
+                    # fresh-dispatch path.
+                    register(name, rec["url"], rec.get("tab_id", "unknown-tab"),
+                             prompt_file, prompt_chars)
+                    log(name, f"ADOPTED earlier chat {cid[:8]} (now generating) — registered + marker written")
                     s["done"] = True
                     progressed_any = True
                     continue

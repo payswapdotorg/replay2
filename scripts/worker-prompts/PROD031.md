@@ -66,15 +66,15 @@ BEFORE writing anything.
 ```bash
 git clone https://github.com/payswapdotorg/AISE.git
 cd AISE
-git checkout __PINNED_BASE__   # public GitHub main (the Tech Lead pins this at dispatch)
-git rev-parse HEAD   # must print __PINNED_BASE__
+git checkout be0ed4c4ab87770740c475108f1b5928dc918fbf   # public GitHub main (the Tech Lead pins this at dispatch)
+git rev-parse HEAD   # must print be0ed4c4ab87770740c475108f1b5928dc918fbf
 BASE=$(git rev-parse HEAD)   # record this — your delivery diff base
 bun install
 git checkout -b prod-031/solution-browser-execution
 bun run verify
 ```
 
-Baseline expectation: **__BASELINE__ pass / 0 fail, VERIFY: PASS** (the Tech
+Baseline expectation: **5385 pass / 0 fail, VERIFY: PASS** (the Tech
 Lead's verified number at this SHA). If the baseline is red, STOP and report.
 
 ## 2. Mandated reading (in order, before writing anything)
@@ -253,7 +253,7 @@ Chromium, STOP and report (never silently skip a browser check).
 ## 8. Gates (all must pass before delivery)
 
 ```bash
-bun run verify        # __BASELINE__ + N pass / 0 fail — N = your new tests; VERIFY: PASS
+bun run verify        # 5385 + N pass / 0 fail — N = your new tests; VERIFY: PASS
 bun run typecheck     # PASS
 bun run lint          # PASS
 ```
