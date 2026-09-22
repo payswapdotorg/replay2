@@ -149,7 +149,15 @@ def tab_hygiene():
     from a HEALTHY pin: navigate the pinned tab to the light home page; if
     the renderer is already dead, close it and mint a fresh tab, updating
     the PATIENT_TAB pin in THIS process's environment (children inherit it
-    at fork time). Returns a short status string for the log."""
+    at fork time). Returns a short status string for the log.
+
+    2026-09-22 16:2x HARDENING (the prod031 home-page zombie): a dead
+    renderer can park ON THE HOME PAGE — the URL-only 'pin already light'
+    shortcut passed it while every patient_dispatch burned its full 560s
+    in _reconnect retry loops (connect ok, Runtime.evaluate never
+    answers). The light-pin branch now SMOKE-PROBES the renderer (eval
+    '1', 8s) — a zombie is closed and replaced exactly like a chat-page
+    corpse."""
     pin = (os.environ.get("PATIENT_TAB") or "").strip()
     home = "https://chat.z.ai/"
     try:
@@ -161,24 +169,37 @@ def tab_hygiene():
         tab = next((t for t in tabs if (t.get("id") or "").upper().startswith(pin.upper())), None)
     if tab is not None:
         url = tab.get("url") or ""
+        dead = False
         if "/c/" not in url:
-            return "pin already light"  # home page: nothing to do
-        # on a chat page: navigate home (best-effort)
-        try:
-            c = channel.CDP(tab["webSocketDebuggerUrl"], timeout=12)
+            # home page — smoke-probe the renderer (the zombie lesson:
+            # URL-light is NOT health; only a responding eval is)
             try:
-                c.call("Page.navigate", {"url": home}, timeout=12)
-            finally:
-                c.close()
-            return "navigated pin home"
-        except Exception:
-            pass  # renderer dead — fall through to replacement
-        # close the dead tab
-        try:
-            urllib.request.urlopen(
-                "http://localhost:9222/json/close/" + tab["id"], timeout=8).read()
-        except Exception:
-            pass
+                c = channel.CDP(tab["webSocketDebuggerUrl"], timeout=10)
+                try:
+                    c.eval("1", timeout=8)
+                finally:
+                    c.close()
+                return "pin already light (probed)"
+            except Exception:
+                dead = True  # renderer dead — fall through to replacement
+        else:
+            # on a chat page: navigate home (best-effort)
+            try:
+                c = channel.CDP(tab["webSocketDebuggerUrl"], timeout=12)
+                try:
+                    c.call("Page.navigate", {"url": home}, timeout=12)
+                finally:
+                    c.close()
+                return "navigated pin home"
+            except Exception:
+                dead = True  # renderer dead — fall through to replacement
+        if dead:
+            # close the dead tab
+            try:
+                urllib.request.urlopen(
+                    "http://localhost:9222/json/close/" + tab["id"], timeout=8).read()
+            except Exception:
+                pass
     # mint a fresh pinned tab
     try:
         r = urllib.request.urlopen(
