@@ -550,7 +550,7 @@ def _eval(c, js, timeout=20):
     return c.eval(js, timeout=timeout)
 
 
-def _reconnect(tab_id, tries=8, sleep=1.5):
+def _reconnect(tab_id, tries=3, sleep=1.5):
     """Re-open a CDP connection to a tab (after a send-triggered navigation).
 
     2026-09-22 leak fix: a failed smoke-eval used to ABANDON the just-opened
@@ -558,6 +558,13 @@ def _reconnect(tab_id, tries=8, sleep=1.5):
     accumulated ~20 live websockets and strangled Chrome's DevTools for
     every other daemon (the both-tabs-wedged incident, pass 17). Failed
     connections are now closed before each retry.
+
+    2026-09-23 BUDGET FIX (the 17h-outage wedge): tries 8 -> 3. A renderer
+    wedged by outage retry-storms accepts connections but never answers
+    evals; the old 8-try loop x the outer 5-try wrap burned ~30min per
+    attempt against the sentinel's 560s child budget (every round a silent
+    TIMEOUT). 3 tries x 2 outer = worst ~5min, inside the budget, so the
+    failure surfaces fast and tab hygiene replaces the pin.
     """
     last = None
     for _ in range(tries):

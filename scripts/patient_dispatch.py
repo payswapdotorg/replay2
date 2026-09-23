@@ -42,9 +42,14 @@ def reconnect(tab_id):
     """2026-09-22 leak fix: keep ONE live connection per dispatch process —
     the previous connection is closed before a new one is adopted (the old
     code abandoned one per call; ~20 accumulated per grinding attempt and
-    wedged every other CDP client on the box)."""
+    wedged every other CDP client on the box).
+    2026-09-23 BUDGET FIX (the 17h-outage wedge): a wedged renderer makes
+    _reconnect's inner retry loop burn minutes; the OUTER retry budget is
+    now 2 (was 5) so a wedged pin fails fast (< ~5 min) inside the
+    sentinel's 560s child budget — the next round's tab hygiene then
+    double-probes, catches the wedge and mints a fresh pin."""
     global _CUR
-    for _ in range(5):
+    for _ in range(2):
         c = None
         try:
             c = DW._reconnect(tab_id)
@@ -62,7 +67,7 @@ def reconnect(tab_id):
                     c.close()
                 except Exception:
                     pass
-            time.sleep(4)
+            time.sleep(2)
     raise RuntimeError("reconnect failed")
 
 

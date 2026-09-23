@@ -80,40 +80,35 @@ def main():
     try:
         state = json.loads(popup_state(cdp) or "{}")
         print("popup:", state)
-        # egress via the chat.z.ai HOME tab (root URL — worker-chat renderers
-        # stream constantly and time CDP evals out; the root tab is idle)
-        tabs = channel.list_tabs()
-        chat = next((x for x in tabs if (x.get("url") or "").rstrip("/").endswith("chat.z.ai")), None) \
-            or next((x for x in tabs if "chat.z.ai" in (x.get("url") or "")), None)
-        chat_cdp = channel.CDP(chat["webSocketDebuggerUrl"], timeout=60) if chat else None
-        try:
-            if status_only:
-                print("egress:", egress(chat_cdp) if chat_cdp else "no chat tab")
+        # egress via the POPUP renderer (2026-09-23: the chat home tab's
+        # renderer gets WEDGED by outage retry-storms — its evals hang and
+        # this check died with a websocket timeout instead of reporting;
+        # the popup page is extension-local, never loads chat.z.ai JS, and
+        # its fetch still goes through the process-wide tunnel)
+        if status_only:
+            print("egress:", egress(cdp))
+            return 0
+        if not state.get("hasPower"):
+            print("ERROR: power control not found in popup")
+            return 2
+        if state.get("connected"):
+            eg = egress(cdp)
+            print("connected; egress:", eg)
+            if str(eg).startswith("EGRESS"):
+                print("HEALTHY")
                 return 0
-            if not state.get("hasPower"):
-                print("ERROR: power control not found in popup")
-                return 2
-            if state.get("connected"):
-                eg = egress(chat_cdp) if chat_cdp else "ERR no-chat-tab"
-                print("connected; egress:", eg)
-                if str(eg).startswith("EGRESS"):
-                    print("HEALTHY")
-                    return 0
-                # dead-tunnel state: toggle to heal
-                print("dead tunnel — toggling power")
-                click_power(cdp)
-                time.sleep(6)
-                print("after disconnect:", popup_state(cdp))
+            # dead-tunnel state: toggle to heal
+            print("dead tunnel — toggling power")
             click_power(cdp)
-            time.sleep(10)
-            print("after reconnect:", popup_state(cdp))
-            eg = egress(chat_cdp) if chat_cdp else "ERR no-chat-tab"
-            print("egress:", eg)
-            print("RECOVERED" if str(eg).startswith("EGRESS") else "STILL-DOWN")
-            return 0 if str(eg).startswith("EGRESS") else 3
-        finally:
-            if chat_cdp:
-                chat_cdp.close()
+            time.sleep(6)
+            print("after disconnect:", popup_state(cdp))
+        click_power(cdp)
+        time.sleep(10)
+        print("after reconnect:", popup_state(cdp))
+        eg = egress(cdp)
+        print("egress:", eg)
+        print("RECOVERED" if str(eg).startswith("EGRESS") else "STILL-DOWN")
+        return 0 if str(eg).startswith("EGRESS") else 3
     finally:
         cdp.close()
 

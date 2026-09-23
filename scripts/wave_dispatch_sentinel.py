@@ -170,18 +170,32 @@ def tab_hygiene():
     if tab is not None:
         url = tab.get("url") or ""
         dead = False
-        if "/c/" not in url:
-            # home page — smoke-probe the renderer (the zombie lesson:
-            # URL-light is NOT health; only a responding eval is)
+        if "chrome-error" in url or not url.startswith("https://chat.z.ai"):
+            # 2026-09-23 (the 17h-outage wedge): an error page / off-domain
+            # corpse is NEVER a valid pin — even one whose renderer evals
+            # fine (the Task-108 VPN corpses answered evals on
+            # chrome-error://chromewebdata while the lane starved).
+            dead = True
+        elif "/c/" not in url:
+            # home page — smoke-probe the renderer TWICE (the 2026-09-23
+            # lesson: a wedged renderer can answer ONE lucky probe — the
+            # outage retry-storms wedge the main thread intermittently;
+            # two consecutive evals with a gap discriminate reliably)
             try:
                 c = channel.CDP(tab["webSocketDebuggerUrl"], timeout=10)
                 try:
-                    c.eval("1", timeout=8)
+                    c.eval("1", timeout=6)
+                    time.sleep(1.5)
+                    c.eval("1", timeout=6)
+                    href = c.eval("location.href", timeout=6)
+                    if "chrome-error" in str(href):
+                        dead = True
+                    else:
+                        return "pin already light (double-probed)"
                 finally:
                     c.close()
-                return "pin already light (probed)"
             except Exception:
-                dead = True  # renderer dead — fall through to replacement
+                dead = True  # renderer dead/wedged — fall through to replacement
         else:
             # on a chat page: navigate home (best-effort)
             try:
@@ -216,8 +230,39 @@ def tab_hygiene():
                 finally:
                     c.close()
                 break
+        # 2026-09-23 hardening: a minted pin must LOAD and RESPOND before it
+        # is adopted — navigate alone proves nothing (the mint can land on a
+        # chrome-error corpse or a wedged renderer). Settle, then probe; a
+        # dead mint is closed and reported as failure (the next round's
+        # hygiene mints again — never adopt an unverified pin).
+        ok = False
+        for _ in range(4):  # up to ~24s of settling for the SPA to come up
+            time.sleep(6)
+            try:
+                for tb in channel.list_tabs():
+                    if tb.get("id") == new_id:
+                        c = channel.CDP(tb["webSocketDebuggerUrl"], timeout=10)
+                        try:
+                            href = c.eval("location.href", timeout=6)
+                            c.eval("1", timeout=6)
+                        finally:
+                            c.close()
+                        if href and "chat.z.ai" in str(href) and "chrome-error" not in str(href):
+                            ok = True
+                        break
+                if ok:
+                    break
+            except Exception:
+                continue
+        if not ok:
+            try:
+                urllib.request.urlopen(
+                    "http://localhost:9222/json/close/" + new_id, timeout=8).read()
+            except Exception:
+                pass
+            return f"fresh pin {new_id[:8]} FAILED verification (closed; retry next round)"
         os.environ["PATIENT_TAB"] = new_id
-        return f"fresh pin {new_id[:8]}"
+        return f"fresh pin {new_id[:8]} (verified)"
     except Exception as e:
         return f"fresh-tab failed ({str(e)[:40]})"
 
