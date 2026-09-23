@@ -499,6 +499,97 @@ def ensure_queue_watch():
         log(f"queue_watch[{name}] restarted: tab={spec.get('tab_prefix')}")
 
 
+_lane_specs_seen = set()
+
+
+def ensure_lane_keepalive():
+    """Keep per-lane keepalive + followup alive while a lane is un-landed.
+
+    2026-09-23 postmortem: the prod031 lane lost ALL THREE watchers (bare
+    sentinel, handoff, followup) in one silent burst ~01:08 — one of 40 OOM
+    kills on Sep 22-23 (chrome+next on 4GB) — and stopped restocking its
+    dispatch queue for 5+ hours with nobody noticing, while hfx302 survived
+    only because its watchers got lucky. Lanes now join the immortality
+    ring: while flags/lane_keepalive.spec.<name> exists and the lane's
+    dispatched marker does NOT, resurrect (a) wave_sentinel_keepalive
+    (itself relaunching the sentinel on crash) and (b) followup_arm_watch
+    (self-rearming on 48h burnout while un-landed). Identity = script +
+    '<name>:' needles on /proc cmdline — NEVER a bare pid (the handoff
+    pid-reuse blind spot, handoff_hfx302.log 02:51->06:02)."""
+    import glob as _glob
+    for spec_path in sorted(_glob.glob(os.path.join(FLAGS, "lane_keepalive.spec.*"))):
+        try:
+            spec = json.loads(open(spec_path).read().strip() or "{}")
+        except Exception:
+            continue
+        name = spec.get("name", "")
+        job = spec.get("job", "")
+        if not name or ":" not in job:
+            continue
+        if spec_path not in _lane_specs_seen:
+            _lane_specs_seen.add(spec_path)
+            log(f"lane guard armed: {name} (job={job})")
+        if os.path.exists(os.path.join(FLAGS, f"{name}-dispatched.marker")):
+            continue  # landed — completion machinery owns the lane now
+
+        def _alive(pid, *needles):
+            try:
+                cmd = open(f"/proc/{int(pid)}/cmdline", "rb").read().decode(
+                    errors="replace")
+                return all(n in cmd for n in needles)
+            except Exception:
+                return False
+
+        def _pgrep(pat):
+            r = subprocess.run(["pgrep", "-f", pat], capture_output=True, text=True)
+            return r.stdout.strip().split("\n")[0] if r.stdout.strip() else ""
+
+        # (a) keepalive
+        pidf = os.path.join(FLAGS, f"lane_keepalive.pid.{name}")
+        pid = read_pid(pidf)
+        if not _alive(pid, "wave_sentinel_keepalive.py", name + ":"):
+            pid = _pgrep(f"wave_sentinel_keepalive.py {name}:")
+            if pid:
+                try:
+                    open(pidf, "w").write(pid)
+                except Exception:
+                    pass
+            else:
+                args = [PY, os.path.join(BASE, "wave_sentinel_keepalive.py"), job]
+                for opt in ("every", "watch", "rounds"):
+                    if spec.get(opt):
+                        args += ["--" + opt, str(spec[opt])]
+                logp = os.path.join(
+                    LOGDIR, spec.get("sentinel_log", f"{name}_sentinel.log"))
+                out = open(logp, "a")
+                subprocess.Popen(args, stdout=out, stderr=subprocess.STDOUT,
+                                 stdin=subprocess.DEVNULL, start_new_session=True,
+                                 cwd=BASE)
+                out.close()
+                log(f"lane keepalive[{name}] DEAD — relaunched (immortality ring)")
+
+        # (b) followup (stays armed until the dispatched marker appears)
+        fpidf = os.path.join(FLAGS, f"lane_followup.pid.{name}")
+        fpid = read_pid(fpidf)
+        if not _alive(fpid, "followup_arm_watch.py", name):
+            fpid = _pgrep(f"followup_arm_watch.py {name}")
+            if fpid:
+                try:
+                    open(fpidf, "w").write(fpid)
+                except Exception:
+                    pass
+            else:
+                out = open(os.path.join(LOGDIR, f"followup_{name}.log"), "a")
+                subprocess.Popen(
+                    [PY, os.path.join(BASE, "followup_arm_watch.py"), name,
+                     "--every", str(spec.get("followup_every", 120)),
+                     "--max-hours", str(spec.get("followup_max_hours", 48))],
+                    stdout=out, stderr=subprocess.STDOUT,
+                    stdin=subprocess.DEVNULL, start_new_session=True, cwd=BASE)
+                out.close()
+                log(f"lane followup[{name}] DEAD — relaunched (immortality ring)")
+
+
 def main():
     # single-instance guard
     lock_fh = open(LOCK, "w")
@@ -519,6 +610,7 @@ def main():
             ensure_tab_gc()
             ensure_queue_watch()
             ensure_stall_recovery()
+            ensure_lane_keepalive()
             if cycle % 3 == 0:          # browser check every ~30s
                 ensure_browser()
                 ensure_dev()

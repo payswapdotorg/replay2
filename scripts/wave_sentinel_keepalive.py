@@ -28,10 +28,17 @@ import time
 BASE = os.path.dirname(os.path.abspath(__file__))
 SENTINEL = os.path.join(BASE, "wave_dispatch_sentinel.py")
 PIDFILE = os.path.join(BASE, "flags", "wave_keepalive.pid")
+# per-lane pidfile (2026-09-23): multiple lanes can run keepalives
+# concurrently and clobber the legacy shared PIDFILE (last writer wins);
+# supervisor's ensure_lane_keepalive() tracks each lane by THIS file.
+NAME = (sys.argv[1].split(":", 1)[0]
+        if len(sys.argv) > 1 and ":" in sys.argv[1] else "wave")
+LANE_PIDFILE = os.path.join(BASE, "flags", f"wave_keepalive.pid.{NAME}")
 RESTART_SLEEP = 120   # seconds between sentinel invocations
 CRASH_SLEEP = 300     # extra patience if the sentinel itself crashed
 
 open(PIDFILE, "w").write(str(os.getpid()))
+open(LANE_PIDFILE, "w").write(str(os.getpid()))
 
 
 def log(line):
