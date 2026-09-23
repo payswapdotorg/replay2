@@ -78,6 +78,88 @@ def _spec():
     return None
 
 
+# --- zombie gate (86g doctrine, re-applied 2026-09-23 after wipe #3) ---------
+# The platform WIPES assistant content after turn death/completion, so chat
+# EXISTENCE + empty content proves nothing. The only structural tell for a
+# never-spawned chat: the created->updated span never grew (real workers
+# update for 33min+; capacity-bounced/staged landings freeze at 4-6s).
+ZOMBIE_MAX_SPAN_S = 600   # a span that never passed 10min = no turn ever ran
+ZOMBIE_MIN_AGE_S = 180    # do not judge chats younger than 3 minutes
+TURN_SPAWN_WAIT_S = 360   # rc=0 spawn-verification window (observed spawns: <=6min)
+
+
+def _chat_turn_spawned(chat_uuid):
+    """True once the turn exists (ANY assistant message, even an empty
+    placeholder — the platform creates it at turn start); False while only
+    the user prompt is there; None on tooling failure."""
+    try:
+        sys.path.insert(0, BASE)
+        import chats_http
+        data = chats_http.api(f"/api/v1/chats/{chat_uuid}")
+        rec = data.get("data", data) if isinstance(data, dict) else {}
+        inner = rec.get("chat", {}) or rec
+        msgs = (inner.get("history", {}) or {}).get("messages", {})
+        if isinstance(msgs, dict):
+            msgs = list(msgs.values())
+        return any(m.get("role") == "assistant" for m in msgs)
+    except Exception:
+        return None
+
+
+def _chat_zombie_server_side(chat_uuid):
+    """True only for a never-spawned (zombie) chat; False for turn-bearing
+    or lived chats; None on tooling failure (caller must preserve the flag)."""
+    try:
+        sys.path.insert(0, BASE)
+        import chats_http
+        data = chats_http.api(f"/api/v1/chats/{chat_uuid}")
+        rec = data.get("data", data) if isinstance(data, dict) else {}
+        inner = rec.get("chat", {}) or rec
+        msgs = (inner.get("history", {}) or {}).get("messages", {})
+        if isinstance(msgs, dict):
+            msgs = list(msgs.values())
+        # turn-bearing: any assistant message with committed content
+        for m in msgs:
+            if m.get("role") == "assistant" and isinstance(m.get("content"), str) \
+                    and len(m["content"]) > 0:
+                return False
+        # timestamps: snake_case on the OUTER record (observed 2026-09-23:
+        # created_at/updated_at epoch seconds), camelCase tried as fallback
+        ca = rec.get("created_at") or inner.get("createdAt") or inner.get("created_at")
+        ua = rec.get("updated_at") or inner.get("updatedAt") or inner.get("updated_at")
+        if isinstance(ca, (int, float)) and isinstance(ua, (int, float)):
+            span, age = ua - ca, time.time() - ca
+            if span > ZOMBIE_MAX_SPAN_S:
+                return False        # lived long enough = worker range
+            if age < ZOMBIE_MIN_AGE_S:
+                return False        # too young to judge
+            return True             # no turn, span frozen, old enough = zombie
+        # no timestamps available: fall back to message-shape (86g truth table:
+        # no assistant at all, or only empty placeholders)
+        if time.time() - _chat_age_fallback(chat_uuid) < ZOMBIE_MIN_AGE_S:
+            return False
+        return not any(m.get("role") == "assistant" for m in msgs) or \
+            all(not (isinstance(m.get("content"), str) and m["content"])
+                for m in msgs if m.get("role") == "assistant")
+    except Exception:
+        return None
+
+
+def _chat_age_fallback(chat_uuid):
+    """Best-effort chat age when createdAt is absent (registry ts fallback)."""
+    try:
+        for line in reversed([l for l in open(REG).read().split("\n") if l.strip()]):
+            try:
+                r = json.loads(line)
+            except Exception:
+                continue
+            if chat_uuid in (r.get("url") or ""):
+                return float(r.get("ts") or 0)
+    except Exception:
+        pass
+    return 0.0
+
+
 def _chat_live_server_side(name):
     """Lesson-98/106: the ONLY landing truth is the server chats list.
 
@@ -216,6 +298,36 @@ def main():
                 # re-reads/refreshes the token.
                 print("server check TOOLING FAILURE (None) — flag preserved, NOT disarming; supervisor will re-arm", flush=True)
                 return 5
+            # 2026-09-23 (TL): the upstream "cosmetic popup" create can exit
+            # rc=0 on a CAPACITY BOUNCE (prompt landed, turn never spawned —
+            # observed twice on pa-004). Verify the turn actually SPAWNS
+            # before disarming: poll for the assistant placeholder up to
+            # TURN_SPAWN_WAIT_S. Spawn -> real success (clear). Timeout ->
+            # void + keep fighting. Tooling failure -> legacy clear (the
+            # zombie gate + pa_server_watch re-arm remain the backstops).
+            m_url = re.search(r"/c/([0-9a-f-]{36})", _last_sent_url(name) or "")
+            if m_url:
+                chat_uuid = m_url.group(1)
+                deadline = time.time() + TURN_SPAWN_WAIT_S
+                spawned = None
+                print(f"rc=0 — verifying turn spawn on {chat_uuid[:8]} "
+                      f"(up to {TURN_SPAWN_WAIT_S}s)...", flush=True)
+                while time.time() < deadline:
+                    spawned = _chat_turn_spawned(chat_uuid)
+                    if spawned is True:
+                        break
+                    if spawned is None:
+                        print("spawn check TOOLING FAILURE — falling back to legacy clear", flush=True)
+                        break
+                    time.sleep(30)
+                if spawned is False:
+                    print("rc=0 but the turn NEVER SPAWNED within the window — "
+                          "voiding + continuing assault", flush=True)
+                    _void_phantom(name, _last_sent_url(name))
+                    time.sleep(20)
+                    continue
+                if spawned is True:
+                    print("turn SPAWNED — assault complete, disarming", flush=True)
             _clear_flag()
             return 0
         if rc == 1:
@@ -258,6 +370,21 @@ def main():
                     # 2026-09-16 (TL): same tooling-failure guard as the rc=0 path.
                     print("server check TOOLING FAILURE (None) — flag preserved, NOT disarming; supervisor will re-arm", flush=True)
                     return 5
+                # 86g zombie gate (re-applied 2026-09-23 after wipe #3): the
+                # chat EXISTS but may have never spawned a turn (capacity
+                # bounce / staged landing). Content-wipe discipline: existence
+                # + empty content proves NOTHING — the created->updated span
+                # is the only structural tell. Zombie -> void + keep fighting.
+                m_url = re.search(r"/c/([0-9a-f-]{36})", _last_sent_url(name) or "")
+                zombie = _chat_zombie_server_side(m_url.group(1)) if m_url else None
+                if zombie is None:
+                    print("zombie check TOOLING FAILURE (None) — flag preserved, NOT disarming; supervisor will re-arm", flush=True)
+                    return 5
+                if zombie:
+                    print("chat exists but NEVER SPAWNED a turn (zombie: no content, span frozen) — voiding + continuing assault", flush=True)
+                    _void_phantom(name, _last_sent_url(name))
+                    time.sleep(20)
+                    continue
                 print("session already live — recovered elsewhere", flush=True)
                 _clear_flag()
                 return 0
