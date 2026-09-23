@@ -590,6 +590,80 @@ def ensure_lane_keepalive():
                 log(f"lane followup[{name}] DEAD — relaunched (immortality ring)")
 
 
+# 2026-09-23 endgame lanes (landed; chat ids from the session registry)
+ENDGAME_LANES = {}
+ENDGAME_LANES_ORDER = []
+
+def _load_endgame_lanes():
+    """Load lanes from flags/endgame_lanes.json (name -> chat-id-prefix)."""
+    global ENDGAME_LANES, ENDGAME_LANES_ORDER
+    try:
+        d = json.loads(open(os.path.join(FLAGS, "endgame_lanes.json")).read())
+        ENDGAME_LANES = dict(d)
+        ENDGAME_LANES_ORDER = list(d)
+    except Exception:
+        ENDGAME_LANES, ENDGAME_LANES_ORDER = {}, []
+
+def _mtime(path):
+    try:
+        return os.path.getmtime(path)
+    except Exception:
+        return 0.0
+
+
+def ensure_endgame_watch():
+    """2026-09-23 endgame guard: keep the LANDED-lane watches immortal.
+
+    The immortality ring (ensure_lane_keepalive) stops at the dispatched
+    marker — by design the completion machinery owns a landed lane. But
+    waveB_completion_watch + lane_watch_now are bare processes; an OOM
+    burst killing them would silently stop completion detection (the exact
+    prod031 postmortem shape). While flags/<name>-complete.marker is
+    ABSENT for a lane in ENDGAME_LANES, resurrect:
+      (a) waveB_completion_watch.py <name>:<cid>   (completion reports)
+      (b) lane_watch_now.py                        (queue-state + destroyed-tab)
+    Identity = cmdline needles, never bare pids (the doctrine).
+    """
+    for name, cid in ENDGAME_LANES.items():
+        if os.path.exists(os.path.join(FLAGS, f"{name}-complete.marker")):
+            continue  # landed + reported — nothing left to watch
+        if not os.path.exists(os.path.join(FLAGS, f"{name}-dispatched.marker")):
+            continue  # never dispatched — not an endgame lane yet
+        # (a) completion watch
+        alive = False
+        for pid in subprocess.run(["pgrep", "-f", "waveB_completion_watch.py"],
+                                  capture_output=True, text=True).stdout.split():
+            try:
+                cmd = open(f"/proc/{int(pid)}/cmdline", "rb").read().decode(errors="replace")
+            except Exception:
+                continue
+            if f"{name}:{cid}" in cmd:
+                alive = True
+                break
+        if not alive:
+            out = open(os.path.join(LOGDIR, f"{name}_completion_watch.log"), "a")
+            subprocess.Popen(
+                [PY, os.path.join(BASE, "waveB_completion_watch.py"), f"{name}:{cid}"],
+                stdout=out, stderr=subprocess.STDOUT,
+                stdin=subprocess.DEVNULL, start_new_session=True, cwd=BASE)
+            out.close()
+            log(f"endgame guard[{name}]: completion watch DEAD — relaunched")
+        # (b) lane state watch (one shared instance, first lane owns the check)
+        if name == ENDGAME_LANES_ORDER[0]:
+            hb = os.path.join(FLAGS, "lane_watch_now_heartbeat")
+            fresh = os.path.exists(hb) and (time.time() - _mtime(hb) <= 900)
+            alive2 = subprocess.run(["pgrep", "-f", "lane_watch_now.py"],
+                                    capture_output=True, text=True).stdout.strip()
+            if not fresh and not alive2:
+                out = open(os.path.join(LOGDIR, "lane_watch_now.log"), "a")
+                subprocess.Popen(
+                    [PY, os.path.join(BASE, "lane_watch_now.py")],
+                    stdout=out, stderr=subprocess.STDOUT,
+                    stdin=subprocess.DEVNULL, start_new_session=True, cwd=BASE)
+                out.close()
+                log("endgame guard: lane_watch_now DEAD — relaunched")
+
+
 def main():
     # single-instance guard
     lock_fh = open(LOCK, "w")
@@ -611,6 +685,8 @@ def main():
             ensure_queue_watch()
             ensure_stall_recovery()
             ensure_lane_keepalive()
+            _load_endgame_lanes()
+            ensure_endgame_watch()
             if cycle % 3 == 0:          # browser check every ~30s
                 ensure_browser()
                 ensure_dev()

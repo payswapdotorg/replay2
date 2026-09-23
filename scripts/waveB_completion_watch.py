@@ -37,6 +37,9 @@ MARKERS = {
     "prod031": ["PROD-031 COMPLETION REPORT", "PROD-031 完成报告", "WORKER_COMMIT"],
     "hfx204": ["HFX-204 COMPLETION REPORT", "HFX-204 完成报告", "WORKER_COMMIT"],
     "hfx301": ["HFX-301 COMPLETION REPORT", "HFX-301 完成报告", "WORKER_COMMIT"],
+    # 2026-09-23 endgame lanes (names lack the hyphen; the packets' headlines have it)
+    "prod033": ["PROD-033 COMPLETION REPORT", "PROD-033 完成报告", "WORKER_COMMIT"],
+    "hfx302": ["HFX-302 COMPLETION REPORT", "HFX-302 完成报告", "WORKER_COMMIT"],
 }
 
 
