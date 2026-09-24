@@ -76,18 +76,18 @@ def settle(c, label, secs=8):
 
 
 def reset_tab(tab):
-    """2026-09-24 siege patch: navigate the dispatch tab to a clean home
-    after a FAILED attempt. A tab that went through one failed send (form
-    submit rejected / composer residue / error overlay) renders a degraded
-    surface where the sidebar Agent nav item disappears — the next pinned
-    reuse then fails 4x at 'agent nav click: not-found' (observed 18:29-
-    19:25 on three consecutive attempts). A full navigate-to-home restores
-    the logged-in shell for the next attempt."""
+    """2026-09-24 siege patch: HARD-RELOAD the dispatch tab after a FAILED
+    attempt. A tab that went through one failed send (form submit rejected /
+    composer residue / error overlay) renders a degraded surface where the
+    sidebar Agent nav item disappears — the next pinned reuse then fails 4x
+    at 'agent nav click: not-found' (observed 18:29-19:41 on four attempts;
+    verified fix: location.reload() restores the logged-in shell; a soft
+    Page.navigate to the SAME url does NOT — the SPA soft-navigates)."""
     try:
         c = channel.CDP(tab["webSocketDebuggerUrl"], timeout=20)
         try:
             c.call("Page.enable", {}, timeout=10)
-            c.call("Page.navigate", {"url": CHAT_URL}, timeout=20)
+            c.eval("location.reload()", timeout=20)
         finally:
             c.close()
     except Exception:
