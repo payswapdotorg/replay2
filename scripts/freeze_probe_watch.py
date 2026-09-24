@@ -34,6 +34,9 @@ MARKER = os.path.join(FLAGS, "backend_recovered.txt")
 OUTBOX = os.path.join(FLAGS, "agent_outbox.jsonl")
 LOG = "/tmp/freeze_probe_watch.log"
 PY = "/home/z/.venv/bin/python3"
+LAST_ATTEMPT = os.path.join(FLAGS, "freeze_probe_last.txt")
+MIN_SPACING = 3300       # s — a restarted instance never probes sooner
+                          # than ~55 min after the last landed attempt (§16)
 
 # freeze until (UTC HH:MM) — hourly spacing after the last failed attempt
 # (2026-09-24 12:26 DOWN probe, sandbox-reset #3 redeploy)
@@ -72,10 +75,36 @@ def wait_until(hhmm):
         time.sleep(min(900, max(1, target - now_s)))
 
 
+def _note_attempt():
+    """Persist the last probe epoch (restart-safe §16 spacing)."""
+    try:
+        with open(LAST_ATTEMPT, "w") as f:
+            f.write(str(int(time.time())))
+    except OSError:
+        pass
+
+
+def _wait_out_recent_attempt():
+    """If a previous instance probed < MIN_SPACING ago, sleep the remainder
+    so a supervisor restart never collapses the hourly cadence."""
+    try:
+        last = int(open(LAST_ATTEMPT).read().strip())
+    except (OSError, ValueError):
+        return
+    remain = MIN_SPACING - (time.time() - last)
+    if remain > 0:
+        log(f"restart-safe spacing: last attempt {int(time.time() - last)}s "
+            f"ago — holding {int(remain)}s before first probe (§16)")
+        while remain > 0:
+            time.sleep(min(900, remain))
+            remain = MIN_SPACING - (time.time() - last)
+
+
 def main():
     log(f"freeze active (§16b) — no sends until {FIRST_PROBE_UTC} UTC; "
         f"then ONE probe/hour max")
     wait_until(FIRST_PROBE_UTC)
+    _wait_out_recent_attempt()
     log("freeze elapsed — starting hourly single-probe loop (§16c)")
     while True:
         try:
@@ -108,6 +137,7 @@ def main():
             log(f"TOOLFAIL — {verdict} (retry in 10 min, not an attempt)")
             time.sleep(600)
             continue
+        _note_attempt()
         log(f"DOWN — {verdict}; next probe in 60 min (hourly max, §16c)")
         time.sleep(HOURLY)
 

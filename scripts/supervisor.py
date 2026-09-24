@@ -451,6 +451,34 @@ def ensure_stall_recovery():
     log("stall_recovery restarted")
 
 
+def ensure_freeze_probe_watch():
+    """freeze_probe_watch.py — the §16 hourly platform probe (generation
+    wedge 2026-09-23..). NOT heartbeat-gated: the loop legally sleeps up to
+    900s inside wait_until/spacers, so a stale heartbeat would false-kill
+    it. pidfile first, pgrep fallback; restart honors the script's own
+    restart-safe spacing (flags/freeze_probe_last.txt). Added 2026-09-24
+    after reset #3: a reboot must never silently kill the probe loop."""
+    pidfile = os.path.join(BASE, "freeze_probe_watch.pid")
+    pid = read_pid(pidfile)
+    if pid_alive(pid, "freeze_probe_watch.py"):
+        return
+    r = subprocess.run(["pgrep", "-f", "scripts/freeze_probe_watch.py"],
+                       capture_output=True, text=True)
+    pid = r.stdout.strip().split("\n")[0] if r.stdout.strip() else ""
+    if pid:
+        try:
+            open(pidfile, "w").write(pid)
+        except Exception:
+            pass
+        return
+    log("freeze_probe_watch DEAD — restarting (§16 probe loop)")
+    subprocess.Popen(
+        [PY, os.path.join(BASE, "freeze_probe_watch.py")],
+        stdout=open(os.path.join(LOGDIR, "freeze_probe_watch.out"), "a"),
+        stderr=subprocess.STDOUT, start_new_session=True)
+    log("freeze_probe_watch restarted")
+
+
 def ensure_queue_watch():
     """Resurrect queue_watch.py for every flags/queue_watch.spec.<name>.
 
@@ -684,6 +712,7 @@ def main():
             ensure_tab_gc()
             ensure_queue_watch()
             ensure_stall_recovery()
+            ensure_freeze_probe_watch()
             ensure_lane_keepalive()
             _load_endgame_lanes()
             ensure_endgame_watch()
