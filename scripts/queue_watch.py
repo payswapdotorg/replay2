@@ -229,6 +229,16 @@ def state(tab_prefix):
         r"===?\s*R\d+-W\d+\s*(?:COMPLETION\s*REPORT|完成报告)\s*===?"
         r"[\s\S]{0,600}?(?:cloned\s*HEAD\s*SHA|Base)\s*[:：@]\s*[0-9a-f]{7,40}",
         body, re.IGNORECASE))
+    # 2026-09-24 (Flauz Wave-5 campaign): the W5 worker packets use
+    # "=== TAKE-001 COMPLETION REPORT ===" (LEASE-001 same shape, LEASE
+    # prefix) + "Base SHA / 基础 SHA: main @ <hex>". The packet template
+    # carries a non-hex placeholder on that line, so prompt echoes (and
+    # worker plan drafts echoing the template) never satisfy this gate;
+    # a genuine report always carries the real checked-out base hex.
+    filled = filled or bool(re.search(
+        r"===?\s*(?:LEASE|TAKE)-\d+\s*(?:COMPLETION\s*REPORT|完成报告)\s*===?"
+        r"[\s\S]{0,600}?(?:Base\s*SHA|基础\s*SHA)[^\n]{0,40}[:：][^\n]{0,15}?(?:main|主干)\s*@\s*[0-9a-f]{7,40}",
+        body, re.IGNORECASE))
 
     gen = bool(re.search(r"\b(Stop|Pause|Halt)\b", body[-1500:]))
     cap = "currently at capacity" in body or "peak hours" in body
