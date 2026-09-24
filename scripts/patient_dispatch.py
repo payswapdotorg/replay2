@@ -81,6 +81,12 @@ def main():
         return 2
     name, prompt_file = sys.argv[1], sys.argv[2]
     prompt = open(prompt_file, encoding="utf-8").read()
+    # 2026-09-24 false-positive fix (W098, twice): the server-verify matched
+    # an OLD dead chat holding an IDENTICAL packet (same prompt file re-sent
+    # after a void) — a failed send "verified" against 5-hour-old evidence.
+    # The verify below now requires the chat's updated_at to be newer than
+    # this dispatch attempt. 3-min floor covers list-write lag.
+    dispatch_start = time.time() - 180
 
     # pick or open a chat.z.ai tab (reuse existing — fewer tabs, less load)
     # PATIENT_TAB env: pin the dispatch to a specific tab id prefix (keeps
@@ -336,6 +342,15 @@ def main():
         cid = it.get("id") or ""
         if not cid:
             continue
+        # freshness gate (2026-09-24): a chat whose latest server-side write
+        # predates this dispatch attempt can only hold an OLD packet — skip
+        # it, else re-dispatches of the same prompt file verify against the
+        # dead predecessor (observed twice on W098).
+        try:
+            if float(it.get("updated_at") or 0) < dispatch_start:
+                continue
+        except (TypeError, ValueError):
+            pass
         try:
             chat = api(f"/api/v1/chats/{cid}")
         except Exception:
