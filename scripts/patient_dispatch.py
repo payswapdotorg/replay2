@@ -75,6 +75,25 @@ def settle(c, label, secs=8):
     time.sleep(secs)
 
 
+def reset_tab(tab):
+    """2026-09-24 siege patch: navigate the dispatch tab to a clean home
+    after a FAILED attempt. A tab that went through one failed send (form
+    submit rejected / composer residue / error overlay) renders a degraded
+    surface where the sidebar Agent nav item disappears — the next pinned
+    reuse then fails 4x at 'agent nav click: not-found' (observed 18:29-
+    19:25 on three consecutive attempts). A full navigate-to-home restores
+    the logged-in shell for the next attempt."""
+    try:
+        c = channel.CDP(tab["webSocketDebuggerUrl"], timeout=20)
+        try:
+            c.call("Page.enable", {}, timeout=10)
+            c.call("Page.navigate", {"url": CHAT_URL}, timeout=20)
+        finally:
+            c.close()
+    except Exception:
+        pass
+
+
 def main():
     if len(sys.argv) != 3:
         print(__doc__)
@@ -129,6 +148,7 @@ def main():
                 c = reconnect(tab["id"])
         if str(ev(c, DW.JS_AGENT_MODE_ON)) != "true":
             print("ERROR: agent mode not activating")
+            reset_tab(tab)
             return 1
     print("      agent mode ON")
 
@@ -366,6 +386,7 @@ def main():
             break
     if not found:
         print("ERROR: packet not found in any recent chat — send FAILED server-side")
+        reset_tab(tab)
         return 1
     print(f"SENT-VERIFIED (server): chat {found} holds the {len(prompt)}-char packet")
     rec = {"name": name, "tab_id": tab["id"], "url": f"https://chat.z.ai/c/{found}",
