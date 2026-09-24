@@ -31,8 +31,10 @@ import urllib.request
 BASE = os.path.dirname(os.path.abspath(__file__))
 FLAGS = os.path.join(BASE, "flags")
 LOGDIR = os.path.join(BASE, "logs")
-INTERVAL = 600
-BAD_STREAK_TRIGGER = 2
+INTERVAL = 300
+BAD_STREAK_TRIGGER = 1  # a replayd 500 already means >30s stale — act on first sight
+# (2026-09-24 07:4x tuning: 3rd recurrence of the wedge/pin class; restart
+# is cheap and proven; operator staring at a frozen image is the real cost)
 
 
 def log(msg):
@@ -168,7 +170,7 @@ def switch_healthy_tab():
 
 
 def main():
-    log("frame_guard online — 600s cycle, trigger at 2 consecutive bad checks")
+    log(f"frame_guard v3 online — {INTERVAL}s cycle, trigger at {BAD_STREAK_TRIGGER} bad check(s)")
     bad = 0
     alerted = False
     while True:
