@@ -280,9 +280,9 @@ def _env_conf():
     canonical operator-credential location since 2026-09-12; the anonymous
     API rate limit on this box's IP exhausts within an hour, so the PAT
     fallback keeps the console's repo card alive). Recognized:
-    REPO=owner/name, OPERATOR_PAT/GITHUB_TOKEN/PAYSWAP_PAT (ghp_ or
-    github_pat_)."""
-    conf = {"repo": "", "pat": ""}
+    REPO=owner/name, CLONE=/path/to/local/clone (optional),
+    OPERATOR_PAT/GITHUB_TOKEN/PAYSWAP_PAT (ghp_ or github_pat_)."""
+    conf = {"repo": "", "pat": "", "clone": ""}
     import re
     here = os.path.join(os.path.dirname(os.path.abspath(__file__)), "env.sh")
     secret = os.path.expanduser("~/.secrets/env.sh")
@@ -296,6 +296,9 @@ def _env_conf():
         m = re.search(r"^\s*(?:export\s+)?REPO=([\w./-]+)", env, re.M)
         if m:
             conf["repo"] = m.group(1).strip().strip("\"'")
+        m = re.search(r"^\s*(?:export\s+)?CLONE=([\w./-]+)", env, re.M)
+        if m:
+            conf["clone"] = m.group(1).strip().strip("\"'")
         # tolerate optional double/single quotes around the token (the
         # canonical ~/.secrets/env.sh writes export PAT="ghp_...")
         m = re.search(
@@ -342,6 +345,71 @@ def _login_state(tab):
         cdp.close()
 
 
+def _status_branches(conf):
+    """Branch list, local-clone FIRST (2026-09-24 rollback recovery).
+
+    The console polls status every 20s and each REST call burns the
+    60/hr unauthenticated GitHub budget (360/hr at the old cadence — the
+    card thrashed to '?'). `git fetch` + for-each-ref over the local clone
+    is not API-rate-limited, so branches + main_sha come from git; the
+    REST API remains the fallback when no CLONE is configured."""
+    clone = conf.get("clone")
+    if clone and os.path.isdir(os.path.join(clone, ".git")):
+        try:
+            subprocess.run(["git", "-C", clone, "fetch", "--quiet", "--prune",
+                            "origin"], capture_output=True, text=True, timeout=30)
+            r = subprocess.run(
+                ["git", "-C", clone, "for-each-ref",
+                 "refs/remotes/origin", "--format",
+                 "%(refname:short) %(objectname)"],
+                capture_output=True, text=True, timeout=15)
+            blist = []
+            for line in r.stdout.splitlines():
+                ref, _, sha = line.partition(" ")
+                name = ref[len("origin/"):] if ref.startswith("origin/") else ref
+                if not name or name == "HEAD":
+                    continue
+                blist.append({"name": name, "sha": sha[:10]})
+            if blist:
+                return blist
+        except Exception:
+            pass
+    brs = gh(conf["repo"], "/branches?per_page=50", conf["pat"])
+    return [{"name": b.get("name"),
+             "sha": b.get("commit", {}).get("sha", "")[:10]}
+            for b in (brs if isinstance(brs, list) else [])]
+
+
+def _status_cached_pulls(conf, ttl=180):
+    """Pulls via REST behind a TTL file cache (rate-limit safety:
+    20s console poll x 2 API calls >> 60/hr unauthenticated). A failed/
+    empty fetch (rate-limited) is cached only briefly (45s) so the card
+    recovers fast once the window resets."""
+    cache_path = os.path.join(
+        os.path.dirname(os.path.abspath(__file__)), "flags",
+        "status_pulls_cache.json")
+    now = __import__("time").time()
+    try:
+        with open(cache_path) as fh:
+            cached = json.load(fh)
+        eff_ttl = ttl if cached.get("ok") else 45
+        if now - float(cached.get("ts", 0)) < eff_ttl:
+            return cached.get("pulls", [])
+    except Exception:
+        pass
+    pulls = gh(conf["repo"], "/pulls?state=all&per_page=20", conf["pat"])
+    prs = [{"n": p.get("number"), "state": p.get("state"),
+            "title": (p.get("title") or "")[:60]}
+           for p in (pulls if isinstance(pulls, list) else [])]
+    try:
+        os.makedirs(os.path.dirname(cache_path), exist_ok=True)
+        with open(cache_path, "w") as fh:
+            json.dump({"ts": now, "ok": bool(prs), "pulls": prs}, fh)
+    except Exception:
+        pass
+    return prs
+
+
 def cmd_status():
     conf = _env_conf()
     out = {
@@ -361,13 +429,8 @@ def cmd_status():
         out["browser_login"] = "no-browser"
     if conf["repo"]:
         try:
-            brs = gh(conf["repo"], "/branches?per_page=50", conf["pat"])
-            blist = [{"name": b.get("name"), "sha": b.get("commit", {}).get("sha", "")[:10]}
-                     for b in (brs if isinstance(brs, list) else [])]
-            pulls = gh(conf["repo"], "/pulls?state=all&per_page=20", conf["pat"])
-            prs = [{"n": p.get("number"), "state": p.get("state"),
-                    "title": (p.get("title") or "")[:60]}
-                   for p in (pulls if isinstance(pulls, list) else [])]
+            blist = _status_branches(conf)
+            prs = _status_cached_pulls(conf)
             out["main_sha"] = next((b["sha"] for b in blist if b["name"] == "main"), "?")
             out["branches"] = blist
             out["pulls"] = prs
