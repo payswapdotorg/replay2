@@ -35,8 +35,9 @@ OUTBOX = os.path.join(FLAGS, "agent_outbox.jsonl")
 LOG = "/tmp/freeze_probe_watch.log"
 PY = "/home/z/.venv/bin/python3"
 
-# freeze until (UTC HH:MM) — 1h18m after the last failed attempt (21:57)
-FIRST_PROBE_UTC = "23:15"
+# freeze until (UTC HH:MM) — hourly spacing after the last failed attempt
+# (2026-09-24 12:26 DOWN probe, sandbox-reset #3 redeploy)
+FIRST_PROBE_UTC = "13:30"
 HOURLY = 3600
 
 
@@ -89,6 +90,14 @@ def main():
             log(f"HEALTHY — {verdict}")
             with open(MARKER, "w") as f:
                 f.write(f"healthy at {time.strftime('%Y-%m-%d %H:%M:%S UTC')}\n")
+            # lift the outage hold so queue_watch re-dispatch paths unblock
+            # (2026-09-23 Task-96 patch, restored 2026-09-24 after reset #3;
+            # committed so it survives the next reset)
+            try:
+                os.remove(os.path.join(FLAGS, "outage_hold.txt"))
+                log("outage_hold.txt removed — queue_watch senders unblocked")
+            except FileNotFoundError:
+                pass
             outbox("[lead] HEALTHY probe! Generation capacity is back "
                    "(hourly-probe protocol, §16). Recovery chain firing: "
                    "both lanes re-dispatch fresh now; completion watches "

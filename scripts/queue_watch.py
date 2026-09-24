@@ -100,7 +100,14 @@ def _prompt_file_for(name):
     # legacy derivation (pre-registry packets); None when nothing exists —
     # the caller must abort the re-dispatch rather than crash
     legacy = os.path.join(BASE, "worker-prompts", f"{name.replace('wo-', 'WO-')}.md")
-    return legacy if os.path.exists(legacy) else None
+    if os.path.exists(legacy):
+        return legacy
+    # 2026-09-24 (reset #3): the registry was wiped by the sandbox reset and
+    # the wave-5 packets use UPPERCASE names (W5-TAKE-001.md) while session
+    # names are lowercase (w5-take-001) — the lowercase legacy path missed
+    # and the re-dispatch aborted at the worst moment (platform recovery).
+    upper = os.path.join(BASE, "worker-prompts", f"{name.upper()}.md")
+    return upper if os.path.exists(upper) else None
 
 
 def heartbeat(name):
