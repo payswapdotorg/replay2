@@ -664,6 +664,55 @@ def ensure_endgame_watch():
                 log("endgame guard: lane_watch_now DEAD — relaunched")
 
 
+def ensure_pa_server_watch():
+    """File-driven per-worker server-side watchers (2026-09-24).
+
+    flags/pa_server_watch_jobs.json = [{"name": ..., "chat_id": ...}].
+    The sandbox process reaper kills freshly-spawned detached processes
+    within ~60-90s (observed: two pa-012 watchers SIGKILLed with no
+    python-level death print while the 14h-old ring survives untouched),
+    so the supervisor owns the respawn: every 10s cycle, any job whose
+    watcher is missing gets relaunched (setsid via start_new_session).
+    Terminal markers (complete/reaped) self-clean the job from the file.
+    The watcher itself is stateless across respawns (markers + heartbeat
+    are file-based), so kill+respawn cycles lose nothing."""
+    jobs_path = os.path.join(FLAGS, "pa_server_watch_jobs.json")
+    try:
+        with open(jobs_path) as fh:
+            jobs = json.load(fh)
+    except Exception:
+        return
+    if not isinstance(jobs, list) or not jobs:
+        return
+    changed = False
+    alive = []
+    for job in jobs:
+        if not isinstance(job, dict):
+            continue
+        name, chat_id = job.get("name"), job.get("chat_id")
+        if not name or not chat_id:
+            continue
+        if any(os.path.exists(os.path.join(
+                FLAGS, f"pa_server_watch.{name}.{term}"))
+               for term in ("complete", "reaped")):
+            changed = True          # terminal state — self-clean the job
+            continue
+        r = subprocess.run(["pgrep", "-f", f"pa_server_watch.py {name} "],
+                           capture_output=True, text=True)
+        if not r.stdout.strip():
+            out = open(os.path.join(LOGDIR, f"pa_server_watch.{name}.log"), "a")
+            subprocess.Popen(
+                [PY, os.path.join(BASE, "pa_server_watch.py"), name, chat_id],
+                stdout=out, stderr=subprocess.STDOUT,
+                stdin=subprocess.DEVNULL, start_new_session=True, cwd=BASE)
+            out.close()
+            log(f"pa_server_watch: {name} DEAD — respawned (reaper-proofing)")
+        alive.append(job)
+    if changed:
+        with open(jobs_path, "w") as fh:
+            json.dump(alive, fh)
+
+
 def main():
     # single-instance guard
     lock_fh = open(LOCK, "w")
@@ -687,6 +736,7 @@ def main():
             ensure_lane_keepalive()
             _load_endgame_lanes()
             ensure_endgame_watch()
+            ensure_pa_server_watch()
             if cycle % 3 == 0:          # browser check every ~30s
                 ensure_browser()
                 ensure_dev()
