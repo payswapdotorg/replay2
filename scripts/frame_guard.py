@@ -115,6 +115,58 @@ def reload_active_tab():
         log(f"reload err: {e!r}")
 
 
+# 2026-09-24 06:5x lesson: pick_tab matches the FULL 32-char target id in
+# active_tab.txt; a short prefix silently falls back to the FIRST chat tab,
+# which may be compositor-wedged. Any active-tab write MUST use the full id.
+SWITCH_SCRIPT = """
+import asyncio, json, sys, urllib.request, websockets
+
+async def t():
+    tabs = json.load(urllib.request.urlopen(
+        "http://127.0.0.1:9222/json/list", timeout=5))
+    pages = [x for x in tabs if x.get("type") == "page"
+             and "chat.z.ai" in (x.get("url") or "")]
+    for tab in pages:
+        try:
+            ws = await websockets.connect(tab["webSocketDebuggerUrl"])
+            await ws.send(json.dumps(
+                {"id": 1, "method": "Page.captureScreenshot",
+                 "params": {"format": "jpeg", "quality": 40}}))
+            r = await asyncio.wait_for(ws.recv(), 6)
+            await ws.close()
+            if "data" in json.loads(r).get("result", {}):
+                print(tab["id"])  # FULL id of first capturable chat tab
+                return
+        except Exception:
+            try:
+                await ws.close()
+            except Exception:
+                pass
+
+asyncio.run(t())
+"""
+
+
+def switch_healthy_tab():
+    """If the active tab itself is wedged, switch active_tab.txt (FULL id)
+    to the first chat.z.ai tab that captures cleanly. Registry/marker
+    surgery stays a Lead action; this only re-points the VIEW."""
+    try:
+        r = subprocess.run([sys.executable, "-c", SWITCH_SCRIPT],
+                           capture_output=True, text=True, timeout=45)
+        full_id = (r.stdout or "").strip()
+        if len(full_id) == 32:
+            with open(os.path.join(FLAGS, "active_tab.txt"), "w") as f:
+                f.write(full_id)
+            log(f"active tab switched to healthy {full_id[:12]}… (full id written)")
+            return True
+        log(f"no healthy chat tab found to switch to (out={full_id[:40]!r})")
+        return False
+    except Exception as e:
+        log(f"switch err: {e!r}")
+        return False
+
+
 def main():
     log("frame_guard online — 600s cycle, trigger at 2 consecutive bad checks")
     bad = 0
@@ -144,6 +196,12 @@ def main():
                     log("active-tab reload fixed the frame stream")
                     bad = 0
                     continue
+                if switch_healthy_tab():
+                    time.sleep(10)
+                    if frame_ok():
+                        log("healthy-tab switch fixed the frame stream")
+                        bad = 0
+                        continue
                 if not alerted:
                     outbox("[lead] Console frame stream is STUCK (replayd restart + tab reload did not "
                            "fix it) — the operator's preview image is frozen. Needs Lead tab-swap/"
