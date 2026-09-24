@@ -242,8 +242,10 @@ def state(tab_prefix):
     # carries a non-hex placeholder on that line, so prompt echoes (and
     # worker plan drafts echoing the template) never satisfy this gate;
     # a genuine report always carries the real checked-out base hex.
+    # 2026-09-24 (Wave-6 staging): WEB- prefix added for the F11 web client
+    # campaign (same report shape, same placeholder-proof rule).
     filled = filled or bool(re.search(
-        r"===?\s*(?:LEASE|TAKE)-\d+\s*(?:COMPLETION\s*REPORT|完成报告)\s*===?"
+        r"===?\s*(?:LEASE|TAKE|WEB)-\d+\s*(?:COMPLETION\s*REPORT|完成报告)\s*===?"
         r"[\s\S]{0,600}?(?:Base\s*SHA|基础\s*SHA)[^\n]{0,40}[:：][^\n]{0,15}?(?:main|主干)\s*@\s*[0-9a-f]{7,40}",
         body, re.IGNORECASE))
 
