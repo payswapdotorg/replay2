@@ -140,14 +140,33 @@ def check_login():
         return STATE["login"]
 
 
+def _repo():
+    """2026-09-24: the branch watch hardcoded payswapdotorg/sporta (the
+    2026-09-15 program) and NEVER fired for the RoamLink campaign — the
+    NEW BRANCH completion signal was silently dead all PA-wave. Read the
+    repo from the same config files the PAT comes from; sporta stays as
+    the fallback for backward safety."""
+    for path in (os.path.expanduser("~/.secrets/env.sh"), os.path.join(BASE, "env.sh")):
+        try:
+            m = re.search(r"^\s*(?:export\s+)?REPO=([\w./-]+)",
+                          open(path).read(), re.M)
+            if m:
+                return m.group(1).strip().strip("\"'")
+        except Exception:
+            continue
+    return "payswapdotorg/sporta"
+
+
 def check_branches(pat):
     """2026-09-15: watch payswapdotorg/sporta (the active program). With a PAT
     use the API; WITHOUT one fall back to anonymous `git ls-remote` — the repo
-    is public, so branch watching survives credential loss (reset-2 lesson)."""
+    is public, so branch watching survives credential loss (reset-2 lesson).
+    2026-09-24: repo is now _repo()-derived (see above)."""
+    repo = _repo()
     if pat:
         r = subprocess.run(["curl", "-s", "--max-time", "15",
                             "-H", f"Authorization: token {pat}",
-                            "https://api.github.com/repos/payswapdotorg/sporta/branches?per_page=100"],
+                            f"https://api.github.com/repos/{repo}/branches?per_page=100"],
                            capture_output=True, text=True)
         try:
             bs = json.loads(r.stdout)
@@ -157,7 +176,7 @@ def check_branches(pat):
             pass
     try:
         r = subprocess.run(
-            ["git", "ls-remote", "--heads", "https://github.com/payswapdotorg/sporta"],
+            ["git", "ls-remote", "--heads", f"https://github.com/{repo}"],
             capture_output=True, text=True, timeout=30)
         out = {}
         for line in r.stdout.splitlines():
