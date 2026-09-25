@@ -2714,3 +2714,40 @@ chain: `head=payswapdotorg:${BRANCH}`.
     and sentinel attempt names must carry a run-unique tag (n resets on
     restart — reused names append to old create logs and a STALE abort
     line from a previous run poisons the verdict).
+
+## Lessons 143-145 (2026-09-25 18:3x UTC — R30-B console: the empty model-menu DOM truth; assault-dispatch pattern; registry-first law)
+
+143. **The empty model-menu is DOM-verifiable in one probe — do not burn
+    dispatch cycles to diagnose it.** The 2026-09-25 10:12-17:58Z storm (11
+    spaced cycles, all "GLM-5.3 option not found") was congestion-class, and
+    the proof took ONE passive probe: iterate chat.z.ai home tabs (some have
+    hung CDP sockets — short timeouts, skip the hung), open the model menu,
+    read the options list. Menu OPEN + options `[]` after 19+s = the
+    option-list fetch hangs (peak congestion); menu with options = the
+    dispatcher's timing was the problem. A popup sitting on top produces the
+    SAME empty menu — dismiss first (lesson 129), re-open, re-read. Both
+    senders now dismiss dialogs between menu cycles (dispatch_worker.py
+    step-4: 3 cycles × [dismiss + open + 15×2s]; patient_dispatch.py:
+    pre-dismiss + every-3-rounds re-dismiss).
+
+144. **Assault-dispatch pattern for congestion (the r30b_assault.py shape):
+    when the operator says never-wait, the loop is void-stale-registry-row →
+    full create → 75s breath → repeat.** Each create itself fights (popup
+    cancels, re-picks, staged-resume Enter). This replaces spaced holds for
+    RENDER/FETCH congestion entirely; spaced pacing (lesson 142) stays only
+    for account-limiter trips. Honesty cadence: an outbox note every ~10
+    failed attempts. Companion tooling: r30_monitor.py (one-shot compact
+    pipeline status; exit codes 10/20/30 = dispatched/complete/dead) and
+    r30_wait_event.py (blocks until the pipeline state CHANGES — the lead
+    loop sleeps on events, not on clocks).
+
+145. **Registry-first when a worker chat looks stalled: the len=0 shell is
+    not a verdict.** A chat detail showing ALL assistant messages len=0 +
+    a big final user prompt looks like a dead worker — but consult
+    flags/session_registry.jsonl's action=done rows FIRST (extends lesson
+    138's "len=0 is a known lie for agent-mode chats" to the completion
+    question: r29-sweep and r30a both displayed the stalled shape while
+    their registries carried done-notes hours old). The registry is the
+    completion truth; the chat tree is the durability surface. Corollary:
+    retire watchers deliberately when the registry closes the task and LOG
+    the retirement, so a later session never misreads the absence.

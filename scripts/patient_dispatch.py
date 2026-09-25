@@ -166,10 +166,26 @@ def main():
         if cur == "no-button":
             print("ERROR: model selector button not found")
             return 1
+        # lesson-129/patch-parity (2026-09-25): a popup sitting on top leaves
+        # the menu EMPTY no matter how many re-opens — dismiss first
+        try:
+            dres = ev(c, DW.JS_DISMISS_DIALOG)
+            if dres not in ("none",):
+                print(f"      dialog {dres} — dismissed before model menu")
+        except Exception:
+            pass
         ev(c, DW.JS_OPEN_MODEL_MENU)
         time.sleep(4)
         ok = False
-        for _ in range(10):
+        for _r in range(10):
+            if _r and _r % 3 == 0:
+                # periodic re-dismiss (popups land mid-flow during peaks)
+                try:
+                    dres = ev(c, DW.JS_DISMISS_DIALOG)
+                    if dres not in ("none",):
+                        print(f"      dialog {dres} — dismissed (round {_r})")
+                except Exception:
+                    pass
             try:
                 res = ev(c, DW.JS_CLICK_MODEL)
                 if res == "ok":

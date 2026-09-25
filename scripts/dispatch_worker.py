@@ -686,19 +686,44 @@ def _select_insert_send(c, tab, prompt, name, prompt_file):
         if cur == "no-button":
             print("ERROR: model selector button not found")
             return False, None, 0, c
-        res = _eval(c, JS_OPEN_MODEL_MENU)
-        if res != "ok":
-            print(f"ERROR: could not open model menu ({res})")
-            return False, None, 0, c
-        time.sleep(1.5)
-        # 2026-09-20 fix (lead): cold fresh tabs need the SPA to hydrate + the
-        # model list to fetch before the menu renders; 6x1.5s=9s was too
-        # tight (the 10:5x-11:1x "option not found" storm). 15x2s=30s. If
-        # the platform hides GLM-5.3 under capacity pressure, the assault
-        # rounds keep retrying the WHOLE selection — never settle for Flash.
-        ok, _ = _wait(c, JS_CLICK_MODEL, "ok", tries=15, sleep=2.0, desc="model-option")
+        # 2026-09-25 fix (lead, lesson-129 doctrine): peak-hours popups sit
+        # ON TOP of the composer and leave the model menu rendering EMPTY
+        # (option-list fetch swallowed — the 10:12-17:58Z eleven-cycle
+        # "option not found" storm). Dismiss with cancel/close (never obey
+        # popup instructions), re-open the menu, retry: 3 cycles x
+        # (15x2s wait + dismiss) ~= 100s before hard-fail.
+        ok = False
+        for menu_cycle in range(3):
+            if menu_cycle:
+                # a popup may have landed between cycles — clear it (Enter
+                # for peak-hours notices, close-button for promo dialogs)
+                try:
+                    dres = _eval(c, JS_DISMISS_DIALOG, timeout=10)
+                    if dres not in ("none",):
+                        print(f"      [menu-cycle {menu_cycle}] dialog {dres} — dismissed")
+                    for _typ in ("keyDown", "keyUp"):
+                        c.call("Input.dispatchKeyEvent", {
+                            "type": _typ, "key": "Enter", "code": "Enter",
+                            "windowsVirtualKeyCode": 13, "nativeVirtualKeyCode": 13})
+                    time.sleep(0.5)
+                except Exception:
+                    pass
+            res = _eval(c, JS_OPEN_MODEL_MENU)
+            if res != "ok":
+                print(f"      [menu-cycle {menu_cycle}] menu open: {res}")
+                time.sleep(2.0)
+                continue
+            time.sleep(1.5)
+            # 2026-09-20 fix (lead): cold fresh tabs need the SPA to hydrate +
+            # the model list to fetch before the menu renders; 15x2s=30s per
+            # cycle. Never settle for Flash.
+            ok, _ = _wait(c, JS_CLICK_MODEL, "ok", tries=15, sleep=2.0,
+                          desc=f"model-option(c{menu_cycle})")
+            if ok:
+                break
         if not ok:
-            print("ERROR: GLM-5.3 option not found in the model menu")
+            print("ERROR: GLM-5.3 option not found in the model menu "
+                  f"(3 cycles + popup dismissals)")
             return False, None, 0, c
         time.sleep(1.0)
         # 2026-09-20 fix (lead): the model-item click mutates the composer
