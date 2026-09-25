@@ -2530,3 +2530,45 @@ chain: `head=payswapdotorg:${BRANCH}`.
     done/harvest, run `dash_sandbox_release.py` (repeat passes until the
     Sandbox section has no Live rows) BEFORE the next create;
     `check_workspaces.py` active count < 3 is the pre-dispatch gate.
+
+## Lessons 136-138 (2026-09-25 13:2x UTC — Epoch wave 6: phantom-create burst; in-chat recovery; patch parity)
+
+136. **Phantom-create burst on the home New-Task surface while generations
+    are active (w020b/c/d + w028a + short-create test, all 12:0x-13:1x).**
+    With a worker generating, a New-Task send (any length — 31 chars to
+    10,449) creates an EMPTY chat shell (URL navigates to /c/<id>) whose
+    message never lands; the shell is reaped server-side (HTTP 500 on
+    detail, absent from the list) and the composer keeps its text. The
+    React-state desync theory is WRONG — the send button shows enabled
+    (state synced); the submit itself drops the content. It is BURSTY, not
+    permanent: a fresh-tab retry (close the pinned tab, clear
+    flags/patient_tab_pin.txt, relaunch) landed cleanly 20 minutes later
+    (w028b SENT-VERIFIED first try). Rule: on phantom-create, rotate with
+    FULL tab hygiene — close the degraded tab (SPA state survives soft
+    navigation; lesson-129 reset_tab rule), clear the pin, fresh tag in
+    the packet comment, retry. Do not conclude "platform full" without
+    server-side corroboration (lesson-131).
+
+137. **In-chat follow-up sends BYPASS the phantom-create gate — use them
+    for stalled-turn recovery instead of re-dispatch.** A continuation
+    nudge sent into a LANDED chat (manual_send.py) lands reliably even
+    mid-burst (w020a recovery 12:52Z: turn truncated at 09:27Z with its
+    sandbox pod gone; one nudge — "restart cleanly from Delivery chain
+    step 1" — re-provisioned the pod and the worker re-executed the full
+    plan; the original packet stays server-side, no re-dispatch needed).
+    Prefer nudge-in-place over fresh dispatch whenever the packet is
+    already landed: faster, no phantom exposure, chat identity preserved.
+
+138. **Patch parity discipline: every send-path fix must land in ALL
+    three senders (dispatch_worker.py, patient_dispatch.py,
+    manual_send.py).** The 41e0bd1 Escape+DOM-click fix was committed to
+    dispatch_worker.py only; patient_dispatch (used by launch_patient —
+    the worker-dispatch path!) and manual_send (the follow-up path) both
+    still had the eaten-Enter bug and burned a full dispatch cycle before
+    the port. Symptom signature for the unpatched path: "send paths:
+    ... | composer=<full>" + post-send URL home or empty-shell /c/<id>.
+    Also: patient_dispatch now gates on the send button ENABLED before
+    any send path fires (abort-before-phantom), and the chats-API
+    "assistant len=0" reading is a KNOWN LIE for agent-mode chats — the
+    tab DOM (body length delta over 60s) is the only reliable liveness
+    probe.
