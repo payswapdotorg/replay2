@@ -29,10 +29,11 @@ T_NUDGE_S = 2 * 3600 + 5 * 60     # T+2h05m
 POLL_S = 5 * 60                   # probe cadence
 MAX_NUDGES = 4
 
+# 2026-09-25 wave-6 partial: only LIVE workers tracked. Old W020 (cb519253),
+# W023 (50c97f83) chats reaped; W028 merged (done). Re-add rows when the
+# fresh W020/W023 dispatches land (update anchors too).
 WORKERS = [
-    ("W012", "931B438C", "e5b4e2d2"),
-    ("W020", "40A3E89", "31e04e5e"),
-    ("W028", "A9D0741A", "6d452b00"),
+    ("W012", "D3E5963D", "31e2c20e"),
 ]
 REPORT_RE = re.compile(r"(Final head:\s+[0-9a-f]{40}|PR:\s+#\d+|CI:\s+(success|failure))")
 

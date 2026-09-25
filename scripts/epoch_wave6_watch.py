@@ -16,10 +16,10 @@ import time
 import urllib.request
 import websocket
 
+# 2026-09-25 wave-6 partial: only LIVE workers probed (W020/W023 chats
+# reaped, re-dispatch pending; W028 merged). Re-add rows on fresh landing.
 WORKERS = [
-    ("W012", "931B438C", "e5b4e2d2", "work/W012-experience-compiler"),
-    ("W020", "40A3E89", "31e04e5e", "work/W020-agent-runtime-orchestration"),
-    ("W028", "A9D0741A", "6d452b00", "work/W028-document-to-adapter"),
+    ("W012", "D3E5963D", "31e2c20e", "work/W012-experience-compiler"),
 ]
 REPORT_RE = re.compile(r"(Final head:\s+[0-9a-f]{40}|PR:\s+#\d+|CI:\s+(success|failure))")
 

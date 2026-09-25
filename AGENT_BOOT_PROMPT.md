@@ -2617,3 +2617,38 @@ chain: `head=payswapdotorg:${BRANCH}`.
     the pushed branch is the delivery truth, the gate is the merge
     authority, and the PR provenance narrates the corpse pattern (PR #50 is
     the precedent).
+
+143. **Never navigate an existing chat.z.ai tab to a DIFFERENT chat URL.**
+    Both a fresh home tab (B1F7D713) and a healthy worker-corpse tab
+    (A9D0741A, 33k chars live minutes earlier) went renderer-dead the moment
+    Page.navigate/location.href targeted another /c/<id> — every eval times
+    out forever after. Navigation to NON-chat URLs (settings/dashboard)
+    works fine from fresh tabs. Chat pages are only reached reliably by
+    (a) the New-Task send flow landing on its own fresh chat
+    (launch_patient), or (b) a tab that already sits on that chat. Corpse
+    chat tabs are CLOSED, never repurposed; nudge recovery needs the tab
+    that is ALREADY on the target chat.
+
+144. **Dashboard sandbox release must ANCESTOR-WALK, never first-match.**
+    tmp_release_probe.py's click mode picks the first element in document
+    order containing the target text — the OUTERMOST container — whose
+    first Release button belongs to the LIVE pod row (Task-8 incident
+    class, would have reaped the live W012 worker). The safe pattern:
+    find elements containing the row title, sort by innerText length
+    ascending, walk UP from the smallest until the element owns a Release
+    button, then REFUSE unless the row text contains the expected state
+    badge ("Expired") and NOT the other workers' titles / "Live". Field-
+    proven releasing the expired w012s row with the live W012 row adjacent.
+
+145. **spaced_create.py loops the STALE launch_create path.** Its retry
+    cadence is right but its create call predates the 2026-09-25 send
+    hardening (Escape+DOM-click, send-readiness gate, freshness gate) —
+    its Enter gets eaten and it cannot land during gate-blocked windows.
+    The patient retry loop must wrap launch_patient/patient_dispatch
+    instead: launch_spaced_patient.py (committed) — fresh session name per
+    attempt (w020i1, w020i2, ...; names are never reused), verdict read
+    from create_<name>.log + session_registry (sent:true = LANDED),
+    240s spacing, SPACED_MAX attempts, exit 0 on landing. Also: the
+    tool-shell reaps plain `nohup ... &` children when the call returns —
+    long-running loops must be spawned with Popen(start_new_session=True)
+    (lesson-13 law, applies to sentinels too).
