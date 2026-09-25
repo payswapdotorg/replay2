@@ -244,9 +244,21 @@ def state(tab_prefix):
     # a genuine report always carries the real checked-out base hex.
     # 2026-09-24 (Wave-6 staging): WEB- prefix added for the F11 web client
     # campaign (same report shape, same placeholder-proof rule).
+    # 2026-09-25 (Wave-7 staging): FV- prefix added for the formal-
+    # verification campaign (FV-001..003; same report shape, same
+    # placeholder-proof rule — the packet's base-SHA line carries a real
+    # hex only in a genuine report). Same-day fix: the observed Wave-6
+    # report phrasing is "Base branch + SHA: main @ <hex>" (w6-web-001/
+    # 002 responses) — the old `Base\s*SHA` never matched it, so those
+    # completions rode the server-probe path only. Accept BOTH phrasings
+    # so the DOM fast-path fires for the FV shape too (the server probe
+    # stays the truth gate either way). RE-APPLIED after reset #4 (the
+    # original patch was working-copy-only at the old sandbox; 12-vector
+    # suite: 4 genuine shapes pass, prompt/plan/unrelated echoes fail,
+    # LEASE/TAKE/WEB regressions pass).
     filled = filled or bool(re.search(
-        r"===?\s*(?:LEASE|TAKE|WEB)-\d+\s*(?:COMPLETION\s*REPORT|完成报告)\s*===?"
-        r"[\s\S]{0,600}?(?:Base\s*SHA|基础\s*SHA)[^\n]{0,40}[:：][^\n]{0,15}?(?:main|主干)\s*@\s*[0-9a-f]{7,40}",
+        r"(?:===?|##+)?\s*(?:LEASE|TAKE|WEB|FV)-\d+\s*(?:COMPLETION\s*REPORT|完成报告)\s*(?:===?|#+)?"
+        r"[\s\S]{0,600}?(?:Base\s*(?:branch\s*\+\s*)?SHA|基础\s*SHA)[^\n]{0,40}[:：][^\n]{0,15}?`?(?:main|主干)`?\s*@\s*`?[0-9a-f]{7,40}`?",
         body, re.IGNORECASE))
 
     gen = bool(re.search(r"\b(Stop|Pause|Halt)\b", body[-1500:]))
