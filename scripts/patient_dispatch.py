@@ -256,13 +256,11 @@ def main():
         return 1
     print(f"      insert verified ({pct}%)")
 
-    # 7. send — form.requestSubmit (SUBMIT_JS) PRIMARY, Enter + button fallbacks.
-    # 2026-09-21 12:5x: the site's new build silently ignores synthetic Enter
-    # keypresses AND coordinate clicks on the send button from the New Task
-    # surface (composer keeps its text, no chat is created, no popup). The
-    # DOM-level form.requestSubmit() is the only proven path (verified live:
-    # composer cleared + /c/<id> navigation). Fallbacks kept for older builds.
-    print("[7/7] sending (form.requestSubmit primary) ...")
+    # 7. send — Escape-overlay-close + DOM send-button click PRIMARY
+    # (2026-09-25 lesson: overlays eat Enter/coordinate clicks; the DOM
+    # button.click() is the proven path), then form.requestSubmit,
+    # synthetic Enter, and send-button coordinate click as fallbacks.
+    print("[7/7] sending (esc-overlay + DOM btn-click primary) ...")
 
     def _cleared_len(conn):
         return ev(conn, r"""(() => {
@@ -280,18 +278,42 @@ def main():
     except Exception:
         pass
     send_report = []
+    # 2026-09-25 lesson (41e0bd1, ported from dispatch_worker.py): a leftover
+    # model-menu overlay EATS Enter AND coordinate clicks (send silently
+    # fails — URL stays home, composer stays filled). Escape-close any
+    # overlay, then DOM-click the SEND BUTTON (button.sendMessageButton) —
+    # React onClick fires regardless of overlay z-index. Proven path.
+    for typ in ("keyDown", "keyUp"):
+        c.call("Input.dispatchKeyEvent", {"type": typ, "key": "Escape", "code": "Escape",
+                                          "windowsVirtualKeyCode": 27, "nativeVirtualKeyCode": 27})
+    send_report.append("esc-overlay")
+    time.sleep(0.6)
     try:
-        r = ev(c, channel.SUBMIT_JS)
-        send_report.append(f"submit-js:{r}")
+        r = ev(c, DW.JS_CLICK_SEND_BUTTON)
+        send_report.append(f"btn-dom:{r}")
     except Exception as e:
-        send_report.append(f"submit-js-err:{str(e)[:40]}")
-    time.sleep(5)
+        send_report.append(f"btn-dom-err:{str(e)[:40]}")
+    time.sleep(4)
     try:
         c.close()
     except Exception:
         pass
     c = reconnect(tab["id"])
     cleared = _cleared_len(c)
+    if cleared not in ("0", "gone"):
+        # fallback 0: DOM-level form.requestSubmit (the 09-21 proven path)
+        try:
+            r = ev(c, channel.SUBMIT_JS)
+            send_report.append(f"submit-js:{r}")
+        except Exception as e:
+            send_report.append(f"submit-js-err:{str(e)[:40]}")
+        time.sleep(5)
+        try:
+            c.close()
+        except Exception:
+            pass
+        c = reconnect(tab["id"])
+        cleared = _cleared_len(c)
     if cleared not in ("0", "gone"):
         # fallback 1: synthetic Enter (legacy build path)
         try:
