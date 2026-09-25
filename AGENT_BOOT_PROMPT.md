@@ -2678,3 +2678,19 @@ chain: `head=payswapdotorg:${BRANCH}`.
     returns — long-running loops must be spawned with
     Popen(start_new_session=True) (lesson-13 law, applies to sentinels
     too).
+
+146. **Send-gate aborts on the PINNED dispatch tab are tab-poisoning —
+    rotate, don't retry.** Two consecutive "send button never enabled
+    (React state desync)" aborts (2026-09-25 16:14 + 16:19) on the same
+    pinned home tab, immediately after that tab's canary turn landed but
+    never replied: the composer's React state stays poisoned by the
+    pending turn even after navigating back to home. THE FIX (field-proven
+    16:26, first-try send-gate pass): close the pinned tab
+    (CDP /json/close/<full-target-id> — the body is plain text, not JSON),
+    `rm flags/patient_tab_pin.txt`, relaunch — launch_patient opens a
+    FRESH tab whose composer syncs immediately. Also delete chats whose
+    turns never replied before further probes (they may hold the New-Task
+    create-gate; DELETE /api/v1/chats/<id> with the cached token, 200).
+    Campaign_sentinel v2 (both WOs, corpse detection via the 0-message
+    tree — a reaped chat still 200s on detail and v1 read it as 'queued'
+    forever) now rides canary-window -> ride-to-generation per lesson 142.
