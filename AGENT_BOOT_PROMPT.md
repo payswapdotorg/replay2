@@ -2507,3 +2507,26 @@ filter.** `pulls?head=<repo>:<branch>` returns 0 results; GitHub expects
 `head=<owner>:<branch>`. The bug was latent (the chain always created
 fresh PRs) until a worker pre-opened its own PR (#31). Fixed in the
 chain: `head=payswapdotorg:${BRANCH}`.
+
+## Lessons 134-135 (2026-09-25 — AISE endgame wave: TTL-wall reaping; done ≠ released)
+
+134. **The sandbox TTL wall REAPS the whole chat, not just the pod
+    (hfx401 v1).** A worker turn still running at the ~2h22m sandbox TTL
+    did not hang-and-nudge (the dep_rescue pattern) — the CHAT began
+    returning HTTP 500 on the chats detail API and vanished from the
+    recent list: session reaped server-side, transcript lost. Rule: for
+    every dispatched worker, track the pod-creation timestamp and send a
+    pre-emptive continuation nudge at ~T+2h05m (BEFORE the wall) if the
+    turn is still running — the nudge re-provisions the pod with a fresh
+    TTL window. Never let a turn ride into the wall.
+
+135. **`dispatch_worker.py done` closes the tab but does NOT release the
+    sandbox — un-released done sandboxes get newcomers REAPED (hfx401
+    v2).** After `done` (or any completed+harvested session), the
+    workspace lingers "Live, Expires in Xh" on the dashboard and still
+    holds one of the 3 concurrency slots. A fresh dispatch into a full
+    slot-queue lands (send VERIFIED) and is then silently REAPED minutes
+    later (two "New Chat" corpses, HTTP 500). Rule: after EVERY
+    done/harvest, run `dash_sandbox_release.py` (repeat passes until the
+    Sandbox section has no Live rows) BEFORE the next create;
+    `check_workspaces.py` active count < 3 is the pre-dispatch gate.
