@@ -2849,3 +2849,43 @@ chain: `head=payswapdotorg:${BRANCH}`.
     body grew). Also trivial but real: extract_full.py hard-fails with
     FileNotFoundError unless scripts/worker-reports/ exists — mkdir it
     once per clone.
+
+## Lessons 153-155 (2026-09-25 22:2x-22:4x UTC — CamScan console: the dashboard release-all trap; watcher spec resurrection; resume-time watcher audit)
+
+153. **dash_sandbox_release.py's release loop reaps LIVE pods — guard before
+    you click.** The tool clicked every Release button in DOM order and took
+    out a LIVE worker sandbox ("ANR-Discovery-Loop+Tap-Fallback", expires
+    1h56m) along with the three stale ones — lesson-144's first-match class
+    on the DASHBOARD variant. DISCIPLINE: dump the sandbox section FIRST;
+    release only rows whose text carries an "Expired" badge and NEVER one
+    showing "Live" (the patched tool now enforces this — `--force` is the
+    only override, for operator-directed full clears). The modal-based
+    `_handle_sandbox_limit` in dispatch_worker.py remains the safe path
+    during dispatch (keep-keywords protect live sessions). Corollary: a
+    reaped live pod is survivable — the stalled duplicate chat was voided,
+    the primary session re-provisioned and kept generating; never conclude
+    "worker lost" until the chat itself stops growing.
+
+154. **Retiring a queue_watch is a TWO-STEP ritual: delete the spec file,
+    then kill the pid.** The supervisor resurrects a watcher for every
+    `flags/queue_watch.spec.<name>` present — killing the pid alone gets you
+    a respawn within minutes. A stale spec for a DONE task is worse than
+    dead weight: the resurrected watcher sees its watched tab lost, marks
+    the session VOID BY NAME, and re-dispatches ALREADY-MERGED work (the
+    camscan010f-2 zombie re-created a duplicate chat for work merged at
+    1c0fb8d, burning a concurrency slot). On task completion: `done <name>`
+    removes the spec (queue_watch self-retires); on manual retirement: rm
+    the spec + kill, in that order.
+
+155. **On ANY session resume, audit watcher specs against live tabs BEFORE
+    trusting them.** Session-boundary reaping (lesson 150) hits queue
+    watchers too; the supervisor's respawn carries the spec's STALE
+    tab_prefix, and a watcher pinned to a dead tab will VOID a live session
+    of the same name and re-dispatch duplicates — the exact hazard that
+    churned the 010G estate while the operator watched an "inactive"
+    replay. Resume checklist (do it in the first two minutes): (1) `ps |
+    grep queue_watch` and compare each pid's tab prefix against
+    `9222/json/list`; (2) `dispatch_worker.py list` for the true session
+    table; (3) kill-and-despec any watcher whose tab is dead or whose task
+    is done; (4) only then poll the live workers. The resident agent, not
+    the daemon estate, is the liveness guarantee.
