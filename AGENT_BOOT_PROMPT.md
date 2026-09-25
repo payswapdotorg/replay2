@@ -2927,3 +2927,37 @@ chain: `head=payswapdotorg:${BRANCH}`.
     (SSE 200 + error payload) ≈ one generation slot per account: land
     sends at slot-free moments (right after another turn completes), and
     queue rather than grind.
+159. **A WEDGED RENDERER shows a STALE conversation — never diagnose
+    worker health from one tab.** The pa019d view froze mid-turn ("Run
+    debug test for device read", static DOM 40+ min, no stop button)
+    while the worker COMPLETED server-side (fresh tab on the same chat
+    URL showed the full completion report). Before declaring a turn
+    dead/stalled: open a FRESH tab on the chat URL and read THAT. A
+    reload of the wedged tab can brick its renderer entirely (evaluate
+    timeouts) — replace, don't reload. Corollary: refused in-chat sends
+    on a "dead-looking" chat can mean the turn is genuinely still active
+    server-side (the refusal is correct).
+
+160. **send_text proof-of-send can FAIL while the message LANDS.** On a
+    completed agent chat, five proof-failed attempts left no trace — but
+    one copy landed server-side and spawned the worker's next turn (a
+    staged duplicate remained in the composer). ALWAYS verify the thread
+    contains the text before re-sending (grep the body innerText); clear
+    any staged duplicate (click-focus composer, Ctrl+A, Backspace via
+    CDP key events). The reliable surgical path: click-focus the
+    textarea, Input.insertText, Enter key events.
+
+161. **Three dispatch-blocking states around landed chats (2026-09-25
+    night round):** (a) the SANDBOX-LIMIT MODAL silently blocks a landed
+    chat's turn from ever spawning — release the stale canary slots
+    (dw._handle_sandbox_limit with a MINIMAL keep-list: only the live
+    workers' names+chat-uuids; the registry-derived keyword list treats
+    every sent canary as an active job and refuses to release) and the
+    queued turn spawns within a minute. (b) A CAPACITY POPUP can swallow
+    the thread-commit of a "SENT-VERIFIED" send (the packet stays staged
+    in the composer; the API reading is meaningless) —
+    capacity_recover_send.py cancels the dialog and resubmits the staged
+    packet (the 2026-09-25 PA-018 case: landed+verified at 21:08, spawn
+    blocked 40 min, recovered 22:09, worker alive 60s later). (c) The
+    platform RE-HOSTS conversations (the tab's chat URL changes) — track
+    the WORKER by its tab, not by the chat id.
