@@ -98,13 +98,17 @@ def patient_create(name, prompt):
     for _ in range(42):  # up to ~7 min
         time.sleep(10)
         try:
-            tail = open(logf).read()[-400:]
+            tail = open(logf).read()[-2500:]  # whole file (small); 400 chars missed long tracebacks
         except Exception:
             continue
         m = re.search(r"SENT-VERIFIED \(server\): chat ([0-9a-f-]{36})", tail)
         if m:
             return m.group(1)
-        if "send FAILED server-side" in tail or "Traceback" in tail:
+        if ("send FAILED server-side" in tail or "Traceback" in tail
+                or "aborting BEFORE phantom create" in tail
+                or "send button never enabled" in tail
+                or "WebSocketTimeoutException" in tail
+                or "Connection timed out" in tail):
             return None
     return None
 
@@ -135,12 +139,12 @@ def delete_chat(cid):
         return False
 
 
-def ride_to_generation(name, prompt, deadline):
+def ride_to_generation(name, prompt, deadline, tag):
     """Dispatch a WO and ride it to GENERATION; retries until deadline."""
     attempt = 0
     while time.time() < deadline:
         attempt += 1
-        wname = f"{name}s{attempt}"
+        wname = f"{name}s-{tag}-{attempt}"
         log(f"dispatching {wname} (attempt {attempt}) via patient path")
         wcid = patient_create(wname, prompt)
         if not wcid:
@@ -168,14 +172,18 @@ def main():
     t0 = time.time()
     deadline = t0 + MAX_HOURS * 3600
     n = 0
+    # run-unique tag: names are NEVER reused across restarts (registry
+    # discipline) and create-log tails must never mix runs (a stale abort
+    # line from a previous run poisons the failure-pattern match)
+    tag = time.strftime("%H%M%S")
     log(f"campaign_sentinel v2 armed: cycle={CYCLE_S}s pace={WO_PACE_S}s "
-        f"watch={GEN_WATCH_S}s max={MAX_HOURS}h WOs=[pa018,pa019]")
+        f"watch={GEN_WATCH_S}s max={MAX_HOURS}h WOs=[pa018,pa019] tag={tag}")
 
     for name, prompt in WOS:
         # ---- PROBE: find an admit-window for this WO --------------------
         while time.time() < deadline:
             n += 1
-            cname = f"cscanary-{n}"
+            cname = f"cscanary-{tag}-{n}"
             log(f"probe cycle {n}: patient-dispatching sandbox canary {cname}")
             cid = patient_create(cname, CANARY_PROMPT)
             if not cid:
@@ -199,7 +207,7 @@ def main():
             return 1
 
         # ---- RIDE: dispatch the WO inside the window --------------------
-        wcid = ride_to_generation(name, prompt, deadline)
+        wcid = ride_to_generation(name, prompt, deadline, tag)
         if not wcid:
             log(f"MAX_HOURS reached fighting for {name} — TL review needed")
             return 1

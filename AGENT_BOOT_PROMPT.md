@@ -2694,3 +2694,23 @@ chain: `head=payswapdotorg:${BRANCH}`.
     Campaign_sentinel v2 (both WOs, corpse detection via the 0-message
     tree — a reaped chat still 200s on detail and v1 read it as 'queued'
     forever) now rides canary-window -> ride-to-generation per lesson 142.
+
+147. **setsid alone does NOT survive the tool-shell teardown — the daemon
+    must be ORPHANED (PPID->1).** The Bash tool's session teardown walks
+    its process TREE (not just the process group/session): a setsid'd
+    child whose parent chain (the `cd && ... && setsid nohup cmd &`
+    background subshell) is still alive gets found and killed. Field
+    evidence 2026-09-25: two campaign_sentinel launches died silently
+    ~3s after the tool call returned (no traceback — SIGKILL class),
+    while all long-lived daemons on this box (replayd, watcher,
+    capture_server) have PPID=1. THE LAUNCH IDIOM:
+    `bash -c 'cd <dir> && setsid nohup python3 daemon.py < /dev/null > log 2>&1 &'`
+    — the inner bash backgrounds the daemon and exits instantly, the
+    daemon is reparented to init (tini), unreachable by any future tool
+    call's teardown. Verify with `ps -o pid,ppid,sess` (want a PID-1
+    ancestor, own session). ALSO (same commit round): patient_create's
+    failure-pattern match must read the WHOLE create log (a 400-char tail
+    missed a 1200-char websocket traceback — "Traceback" fell outside);
+    and sentinel attempt names must carry a run-unique tag (n resets on
+    restart — reused names append to old create logs and a STALE abort
+    line from a previous run poisons the verdict).
