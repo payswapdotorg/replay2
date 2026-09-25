@@ -2572,3 +2572,48 @@ chain: `head=payswapdotorg:${BRANCH}`.
     "assistant len=0" reading is a KNOWN LIE for agent-mode chats — the
     tab DOM (body length delta over 60s) is the only reliable liveness
     probe.
+
+## Lessons 139-141 (2026-09-25 ~12:10 UTC — TL session on the RoamLink box: the SSH tool-killer, the Vercel project-alias receiver, the escalation-leg env)
+
+139. **SSH egress KILLS the tool session (RoamLink box law, 4/4).** Every
+    `ssh ... localhost.run` (foreground, timeout-wrapped, or setsid-detached)
+    403'd the tool layer within seconds; each outage lasted ~2h (three of
+    them burned ~6h wall-clock; the ring survived every one autonomously —
+    replayd served 10k+ frames, supervisor/watcher/custodian/stall_recovery
+    all healthy on recovery). RULE: NEVER ssh from that box. Public HTTPS
+    endpoints are provisioned through Vercel instead (lesson 140).
+
+140. **The TL-gate capture receiver recipe (QSTASH_LIVE_RECEIVER_URL).** A
+    Vercel serverless function IS the battery's documented receiver: POST
+    captures {headers (string values; custom headers like upstash-signature
+    pass through), body (raw string)} to an Upstash Redis REST list (the
+    operator's account is recoverable from the PA-013 chat via the
+    lesson-107 HTTP rail — url + token, mode 600, never printed;
+    PING-verify before use); GET returns the array (exactly the captureList
+    shape). Deploy via the v13 API with inline files
+    (`files:[{file:"api/capture.js", data, encoding:"utf-8"}]`,
+    `projectSettings.framework:null`). LAWS: (a) account-wide SSO 302s every
+    `*.vercel.app` DEPLOYMENT url, but PROJECT DOMAIN ALIASES are public —
+    use `https://<project>.vercel.app/api/capture`, never the deployment
+    url; (b) v13 gitSource shape is `{type:"github", repoId, ref}` (repoId
+    from the project's link block); (c) v10 env creation needs
+    `type:"encrypted"` per entry and must complete BEFORE the deployment
+    that consumes the vars; (d) roundtrip-verify (POST marker + GET match)
+    before trusting the receiver with a gate. Field-proven end-to-end by the
+    PA-017 TL gate (PR #50).
+
+141. **The runtime-hardening escalation leg reads
+    ROAMLINK_MAINTENANCE_DESTINATION, NOT QSTASH_LIVE_RECEIVER_URL.** Unset,
+    it defaults to the RFC 2606 `.invalid` sink, which the live QStash
+    service REFUSES at publish time by the documented destination-admission
+    law — the leg fails as a typed provider-error and looks like a real
+    defect (the PA-017 TL gate hit it live). Export BOTH vars for the gate.
+    Same session's smaller laws: root `pnpm lint`/`typecheck` need
+    `corepack enable --install-directory ~/.local/bin` + PATH (exit 1 with
+    `pnpm: not found` is NOT a battery failure); the tool-call cwd RESETS
+    between calls — always `cd` explicitly; and a worker that PUSHED its
+    branch but died before writing its report (the PA-017 corpse: empty
+    assistant shell, 9888-char user prompt) is closed by the TL gate alone —
+    the pushed branch is the delivery truth, the gate is the merge
+    authority, and the PR provenance narrates the corpse pattern (PR #50 is
+    the precedent).
