@@ -40,7 +40,7 @@ MIN_SPACING = 3300       # s — a restarted instance never probes sooner
 
 # freeze until (UTC HH:MM) — hourly spacing after the last failed attempt
 # (2026-09-24 12:26 DOWN probe, sandbox-reset #3 redeploy)
-FIRST_PROBE_UTC = "13:30"
+FIRST_PROBE_UTC = "00:00"  # reset #4: stale 13:30 pin expired 2026-09-24; hourly loop resumed (last probe 03:56 DOWN)
 HOURLY = 3600
 
 
