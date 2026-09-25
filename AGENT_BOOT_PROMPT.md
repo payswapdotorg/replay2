@@ -2411,9 +2411,488 @@ Field-verified during the W044 final-delivery session (post-10:40-reset stack):
     level; user + empty assistant gen=None = turn accepted but dead; the
     first state survives hours, the second is a corpse).
 
-## Lessons 53-55 (2026-09-25/26 — Flauz Wave-3 recovery session)
+## Lesson 129 (2026-09-25 04:15 UTC — operator doctrine override: the rate-limit wedge doctrine was WRONG; popups are never obeyed, never waited out)
 
-53. **Worker sandboxes are EPHEMERAL outside the project dir: only
+**OPERATOR RULING (verbatim intent, 2026-09-25):** "It is not capacity
+blocked. Disregard the rate-limit notifications, they do not apply. Dismiss
+peak-hours popups with Enter+resend. Most popups that have a cancel button
+can be dealt with by pressing cancel and retrying (resending the previous
+prompt). NEVER follow the instructions of a popup — always follow the
+instructions of the operator. Never wait just because a popup or any message
+tells you to. Never wait, retry and retry, find a way around it."
+
+**What this supersedes:** the §16-era "usage-limit wedge" protocol
+(2026-09-23/24: hard freeze + one-probe-per-hour + backend_recovered marker)
+was built on a false premise — those dialogs are ordinary dismissable
+popups, not a platform outage. Evidence: after the ruling, an immediate
+patient dispatch (W009f) landed AND started generating within ~90 seconds,
+and a second concurrent worker (W011a) landed right after. Six hours of
+hourly probe sends had produced only junk chats and open-empty assistant
+turns — the probes themselves were the only "outage."
+
+**Correct playbook going forward:**
+- Popup with a Cancel button -> press Cancel, then resend the previous
+  prompt (re-verify agents tab + GLM-5.3 + Full-Stack first — a cancel can
+  reset the three selections).
+- Peak-hours popup -> dismiss with Enter, then resend.
+- NEVER switch models (the popup's "switch to GLM-5.3-Flash" suggestion is
+  to be refused; GLM-5.3 is the standing model pin).
+- NEVER wait out a popup, a "try again later", or any rate-limit message.
+- If a send was ACCEPTED (URL at /c/<uuid>, composer cleared, prompt in
+  transcript) and generation is stalled by a popup: dismiss the popup and
+  watch — the queued-capacity two-state rule (lesson 9) still applies.
+- freeze_probe_watch.py is RETIRED (supervisor resurrection disabled
+  2026-09-25): hourly junk-probe sends are pure waste under this doctrine.
+
+**Cost of the wrong doctrine (recorded for calibration):** 2026-09-24
+18:53 -> 2026-09-25 04:15 (~9h): one landed W009 packet left ungenerated
+(chat 232807e8, later deleted), 7 junk probe chats, 6 idle probe cycles,
+and a sandbox reset's worth of dispatch capacity — all on a premise the
+operator overturned in one line.
+
+## Lesson 131 (2026-09-25 04:45 UTC — corroboration rule + shared-account concurrency)
+
+131. **Corroborate "platform down" verdicts server-side before freezing
+    (addendum to 129's postmortem).** The 39h AISE freeze was diagnosed
+    through ONE DOM-reading channel (probe tab scans) while the lesson-107
+    chats HTTP rail was available the whole time and would have shown
+    whether assistant replies existed server-side. Rule: any "wedge/DOWN"
+    verdict that would gate dispatch for more than ~30 min MUST be
+    corroborated by a second, independent channel (chats HTTP rail detail
+    view, a fresh patient dispatch probe) before it freezes anything.
+    Also: the account's 3-session sandbox cap is SHARED across concurrent
+    programs on this machine (aurum W-lane + AISE lanes) — check
+    `dispatch_worker.py sandboxes` + the registry before every create, and
+    when the concurrency modal hits, release the session YOU no longer need
+    (never another program's live worker). AISE lane state (2026-09-25
+    04:35 UTC): prod033 landed + generating (chat 1e23e0b4); hfx302 in
+    capacity assault; remaining roadmap = HFX-302 → HFX-401 → PROD-015
+    (Lead's), PROD-033 parallel, HFX-303 parallel-eligible for slot 3.
+---
+
+## Lessons 2026-09-25 (P13 dispatch, the "phantom outage")
+
+**L-2026-09-25-1 — the probe chats do NOT measure agents-tab capacity.**
+The backend probes (fresh chat-tab sessions, "assistant reply within N
+minutes") reported DOWN for 32h straight while an agents-tab worker
+(p14, GLM-5.3 + Full-Stack) GENERATED ITS ENTIRE DELIVERY in that same
+window. Operator ruling: chat.z.ai is not capacity blocked; rate-limit /
+peak-hours popups do not apply to dispatch decisions. NEVER declare a
+platform outage from probe-chat silence alone — cross-check a live
+agents-tab session (`dispatch_worker.py check <name>`) before standing
+down. The 30-min probe watch is a weak signal at best.
+
+**L-2026-09-25-2 — the personal-limit popup does not match the capacity
+detector.** The dispatcher's JS_CAPACITY_STATE looked for "currently at
+capacity" / "try again later" / "peak hours"; the personal-limit popup
+reads "usage exceeds the personal limit … try again 1 hour later" — no
+match, so `create` classified the send as a GENUINE failure and exited
+rc=2 instead of assaulting. Fixed: the detector now also matches
+"exceeds the personal limit" / "personal usage limit" (operator ruling:
+those notifications do not apply; cancel + resend through them).
+
+**L-2026-09-25-3 — a leftover model-menu overlay EATS the Enter key.**
+After model selection the picker overlay can stay open; the composer
+holds the full prompt, insert verifies 100%, but the send Enter is
+swallowed by the overlay — URL stays home, `create` exits. Fixed (both
+send paths): Escape-close any overlay, then CLICK
+`button.sendMessageButton` (found + enabled even while the overlay is
+open), Enter kept as fallback. Manual recovery when it still fails:
+`channel.CDP` → `dispatch_worker.JS_MODEL_TEXT`/`JS_SKILL_STATE`/`JS_AGENT_MODE_ON`
+to verify the three selections → Escape → `document.querySelector('button.sendMessageButton').click()`
+→ the URL moves to /c/<uuid> within seconds.
+
+**L-2026-09-25-4 — task-push-chain.sh PR reuse used the wrong head
+filter.** `pulls?head=<repo>:<branch>` returns 0 results; GitHub expects
+`head=<owner>:<branch>`. The bug was latent (the chain always created
+fresh PRs) until a worker pre-opened its own PR (#31). Fixed in the
+chain: `head=payswapdotorg:${BRANCH}`.
+
+## Lessons 134-135 (2026-09-25 — AISE endgame wave: TTL-wall reaping; done ≠ released)
+
+134. **The sandbox TTL wall REAPS the whole chat, not just the pod
+    (hfx401 v1).** A worker turn still running at the ~2h22m sandbox TTL
+    did not hang-and-nudge (the dep_rescue pattern) — the CHAT began
+    returning HTTP 500 on the chats detail API and vanished from the
+    recent list: session reaped server-side, transcript lost. Rule: for
+    every dispatched worker, track the pod-creation timestamp and send a
+    pre-emptive continuation nudge at ~T+2h05m (BEFORE the wall) if the
+    turn is still running — the nudge re-provisions the pod with a fresh
+    TTL window. Never let a turn ride into the wall.
+
+135. **`dispatch_worker.py done` closes the tab but does NOT release the
+    sandbox — un-released done sandboxes get newcomers REAPED (hfx401
+    v2).** After `done` (or any completed+harvested session), the
+    workspace lingers "Live, Expires in Xh" on the dashboard and still
+    holds one of the 3 concurrency slots. A fresh dispatch into a full
+    slot-queue lands (send VERIFIED) and is then silently REAPED minutes
+    later (two "New Chat" corpses, HTTP 500). Rule: after EVERY
+    done/harvest, run `dash_sandbox_release.py` (repeat passes until the
+    Sandbox section has no Live rows) BEFORE the next create;
+    `check_workspaces.py` active count < 3 is the pre-dispatch gate.
+
+## Lessons 136-138 (2026-09-25 13:2x UTC — Epoch wave 6: phantom-create burst; in-chat recovery; patch parity)
+
+136. **Phantom-create burst on the home New-Task surface while generations
+    are active (w020b/c/d + w028a + short-create test, all 12:0x-13:1x).**
+    With a worker generating, a New-Task send (any length — 31 chars to
+    10,449) creates an EMPTY chat shell (URL navigates to /c/<id>) whose
+    message never lands; the shell is reaped server-side (HTTP 500 on
+    detail, absent from the list) and the composer keeps its text. The
+    React-state desync theory is WRONG — the send button shows enabled
+    (state synced); the submit itself drops the content. It is BURSTY, not
+    permanent: a fresh-tab retry (close the pinned tab, clear
+    flags/patient_tab_pin.txt, relaunch) landed cleanly 20 minutes later
+    (w028b SENT-VERIFIED first try). Rule: on phantom-create, rotate with
+    FULL tab hygiene — close the degraded tab (SPA state survives soft
+    navigation; lesson-129 reset_tab rule), clear the pin, fresh tag in
+    the packet comment, retry. Do not conclude "platform full" without
+    server-side corroboration (lesson-131).
+
+137. **In-chat follow-up sends BYPASS the phantom-create gate — use them
+    for stalled-turn recovery instead of re-dispatch.** A continuation
+    nudge sent into a LANDED chat (manual_send.py) lands reliably even
+    mid-burst (w020a recovery 12:52Z: turn truncated at 09:27Z with its
+    sandbox pod gone; one nudge — "restart cleanly from Delivery chain
+    step 1" — re-provisioned the pod and the worker re-executed the full
+    plan; the original packet stays server-side, no re-dispatch needed).
+    Prefer nudge-in-place over fresh dispatch whenever the packet is
+    already landed: faster, no phantom exposure, chat identity preserved.
+
+138. **Patch parity discipline: every send-path fix must land in ALL
+    three senders (dispatch_worker.py, patient_dispatch.py,
+    manual_send.py).** The 41e0bd1 Escape+DOM-click fix was committed to
+    dispatch_worker.py only; patient_dispatch (used by launch_patient —
+    the worker-dispatch path!) and manual_send (the follow-up path) both
+    still had the eaten-Enter bug and burned a full dispatch cycle before
+    the port. Symptom signature for the unpatched path: "send paths:
+    ... | composer=<full>" + post-send URL home or empty-shell /c/<id>.
+    Also: patient_dispatch now gates on the send button ENABLED before
+    any send path fires (abort-before-phantom), and the chats-API
+    "assistant len=0" reading is a KNOWN LIE for agent-mode chats — the
+    tab DOM (body length delta over 60s) is the only reliable liveness
+    probe.
+
+## Lessons 139-141 (2026-09-25 ~12:10 UTC — TL session on the RoamLink box: the SSH tool-killer, the Vercel project-alias receiver, the escalation-leg env)
+
+139. **SSH egress KILLS the tool session (RoamLink box law, 4/4).** Every
+    `ssh ... localhost.run` (foreground, timeout-wrapped, or setsid-detached)
+    403'd the tool layer within seconds; each outage lasted ~2h (three of
+    them burned ~6h wall-clock; the ring survived every one autonomously —
+    replayd served 10k+ frames, supervisor/watcher/custodian/stall_recovery
+    all healthy on recovery). RULE: NEVER ssh from that box. Public HTTPS
+    endpoints are provisioned through Vercel instead (lesson 140).
+
+140. **The TL-gate capture receiver recipe (QSTASH_LIVE_RECEIVER_URL).** A
+    Vercel serverless function IS the battery's documented receiver: POST
+    captures {headers (string values; custom headers like upstash-signature
+    pass through), body (raw string)} to an Upstash Redis REST list (the
+    operator's account is recoverable from the PA-013 chat via the
+    lesson-107 HTTP rail — url + token, mode 600, never printed;
+    PING-verify before use); GET returns the array (exactly the captureList
+    shape). Deploy via the v13 API with inline files
+    (`files:[{file:"api/capture.js", data, encoding:"utf-8"}]`,
+    `projectSettings.framework:null`). LAWS: (a) account-wide SSO 302s every
+    `*.vercel.app` DEPLOYMENT url, but PROJECT DOMAIN ALIASES are public —
+    use `https://<project>.vercel.app/api/capture`, never the deployment
+    url; (b) v13 gitSource shape is `{type:"github", repoId, ref}` (repoId
+    from the project's link block); (c) v10 env creation needs
+    `type:"encrypted"` per entry and must complete BEFORE the deployment
+    that consumes the vars; (d) roundtrip-verify (POST marker + GET match)
+    before trusting the receiver with a gate. Field-proven end-to-end by the
+    PA-017 TL gate (PR #50).
+
+141. **The runtime-hardening escalation leg reads
+    ROAMLINK_MAINTENANCE_DESTINATION, NOT QSTASH_LIVE_RECEIVER_URL.** Unset,
+    it defaults to the RFC 2606 `.invalid` sink, which the live QStash
+    service REFUSES at publish time by the documented destination-admission
+    law — the leg fails as a typed provider-error and looks like a real
+    defect (the PA-017 TL gate hit it live). Export BOTH vars for the gate.
+    Same session's smaller laws: root `pnpm lint`/`typecheck` need
+    `corepack enable --install-directory ~/.local/bin` + PATH (exit 1 with
+    `pnpm: not found` is NOT a battery failure); the tool-call cwd RESETS
+    between calls — always `cd` explicitly; and a worker that PUSHED its
+    branch but died before writing its report (the PA-017 corpse: empty
+    assistant shell, 9888-char user prompt) is closed by the TL gate alone —
+    the pushed branch is the delivery truth, the gate is the merge
+    authority, and the PR provenance narrates the corpse pattern (PR #50 is
+    the precedent).
+
+## Lesson 142 (2026-09-25 13:0x UTC — the peak reap-window data: serialized + paced dispatch under platform-wide capacity strain)
+
+142. **Platform-wide capacity peaks reap QUEUED sessions within minutes of a
+    server-verified landing.** Field data (RoamLink TL session, four consecutive
+    reaps): pa018e landed 12:44 server-verified, reaped by 12:57; pa019b landed
+    12:46, reaped by 12:57; pa018f landed 13:01, reaped by 13:05 (~4-min reap
+    window) — all with the "GLM-5.3 is intensifying" popup on the tab, all
+    answering HTTP 500 on the chats detail and vanishing from the list. The
+    parallel session's w-series chats are NOT in this account's list — the
+    capacity strain is PLATFORM-WIDE, not account-slot contention. The race is:
+    queued session must survive until capacity frees, but the reap window is
+    minutes. DISCIPLINE THAT EMERGED: (a) SERIALIZE — one create at a time,
+    ride it to GENERATION (an assistant message actually generating) before
+    any further create (generating sessions hold; queued ones reap);
+    (b) PACE retries ~15-20 min apart under an active peak (the parallel
+    session's field evidence: a fresh-tab retry "landed cleanly 20 minutes
+    later"; hot cadence FEEDS the reaping — lesson 125); (c) never cancel an
+    accepted send (two-state law) and NEVER settle for GLM-5.3-Flash;
+    (d) two rapid launch_patient calls RACE on the tab pin (both got the same
+    pin; the second navigates the first's tab) — serialize patient launches,
+    never run two at once.
+
+143. **Never navigate an existing chat.z.ai tab to a DIFFERENT chat URL.**
+    Both a fresh home tab (B1F7D713) and a healthy worker-corpse tab
+    (A9D0741A, 33k chars live minutes earlier) went renderer-dead the moment
+    Page.navigate/location.href targeted another /c/<id> — every eval times
+    out forever after. Navigation to NON-chat URLs (settings/dashboard)
+    works fine from fresh tabs. Chat pages are only reached reliably by
+    (a) the New-Task send flow landing on its own fresh chat
+    (launch_patient), or (b) a tab that already sits on that chat. Corpse
+    chat tabs are CLOSED, never repurposed; nudge recovery needs the tab
+    that is ALREADY on the target chat.
+
+144. **Dashboard sandbox release must ANCESTOR-WALK, never first-match.**
+    tmp_release_probe.py's click mode picks the first element in document
+    order containing the target text — the OUTERMOST container — whose
+    first Release button belongs to the LIVE pod row (Task-8 incident
+    class, would have reaped the live W012 worker). The safe pattern:
+    find elements containing the row title, sort by innerText length
+    ascending, walk UP from the smallest until the element owns a Release
+    button, then REFUSE unless the row text contains the expected state
+    badge ("Expired") and NOT the other workers' titles / "Live". Field-
+    proven releasing the expired w012s row with the live W012 row adjacent.
+
+145. **spaced_create.py loops the STALE launch_create path.** Its retry
+    cadence is right but its create call predates the 2026-09-25 send
+    hardening (Escape+DOM-click, send-readiness gate, freshness gate) —
+    its Enter gets eaten and it cannot land during gate-blocked windows.
+    The patient retry loop must wrap launch_patient/patient_dispatch
+    instead: launch_spaced_patient.py (committed) — fresh session name per
+    attempt (w020i1, w020i2, ...; names are never reused), verdict read
+    from create_<name>.log + session_registry (sent:true = LANDED),
+    lesson-142 pacing (>=15 min between attempts under an active peak;
+    hot cadence feeds the reaping), SPACED_MAX attempts, exit 0 on
+    LANDING+GENERATION (a landed-but-queued chat is reap-bait — the
+    success criterion is an assistant turn actually generating). Also:
+    the tool-shell reaps plain `nohup ... &` children when the call
+    returns — long-running loops must be spawned with
+    Popen(start_new_session=True) (lesson-13 law, applies to sentinels
+    too).
+
+146. **Send-gate aborts on the PINNED dispatch tab are tab-poisoning —
+    rotate, don't retry.** Two consecutive "send button never enabled
+    (React state desync)" aborts (2026-09-25 16:14 + 16:19) on the same
+    pinned home tab, immediately after that tab's canary turn landed but
+    never replied: the composer's React state stays poisoned by the
+    pending turn even after navigating back to home. THE FIX (field-proven
+    16:26, first-try send-gate pass): close the pinned tab
+    (CDP /json/close/<full-target-id> — the body is plain text, not JSON),
+    `rm flags/patient_tab_pin.txt`, relaunch — launch_patient opens a
+    FRESH tab whose composer syncs immediately. Also delete chats whose
+    turns never replied before further probes (they may hold the New-Task
+    create-gate; DELETE /api/v1/chats/<id> with the cached token, 200).
+    Campaign_sentinel v2 (both WOs, corpse detection via the 0-message
+    tree — a reaped chat still 200s on detail and v1 read it as 'queued'
+    forever) now rides canary-window -> ride-to-generation per lesson 142.
+
+147. **setsid alone does NOT survive the tool-shell teardown — the daemon
+    must be ORPHANED (PPID->1).** The Bash tool's session teardown walks
+    its process TREE (not just the process group/session): a setsid'd
+    child whose parent chain (the `cd && ... && setsid nohup cmd &`
+    background subshell) is still alive gets found and killed. Field
+    evidence 2026-09-25: two campaign_sentinel launches died silently
+    ~3s after the tool call returned (no traceback — SIGKILL class),
+    while all long-lived daemons on this box (replayd, watcher,
+    capture_server) have PPID=1. THE LAUNCH IDIOM:
+    `bash -c 'cd <dir> && setsid nohup python3 daemon.py < /dev/null > log 2>&1 &'`
+    — the inner bash backgrounds the daemon and exits instantly, the
+    daemon is reparented to init (tini), unreachable by any future tool
+    call's teardown. Verify with `ps -o pid,ppid,sess` (want a PID-1
+    ancestor, own session). ALSO (same commit round): patient_create's
+    failure-pattern match must read the WHOLE create log (a 400-char tail
+    missed a 1200-char websocket traceback — "Traceback" fell outside);
+    and sentinel attempt names must carry a run-unique tag (n resets on
+    restart — reused names append to old create logs and a STALE abort
+    line from a previous run poisons the verdict).
+
+## Lessons 143-145 (2026-09-25 18:3x UTC — R30-B console: the empty model-menu DOM truth; assault-dispatch pattern; registry-first law)
+
+143. **The empty model-menu is DOM-verifiable in one probe — do not burn
+    dispatch cycles to diagnose it.** The 2026-09-25 10:12-17:58Z storm (11
+    spaced cycles, all "GLM-5.3 option not found") was congestion-class, and
+    the proof took ONE passive probe: iterate chat.z.ai home tabs (some have
+    hung CDP sockets — short timeouts, skip the hung), open the model menu,
+    read the options list. Menu OPEN + options `[]` after 19+s = the
+    option-list fetch hangs (peak congestion); menu with options = the
+    dispatcher's timing was the problem. A popup sitting on top produces the
+    SAME empty menu — dismiss first (lesson 129), re-open, re-read. Both
+    senders now dismiss dialogs between menu cycles (dispatch_worker.py
+    step-4: 3 cycles × [dismiss + open + 15×2s]; patient_dispatch.py:
+    pre-dismiss + every-3-rounds re-dismiss).
+
+144. **Assault-dispatch pattern for congestion (the r30b_assault.py shape):
+    when the operator says never-wait, the loop is void-stale-registry-row →
+    full create → 75s breath → repeat.** Each create itself fights (popup
+    cancels, re-picks, staged-resume Enter). This replaces spaced holds for
+    RENDER/FETCH congestion entirely; spaced pacing (lesson 142) stays only
+    for account-limiter trips. Honesty cadence: an outbox note every ~10
+    failed attempts. Companion tooling: r30_monitor.py (one-shot compact
+    pipeline status; exit codes 10/20/30 = dispatched/complete/dead) and
+    r30_wait_event.py (blocks until the pipeline state CHANGES — the lead
+    loop sleeps on events, not on clocks).
+
+145. **Registry-first when a worker chat looks stalled: the len=0 shell is
+    not a verdict.** A chat detail showing ALL assistant messages len=0 +
+    a big final user prompt looks like a dead worker — but consult
+    flags/session_registry.jsonl's action=done rows FIRST (extends lesson
+    138's "len=0 is a known lie for agent-mode chats" to the completion
+    question: r29-sweep and r30a both displayed the stalled shape while
+    their registries carried done-notes hours old). The registry is the
+    completion truth; the chat tree is the durability surface. Corollary:
+    retire watchers deliberately when the registry closes the task and LOG
+    the retirement, so a later session never misreads the absence.
+
+## Lessons 146-148 (2026-09-25 19:0x-19:2x UTC — R30-B console: the renderer-purge recovery; the success-string format drift; the crash-on-spawn class)
+
+146. **chat.z.ai peak-load renderer hostility has THREE distinct layers —
+    diagnose by spawning tabs with DIFFERENT urls.** (a) Chrome-wide CDP
+    strain (ALL tabs incl. extensions hung: lesson-105 restart, identical
+    flags); (b) after restart, RESTORED chat.z.ai tabs stay CDP-dead while
+    restored non-chat tabs live; (c) NEW chat.z.ai tabs crash their renderer
+    on spawn (about:blank + example.com survive, chat.z.ai dies instantly).
+    THE FIX for (b)+(c): close EVERY chat.z.ai tab (urllib /json/close/<id>
+    each), then open ONE fresh chat tab — it loads complete with the
+    operator session (localStorage 'token' survives the restart; re-inject
+    the httpOnly cookie per lesson 114, HOST-ONLY domain). A clean chat-tab
+    estate makes the very next dispatch land instantly (proven 19:15-19:18Z:
+    first clean attempt ACCEPTED server-side).
+
+147. **SUCCESS-STRING FORMAT DRIFT: the create flow's success line is now
+    "prompt ACCEPTED — session live at <url> (server-verified)" — an
+    uppercase-only `VERIFIED in out` match MISSES it and voids live
+    dispatches.** The 19:16Z incident: attempt 1 landed (19499279), the
+    daemon's stale check read failure, voided it, and re-dispatched a
+    duplicate (d5e9e1ec) before the operator-side kill. Robust check:
+    `"prompt ACCEPTED" in out OR ("VERIFIED" in out AND "NOT VERIFIED" not
+    in out)` (r30b_assault.py fixed; every future daemon must use this
+    form). Registry discipline: the KEEPER is the newest create record; the
+    voided duplicate shell is reaped server-side (lesson 136's class).
+
+148. **The quiet-window dispatch under a clean estate is INSTANT — spend
+    the peak hours on estate hygiene, not on spaced polls.** The 03:0x
+    Beijing window + the renderer purge + first attempt = ACCEPTED in 31
+    seconds (19:15:45 armed → 19:16:16 landed). The eight spaced hourly
+    cycles before it accomplished nothing that hygiene + one clean attempt
+    didn't. Under congestion: fix the estate (restart, purge, inject), then
+    ONE attempt tells the truth.
+
+## Lesson 149 (2026-09-25 20:2x-20:4x UTC — R30-B console: the turbovpn power-button automation + the pivot pattern)
+
+149. **The VPN can be connected BY THE LEAD — the turbovpn extension's
+    power button is a 64x64 cursor-pointer DIV (class 'mt-5 w-16 h-16
+    cursor-pointer') at ~(720,504) in the popup page
+    (chrome-extension://piplkafkogjfjlofefcobgiccagncean/dist/popup/index.html)
+    and needs a REAL CDP Input.dispatchMouseEvent (mousePressed+Released at
+    its center) — synthetic .click() and label-clicks do nothing.** After
+    the click the popup shows "CONNECTED / <timer>"; the vpn_probe's `bip=`
+    field then reports the browser egress IP (a genuinely different range,
+    e.g. 138.199.x — NOT the sandbox's Alibaba flap pool). The generation
+    route clears within a minute (dom ERR -> IDLE). THE FULL PIVOT PATTERN
+    (proven 20:35-20:41Z): VPN on -> old chat may be destroyed in the churn
+    (d5e9e1ec: HTTP 500 + list-absent = death signature) -> duplicate
+    shells can be poisoned/unroutable (every tab on them dies) -> the
+    answer is VOID + estate purge (close EVERY chat.z.ai tab) + fresh
+    create -> lands instantly (GLM-5.3 verified, Full-Stack on, prompt
+    VERIFIED) and generation streams within a minute. Two corollaries:
+    (a) the vpn_probe's chat watch must be repointed to each new chat id;
+    (b) a queued turn on a poisoned shell never fires — don't wait on it.
+
+## Lessons 150-152 (2026-09-25 20:1x-21:2x UTC — CamScan console: the session-boundary reap; the destroyed-queued zombie; the URL roll)
+
+150. **Agent-session boundaries reap the ENTIRE process tree — even a
+    properly double-forked daemon (fork → setsid → fork → execvp) does not
+    survive the platform's session-end sweep.** The 19:08 UTC reference
+    campaign (daemonize.py, pid 15593) died at ~20:12 exactly when the
+    prior agent session ended: the log froze mid-provisioning ("S002
+    attempt 2 starting / provisioning e2b sandbox…"), the process was
+    gone, and no E2B sandbox leaked. Corollaries: (a) on ANY session
+    resume, re-check long-running campaign/monitor liveness FIRST (ps +
+    log mtime) before trusting "it is running" — the operator's "I'm not
+    seeing any activity" report is this exact signature; (b) design
+    campaign loops idempotent (evidence-exists gates per scenario) so a
+    relaunch is one cheap command and skips completed work; (c) the
+    resident agent, not the daemon, is the liveness guarantee — poll the
+    campaign log on every resident loop while it matters.
+
+151. **A capacity-popup CANCEL can DESTROY an accepted-but-queued session
+    body — the two-state refinement (lesson 9) needs a THIRD state:
+    destroyed-queued.** 2026-09-25 20:2x: camscan010f was accepted
+    (URL /c/<uuid>, prompt visible, queued-capacity); unstick.py's
+    cancel → resend left a 637-char corpse (the transcript body had been
+    10872 — the queued prompt text was GONE), the resend proof-failed 5x,
+    and no generation ever fired. The escalation that works: VOID the
+    zombie + fresh re-dispatch under a new name (the -2 convention) —
+    first-round clean send landed instantly and generated. Decision rule:
+    after any cancel on a queued session, if the body's char count
+    COLLAPSES (the prompt text vanished from the transcript), the session
+    is destroyed — void it; never keep resending into the corpse.
+
+152. **Session URLs ROLL mid-flight ON THE SAME TAB — the send-path guard
+    refusal ("tab is NOT on <name>'s session — destroyed") can be a stale
+    REGISTRY record, not a dead session.** camscan010f-2's chat id rolled
+    97eae1db → e5783cdf (same tab CE31035B, session alive and generating)
+    between dispatch and a turn-stall continuation; the guard compared the
+    live URL against the stale create record and refused. Fix: append
+    {"action":"tab-reopen","name":…,"tab_id":<same>,"url":<new>} to
+    scripts/flags/session_registry.jsonl — _find() carries tab-reopen
+    records onto the resolved session and the next send lands (VERIFIED,
+    body grew). Also trivial but real: extract_full.py hard-fails with
+    FileNotFoundError unless scripts/worker-reports/ exists — mkdir it
+    once per clone.
+
+## Lessons 153-155 (2026-09-25 22:2x-22:4x UTC — CamScan console: the dashboard release-all trap; watcher spec resurrection; resume-time watcher audit)
+
+153. **dash_sandbox_release.py's release loop reaps LIVE pods — guard before
+    you click.** The tool clicked every Release button in DOM order and took
+    out a LIVE worker sandbox ("ANR-Discovery-Loop+Tap-Fallback", expires
+    1h56m) along with the three stale ones — lesson-144's first-match class
+    on the DASHBOARD variant. DISCIPLINE: dump the sandbox section FIRST;
+    release only rows whose text carries an "Expired" badge and NEVER one
+    showing "Live" (the patched tool now enforces this — `--force` is the
+    only override, for operator-directed full clears). The modal-based
+    `_handle_sandbox_limit` in dispatch_worker.py remains the safe path
+    during dispatch (keep-keywords protect live sessions). Corollary: a
+    reaped live pod is survivable — the stalled duplicate chat was voided,
+    the primary session re-provisioned and kept generating; never conclude
+    "worker lost" until the chat itself stops growing.
+
+154. **Retiring a queue_watch is a TWO-STEP ritual: delete the spec file,
+    then kill the pid.** The supervisor resurrects a watcher for every
+    `flags/queue_watch.spec.<name>` present — killing the pid alone gets you
+    a respawn within minutes. A stale spec for a DONE task is worse than
+    dead weight: the resurrected watcher sees its watched tab lost, marks
+    the session VOID BY NAME, and re-dispatches ALREADY-MERGED work (the
+    camscan010f-2 zombie re-created a duplicate chat for work merged at
+    1c0fb8d, burning a concurrency slot). On task completion: `done <name>`
+    removes the spec (queue_watch self-retires); on manual retirement: rm
+    the spec + kill, in that order.
+
+155. **On ANY session resume, audit watcher specs against live tabs BEFORE
+    trusting them.** Session-boundary reaping (lesson 150) hits queue
+    watchers too; the supervisor's respawn carries the spec's STALE
+    tab_prefix, and a watcher pinned to a dead tab will VOID a live session
+    of the same name and re-dispatch duplicates — the exact hazard that
+    churned the 010G estate while the operator watched an "inactive"
+    replay. Resume checklist (do it in the first two minutes): (1) `ps |
+    grep queue_watch` and compare each pid's tab prefix against
+    `9222/json/list`; (2) `dispatch_worker.py list` for the true session
+    table; (3) kill-and-despec any watcher whose tab is dead or whose task
+    is done; (4) only then poll the live workers. The resident agent, not
+    the daemon estate, is the liveness guarantee.
+
+## Lessons 156-158 (2026-09-25/26 — Flauz Wave-3 TL recovery session)
+
+156. **Worker sandboxes are EPHEMERAL outside the project dir: only
     /home/z/my-project survives pod recycles.** A platform re-image
     (2026-09-25T17:39:54Z) wiped /home/z/flauz, /home/z/Downloads, every
     clone and staged delivery OUTSIDE the project root mid-wave. Binding
@@ -2425,7 +2904,7 @@ Field-verified during the W044 final-delivery session (post-10:40-reset stack):
     tool-results reads — enough for a zero-drift rebuild ("rewrite, not
     re-derivation") when the chat still holds the worker's report.
 
-54. **The workspaces ls-tree API is SIZE-CAPPED and alphabetical: paths
+157. **The workspaces ls-tree API is SIZE-CAPPED and alphabetical: paths
     that sort AFTER a big clone are invisible.** With an 18.6K-file Flauz/
     clone in the project dir, flauz-delivery/ and *.bundle (lowercase,
     sort after Flauz/) never appeared in ls-tree — the tree count looked
@@ -2435,7 +2914,7 @@ Field-verified during the W044 final-delivery session (post-10:40-reset stack):
     every listed file + the bundle + REPORT/README by explicit path. This
     is the same class as the old ~99-entry truncation but at a new scale.
 
-55. **Agents-tab turn liveness: the chats-history tree shows only shells —
+158. **Agents-tab turn liveness: the chats-history tree shows only shells —
     read the messages/batch store, and distrust early "queued" reads.**
     The history.messages tree carries the prompt + empty assistant stubs
     even while a turn streams 500K+ of content into content_blocks (POST
