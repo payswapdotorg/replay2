@@ -2617,3 +2617,25 @@ chain: `head=payswapdotorg:${BRANCH}`.
     the pushed branch is the delivery truth, the gate is the merge
     authority, and the PR provenance narrates the corpse pattern (PR #50 is
     the precedent).
+
+## Lesson 142 (2026-09-25 13:0x UTC — the peak reap-window data: serialized + paced dispatch under platform-wide capacity strain)
+
+142. **Platform-wide capacity peaks reap QUEUED sessions within minutes of a
+    server-verified landing.** Field data (RoamLink TL session, four consecutive
+    reaps): pa018e landed 12:44 server-verified, reaped by 12:57; pa019b landed
+    12:46, reaped by 12:57; pa018f landed 13:01, reaped by 13:05 (~4-min reap
+    window) — all with the "GLM-5.3 is intensifying" popup on the tab, all
+    answering HTTP 500 on the chats detail and vanishing from the list. The
+    parallel session's w-series chats are NOT in this account's list — the
+    capacity strain is PLATFORM-WIDE, not account-slot contention. The race is:
+    queued session must survive until capacity frees, but the reap window is
+    minutes. DISCIPLINE THAT EMERGED: (a) SERIALIZE — one create at a time,
+    ride it to GENERATION (an assistant message actually generating) before
+    any further create (generating sessions hold; queued ones reap);
+    (b) PACE retries ~15-20 min apart under an active peak (the parallel
+    session's field evidence: a fresh-tab retry "landed cleanly 20 minutes
+    later"; hot cadence FEEDS the reaping — lesson 125); (c) never cancel an
+    accepted send (two-state law) and NEVER settle for GLM-5.3-Flash;
+    (d) two rapid launch_patient calls RACE on the tab pin (both got the same
+    pin; the second navigates the first's tab) — serialize patient launches,
+    never run two at once.
