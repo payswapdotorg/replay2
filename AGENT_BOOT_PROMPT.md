@@ -2806,3 +2806,46 @@ chain: `head=payswapdotorg:${BRANCH}`.
     VERIFIED) and generation streams within a minute. Two corollaries:
     (a) the vpn_probe's chat watch must be repointed to each new chat id;
     (b) a queued turn on a poisoned shell never fires — don't wait on it.
+
+## Lessons 150-152 (2026-09-25 20:1x-21:2x UTC — CamScan console: the session-boundary reap; the destroyed-queued zombie; the URL roll)
+
+150. **Agent-session boundaries reap the ENTIRE process tree — even a
+    properly double-forked daemon (fork → setsid → fork → execvp) does not
+    survive the platform's session-end sweep.** The 19:08 UTC reference
+    campaign (daemonize.py, pid 15593) died at ~20:12 exactly when the
+    prior agent session ended: the log froze mid-provisioning ("S002
+    attempt 2 starting / provisioning e2b sandbox…"), the process was
+    gone, and no E2B sandbox leaked. Corollaries: (a) on ANY session
+    resume, re-check long-running campaign/monitor liveness FIRST (ps +
+    log mtime) before trusting "it is running" — the operator's "I'm not
+    seeing any activity" report is this exact signature; (b) design
+    campaign loops idempotent (evidence-exists gates per scenario) so a
+    relaunch is one cheap command and skips completed work; (c) the
+    resident agent, not the daemon, is the liveness guarantee — poll the
+    campaign log on every resident loop while it matters.
+
+151. **A capacity-popup CANCEL can DESTROY an accepted-but-queued session
+    body — the two-state refinement (lesson 9) needs a THIRD state:
+    destroyed-queued.** 2026-09-25 20:2x: camscan010f was accepted
+    (URL /c/<uuid>, prompt visible, queued-capacity); unstick.py's
+    cancel → resend left a 637-char corpse (the transcript body had been
+    10872 — the queued prompt text was GONE), the resend proof-failed 5x,
+    and no generation ever fired. The escalation that works: VOID the
+    zombie + fresh re-dispatch under a new name (the -2 convention) —
+    first-round clean send landed instantly and generated. Decision rule:
+    after any cancel on a queued session, if the body's char count
+    COLLAPSES (the prompt text vanished from the transcript), the session
+    is destroyed — void it; never keep resending into the corpse.
+
+152. **Session URLs ROLL mid-flight ON THE SAME TAB — the send-path guard
+    refusal ("tab is NOT on <name>'s session — destroyed") can be a stale
+    REGISTRY record, not a dead session.** camscan010f-2's chat id rolled
+    97eae1db → e5783cdf (same tab CE31035B, session alive and generating)
+    between dispatch and a turn-stall continuation; the guard compared the
+    live URL against the stale create record and refused. Fix: append
+    {"action":"tab-reopen","name":…,"tab_id":<same>,"url":<new>} to
+    scripts/flags/session_registry.jsonl — _find() carries tab-reopen
+    records onto the resolved session and the next send lands (VERIFIED,
+    body grew). Also trivial but real: extract_full.py hard-fails with
+    FileNotFoundError unless scripts/worker-reports/ exists — mkdir it
+    once per clone.
