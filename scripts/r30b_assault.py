@@ -48,7 +48,7 @@ def post(text):
         ) + "\n")
 
 
-def run(cmd, timeout=420):
+def run(cmd, timeout=900):
     try:
         p = subprocess.run(cmd, capture_output=True, text=True, timeout=timeout)
         return p.returncode, (p.stdout or "") + (p.stderr or "")
@@ -82,7 +82,12 @@ def main():
         rc, out = run([PY, DISPATCH, "create", "r30b", PROMPT])
         tail = "\n".join(out.strip().splitlines()[-4:])
         log(f"create rc={rc}\n{tail}")
-        if "VERIFIED" in out and "NOT VERIFIED" not in out:
+        # 2026-09-25 fix: the remote create's success line is "prompt ACCEPTED
+        # — session live at ... (server-verified)" (lowercase) — the old
+        # uppercase-only VERIFIED match MISSED it and voided live dispatches.
+        ok = (("prompt ACCEPTED" in out)
+              or ("VERIFIED" in out and "NOT VERIFIED" not in out))
+        if ok:
             cid = registry_chat_id()
             if cid:
                 with open(CHAT_ID_FLAG, "w") as f:

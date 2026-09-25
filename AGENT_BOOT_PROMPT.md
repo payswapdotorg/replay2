@@ -2751,3 +2751,37 @@ chain: `head=payswapdotorg:${BRANCH}`.
     completion truth; the chat tree is the durability surface. Corollary:
     retire watchers deliberately when the registry closes the task and LOG
     the retirement, so a later session never misreads the absence.
+
+## Lessons 146-148 (2026-09-25 19:0x-19:2x UTC — R30-B console: the renderer-purge recovery; the success-string format drift; the crash-on-spawn class)
+
+146. **chat.z.ai peak-load renderer hostility has THREE distinct layers —
+    diagnose by spawning tabs with DIFFERENT urls.** (a) Chrome-wide CDP
+    strain (ALL tabs incl. extensions hung: lesson-105 restart, identical
+    flags); (b) after restart, RESTORED chat.z.ai tabs stay CDP-dead while
+    restored non-chat tabs live; (c) NEW chat.z.ai tabs crash their renderer
+    on spawn (about:blank + example.com survive, chat.z.ai dies instantly).
+    THE FIX for (b)+(c): close EVERY chat.z.ai tab (urllib /json/close/<id>
+    each), then open ONE fresh chat tab — it loads complete with the
+    operator session (localStorage 'token' survives the restart; re-inject
+    the httpOnly cookie per lesson 114, HOST-ONLY domain). A clean chat-tab
+    estate makes the very next dispatch land instantly (proven 19:15-19:18Z:
+    first clean attempt ACCEPTED server-side).
+
+147. **SUCCESS-STRING FORMAT DRIFT: the create flow's success line is now
+    "prompt ACCEPTED — session live at <url> (server-verified)" — an
+    uppercase-only `VERIFIED in out` match MISSES it and voids live
+    dispatches.** The 19:16Z incident: attempt 1 landed (19499279), the
+    daemon's stale check read failure, voided it, and re-dispatched a
+    duplicate (d5e9e1ec) before the operator-side kill. Robust check:
+    `"prompt ACCEPTED" in out OR ("VERIFIED" in out AND "NOT VERIFIED" not
+    in out)` (r30b_assault.py fixed; every future daemon must use this
+    form). Registry discipline: the KEEPER is the newest create record; the
+    voided duplicate shell is reaped server-side (lesson 136's class).
+
+148. **The quiet-window dispatch under a clean estate is INSTANT — spend
+    the peak hours on estate hygiene, not on spaced polls.** The 03:0x
+    Beijing window + the renderer purge + first attempt = ACCEPTED in 31
+    seconds (19:15:45 armed → 19:16:16 landed). The eight spaced hourly
+    cycles before it accomplished nothing that hygiene + one clean attempt
+    didn't. Under congestion: fix the estate (restart, purge, inject), then
+    ONE attempt tells the truth.
