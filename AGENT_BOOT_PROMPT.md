@@ -2785,3 +2785,24 @@ chain: `head=payswapdotorg:${BRANCH}`.
     cycles before it accomplished nothing that hygiene + one clean attempt
     didn't. Under congestion: fix the estate (restart, purge, inject), then
     ONE attempt tells the truth.
+
+## Lesson 149 (2026-09-25 20:2x-20:4x UTC — R30-B console: the turbovpn power-button automation + the pivot pattern)
+
+149. **The VPN can be connected BY THE LEAD — the turbovpn extension's
+    power button is a 64x64 cursor-pointer DIV (class 'mt-5 w-16 h-16
+    cursor-pointer') at ~(720,504) in the popup page
+    (chrome-extension://piplkafkogjfjlofefcobgiccagncean/dist/popup/index.html)
+    and needs a REAL CDP Input.dispatchMouseEvent (mousePressed+Released at
+    its center) — synthetic .click() and label-clicks do nothing.** After
+    the click the popup shows "CONNECTED / <timer>"; the vpn_probe's `bip=`
+    field then reports the browser egress IP (a genuinely different range,
+    e.g. 138.199.x — NOT the sandbox's Alibaba flap pool). The generation
+    route clears within a minute (dom ERR -> IDLE). THE FULL PIVOT PATTERN
+    (proven 20:35-20:41Z): VPN on -> old chat may be destroyed in the churn
+    (d5e9e1ec: HTTP 500 + list-absent = death signature) -> duplicate
+    shells can be poisoned/unroutable (every tab on them dies) -> the
+    answer is VOID + estate purge (close EVERY chat.z.ai tab) + fresh
+    create -> lands instantly (GLM-5.3 verified, Full-Stack on, prompt
+    VERIFIED) and generation streams within a minute. Two corollaries:
+    (a) the vpn_probe's chat watch must be repointed to each new chat id;
+    (b) a queued turn on a poisoned shell never fires — don't wait on it.
