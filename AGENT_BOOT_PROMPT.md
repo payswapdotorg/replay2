@@ -2410,3 +2410,41 @@ Field-verified during the W044 final-delivery session (post-10:40-reset stack):
     chats API detail call is the truth (1 user message = queued at API
     level; user + empty assistant gen=None = turn accepted but dead; the
     first state survives hours, the second is a corpse).
+
+## Lessons 53-55 (2026-09-25/26 — Flauz Wave-3 recovery session)
+
+53. **Worker sandboxes are EPHEMERAL outside the project dir: only
+    /home/z/my-project survives pod recycles.** A platform re-image
+    (2026-09-25T17:39:54Z) wiped /home/z/flauz, /home/z/Downloads, every
+    clone and staged delivery OUTSIDE the project root mid-wave. Binding
+    work-order discipline ever since: clone INSIDE the persisted volume
+    (/home/z/my-project/<repo>), stage deliveries there, and refresh the
+    git bundle + staged copy AFTER EVERY MILESTONE — a pod reset must
+    never cost more than one milestone. The surviving artifacts per lane
+    were the project-dir worklog.md (the complete design record) and
+    tool-results reads — enough for a zero-drift rebuild ("rewrite, not
+    re-derivation") when the chat still holds the worker's report.
+
+54. **The workspaces ls-tree API is SIZE-CAPPED and alphabetical: paths
+    that sort AFTER a big clone are invisible.** With an 18.6K-file Flauz/
+    clone in the project dir, flauz-delivery/ and *.bundle (lowercase,
+    sort after Flauz/) never appeared in ls-tree — the tree count looked
+    plausible (~18.7K) while the delivery was silently missing from the
+    listing. The content endpoint serves UNLISTED paths: fetch the
+    MANIFEST.txt explicitly first, parse its sha256+path lines, then fetch
+    every listed file + the bundle + REPORT/README by explicit path. This
+    is the same class as the old ~99-entry truncation but at a new scale.
+
+55. **Agents-tab turn liveness: the chats-history tree shows only shells —
+    read the messages/batch store, and distrust early "queued" reads.**
+    The history.messages tree carries the prompt + empty assistant stubs
+    even while a turn streams 500K+ of content into content_blocks (POST
+    /api/v1/chats/<id>/messages/batch with the tree's message ids).
+    A fresh turn's batch may read 733-byte-shell for 60+ minutes before
+    the first flush — "queued" is not "dead". Independent liveness: the
+    pod filesystem (ls-tree file count growth), and the DOM (a saturated
+    generating tab times out on CDP evals — that saturation IS the
+    alive signal; probe from a different tab). MODEL_CONCURRENCY_LIMIT
+    (SSE 200 + error payload) ≈ one generation slot per account: land
+    sends at slot-free moments (right after another turn completes), and
+    queue rather than grind.
