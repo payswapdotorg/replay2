@@ -2449,3 +2449,22 @@ turns — the probes themselves were the only "outage."
 (chat 232807e8, later deleted), 7 junk probe chats, 6 idle probe cycles,
 and a sandbox reset's worth of dispatch capacity — all on a premise the
 operator overturned in one line.
+
+## Lesson 131 (2026-09-25 04:45 UTC — corroboration rule + shared-account concurrency)
+
+131. **Corroborate "platform down" verdicts server-side before freezing
+    (addendum to 129's postmortem).** The 39h AISE freeze was diagnosed
+    through ONE DOM-reading channel (probe tab scans) while the lesson-107
+    chats HTTP rail was available the whole time and would have shown
+    whether assistant replies existed server-side. Rule: any "wedge/DOWN"
+    verdict that would gate dispatch for more than ~30 min MUST be
+    corroborated by a second, independent channel (chats HTTP rail detail
+    view, a fresh patient dispatch probe) before it freezes anything.
+    Also: the account's 3-session sandbox cap is SHARED across concurrent
+    programs on this machine (aurum W-lane + AISE lanes) — check
+    `dispatch_worker.py sandboxes` + the registry before every create, and
+    when the concurrency modal hits, release the session YOU no longer need
+    (never another program's live worker). AISE lane state (2026-09-25
+    04:35 UTC): prod033 landed + generating (chat 1e23e0b4); hfx302 in
+    capacity assault; remaining roadmap = HFX-302 → HFX-401 → PROD-015
+    (Lead's), PROD-033 parallel, HFX-303 parallel-eligible for slot 3.
