@@ -275,7 +275,11 @@ JS_INSERT_RATIO = r"""(() => {
 JS_CAPACITY_STATE = r"""(() => {
   const body = document.body.innerText || '';
   const capacity = body.includes('currently at capacity') || body.includes('try again later')
-                || body.includes('peak hours');
+                || body.includes('peak hours')
+                // 2026-09-25 operator ruling: the personal-limit notification does
+                // NOT block agents-tab sessions — treat it as a dismissable
+                // popup (cancel + resend), never a hard failure.
+                || body.includes('exceeds the personal limit') || body.includes('personal usage limit');
   let hasCancel = false;
   let generating = false;
   document.querySelectorAll('button').forEach(b => {
@@ -299,6 +303,13 @@ JS_SEND_BUTTON = r"""(() => {
   if (!b) return '';
   const r = b.getBoundingClientRect();
   return JSON.stringify({x: Math.round(r.x + r.width/2), y: Math.round(r.y + r.height/2), disabled: b.disabled});
+})()"""
+
+JS_CLICK_SEND_BUTTON = r"""(() => {
+  const b = document.querySelector('button.sendMessageButton');
+  if (!b) return 'no-button';
+  b.click();
+  return 'clicked';
 })()"""
 
 # --- sandbox concurrency (operator rule: release sandboxes with no active job) ---
@@ -807,6 +818,20 @@ def _select_insert_send(c, tab, prompt, name, prompt_file):
         pass
     _eval(c, JS_FOCUS_COMPOSER, timeout=15)
     time.sleep(0.2)
+    # 2026-09-25 lesson: a leftover model-menu overlay EATS the Enter key
+    # (the send silently fails — URL stays home, composer stays filled).
+    # Escape-close any overlay, then click the SEND BUTTON; keep Enter as
+    # the fallback.
+    for typ in ("keyDown", "keyUp"):
+        c.call("Input.dispatchKeyEvent", {
+            "type": typ, "key": "Escape", "code": "Escape",
+            "windowsVirtualKeyCode": 27, "nativeVirtualKeyCode": 27})
+    time.sleep(0.6)
+    try:
+        _eval(c, JS_CLICK_SEND_BUTTON, timeout=10)
+    except Exception:
+        pass
+    time.sleep(2)
     for typ in ("keyDown", "keyUp"):
         c.call("Input.dispatchKeyEvent", {
             "type": typ, "key": "Enter", "code": "Enter",
@@ -999,10 +1024,16 @@ def create(name, prompt_file):
                             print(f"      [staged-resume] composer holds {len(prompt)} chars — Enter")
                             _eval(c, JS_FOCUS_COMPOSER, timeout=15)
                             time.sleep(0.2)
+                            # 2026-09-25 lesson: a leftover model-menu overlay EATS
+                            # the Enter key (send silently fails, URL stays home).
+                            # Escape-close any overlay FIRST, then click the SEND
+                            # BUTTON (button.sendMessageButton) — far more reliable.
                             for _typ in ("keyDown", "keyUp"):
                                 c.call("Input.dispatchKeyEvent", {
-                                    "type": _typ, "key": "Enter", "code": "Enter",
-                                    "windowsVirtualKeyCode": 13, "nativeVirtualKeyCode": 13})
+                                    "type": _typ, "key": "Escape", "code": "Escape",
+                                    "windowsVirtualKeyCode": 27, "nativeVirtualKeyCode": 27})
+                            time.sleep(0.6)
+                            _eval(c, JS_CLICK_SEND_BUTTON, timeout=10)
                             time.sleep(4)
                             try:
                                 c.close()

@@ -2468,3 +2468,42 @@ operator overturned in one line.
     04:35 UTC): prod033 landed + generating (chat 1e23e0b4); hfx302 in
     capacity assault; remaining roadmap = HFX-302 → HFX-401 → PROD-015
     (Lead's), PROD-033 parallel, HFX-303 parallel-eligible for slot 3.
+---
+
+## Lessons 2026-09-25 (P13 dispatch, the "phantom outage")
+
+**L-2026-09-25-1 — the probe chats do NOT measure agents-tab capacity.**
+The backend probes (fresh chat-tab sessions, "assistant reply within N
+minutes") reported DOWN for 32h straight while an agents-tab worker
+(p14, GLM-5.3 + Full-Stack) GENERATED ITS ENTIRE DELIVERY in that same
+window. Operator ruling: chat.z.ai is not capacity blocked; rate-limit /
+peak-hours popups do not apply to dispatch decisions. NEVER declare a
+platform outage from probe-chat silence alone — cross-check a live
+agents-tab session (`dispatch_worker.py check <name>`) before standing
+down. The 30-min probe watch is a weak signal at best.
+
+**L-2026-09-25-2 — the personal-limit popup does not match the capacity
+detector.** The dispatcher's JS_CAPACITY_STATE looked for "currently at
+capacity" / "try again later" / "peak hours"; the personal-limit popup
+reads "usage exceeds the personal limit … try again 1 hour later" — no
+match, so `create` classified the send as a GENUINE failure and exited
+rc=2 instead of assaulting. Fixed: the detector now also matches
+"exceeds the personal limit" / "personal usage limit" (operator ruling:
+those notifications do not apply; cancel + resend through them).
+
+**L-2026-09-25-3 — a leftover model-menu overlay EATS the Enter key.**
+After model selection the picker overlay can stay open; the composer
+holds the full prompt, insert verifies 100%, but the send Enter is
+swallowed by the overlay — URL stays home, `create` exits. Fixed (both
+send paths): Escape-close any overlay, then CLICK
+`button.sendMessageButton` (found + enabled even while the overlay is
+open), Enter kept as fallback. Manual recovery when it still fails:
+`channel.CDP` → `dispatch_worker.JS_MODEL_TEXT`/`JS_SKILL_STATE`/`JS_AGENT_MODE_ON`
+to verify the three selections → Escape → `document.querySelector('button.sendMessageButton').click()`
+→ the URL moves to /c/<uuid> within seconds.
+
+**L-2026-09-25-4 — task-push-chain.sh PR reuse used the wrong head
+filter.** `pulls?head=<repo>:<branch>` returns 0 results; GitHub expects
+`head=<owner>:<branch>`. The bug was latent (the chain always created
+fresh PRs) until a worker pre-opened its own PR (#31). Fixed in the
+chain: `head=payswapdotorg:${BRANCH}`.
