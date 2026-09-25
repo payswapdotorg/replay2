@@ -1,0 +1,165 @@
+=== POST-001 COMPLETION REPORT ===` verbatim, as it's the sole deliverable channel. Let me compose it carefully with all sections:
+
+- Work Item ID
+- Base SHA (clone HEAD, live-resolved)
+- Head SHA
+- Protected surfaces touched
+- Machine-state reconciliation (per-item summary, drift list, exact counts)
+- Deployed-check (PASS/FAIL + per-check table)
+- Deployed fingerprint (probes + values)
+- Local-build fingerprint @ main
+- Deployment staleness verdict
+- Deploy step status
+- Proposed state diff (fenced unified diff)
+- Commands executed (exact list, in order)
+- Failure/unsupported cases
+- Security/tenant considerations
+- Limitations
+- Out-of-scope
+- Successor handoff
+
+This must be my FINAL message and be the complete report. Let me write it out fully.
+All sections executed and verified. Emitting the final completion report — this is the sole deliverable channel, harvested verbatim.
+
+=== POST-001 COMPLETION REPORT ===
+- Work Item ID: POST-001 (issue #15)
+- Base SHA (clone HEAD, live-resolved): `4065037bdf825c3848638e39ff5e72cfc2f87662` — live-resolved myself via `git rev-parse HEAD` after clone. This EQUALS the dispatch-time reference (`4065037…`), so no divergence to report; the live value was used throughout. HEAD subject: "state: refresh reconciliation timestamp after handoff audit" (2026-09-25T11:16:00Z). Main history: 427 commits; `git log --oneline -5`: `4065037` state: refresh reconciliation timestamp after handoff audit / `89cc314` docs: link README to final tech lead handoff / `4b056ae` docs: add current execution override to post-production plan / `6e2679c` state: record active post-readiness programs / `d5792d1` docs: align agent contract with final post-production orchestration.
+- Head SHA: `4065037bdf825c3848638e39ff5e72cfc2f87662` — identical; no repository mutations were made (clone is pristine: zero tracked modifications after all work including the local build; the regenerated `api/[...path].mjs` beacon is byte-identical to the committed one, so `git status` stayed clean).
+- Protected surfaces touched: none — read-only wave. No AISE source file was modified, no commit, no push, no GitHub/Vercel authentication attempted. Scratch analysis scripts were kept out of the tracked tree (moved to /tmp). One side effect inside the sandbox only: `bun install` (286 pkgs) and `bunx playwright install chromium` (chromium-1208, Chrome Headless Shell 145.0.7632.6) in the local clone.
+- Machine-state reconciliation (deterministic — git history + filesystem vs `docs/productization-state.json`):
+  - Inventory: 43 work-item records = 35 PROD (PROD-001…PROD-034, where PROD-011b is the session-stability sub-record) + 8 HFX (HFX-000/101/201/204/301/302/303/401). Counts match the PROD-015 declaration ("all 34 PROD work items and all 8 HFX"; 35 records = 34 + the 011b sub-record).
+  - Per-item result: **43/43 OK on main lineage** — every recorded `mergedSha` (and PROD-015's `evidence.finalSha`) resolves via `git rev-parse` AND is an ancestor of main AND maps to a commit finalizing exactly that item (42/43 subjects name the item verbatim; PROD-011b's `eb953b2` is the deploy-shape fix commit its own record text describes). Every item also has finalization history on main (`git log --all --grep`).
+  - Placeholder/literal SHA check: **none found** (no `X…`, `TBD`, `FIXME`, `0000000`, `deadbeef`, `YOUR_*` patterns; grep clean).
+  - DRIFT list (exact):
+    1. PROD-026 `mergedSha: "d9c0d84ac"` — non-standard 9-char abbreviation (neither 7 nor 40). Resolves unambiguously → `d9c0d84acb14bd9847430973bc6bd458c58ea4a6`, on main, subject "merge: PROD-026 — end-to-end composition + building benchmark". Cosmetic drift only; normalization proposed.
+    2. HFX-000 `mergedSha: "16663d66b"` — same class → `16663d66b5a0c95e3c35f6e194e91e52ea286b67`, on main, subject "merge: HFX-000 — provider evaluation control plane". Cosmetic drift only; normalization proposed.
+    3. Deployment metadata does not distinguish declaration SHA from current main SHA: `productization.deployedApplicationCommit`/`lastVerifiedCommit` = `91f1b449…`, valid as the PROD-015 declaration, but no field records that current main HEAD `4065037…` is 24 commits ahead and NOT deployed as an exact SHA. Fixed by the proposed diff.
+  - Not drift (verified, explainable): evidence dirs exist for PROD-010…034, all HFX, PROD-015, PROD-012-R; PROD-011b's cited `evidence/PROD-011B/` exists (root `evidence/`, 3 files); PROD-013's cited `evidence/PROD-013/` exists (4 files); PROD-001…009 claim no evidence directories in state (their finalization evidence is in their merge commits; the state schema does not require per-item evidence dirs); `docs/productization-evidence/PROD-012-R/` is PROD-012's remediation sub-record (its `mergedSha 667d22e` resolves on main); `GBIM-000/` is the Track G canonical fixture (recorded under `followOnPrograms.geometryBimRAndD`, outside the productization inventory by design). No state item absent from history; no history item absent from state. `implementationCampaign.commit b9b031a85016ac50caba6cd66990707f7815b179` resolves on main. The plan-baseline tip `d231287f…` resolves ("PROD-015: refresh the committed api/[...path].mjs deploy beacon…").
+  - Honest classification of `workerCommit`/`workerChat` fields: 16 full-length + several short `workerCommit` values do NOT exist anywhere in the public clone (main or `origin/work/*`). This is consistent with the state's own documented harvest model (`recoveryMethod: "work-log replay…"`, `harvest: "standard staged delivery … via work branch; gate branch tree-identical merge"`, PROD-028's literal `"per DELIVERY.txt"`). They are worker-side provenance pointers, not main-lineage claims — classified as not independently verifiable from a public clone (by design of the harvest model), NOT drift. The closure-wave worker commits that were pushed and merged tree-identically (PROD-031 `5def563`, PROD-032 `cdd0cf3`, PROD-034 `ca391b6`) DO resolve on main. `workerChat` values are chat-session UUIDs (regex false-positives for SHAs); `f1147c36`/`676a6eda`/`f88c53aa` are sha256/tree digests, not git SHAs.
+  - PROD-015 declaration facts verified against evidence FILES (not just the state JSON): final SHA `91f1b449d6ea5cafd6a4e58e8533fea8d24ed5b7` ✓ (PROD-015/README.md "The final lineage"; resolves on main, subject "state: HFX-401 FINALIZED…", date 2026-09-25T08:09:30Z; also cited as `repo SHA at run time` in all three PROD-033 run records w/m/x of 2026-09-25T08-20-*Z); deployment `dpl_9G5gsVbGzpbWGBewyQUE4QhgadFY` ✓ (README "The final-SHA deployment", Production/Ready, alias re-pointed from the stale Sep-23 deployment); public URL `https://aise-tan.vercel.app` ✓ (README + PROD-033 run records).
+- Deployed-check: **PASS — DEPLOYED: PASS (7/7), exit 0** — run 2026-09-25T12:03–12:04Z against the default target `https://aise-tan.vercel.app` with real headless Chromium (`/home/z/.cache/ms-playwright/chromium-1208/chrome-linux64/chrome`, --no-sandbox, sequential checks, one browser). Classification: synthetic-over-HTTP (live public-deployment browser replay). Per-check table (40 pass assertions / 0 fail):
+  | check | result | key evidence |
+  |---|---|---|
+  | availability | PASS (9 assertions) | GET / 200 no off-origin redirect; title "AISE — AI Site Engineer"; x-vercel-id `hkg1::f8994-…`; /healthz 200 `ok:true`; /readyz 200 `ok:true`, `cost.ledger=redis`, `auth.status=enabled, mode=demo-open` |
+  | shell-renders | PASS (5) | #app mounted (13 descendants); auth gate "Sign in to AISE" + "Enter demo" offered |
+  | session-lifecycle | PASS (10) | POST /v1/auth/demo 200 mints Demo Evaluator; aise_session cookie HttpOnly+Secure, SameSite=Strict, maxAge≈604800s; whoami 200; logout 200; post-logout whoami **401 fail-closed** with `error.code=authentication_required`; 0 cookies remain |
+  | responsive-desktop | PASS (4) | 1440x900 zero horizontal overflow (gate + signed-in shell); header.app-header + nav#primary-nav visible |
+  | responsive-mobile | PASS (5) | 390x844 zero overflow incl. drawer open; nav-toggle visible |
+  | accessibility | PASS (4) | axe: critical=0 serious=0 at BOTH viewports; 3 moderate non-blocking landmark findings reported (the PROD-012-R known deferred nested-main item — honestly surfaced, not re-classified) |
+  | console-runtime-errors | PASS (3) | 0 pageerror, 0 console.error, 0 blocking failed requests; 15 expected-by-design pre-session 401s excluded with cause |
+- Deployed fingerprint (synthetic-over-HTTP; probe time 2026-09-25T12:04:19–20Z):
+  - `GET /` → 200; ETag `"11864a6da01dfbfd329951263c0dec15"`; Last-Modified `Fri, 25 Sep 2026 08:19:58 GMT` (consistent with the PROD-015 platform-build window; declaration finalizedAt 08:23:01Z); x-vercel-cache HIT, age 13461; body sha256 `a4931614db8591eba4e78746d0d72761f193a0d752ec07cd14b0403694de0df5` (768 bytes); server: Vercel; HSTS preload.
+  - Referenced assets: `/assets/index-CY7lDqUY.js` (200, ETag `W/"1afab6ed…"`, sha256 `c7597d790c0146f09eb75310eef52c20abe8d7fee9af47a4080889772b91e374`, 701,622 bytes) and `/assets/index-_fuVXJEw.css` (200, ETag `W/"04e913d1…"`, sha256 `230e91f0585cdd3c47d396d6e0daa0ff60f6e12c43787bc093e400209d69f05f`, 15,427 bytes). Dynamically-imported chunks also served and hashed: `solution-browser-mount-DBnmDhO6.js` sha256 `d91a722eb7b3a76d445e77e466cdebb58f6b6a401cc0d4df3a6bd510de943550`; `solution-mount-Bd5LVVfT.js` `fe83d9836e4caa0d77495293660cf2d549cd8aad1de4f797a7322cce1577b08e`; `demo-world-Drwzzp2W.js` `bd2e1317faa00fefebeb8bd30aa92697556f553e517ad83cd922c389124882a1`.
+  - `/healthz` → 200, payload `{"ok":true,"service":"aise-api","version":"0.1.0"}`, body sha256 `fd98f68e5937f70fcf20ae683620144cf1baf4e13766ce45c785a3624b471647`; x-vercel-cache MISS (function invocation), x-request-id present.
+  - `/readyz` → 200 (full payload captured): providers `worldsculpt: disabled`; artifacts `local-fs/available`; auth `enabled/demo-open`; cost ledger `redis`, windowId `2026-09`, thresholdPercent 80, meters: redis_commands 1398/400000 (99% remaining, ok), r2_storage_bytes 0/8 GiB, r2_objects 0/100000; rateLimit 60/60s per principal, 600 global; maxUploadBytes 10485760.
+  - `/v1/gaps` → 200 (multi-segment function routing live).
+  - Build/version identifiers exposed: only the service `version: "0.1.0"`; no commit SHA or deployment id header is exposed publicly. Deployment-freshness signals: Last-Modified 08:19:58Z (declaration build), x-vercel-id region traces (edge hkg1, function origin iad1). Stability: refetch of `/` across two different edge instances (x-vercel-id `hkg1::nx99n-…` then `hkg1::bfnww-…`) returned byte-identical body and identical ETag.
+- Local-build fingerprint @ main (`bun run build` at HEAD `4065037…`, deterministic): **BUILD: PASS** (`apps/web/dist/index.html`, `api/[...path].mjs`):
+  - `apps/web/dist/index.html`: sha256 `a4931614db8591eba4e78746d0d72761f193a0d752ec07cd14b0403694de0df5` (768 bytes) — **identical to deployed `/`** (md5 of body = ETag content `11864a6da01dfbfd329951263c0dec15`, identical).
+  - `/assets/index-CY7lDqUY.js`: sha256 `c7597d790c0146f09eb75310eef52c20abe8d7fee9af47a4080889772b91e374` — identical to deployed. (Deployed probe reported 700,352 "bytes" = UTF-16 code units of `res.text()`; the delta of 1,270 is multi-byte UTF-8 characters — sha256 over the UTF-8 bytes matches exactly.)
+  - `/assets/index-_fuVXJEw.css`: sha256 `230e91f0585cdd3c47d396d6e0daa0ff60f6e12c43787bc093e400209d69f05f` — identical.
+  - All 3 dynamic chunks — sha256-identical to the deployed chunks (values above).
+  - `api/[...path].mjs` (serverless bundle): regenerated sha256 `d809e0d81e8d4222cb5982942c15e84c988429092edbd7f4c74f0cd569d74c3f` (1,629,443 bytes), **byte-identical to the HEAD-committed beacon and to the `d231287` refreshed beacon**; the `91f1b449`-committed beacon was the stale `e1e3f15b6e21cb214717fcabd587bb2eda92ca1ab53eb6b55ed763145cf768b8` (regenerated by the platform at deploy time — exactly what `d231287` recorded). `git status` after build: clean.
+- Deployment staleness verdict: **STALE(=91f1b449…)** — with evidence, at two precise levels:
+  1. Provenance/exact-SHA level (governing): the live deployment is the PROD-015 declaration deployment `dpl_9G5gsVbGzpbWGBewyQUE4QhgadFY`, built by the platform from repository state at `91f1b449d6ea5cafd6a4e58e8533fea8d24ed5b7` (PROD-015/README.md; corroborated by served Last-Modified 08:19:58Z). Current main HEAD `4065037…` has never been deployed as an exact SHA. `git rev-list --count 91f1b449..HEAD` = 24 commits, ALL documentation/state-only: `git diff --stat 91f1b449..HEAD` touches only `api/[...path].mjs` (the regenerated beacon itself), docs/, README.md, AGENTS.md, productization-state.json — the diff over build inputs (`apps/web/src apps/web/index.html apps/web/package.json backend packages api/_serverless.ts tools/build.ts bun.lock package.json vercel.json`) is EMPTY.
+  2. Artifact-content level: every observable deployed artifact is **byte-identical** to a fresh build of current main (all 5 web assets + index.html, proven over HTTP); the server bundle is deterministic-regeneration-equivalent (local build at HEAD reproduces the `d231287` beacon byte-for-byte; the platform build of `dpl_9G5gs…` ran the same `bun run build` from source-identical inputs with the pinned esbuild 0.28.2). Therefore the staleness is provenance-staleness only, with zero content divergence risk — but under the handoff's exact-SHA evidence law ("never accept a later main SHA as covered by older deployment evidence"), current main must NOT be described as the deployed artifact until the exact SHA is deployed and replayed.
+- Deploy step status: **DEPLOY_PENDING_CREDENTIAL** (I hold no Vercel credentials; no authentication attempted — expected and honest). Exact runbook steps for the Tech Lead (from `tools/deploy-vercel.md` Phases 0–5 + `docs/DEPLOYMENT.md` §9, adapted to current main):
+  1. `git checkout main && git pull` → `FINAL_SHA=$(git rev-parse HEAD)` (expect `4065037…`; re-resolve — never hard-code).
+  2. `bun install --frozen-lockfile`.
+  3. `bun run verify` (expected VERIFY: PASS, 0 fail; POST-003's independent run provides the same gate) — then `bun run typecheck`, `bun run lint`.
+  4. `bun run build` → expected `BUILD: PASS` (and, per POST-001 evidence, the beacon should regenerate as sha256 `d809e0d8…` byte-identical).
+  5. Phase 1–3 of the deploy runbook: `bunx vercel link` (once, if not linked), verify env secrets exist (`bunx vercel env ls` — AISE_SERVERLESS=1, AISE_AUTH=1, AISE_AUTH_MODE=demo-open, AUTH_SECRET, + the PROD-007 Upstash pair), then `bunx vercel deploy --prod`.
+  6. Confirm the alias `https://aise-tan.vercel.app` points at the NEW deployment (`bunx vercel ls` / `bunx vercel inspect <url> --logs`; `bunx vercel alias set` if pinned — the Sep-25 stale-alias incident is the precedent).
+  7. `AISE_DEPLOYED_URL=https://aise-tan.vercel.app bun tools/deployed-check.ts` → expected `DEPLOYED: PASS` (7/7).
+  8. `bun tools/journey/run.ts all --base-url https://aise-tan.vercel.app` → expected `JOURNEY HARNESS: PASS`; commit the timestamped records under `docs/productization-evidence/PROD-033/runs/`.
+  9. Evidence pin: `git add docs/productization-evidence/PROD-033/runs/ docs/productization-state.json` (including this POST-001 state refresh) `&& git commit -m "…pinned at $FINAL_SHA"`.
+- Proposed state diff (unified, against `docs/productization-state.json` @ `4065037`; validated — the patched file parses as JSON with all counts intact: 35 workItems, 8 hfx; NOT committed, NOT pushed — Lead applies after review):
+
+```diff
+--- a/docs/productization-state.json
++++ b/docs/productization-state.json
+@@ -9,7 +9,7 @@
+     "spec/governance/architecture-change-record-006.md"
+   ],
+   "technologySubstitutionContract": "spec/technology-substitution-contract.md",
+-  "lastReconciledAt": "2026-09-25T11:15:41Z",
++  "lastReconciledAt": "2026-09-25T12:06:40Z",
+   "implementationCampaign": {
+     "status": "complete",
+     "workItemsFinalized": 41,
+@@ -20,14 +20,18 @@
+     "status": "ready",
+     "installable": "yes",
+     "freeTierDeployed": "yes",
+-    "deploymentStatus": "final-SHA production deployment (dpl_9G5gsVbGzpbWGBewyQUE4QhgadFY, 2026-09-25); DEPLOYED: PASS 7/7; JOURNEY HARNESS: PASS against the deployed URL",
++    "deploymentStatus": "final-SHA production deployment (dpl_9G5gsVbGzpbWGBewyQUE4QhgadFY, 2026-09-25) built from declaration SHA 91f1b449d6ea5cafd6a4e58e8533fea8d24ed5b7; DEPLOYED: PASS 7/7 (declaration run 2026-09-25T08:2xZ; POST-001 replay 2026-09-25T12:03Z PASS 7/7); JOURNEY HARNESS: PASS against the deployed URL (declaration run); current main HEAD is NOT the deployed SHA — see deploymentFreshness",
+     "userFriendlyInterface": "yes",
+     "publicUrl": "https://aise-tan.vercel.app",
+     "vercelDeploymentId": "dpl_9G5gsVbGzpbWGBewyQUE4QhgadFY",
+     "deployedApplicationCommit": "91f1b449d6ea5cafd6a4e58e8533fea8d24ed5b7",
+     "lastVerifiedCommit": "91f1b44",
++    "currentMainCommit": "4065037bdf825c3848638e39ff5e72cfc2f87662",
++    "currentMainCommitDate": "2026-09-25T11:16:00Z",
++    "currentMainResolvedAt": "2026-09-25T12:06:40Z",
++    "deploymentFreshness": "declaration-SHA deployment, not current main: the PROD-015 deployment dpl_9G5gsVbGzpbWGBewyQUE4QhgadFY was built by the platform from repository state at 91f1b449d6ea5cafd6a4e58e8533fea8d24ed5b7; current main 4065037bdf825c3848638e39ff5e72cfc2f87662 is 24 commits ahead, all documentation/state-only (no build inputs changed: git diff 91f1b449..4065037 -- apps/web/src apps/web/index.html backend packages api/_serverless.ts tools/build.ts bun.lock package.json vercel.json is empty). POST-001 fingerprint (2026-09-25T12:04Z): every deployed static artifact is byte-identical to a fresh bun run build of current main (index.html sha256 a4931614db8591eba4e78746d0d72761f193a0d752ec07cd14b0403694de0df5; index-CY7lDqUY.js sha256 c7597d790c0146f09eb75310eef52c20abe8d7fee9af47a4080889772b91e374; index-_fuVXJEw.css sha256 230e91f0585cdd3c47d396d6e0daa0ff60f6e12c43787bc093e400209d69f05f; api/[...path].mjs regenerated byte-identical to the committed d231287 beacon d809e0d81e8d4222cb5982942c15e84c988429092edbd7f4c74f0cd569d74c3f). Exact-SHA redeploy of current main remains required before describing current main as deployed: DEPLOY_PENDING_CREDENTIAL",
+     "finalGate": "docs/PRODUCTION-READINESS-GATE.md",
+-    "lastReconciledAt": "2026-09-25T09:45:00Z"
++    "lastReconciledAt": "2026-09-25T12:06:40Z"
+   },
+   "execution": {
+     "maxConcurrentWorkers": 3,
+@@ -409,7 +413,7 @@
+         "PROD-025",
+         "PROD-018"
+       ],
+-      "mergedSha": "d9c0d84ac",
++      "mergedSha": "d9c0d84acb14bd9847430973bc6bd458c58ea4a6",
+       "mergedAt": "2026-09-21T23:35:00Z",
+       "evidence": {
+         "workerChat": "88536451-9325-48c3-bcab-52da419a2bb1",
+@@ -559,7 +563,7 @@
+       {
+         "id": "HFX-000",
+         "status": "finalized",
+-        "mergedSha": "16663d66b",
++        "mergedSha": "16663d66b5a0c95e3c35f6e194e91e52ea286b67",
+         "mergedAt": "2026-09-22T00:55:00Z",
+         "workerChat": "181c84ee-8640-4fbc-ae3e-e471126b5f5b",
+         "workerCommit": "50e752e655b770873c625253d4ad0fb40324a263",
+```
+
+- Commands executed (exact, in order):
+  1. `git clone https://github.com/payswapdotorg/AISE.git aise-post001` (to /home/z/aise-post001)
+  2. `git rev-parse HEAD` → `4065037bdf825c3848638e39ff5e72cfc2f87662`; `git log --oneline -5`; `git branch -a`; `git status --short`
+  3. `git log -1 --format="%H%n%an%n%ae%n%ad%n%s"`; `git log --oneline | wc -l` → 427
+  4. `bun -e` (state-structure dump: workItems/hfx/execution/simulation/followOnPrograms)
+  5. `bun post001-reconcile.ts` (custom reconciliation: 43 items × SHA-resolve × on-main × evidence-dir × history-grep; scratch script, moved to /tmp after use)
+  6. `ls evidence/`; per-item `evidence/PROD-00X` existence loop; `ls evidence/PROD-011B`
+  7. `grep -nE 'X{3,}|TBD|PLACEHOLDER|…' docs/productization-state.json` (clean); `git rev-parse d9c0d84ac 16663d66b`; `git rev-parse --disambiguate=…`; `git rev-parse --verify d231287f0a1a90521d74be8cccea4c196736f286^{commit}`
+  8. `bun -e` (SHA→subject mapping for all 43; `git rev-list --count 91f1b449..HEAD` → 24; `git log --oneline 91f1b449..HEAD`; `git diff --stat 91f1b449..HEAD`)
+  9. `grep playwright package.json` (1.58.1); `bun install --frozen-lockfile` (286 packages)
+  10. `bun -e "chromium.executablePath()"` → chromium-1208 (missing) 
+  11. `bunx playwright install chromium` (Chrome Headless Shell 145.0.7632.6, chromium-1208)
+  12. `bun tools/deployed-check.ts` → **DEPLOYED: PASS** (default target https://aise-tan.vercel.app)
+  13. `bun post001-fingerprint-deployed.ts` (/, assets, /healthz, /readyz, /v1/gaps, HEAD /, refetch-stability)
+  14. `bun run build` → **BUILD: PASS**
+  15. `bun post001-compare.ts` (local fingerprint + deployed↔local comparison + beacon lineage: built == HEAD == d231287 ≠ 91f1b449)
+  16. `bun -e` (3 dynamic-chunk deployed↔local sha256 comparison + UTF-8 byte/code-unit explanation)
+  17. `git diff --stat 91f1b449..HEAD -- apps/web/src apps/web/index.html apps/web/package.json backend packages api/_serverless.ts tools/build.ts tools/smoke.ts bun.lock package.json vercel.json` → EMPTY; `git show --stat 9a32a93`; `cat docs/productization-state.schema.json`
+  18. `bun -e` (all 124 sha-like values in state → resolution check; history-vs-state inventory diff)
+  19. `bun -e` (16 workerCommits × all-refs resolution → 0 in public repo, classified)
+  20. `grep -h -E "91f1b449|aise-tan.vercel.app|dpl_9G5gs" docs/productization-evidence/PROD-033/runs/*.md`; `git status --porcelain` (pristine); `mv post001-*.ts /tmp/`
+  21. `bun -e` (construct proposed state → validate JSON/counts → emit unified diff to /tmp/post001-diff/state-refresh.diff)
+- Failure/unsupported cases:
+  - No check silently skipped; no FAIL results. Honest non-executions: (a) the deploy itself — credential-gated, classified DEPLOY_PENDING_CREDENTIAL, not attempted; (b) `bun run verify`/typecheck/lint/journey harness — POST-003's (#17) scope, not mine; I ran `bun run build` only (PASS); (c) Vercel deployment-metadata API (dpl↔git-SHA binding) — not queryable without credentials; binding rests on PROD-015 evidence + Last-Modified timing + byte-identical artifacts.
+  - The stale deployment is an honest, expected finding (the handoff §2 "Release freshness" predicted exactly this), not a failure of this worker.
+- Security/tenant considerations: none — no secrets in this output. All probed values are publicly served by the deployment (headers, non-secret /healthz//readyz status payloads). The session-lifecycle check minted and destroyed its own demo session (demo-open mode; the suite's output redacts the cookie value; logout verified fail-closed). No AUTH_SECRET, tokens, or credentials were observed, transmitted, or recorded. No tenant data touched. No GitHub/Vercel write or auth attempt.
+- Limitations: (1) HTTP fingerprinting cannot prove server-side environment variables (AISE_SERVERLESS, AUTH_SECRET, DATABASE_URL, Upstash pair) — only their behavioral surface in /readyz (artifacts=local-fs, ledger=redis, auth=enabled/demo-open) and the working session/rate-limit/cost behavior; (2) the deployed `api/[...path].mjs` bytes cannot be fetched over HTTP — its equivalence to the local build is inferred from identical build inputs + byte-identical deterministic regeneration + the d231287 commit's own assertion, not directly byte-proven; (3) ETag/asset stability observed across two edge instances at one point in time (12:04Z); (4) workerCommit provenance values are not independently verifiable from the public clone (sandbox-harvest model — by design); (5) the deployed-check's accessibility findings (3 moderate landmark issues) match the known PROD-012-R deferred item and are reported, not patched.
+- Out-of-scope (explicit non-goals): any AISE source modification (read-only wave); any work-item status change (all PROD/HFX remain finalized — no readiness reopening); W/M/X journey replay and full verify at current main (POST-003 / Wave R2); Android/E2B/physical-device validation (POST-002); Vercel authentication, deployment, alias changes or rollback; committing or pushing the proposed state diff (Lead applies after review); Track G geometry/BIM evaluation.
+- Successor handoff (the Lead, in order):
+  1. Review and apply the proposed `docs/productization-state.json` diff (Section D above) — it refreshes reconciliation timestamps, makes the declaration-SHA vs current-main-SHA distinction explicit (`currentMainCommit` + `deploymentFreshness`), and normalizes the two 9-char mergedSha values to full SHAs; commit on main.
+  2. Execute the DEPLOY_PENDING_CREDENTIAL runbook at current main (Section C steps 1–9): re-resolve HEAD first (expect `4065037…`; if main advanced, the fingerprint conclusion must be re-derived — though only doc-level commits since `4065037` would preserve it), verify/typecheck/lint/build, `bunx vercel deploy --prod`, verify the `aise-tan` alias points at the NEW deployment, rerun `bun tools/deployed-check.ts` and `bun tools/journey/run.ts all --base-url https://aise-tan.vercel.app`, then pin the evidence records + state refresh citing the new exact SHA.
+  3. Harvest POST-002 (#16, Android physical lane — physical/emulated/synthetic classification, never upgraded) and POST-003 (#17, independent verify/typecheck/lint/build/live-Chromium/W/M/X/route/secret-leakage at current main + deployment behavior); their runs close the remaining R0 baseline.
+  4. After R0 harvest and acceptance, dispatch Wave R1 (#18 POST-004, #19 POST-005, #20 POST-006); Wave R2 (Lead-only exact-SHA W/M/X replay + reconciliation) after R1 merges.
+  5. Note for POST-003 / R2: at `4065037` the local build reproduces the committed beacon byte-identically (sha256 `d809e0d8…`) and every deployed static asset already matches current main — the replay should CONFIRM this equivalence, not expect drift; any divergence there would itself be a defect to report.
+=== END REPORT ===
