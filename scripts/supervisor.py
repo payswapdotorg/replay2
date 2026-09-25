@@ -479,6 +479,36 @@ def ensure_freeze_probe_watch():
     log("freeze_probe_watch restarted")
 
 
+
+def ensure_frame_guard():
+    """frame_guard.py — console frame freshness watch (2026-09-24 stale-frame
+    postmortem: replayd can serve 500s for hours while healthz stays green).
+    Standalone by design upstream, but a dead guard silently re-opens the
+    4.5h-frozen-preview gap, so the supervisor owns its resurrection the
+    same way as freeze_probe_watch (pidfile first, pgrep fallback; the guard
+    itself only does local HTTP/CDP reads — restart is always safe).
+    Recreated after sandbox-reset #4 (2026-09-25)."""
+    pidfile = os.path.join(BASE, "frame_guard.pid")
+    pid = read_pid(pidfile)
+    if pid_alive(pid, "frame_guard.py"):
+        return
+    r = subprocess.run(["pgrep", "-f", "scripts/frame_guard.py"],
+                       capture_output=True, text=True)
+    pid = r.stdout.strip().split("\n")[0] if r.stdout.strip() else ""
+    if pid:
+        try:
+            open(pidfile, "w").write(pid)
+        except Exception:
+            pass
+        return
+    log("frame_guard DEAD — restarting (frame freshness watch)")
+    subprocess.Popen(
+        [PY, os.path.join(BASE, "frame_guard.py")],
+        stdout=open(os.path.join(LOGDIR, "frame_guard.out"), "a"),
+        stderr=subprocess.STDOUT, start_new_session=True)
+    log("frame_guard restarted")
+
+
 def ensure_queue_watch():
     """Resurrect queue_watch.py for every flags/queue_watch.spec.<name>.
 
@@ -712,7 +742,11 @@ def main():
             ensure_tab_gc()
             ensure_queue_watch()
             ensure_stall_recovery()
-            ensure_freeze_probe_watch()
+            # ensure_freeze_probe_watch() — DISABLED 2026-09-25: operator doctrine
+            # override ("it is not capacity blocked; disregard rate-limit
+            # notifications; never wait — dismiss popups and resend"). The
+            # §16 hourly-probe loop sent junk chats hourly on a false premise.
+            ensure_frame_guard()
             ensure_lane_keepalive()
             _load_endgame_lanes()
             ensure_endgame_watch()

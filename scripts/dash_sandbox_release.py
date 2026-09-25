@@ -33,11 +33,22 @@ DUMP_JS = r"""
 
 RELEASE_JS = r"""
 (() => {
-  const btns = Array.from(document.querySelectorAll('button'))
-    .filter(b => ((b.innerText || '').trim() === 'Release'));
-  if (!btns.length) return JSON.stringify({clicked: 0});
-  btns[0].click();
-  return JSON.stringify({clicked: 1, remaining: btns.length - 1});
+  // 2026-09-25 live-pod guard (lesson-153): only release rows whose text
+  // does NOT carry a Live badge — clicking a Live row's Release button
+  // reaps a running worker's sandbox (incident: the ANR-Discovery-Loop pod).
+  const el = Array.from(document.querySelectorAll('div,section,[role=dialog]'))
+    .find(e => (e.innerText||'').includes('Sandbox'));
+  const scope = el || document;
+  let clicked = 0, live = 0;
+  scope.querySelectorAll('button').forEach(b => {
+    if (((b.innerText || '').trim()) !== 'Release') return;
+    const row = b.closest('tr, div');
+    const txt = (row ? row.innerText : '') || '';
+    if (/\bLive\b/.test(txt)) { live += 1; return; }
+    b.click();
+    clicked += 1;
+  });
+  return JSON.stringify({clicked: clicked, live_skipped: live});
 })()
 """
 
@@ -64,11 +75,18 @@ def main():
     print("SANDBOX SECTION:")
     print(dump.get("txt", "(empty)")[:1200])
     print("BUTTONS:", dump.get("btns", []))
-    # release loop: click Release until none remain (each click removes a row)
+    # release loop: click Release for every NON-LIVE row until none remain
+    # (--force overrides the live guard for operator-directed full clears)
+    force = "--force" in sys.argv
     total = 0
     for _ in range(12):
         r = json.loads(c.eval(RELEASE_JS, timeout=20))
+        if force and r.get("live_skipped"):
+            r = {"clicked": r.get("clicked", 0) + r["live_skipped"]}
         if not r.get("clicked"):
+            if r.get("live_skipped"):
+                print(f"GUARD: skipped {r['live_skipped']} LIVE sandbox(es) "
+                      f"(use --force to override)")
             break
         total += r["clicked"]
         time.sleep(2.5)  # let the row vanish / API settle

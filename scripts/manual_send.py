@@ -89,9 +89,27 @@ def send_once(ws, text):
 """)
     if not str(enabled).startswith('staged:'):
         return 'insert-failed:' + str(enabled)
-    # Enter to submit
-    ws.call('Input.dispatchKeyEvent', {'type': 'keyDown', 'key': 'Enter', 'code': 'Enter', 'windowsVirtualKeyCode': 13, 'nativeVirtualKeyCode': 13})
-    ws.call('Input.dispatchKeyEvent', {'type': 'keyUp', 'key': 'Enter', 'code': 'Enter', 'windowsVirtualKeyCode': 13, 'nativeVirtualKeyCode': 13})
+    # Send: Escape-close any overlay, then DOM-click the send button
+    # (2026-09-25 lesson: overlays eat Enter AND coordinate clicks; React
+    # onClick on button.sendMessageButton is the proven path). Enter kept
+    # as fallback.
+    ws.call('Input.dispatchKeyEvent', {'type': 'keyDown', 'key': 'Escape', 'code': 'Escape', 'windowsVirtualKeyCode': 27, 'nativeVirtualKeyCode': 27})
+    ws.call('Input.dispatchKeyEvent', {'type': 'keyUp', 'key': 'Escape', 'code': 'Escape', 'windowsVirtualKeyCode': 27, 'nativeVirtualKeyCode': 27})
+    time.sleep(0.6)
+    clicked = eval_js(ws, r"""
+(() => {
+  const b = document.querySelector('button.sendMessageButton');
+  if (!b) return 'no-button';
+  if (b.disabled) return 'disabled';
+  b.click();
+  return 'clicked';
+})()
+""")
+    time.sleep(2.5)
+    if clicked != 'clicked':
+        # fallback: Enter (legacy path)
+        ws.call('Input.dispatchKeyEvent', {'type': 'keyDown', 'key': 'Enter', 'code': 'Enter', 'windowsVirtualKeyCode': 13, 'nativeVirtualKeyCode': 13})
+        ws.call('Input.dispatchKeyEvent', {'type': 'keyUp', 'key': 'Enter', 'code': 'Enter', 'windowsVirtualKeyCode': 13, 'nativeVirtualKeyCode': 13})
     time.sleep(4)
     return 'entered'
 

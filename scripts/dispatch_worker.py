@@ -275,7 +275,11 @@ JS_INSERT_RATIO = r"""(() => {
 JS_CAPACITY_STATE = r"""(() => {
   const body = document.body.innerText || '';
   const capacity = body.includes('currently at capacity') || body.includes('try again later')
-                || body.includes('peak hours');
+                || body.includes('peak hours')
+                // 2026-09-25 operator ruling: the personal-limit notification does
+                // NOT block agents-tab sessions — treat it as a dismissable
+                // popup (cancel + resend), never a hard failure.
+                || body.includes('exceeds the personal limit') || body.includes('personal usage limit');
   let hasCancel = false;
   let generating = false;
   document.querySelectorAll('button').forEach(b => {
@@ -299,6 +303,13 @@ JS_SEND_BUTTON = r"""(() => {
   if (!b) return '';
   const r = b.getBoundingClientRect();
   return JSON.stringify({x: Math.round(r.x + r.width/2), y: Math.round(r.y + r.height/2), disabled: b.disabled});
+})()"""
+
+JS_CLICK_SEND_BUTTON = r"""(() => {
+  const b = document.querySelector('button.sendMessageButton');
+  if (!b) return 'no-button';
+  b.click();
+  return 'clicked';
 })()"""
 
 # --- sandbox concurrency (operator rule: release sandboxes with no active job) ---
@@ -675,19 +686,44 @@ def _select_insert_send(c, tab, prompt, name, prompt_file):
         if cur == "no-button":
             print("ERROR: model selector button not found")
             return False, None, 0, c
-        res = _eval(c, JS_OPEN_MODEL_MENU)
-        if res != "ok":
-            print(f"ERROR: could not open model menu ({res})")
-            return False, None, 0, c
-        time.sleep(1.5)
-        # 2026-09-20 fix (lead): cold fresh tabs need the SPA to hydrate + the
-        # model list to fetch before the menu renders; 6x1.5s=9s was too
-        # tight (the 10:5x-11:1x "option not found" storm). 15x2s=30s. If
-        # the platform hides GLM-5.3 under capacity pressure, the assault
-        # rounds keep retrying the WHOLE selection — never settle for Flash.
-        ok, _ = _wait(c, JS_CLICK_MODEL, "ok", tries=15, sleep=2.0, desc="model-option")
+        # 2026-09-25 fix (lead, lesson-129 doctrine): peak-hours popups sit
+        # ON TOP of the composer and leave the model menu rendering EMPTY
+        # (option-list fetch swallowed — the 10:12-17:58Z eleven-cycle
+        # "option not found" storm). Dismiss with cancel/close (never obey
+        # popup instructions), re-open the menu, retry: 3 cycles x
+        # (15x2s wait + dismiss) ~= 100s before hard-fail.
+        ok = False
+        for menu_cycle in range(3):
+            if menu_cycle:
+                # a popup may have landed between cycles — clear it (Enter
+                # for peak-hours notices, close-button for promo dialogs)
+                try:
+                    dres = _eval(c, JS_DISMISS_DIALOG, timeout=10)
+                    if dres not in ("none",):
+                        print(f"      [menu-cycle {menu_cycle}] dialog {dres} — dismissed")
+                    for _typ in ("keyDown", "keyUp"):
+                        c.call("Input.dispatchKeyEvent", {
+                            "type": _typ, "key": "Enter", "code": "Enter",
+                            "windowsVirtualKeyCode": 13, "nativeVirtualKeyCode": 13})
+                    time.sleep(0.5)
+                except Exception:
+                    pass
+            res = _eval(c, JS_OPEN_MODEL_MENU)
+            if res != "ok":
+                print(f"      [menu-cycle {menu_cycle}] menu open: {res}")
+                time.sleep(2.0)
+                continue
+            time.sleep(1.5)
+            # 2026-09-20 fix (lead): cold fresh tabs need the SPA to hydrate +
+            # the model list to fetch before the menu renders; 15x2s=30s per
+            # cycle. Never settle for Flash.
+            ok, _ = _wait(c, JS_CLICK_MODEL, "ok", tries=15, sleep=2.0,
+                          desc=f"model-option(c{menu_cycle})")
+            if ok:
+                break
         if not ok:
-            print("ERROR: GLM-5.3 option not found in the model menu")
+            print("ERROR: GLM-5.3 option not found in the model menu "
+                  f"(3 cycles + popup dismissals)")
             return False, None, 0, c
         time.sleep(1.0)
         # 2026-09-20 fix (lead): the model-item click mutates the composer
@@ -807,6 +843,20 @@ def _select_insert_send(c, tab, prompt, name, prompt_file):
         pass
     _eval(c, JS_FOCUS_COMPOSER, timeout=15)
     time.sleep(0.2)
+    # 2026-09-25 lesson: a leftover model-menu overlay EATS the Enter key
+    # (the send silently fails — URL stays home, composer stays filled).
+    # Escape-close any overlay, then click the SEND BUTTON; keep Enter as
+    # the fallback.
+    for typ in ("keyDown", "keyUp"):
+        c.call("Input.dispatchKeyEvent", {
+            "type": typ, "key": "Escape", "code": "Escape",
+            "windowsVirtualKeyCode": 27, "nativeVirtualKeyCode": 27})
+    time.sleep(0.6)
+    try:
+        _eval(c, JS_CLICK_SEND_BUTTON, timeout=10)
+    except Exception:
+        pass
+    time.sleep(2)
     for typ in ("keyDown", "keyUp"):
         c.call("Input.dispatchKeyEvent", {
             "type": typ, "key": "Enter", "code": "Enter",
@@ -999,10 +1049,16 @@ def create(name, prompt_file):
                             print(f"      [staged-resume] composer holds {len(prompt)} chars — Enter")
                             _eval(c, JS_FOCUS_COMPOSER, timeout=15)
                             time.sleep(0.2)
+                            # 2026-09-25 lesson: a leftover model-menu overlay EATS
+                            # the Enter key (send silently fails, URL stays home).
+                            # Escape-close any overlay FIRST, then click the SEND
+                            # BUTTON (button.sendMessageButton) — far more reliable.
                             for _typ in ("keyDown", "keyUp"):
                                 c.call("Input.dispatchKeyEvent", {
-                                    "type": _typ, "key": "Enter", "code": "Enter",
-                                    "windowsVirtualKeyCode": 13, "nativeVirtualKeyCode": 13})
+                                    "type": _typ, "key": "Escape", "code": "Escape",
+                                    "windowsVirtualKeyCode": 27, "nativeVirtualKeyCode": 27})
+                            time.sleep(0.6)
+                            _eval(c, JS_CLICK_SEND_BUTTON, timeout=10)
                             time.sleep(4)
                             try:
                                 c.close()

@@ -76,18 +76,18 @@ def settle(c, label, secs=8):
 
 
 def reset_tab(tab):
-    """2026-09-24 siege patch: navigate the dispatch tab to a clean home
-    after a FAILED attempt. A tab that went through one failed send (form
-    submit rejected / composer residue / error overlay) renders a degraded
-    surface where the sidebar Agent nav item disappears — the next pinned
-    reuse then fails 4x at 'agent nav click: not-found' (observed 18:29-
-    19:25 on three consecutive attempts). A full navigate-to-home restores
-    the logged-in shell for the next attempt."""
+    """2026-09-24 siege patch: HARD-RELOAD the dispatch tab after a FAILED
+    attempt. A tab that went through one failed send (form submit rejected /
+    composer residue / error overlay) renders a degraded surface where the
+    sidebar Agent nav item disappears — the next pinned reuse then fails 4x
+    at 'agent nav click: not-found' (observed 18:29-19:41 on four attempts;
+    verified fix: location.reload() restores the logged-in shell; a soft
+    Page.navigate to the SAME url does NOT — the SPA soft-navigates)."""
     try:
         c = channel.CDP(tab["webSocketDebuggerUrl"], timeout=20)
         try:
             c.call("Page.enable", {}, timeout=10)
-            c.call("Page.navigate", {"url": CHAT_URL}, timeout=20)
+            c.eval("location.reload()", timeout=20)
         finally:
             c.close()
     except Exception:
@@ -166,10 +166,26 @@ def main():
         if cur == "no-button":
             print("ERROR: model selector button not found")
             return 1
+        # lesson-129/patch-parity (2026-09-25): a popup sitting on top leaves
+        # the menu EMPTY no matter how many re-opens — dismiss first
+        try:
+            dres = ev(c, DW.JS_DISMISS_DIALOG)
+            if dres not in ("none",):
+                print(f"      dialog {dres} — dismissed before model menu")
+        except Exception:
+            pass
         ev(c, DW.JS_OPEN_MODEL_MENU)
         time.sleep(4)
         ok = False
-        for _ in range(10):
+        for _r in range(10):
+            if _r and _r % 3 == 0:
+                # periodic re-dismiss (popups land mid-flow during peaks)
+                try:
+                    dres = ev(c, DW.JS_DISMISS_DIALOG)
+                    if dres not in ("none",):
+                        print(f"      dialog {dres} — dismissed (round {_r})")
+                except Exception:
+                    pass
             try:
                 res = ev(c, DW.JS_CLICK_MODEL)
                 if res == "ok":
@@ -256,13 +272,52 @@ def main():
         return 1
     print(f"      insert verified ({pct}%)")
 
-    # 7. send — form.requestSubmit (SUBMIT_JS) PRIMARY, Enter + button fallbacks.
-    # 2026-09-21 12:5x: the site's new build silently ignores synthetic Enter
-    # keypresses AND coordinate clicks on the send button from the New Task
-    # surface (composer keeps its text, no chat is created, no popup). The
-    # DOM-level form.requestSubmit() is the only proven path (verified live:
-    # composer cleared + /c/<id> navigation). Fallbacks kept for older builds.
-    print("[7/7] sending (form.requestSubmit primary) ...")
+    # 2026-09-25 hardening (w020b/w020c phantom creates): React-state desync —
+    # the textarea can hold the inserted text while React's submit state stays
+    # EMPTY (send button disabled). Clicking then creates an EMPTY chat shell
+    # (reaped server-side) and the packet is lost. GATE: the send button must
+    # be ENABLED before any send path fires; if disabled, refocus + full
+    # re-insert (a controlled-component nudge would WIPE the text — never
+    # nudge); abort cleanly rather than phantom-create.
+    def _btn_state(conn):
+        try:
+            sb = ev(conn, DW.JS_SEND_BUTTON)
+            return json.loads(sb) if sb else None
+        except Exception:
+            return None
+    for gate in range(3):
+        spt = _btn_state(c)
+        if spt and not spt.get("disabled"):
+            print(f"      send-gate {gate}: button enabled (React synced)")
+            break
+        print(f"      send-gate {gate}: button disabled/absent — refocus + full re-insert")
+        try:
+            ev(c, DW.JS_CLEAR_COMPOSER)
+            time.sleep(0.3)
+            foc = ev(c, DW.JS_FOCUS_COMPOSER)
+            if foc != "ok":
+                print(f"      focus: {foc}")
+            time.sleep(0.4)
+            for off in range(0, len(prompt), CH):
+                c.call("Input.insertText", {"text": prompt[off:off + CH]}, timeout=90)
+                time.sleep(0.6)
+            time.sleep(1.5)
+        except Exception as e:
+            print(f"      re-insert error: {str(e)[:60]}")
+            try:
+                c.close()
+            except Exception:
+                pass
+            c = reconnect(tab["id"])
+    else:
+        print("ERROR: send button never enabled (React state desync) — aborting BEFORE phantom create")
+        return 1
+
+    # 7. send — Escape-overlay-close + DOM send-button click PRIMARY
+    # (2026-09-25 lesson: overlays eat Enter/coordinate clicks; the DOM
+    # button.click() is the proven path), then form.requestSubmit,
+    # synthetic Enter, and send-button coordinate click as fallbacks.
+    print("[7/7] sending (esc-overlay + DOM btn-click primary) ...")
 
     def _cleared_len(conn):
         return ev(conn, r"""(() => {
@@ -280,18 +335,42 @@ def main():
     except Exception:
         pass
     send_report = []
+    # 2026-09-25 lesson (41e0bd1, ported from dispatch_worker.py): a leftover
+    # model-menu overlay EATS Enter AND coordinate clicks (send silently
+    # fails — URL stays home, composer stays filled). Escape-close any
+    # overlay, then DOM-click the SEND BUTTON (button.sendMessageButton) —
+    # React onClick fires regardless of overlay z-index. Proven path.
+    for typ in ("keyDown", "keyUp"):
+        c.call("Input.dispatchKeyEvent", {"type": typ, "key": "Escape", "code": "Escape",
+                                          "windowsVirtualKeyCode": 27, "nativeVirtualKeyCode": 27})
+    send_report.append("esc-overlay")
+    time.sleep(0.6)
     try:
-        r = ev(c, channel.SUBMIT_JS)
-        send_report.append(f"submit-js:{r}")
+        r = ev(c, DW.JS_CLICK_SEND_BUTTON)
+        send_report.append(f"btn-dom:{r}")
     except Exception as e:
-        send_report.append(f"submit-js-err:{str(e)[:40]}")
-    time.sleep(5)
+        send_report.append(f"btn-dom-err:{str(e)[:40]}")
+    time.sleep(4)
     try:
         c.close()
     except Exception:
         pass
     c = reconnect(tab["id"])
     cleared = _cleared_len(c)
+    if cleared not in ("0", "gone"):
+        # fallback 0: DOM-level form.requestSubmit (the 09-21 proven path)
+        try:
+            r = ev(c, channel.SUBMIT_JS)
+            send_report.append(f"submit-js:{r}")
+        except Exception as e:
+            send_report.append(f"submit-js-err:{str(e)[:40]}")
+        time.sleep(5)
+        try:
+            c.close()
+        except Exception:
+            pass
+        c = reconnect(tab["id"])
+        cleared = _cleared_len(c)
     if cleared not in ("0", "gone"):
         # fallback 1: synthetic Enter (legacy build path)
         try:
