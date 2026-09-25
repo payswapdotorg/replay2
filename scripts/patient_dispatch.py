@@ -256,6 +256,47 @@ def main():
         return 1
     print(f"      insert verified ({pct}%)")
 
+    # 2026-09-25 hardening (w020b/w020c phantom creates): React-state desync —
+    # the textarea can hold the inserted text while React's submit state stays
+    # EMPTY (send button disabled). Clicking then creates an EMPTY chat shell
+    # (reaped server-side) and the packet is lost. GATE: the send button must
+    # be ENABLED before any send path fires; if disabled, refocus + full
+    # re-insert (a controlled-component nudge would WIPE the text — never
+    # nudge); abort cleanly rather than phantom-create.
+    def _btn_state(conn):
+        try:
+            sb = ev(conn, DW.JS_SEND_BUTTON)
+            return json.loads(sb) if sb else None
+        except Exception:
+            return None
+    for gate in range(3):
+        spt = _btn_state(c)
+        if spt and not spt.get("disabled"):
+            print(f"      send-gate {gate}: button enabled (React synced)")
+            break
+        print(f"      send-gate {gate}: button disabled/absent — refocus + full re-insert")
+        try:
+            ev(c, DW.JS_CLEAR_COMPOSER)
+            time.sleep(0.3)
+            foc = ev(c, DW.JS_FOCUS_COMPOSER)
+            if foc != "ok":
+                print(f"      focus: {foc}")
+            time.sleep(0.4)
+            for off in range(0, len(prompt), CH):
+                c.call("Input.insertText", {"text": prompt[off:off + CH]}, timeout=90)
+                time.sleep(0.6)
+            time.sleep(1.5)
+        except Exception as e:
+            print(f"      re-insert error: {str(e)[:60]}")
+            try:
+                c.close()
+            except Exception:
+                pass
+            c = reconnect(tab["id"])
+    else:
+        print("ERROR: send button never enabled (React state desync) — aborting BEFORE phantom create")
+        return 1
+
     # 7. send — Escape-overlay-close + DOM send-button click PRIMARY
     # (2026-09-25 lesson: overlays eat Enter/coordinate clicks; the DOM
     # button.click() is the proven path), then form.requestSubmit,
