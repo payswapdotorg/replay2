@@ -75,7 +75,12 @@ def title_hint(tabs):
     return "plain" if any(t.get("title") == "YouTube" for t in tabs) else "none"
 
 def strong_login_check(tab):
-    """Patient eval on the YT tab. Returns 'in' | 'out' | 'unknown'."""
+    """Patient eval on the YT tab. Returns 'in' | 'out' | 'gate' | 'unknown'.
+
+    The third state (lesson-167 extension, proven 05:2xZ): no avatar AND no
+    sign-in link = GATE-DEGRADED logged-in (the risk engine strips the account
+    chrome; a logged-OUT page shows the Sign in link). Gate = keep watching,
+    never fire, never stand down."""
     import websocket
     try:
         ws = websocket.create_connection(tab["webSocketDebuggerUrl"], timeout=30)
@@ -93,7 +98,11 @@ def strong_login_check(tab):
                     if v is None:
                         return "unknown"
                     v = json.loads(v)
-                    return "in" if (v.get("avatar") and not v.get("signin")) else "out"
+                    if v.get("avatar") and not v.get("signin"):
+                        return "in"
+                    if not v.get("avatar") and not v.get("signin"):
+                        return "gate"
+                    return "out"
         finally:
             try: ws.close()
             except Exception: pass
@@ -192,6 +201,9 @@ def main():
                                "re-trigger manually via yt_gap_capture.py if needed.")
                     _state["name"] = "WAIT_CLOSE"; _state["since"] = time.time()
                     continue
+                elif verdict == "gate":
+                    log(f"eval: GATE-DEGRADED logged-in (hint={hint}) — the chrome is "
+                        "stripped; standing by (the VPN-off + fresh-load lever lifts it)")
                 elif verdict == "out":
                     log(f"eval: logged-out (hint={hint}) — standing by")
                 else:
