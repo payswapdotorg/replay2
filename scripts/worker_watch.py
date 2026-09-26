@@ -42,6 +42,25 @@ def find_tab(url_frag):
     return None
 
 
+def find_tab_by_id(tid):
+    for t in list_tabs():
+        if t.get("id") == tid:
+            return t
+    return None
+
+
+def close_tab(tid):
+    """Close via Target.closeTarget (the /json/close endpoint 404s on some
+    blank/extension targets; the CDP browser-level call is reliable)."""
+    import urllib.request as _u
+    ver = json.load(_u.urlopen(CDP_HTTP + "/version", timeout=10))
+    c = channel.CDP(ver["webSocketDebuggerUrl"], timeout=20)
+    try:
+        return c.call("Target.closeTarget", {"targetId": tid}, timeout=10)
+    finally:
+        c.close()
+
+
 def open_tab(url):
     req = urllib.request.Request(
         CDP_HTTP + "/new?url=" + urllib.parse.quote(url, safe=""), method="PUT")
@@ -86,6 +105,7 @@ def main():
     last = {u: None for u in chat_urls}
     gen_announced = {u: False for u in chat_urls}
     last_growth = {u: 0.0 for u in chat_urls}
+    last_growth_log = {u: 0.0 for u in chat_urls}
     while time.time() < deadline:
         time.sleep(POLL_S)
         for u in chat_urls:
@@ -111,8 +131,43 @@ def main():
                 if not gen_announced[u]:
                     gen_announced[u] = True
                     log("%s DOM GROWTH %d -> %d — GENERATING" % (u.rsplit('/', 1)[-1][:8], prev, n))
+                # visible progress: log the growth at most every 300s per chat
+                now = time.time()
+                if now - last_growth_log[u] >= 300:
+                    last_growth_log[u] = now
+                    log("%s growing: %d -> %d" % (u.rsplit('/', 1)[-1][:8], prev, n))
             else:
                 age = int(time.time() - last_growth[u]) if last_growth[u] else -1
+                # wedged-renderer rotation (lesson 159 corollary): a tracked
+                # tab static > 600s may be a WEDGED RENDERER — open a FRESH
+                # tab on the same URL; if its DOM differs, the old tab lies:
+                # switch tracking to the fresh tab and close the wedged one.
+                if age > 600:
+                    frag = u.rsplit('/', 1)[-1][:8]
+                    try:
+                        ft = open_tab(u)
+                        time.sleep(8)
+                        ft2 = find_tab_by_id(ft["id"])
+                        if ft2 is not None:
+                            fn = dom_len(ft2)
+                            if fn is not None and fn != n:
+                                log("%s WEDGE ROTATION: tracked tab static %d, fresh tab %d — switching (the worker is ALIVE)" % (frag, n, fn))
+                                try:
+                                    close_tab(t["id"])
+                                except Exception:
+                                    pass
+                                last[u] = fn
+                                last_growth[u] = time.time()
+                                continue
+                            else:
+                                # fresh tab agrees (or unreadable) — close it,
+                                # keep the tracked one
+                                try:
+                                    close_tab(ft["id"])
+                                except Exception:
+                                    pass
+                    except Exception as e:  # noqa: BLE001
+                        log("wedge-rotation probe failed for %s: %s" % (frag, e))
                 # periodic quiet status
                 if int(time.time()) % 1800 < POLL_S:
                     log("%s DOM static at %d (quiet %ss)" % (u.rsplit('/', 1)[-1][:8], n, age))
