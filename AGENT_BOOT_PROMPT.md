@@ -3032,3 +3032,22 @@ chain: `head=payswapdotorg:${BRANCH}`.
     with non-empty assistant content" loop is self-defeating while the slot is busy
     (probes bounce empty until the slot frees, and once it frees ANY dispatch
     works) — watch the SLOT (workspaces + chat activity), not the probe.
+
+## Lesson 163 (2026-09-26 02:50 UTC — AISE console: the alias-pinned production domain; bundle-hash is the only SHA truth)
+
+163. **A READY production deployment does NOT mean the production DOMAIN serves it —
+    a deployment-pinned alias stays on its old deployment forever; verify the BUNDLE
+    HASH, never just behavior.** The AISE console merged POST-004, created an exact-SHA
+    API deployment (READY), and ran deployed-check (DEPLOYED: PASS) — while the
+    production domain aise-tan.vercel.app was still alias-pinned to the PRE-POST-004
+    build (dpl_9G5gsVbG-era). Every behavioral gate passed because the old build was
+    also green — deployed-check cannot see SHA drift (healthz exposes no git SHA).
+    THE PROBE THAT CATCHES IT: build locally at the merge SHA, compare the hashed
+    asset filename the domain's index.html references (index-<hash>.js must match the
+    local build's) — byte-level SHA truth with zero API scope. THE FIX: POST
+    /v2/deployments/{full-uid}/aliases {"alias": "<domain>"} re-pins (needs the FULL
+    deployment uid from the v6 list — truncated uids 404); the flip is visible within
+    seconds (age: 0, new bundle). Free-tier note: the api-deployments-free-per-day
+    quota (100/day, account-wide — parallel sessions share it) blocks API creates but
+    git-integration auto-deploys still work — push, then re-pin the alias.
+
