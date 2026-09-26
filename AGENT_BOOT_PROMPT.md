@@ -3163,26 +3163,6 @@ chain: `head=payswapdotorg:${BRANCH}`.
     snapshot-root cp at the first completion signal, not after the final
     report) — the staged bundle survives every subsequent turn death, and
     the harvest can proceed without the final report message.
-171. **A zombie turn locks the composer at the APPLICATION layer — dead-turn
-    revival is impossible; re-dispatch is the only recovery.** Signature
-    (pa025, 2026-09-26): the worker's turn hung mid-command (90+ min static,
-    zero command cards, zero stop buttons, zero generating indicators, fresh
-    tabs AGREEING — not a renderer wedge). Every send path fails SILENTLY:
-    insertText+Enter echoes but never lands; a real-mouse click on the
-    composer's send button fires NO network request (verify via
-    performance.getEntriesByType('resource') — only telemetry pings, no
-    message POST); raw key events do nothing. The platform holds the turn as
-    ACTIVE server-side and refuses submission while it is "running" — with
-    NO stop control exposed. Do not burn an hour on nudge variants: void the
-    chat, re-dispatch (lesson 127). Corollary for the re-dispatch battle
-    after a Chrome restart: session restore re-opens the hung chat's tabs
-    (close them by URL match), the restored home tab renders the degraded
-    no-Agent-nav surface (hard location.reload() restores it), and that
-    reload can wedge the renderer (lesson 160) — if eval times out after the
-    reload, replace the tab, never reload again.
-
-## Lessons 172-173 (2026-09-26 07:5x UTC — the "no activity in the replay" resume: zombie watcher re-dispatch + double campaign)
-
 172. **`done` must retire the queue_watch spec ITSELF — a completion marker
     named in a live spec is a hard dependency of `done`.** The CAMSCAN-010H
     incident (2026-09-26): `dispatch_worker.py done camscan010h` recorded the
@@ -3211,3 +3191,27 @@ chain: `head=payswapdotorg:${BRANCH}`.
     child (its SIGINT-safe destroy tears down the live E2B sandbox cleanly),
     THEN TERM the bash loop. Killing the parent first orphans a
     provisioning/running child holding a paid sandbox.
+
+174. **A composer-locked chat means the turn is ACTIVE server-side — a long
+    silent stretch is NOT death; check the branch watch before re-dispatching.
+    (Renumbered 171->174 past the parallel session's lessons; which called it a zombie
+    turn — the pa025 turn completed and delivered its branch 90 minutes into
+    the "silence".)** The real signature decomposition: the worker chat went
+    static mid-command for 90+ min with zero command cards, zero stop
+    buttons, zero generating indicators, fresh tabs AGREEING — and the
+    composer refusing every send path (insertText+Enter echoes but never
+    lands; the send button fires NO network request — verify via
+    performance.getEntriesByType('resource')). That composer lock is the
+    platform TRUTHFULLY holding the active-turn lock — the turn was running
+    server-side the whole time (its architecture check + implementation +
+    verification took ~2h with no UI feedback after the tab views went
+    stale). The DOCTRINE: (1) a locked composer + static DOM = turn ACTIVE,
+    unknown progress — never diagnose death from view-tab silence alone;
+    (2) the branch watch (ls-remote every 150s) is the independent delivery
+    signal — if the worker pushes, the turn is alive regardless of the tabs;
+    (3) before re-dispatching a silent worker, wait at least one branch-watch
+    cycle past the point where the tabs went static AND check the chat with
+    a fresh tab + "Show full message" expansion for a completed report;
+    (4) if you DO re-dispatch redundantly, gate and merge the FIRST verified
+    delivery, and void the sibling on its delivery (its push moves the
+    branch — reset the branch to the merged sha after voiding).
