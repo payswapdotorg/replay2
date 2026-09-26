@@ -1,0 +1,64 @@
+POST-004B delivery (issue #18 follow-up lane — the three POST-003 verification defects)
+
+commit: 4a8731ce4d8599e60b5c7f1676f38b109f6f2f1e
+base:   0bb8c87898ee59ceb5c37784078d7f6bcce82f10
+branch: post004b/defect-fixes
+bundle: aise-post004b.bundle (git bundle, range base..HEAD — fetch with:
+        git fetch /path/to/aise-post004b.bundle post004b/defect-fixes:post004b/defect-fixes)
+
+diffstat (base..HEAD, 8 files):
+
+ apps/web/src/app/App.tsx                           |  87 +++++-
+ apps/web/src/app/post004b-defect-fixes.test.tsx    | 188 +++++++++++++
+ apps/web/src/app/surfaces/Projects.tsx             |  62 +++-
+ .../PROD-033/runs/m-2026-09-26T02-04-10Z.md        | 194 +++++++++++++
+ .../PROD-033/runs/w-2026-09-26T02-04-35Z.md        | 313 ++++++++++++++++++
+ tools/journey/classes.test.ts                      |  94 +++++++
+ tools/journey/classes.ts                           |  19 +-
+ tools/journey/m.ts                                 |  9 +-
+ 8 files changed, 960 insertions(+), 6 deletions(-)
+
+commits (2):
+  b6f99851b82ae98d250adb67eaa0bc639dbc3c3c  POST-004B: the three POST-003 verification defects fixed
+  4a8731ce4d8599e60b5c7f1676f38b109f6f2f1e  POST-004B: M + W journey records at b6f9985 — by-design M header, W 25/0/0 unchanged
+
+The three work-order items:
+  1. Orphaned demo-solution world (Defect 2): clearly-labeled "Build solution —
+     the interactive walkthrough" card on the Projects surface (Projects.tsx,
+     SolutionWorldCard), rendered in demo AND live mode, linking
+     #/projects/proj-demo-001/solution directly; honest labeling keeps it
+     outside the registry grid (never presented as an identity-registry
+     project). Targeted tests: post004b-defect-fixes.test.tsx (5 assertions).
+  2. Identity race (Defect 3): App.tsx ONLY — actingPrincipalUnresolved()
+     gates the data surfaces on principal resolution (live API + signed-in +
+     no remembered principal → the honest UnresolvedPrincipalPanel holds the
+     surfaces; guarded identity reads never fire with the demo default).
+     whoami stays display-only (AISE-036); W journey 25/0/0 proves the
+     enter-demo navigation shape is unchanged.
+  3. M-record header honesty (Defect 1): m.ts:218 carries the strictly-additive
+     "none-by-design" union value; classes.ts type+render widened so the M
+     header states the by-design fact while boolean W/X renderings stay
+     byte-identical (pinned by tools/journey/classes.test.ts). NOTE: the reword
+     option mechanically requires the shared renderer (classes.ts:96 type +
+     :168 render) — flagged for Lead review; the probe option was rejected as
+     dishonest (it would fabricate a live-run claim for a legless journey).
+
+Exit gates at HEAD 4a8731c:
+  verify:      5984 pass / 0 fail / 79324 expect() calls / 390 files — VERIFY: PASS
+               (base 5969/0 + 15 new tests; no test weakened, skipped or deleted)
+  m-header:    "- chromium: not applicable — this journey has no browser legs by
+               design (its evidence is the committed transcripts; the station's
+               Chromium capability is never claimed as this journey's evidence)"
+               — outcome classes identical to every committed M record
+               (19 PASS / 0 FAIL / 1 BLOCKED_NO_KVM; 19 emulated rows)
+  item-1 test: post004b-defect-fixes.test.tsx — 11/11 PASS (incl. the 5
+               solution-world-affordance assertions)
+  bonus:       W journey at the fix head — 25 PASS / 0 FAIL / 0 BLOCKED_NO_KVM,
+               boolean header byte-identical ("available — the live legs ran in
+               a real headless Chromium")
+
+Environment repair (node_modules only, never a repo change; the POST-004
+worker hit the same): node_modules/@types/node ->
+../.bun/@types+node@26.5.1/node_modules/@types/node, because bun-types'
+`/// <reference types="node" />` otherwise escapes the repo to the parent
+sandbox scaffold's @types/node@25.0.9 and breaks the backend typecheck.

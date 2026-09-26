@@ -1,0 +1,14 @@
+MANIFEST — POST-004B delivery (commit 4a8731ce4d8599e60b5c7f1676f38b109f6f2f1e, base 0bb8c87898ee59ceb5c37784078d7f6bcce82f10)
+sha256  path (repo-relative; delivery/ prefix = staged file)
+
+25175c50e3af58c1eca12038e4e6b72c43a4aba2e19508b8aacf5c36fa3b6cf8  delivery/apps/web/src/app/App.tsx
+b1916315b364152b8c751d7511e2bb3adf5474edf2a66aa54f95c3e88943b285  delivery/apps/web/src/app/post004b-defect-fixes.test.tsx
+22b8357133524540617e598b5496cf28d8a78fee5b32cd4ea9641c869357f313  delivery/apps/web/src/app/surfaces/Projects.tsx
+f49804822987e0fed1fa8ca8d0add31f4320e2a774ce545bde654b1af4d2c996  delivery/docs/productization-evidence/PROD-033/runs/m-2026-09-26T02-04-10Z.md
+0bbd68fe0c30ee218957f3d4263555b32055bd18bc4a966e10c4a931cf545f65  delivery/docs/productization-evidence/PROD-033/runs/w-2026-09-26T02-04-35Z.md
+3dc26941a807c4fab6a39687b49b351a34ba7104abfc462396fd370969634d44  delivery/tools/journey/classes.test.ts
+b36b0d027860e6908def73b9df561cbcffc2293dfa46f871ea19cf1e190953ec  delivery/tools/journey/classes.ts
+0721f1c8e1a7fbeb72afe51d79ea5f77c06892bf4dc6c0fd57708270018b5c7e  delivery/tools/journey/m.ts
+
+e512d05acbb8abcdfca6233e5e101d59b9077dade9995fba806e5b271801f89c  aise-post004b.bundle
+71331a10a26e9b9d2b3cee3dbced5c034ba652a68b5bb7480ffcfd8a98fe3c97  DELIVERY.txt
