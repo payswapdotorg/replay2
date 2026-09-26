@@ -16,7 +16,7 @@ import time
 
 BASE = "/home/z/replay2/scripts"
 FLAGS = f"{BASE}/flags"
-QUIET_LOG = f"{BASE}/logs/r30b-quiet-hold.log"
+QUIET_LOG = f"{BASE}/logs/r30b-assault.log"
 WATCH_LOG = f"{BASE}/logs/r30b-watch.log"
 POLL_S = 20
 MAX_S = 570
@@ -39,7 +39,7 @@ def outcome_count(path):
 
 
 def daemon_alive():
-    p = subprocess.run(["pgrep", "-f", "r30b_quiet_hold"],
+    p = subprocess.run(["pgrep", "-f", "r30b_assault"],
                        capture_output=True, text=True)
     return bool(p.stdout.strip())
 

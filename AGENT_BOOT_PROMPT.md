@@ -3093,3 +3093,32 @@ chain: `head=payswapdotorg:${BRANCH}`.
     trigger). Also: an unauthenticated POST to any /v1/* path answers 401
     from the auth gate BEFORE routing — a 401 proves nothing about whether
     a route exists.
+
+## Lesson 167 (2026-09-26 04:47-05:05 UTC — the four-gap window responder + the title false-positive; renumbered from a parallel lineage's 150)
+
+167. **A notification-count tab title ("(15) YouTube") is a logged-in HINT,
+    never a FIRE signal — an unattended responder fires only on the STRONG
+    signal (a successful eval: #avatar-btn present AND no sign-in link), and
+    a stalled eval is UNKNOWN, never logged-out.** Proven by the
+    20260926-045611 false-positive: the tab title carried a live count while
+    the window was LOGGED OUT (stale title); a title-fired ladder burned the
+    pass on placeholder masthead buttons (VLM-verified: no avatar, no bell).
+    THE ALWAYS-ON RESPONDER (scripts/yt_gap_watch.py — ARMED/CAPTURING/
+    WAIT_CLOSE machine, one fire per window session, no gate-fighting) now
+    enforces the strict law and fires within ~90s of a REAL logged-in
+    window, running the hardened four-gap ladder (scripts/
+    yt_gap_capture.py): theme-picker FIRST (poll-for-open + REAL CDP
+    Input.dispatchMouseEvent for the menu clicks — synthetic .click() does
+    not open YouTube's polymer menus, the lesson-149 class), then
+    subs-feed, home-progress, shorts; every surface records honestly
+    (degraded/gate states included); VLM-verifies the picker shot; posts
+    the outbox. TWO CAPTURE-SCRIPT BUG CLASSES, both silent until
+    mid-window: (a) a JS payload referencing a helper defined outside
+    itself (`r is not defined` — lost the theme-picker truth on 09-25);
+    every payload must be SELF-CONTAINED and node-validated
+    (`new Function(src)`) before it's ever needed; (b) multi-line
+    querySelectorAll spreads need BOTH closers `')]` — a missing bracket
+    lives happily inside a Python string and dies only at eval time.
+    Also: this lesson was born on a diverged local clone that had not
+    fetched — ALWAYS `git fetch` before claiming origin state from a
+    stale remote-tracking ref.
