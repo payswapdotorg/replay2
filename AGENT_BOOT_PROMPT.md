@@ -3293,3 +3293,46 @@ chain: `head=payswapdotorg:${BRANCH}`.
     when a gap window opens, capture IMMEDIATELY (the targeted DOM walk:
     find the anchor element, walk up to the structural container, slice
     the outerHTML + the geometry JSONs) — the window may not last.
+
+## Lesson 178 (2026-09-26 11:2x UTC — the 010H four-hour zombie: retirement ATOMICITY, DOM-text marker semantics, land-then-reap, and the stale-mirror "no activity")
+
+178. **Watcher retirement is an ATOMICITY requirement — lessons 119
+    (kill-then-rm) and 154 (rm-then-kill) both lost races; the order
+    debate was misframed.** Field evidence (2026-09-26, the 010H zombie):
+    a kill-then-despec pair executed with a ~minutes gap between the two
+    steps let the supervisor respawn the watcher from the still-present
+    spec (pid 14507 at 07:38) — the respawned watcher then re-dispatched
+    ALREADY-MERGED work for 4 HOURS (duplicates at 07:41, 08:29, 10:22,
+    11:22), jamming all three sandbox slots and causing two land-then-
+    reap kills of the next work order. The reliable form is ONE shell
+    invocation with zero gap — `kill <pid> && rm flags/queue_watch.spec.<name>`
+    — plus `rm flags/queue_watch_heartbeat.<name>`; and the standing fix:
+    `done`/`void` must perform the kill-and-despec ritual NATIVELY (the
+    lead-side manual ritual is where races live).
+    **The queue_watch completion gate is the DOM REPORT TEXT, not flags
+    files.** Touching `flags/<MARKER>` is INERT — the watcher greps the
+    rendered session page for the marker string (the report headline).
+    A "touch the marker" recovery that does not put the marker into the
+    session's report text (or kill the watcher) accomplishes nothing;
+    the assault loop keeps cycling. When manually retiring: kill+despec
+    is the ONLY reliable act; the flags file is a human-readable note.
+    **Land-then-reap under slot contention is a platform queue cull,
+    not a dispatch defect.** With 3/3 slots held (stale pods + a
+    regenerating duplicate), a freshly-LANDED session (server-verified
+    user message at the chats API) was reaped minutes later (chats API
+    500 "chat not found") — twice (010J, 010J-2). Recovery is ALWAYS a
+    fresh re-dispatch with the original prompt packet (j-3 landed and
+    spawned); never continuation-sends into the dead chat. Prevention:
+    release stale slots BEFORE dispatching (targeted_release.py — one
+    row by title substring, the live-duplicate-beside-live-worker case)
+    and ps-audit for duplicate-title regenerators before every create.
+    **"No activity in the replay" has TWO silent causes beyond dead
+    workers**: (a) the estate churning on zombie duplicates (lesson 172
+    — nothing new generates, slots burn); (b) the console mirroring a
+    DEAD tab — `flags/active_tab.txt` can hold a closed tab's id (the
+    frame endpoint then serves a frozen/blank view while the estate is
+    fully alive). Resume checklist: `curl :3100/healthz` (active field)
+    vs `curl :9222/json/list` — if the active id is not in the live tab
+    list, re-point the mirror: `POST :3100/tabs {"id": "<live-worker-tab>"}`
+    (one call, frames resume instantly), THEN audit watchers/sessions
+    per lesson 155.
