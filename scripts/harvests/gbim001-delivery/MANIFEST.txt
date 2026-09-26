@@ -1,0 +1,29 @@
+# GBIM-001 delivery manifest — sha256 + size + repo-relative path
+
+1a956a0e3615447ec3da5ff1351e5450685a60a6e30c656e163e8edc69c1d2fa  7125  docs/productization-evidence/GBIM-001/PORT.md
+1fcfdba631a5300afededdb7c57407769c7cd3dd8e7b888d8ba83d9216428d28  2245  docs/productization-evidence/GBIM-001/README.md
+20e57fc4ff95f89ffe3657d8ce9cdebea5e9546a790e275cd77319f1d61b2ed4  4440  docs/productization-evidence/GBIM-001/SCORECARD.md
+9f74b531fdb0fd37226a60a98e84b310160267b5aab103ea6aec4f8ae00db291  5292  docs/productization-evidence/GBIM-001/adapter-notes.md
+87f95aeebb061958cd79c11b32b5c74363b5e0b8b7c47c30aab58877e1878063  8867  docs/productization-evidence/GBIM-001/adapter/canonical_fixture.py
+540c11d8ec8aecb3923cf790fd1a168c35be45757540b404a72cca5981d7d61e  9351  docs/productization-evidence/GBIM-001/adapter/negative_cases.py
+c94851c048021d239dce11e0b6a46e257dbb9987b731bcbfb139e625684c714d  38074  docs/productization-evidence/GBIM-001/adapter/occt_adapter.py
+8c6254ebe106cd8768649b03bba531ce764577aa18350ad09bd7361f33e2ec06  9240  docs/productization-evidence/GBIM-001/adapter/replay_without_provider.py
+8bbd8e492ee638255db547c97b1c51c0de5736bd9da4928ca4cf8e64cda0caa7  7511  docs/productization-evidence/GBIM-001/adapter/run_fixture.py
+5b5434fd2c2f2fc2efd7b70a20e74b1993d08c7b59ffcc9367f1018d9ea47fb8  6940  docs/productization-evidence/GBIM-001/adapter/schema_guard.py
+a925ab2d3286d43fbd8bc1ee8479c116317a02de187d99fc414d95d3bc14bbb1  7130  docs/productization-evidence/GBIM-001/aise-reference/aise_reference.ts
+d5ab86f674d9d5126ecb4cd9688a92c860493d0861d4b2a908313b7974c4accb  5534  docs/productization-evidence/GBIM-001/fixture-mapping.md
+7b2636db96b35ecb1899d3fe930f9043b7e886b71bba899a56b04c18674cd239  3378  docs/productization-evidence/GBIM-001/historical-replay.md
+32ae02cd32c4e2d85cd8e8eee752c53004e691aa0a75f0acbb1ce445d882d379  3967  docs/productization-evidence/GBIM-001/negative-tests.md
+effb2f1468f763a778f1a26b9171c74fce6dcc7f9f57dcf93bdbfb736bea9f2b  4453  docs/productization-evidence/GBIM-001/provenance.md
+05d90c9b5e36fc55e4224bd800289ff6faf75df63823dfea0997a9716a977541  4168  docs/productization-evidence/GBIM-001/recommendation.md
+156ee193497be05f966a38682213e30107d2b15a4cde1d82b0e5c642c98aa8f8  12564  docs/productization-evidence/GBIM-001/results/aise-reference.json
+6fe5f383dd87ddfb0b8a3d21585e0dfcb7723addc701582eba25c9416c146251  8462  docs/productization-evidence/GBIM-001/results/canonical-input.json
+8a85951a6f27604cdf33ff48b32ed4625d8ea17d54cc92c98cffaf4eeef2c886  24606  docs/productization-evidence/GBIM-001/results/historical-record.json
+ac3505d633848bfa1459e7d9daf033c7b197d78ec7f5bc57599219f4a29905ea  3500  docs/productization-evidence/GBIM-001/results/negative-cases.json
+e934d32438eb7129ee04506aeaad0bd781753c8c643de75b633a316c81aca3c4  23794  docs/productization-evidence/GBIM-001/results/occt-run-1.json
+827eddccb764c0fa879afc5bbcb75dc2d1c256700aa7e5697e7a29f40bbca1a1  23795  docs/productization-evidence/GBIM-001/results/occt-run-2.json
+90b39d73f5595ed4e304e3251917c6bf6b83bc5e70424db106cc05142847cb1a  3253  docs/productization-evidence/GBIM-001/results/replay-without-provider.json
+df3508c02714d462ec50114d3277e84d9a8ad0eaad6bb8fd189ebf9ff3f94b5e  671  docs/productization-evidence/GBIM-001/results/reproducibility.json
+8328fb575423e61b02fb165e133eb6f6e283558339161ef52f1a17f403baf0ef  7776  docs/productization-evidence/GBIM-001/semantic-comparison.md
+e0149c2400fcb8a94644b12e2c98d5470dffe936ea840d1901bf225e94c3f21e  603  [staged-root] DELIVERY.txt
+e7917cacb21075e9a33d6f18182689ad1e1a314e99d43de1f3c1fa881ee1efe6  57713  [staged-root] aise-gbim001.bundle

@@ -1,0 +1,44 @@
+commit: c12f558cb107cbed31f8855b0a159cb6ac28c6dc
+base: 0bb8c87898ee59ceb5c37784078d7f6bcce82f10
+branch: gbim002/geometry-spike
+
+diffstat (base..head):
+ .../GBIM-002/ADAPTER-NOTES.md                      |   80 ++
+ .../productization-evidence/GBIM-002/PROVENANCE.md |   83 ++
+ docs/productization-evidence/GBIM-002/README.md    |   54 +
+ .../GBIM-002/RECOMMENDATION.md                     |   77 ++
+ docs/productization-evidence/GBIM-002/SCORECARD.md |   38 +
+ .../GBIM-002/failures/FAILURE-CASES.md             |   65 +
+ .../GBIM-002/fixture/aise-fixture-v1.json          | 1269 ++++++++++++++++++++
+ .../GBIM-002/fixture/aise-ifc-map.json             |  114 ++
+ .../GBIM-002/fixture/fixture-v1-raw-a.ifc          |  318 +++++
+ .../GBIM-002/fixture/fixture-v1-raw-b.ifc          |  318 +++++
+ .../GBIM-002/fixture/fixture-v1.ifc                |  318 +++++
+ .../GBIM-002/mapping/SEMANTIC-MAPPING.md           |   81 ++
+ .../GBIM-002/replay/HISTORICAL-REPLAY.md           |   50 +
+ .../GBIM-002/results/adapter-bonsai-report.json    |  117 ++
+ .../GBIM-002/results/bonsai-edit.ifc               |  336 ++++++
+ .../GBIM-002/results/export-report.json            |   29 +
+ .../results/neg-duplicate-operation-id.ifc         |  318 +++++
+ .../GBIM-002/results/neg-empty-representation.ifc  |   23 +
+ .../GBIM-002/results/neg-garbage.ifc               |  Bin 0 -> 1792 bytes
+ .../GBIM-002/results/neg-invalid-syntax.ifc        |  319 +++++
+ .../GBIM-002/results/neg-negative-dims.ifc         |   28 +
+ .../GBIM-002/results/neg-opening-outside-host.ifc  |   50 +
+ .../GBIM-002/results/neg-schema-mismatch.ifc       |  318 +++++
+ .../GBIM-002/results/neg-truncated.ifc             |  196 +++
+ .../GBIM-002/results/neg-unit-hazard.ifc           |   28 +
+ .../GBIM-002/results/negatives-report.json         |  318 +++++
+ .../GBIM-002/results/replay-report.json            |   55 +
+ .../GBIM-002/results/repro-fixture-v1.ifc          |  318 +++++
+ .../GBIM-002/results/roundtrip-report.json         |  760 ++++++++++++
+ .../GBIM-002/roundtrip/ROUNDTRIP-REPORT.md         |   57 +
+ .../GBIM-002/scripts/adapter_bonsai.py             |  271 +++++
+ .../GBIM-002/scripts/aise_canon.py                 |  984 +++++++++++++++
+ .../GBIM-002/scripts/export_ifc.py                 |  543 +++++++++
+ .../GBIM-002/scripts/import_ifc.py                 |  562 +++++++++
+ .../GBIM-002/scripts/negatives.py                  |  670 +++++++++++
+ .../GBIM-002/scripts/replay_aise.py                |  188 +++
+ 36 files changed, 9353 insertions(+)
+
+note: the toolchain venv (/home/z/my-project/.venv-gbim002, 284 MB, IfcOpenShell 0.8.5) lives outside the repo and is NOT staged; the delivery stages the complete committed evidence tree (36 files) plus this record and the bundle.

@@ -1,0 +1,13 @@
+commit: a0453206f34100afbe6b3d354cc8fee6c37e433e
+base: 0bb8c87898ee59ceb5c37784078d7f6bcce82f10
+branch: gbim001/geometry-spike
+work-item: GBIM-001 (issue #11, parent #10)
+
+diffstat (base..head):
+ 25 files changed, 6767 insertions(+)
+ (all under docs/productization-evidence/GBIM-001/ — no engine/package/spec file touched)
+
+bundle: aise-gbim001.bundle (git bundle base..gbim001/geometry-spike)
+
+note: the OCCT/CadQuery toolchain lives OUTSIDE the repo in /home/z/my-project/gbim001-venv (~1.8 GB persisted);
+only essential evidence (code, results, scorecard) is staged — see MANIFEST.txt for sizes.
