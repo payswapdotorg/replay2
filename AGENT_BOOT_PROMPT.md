@@ -3367,3 +3367,37 @@ chain: `head=payswapdotorg:${BRANCH}`.
     console evidence + the exact design-contract citations + pin tests
     + mutation red/green) turns a 5-line fix into a ~20-minute worker
     cycle even under platform churn.
+
+## Lesson 180 (2026-09-26 13:4x UTC — the 010L wave: first-live-exercise gaps cluster; the watcher's own escalation is the capacity-rollback recovery)
+
+180. **First-live-exercise gaps CLUSTER — budget for a second unblock
+    WO after opening any never-exercised path.** The 010K pairing
+    guard was opened at 11:41; the first live implementation run then
+    exposed TWO more never-exercised defects in the same flow (the APK
+    push step the driver contract promised but never wired — adb
+    install ran on a HOST path inside the sandbox; and run.py's
+    no-leak teardown invariant guarding execute() only, so a raising
+    provision() orphaned its paid sandbox — live-proven: the sandbox
+    was still running 11 min past the campaign's "cleanly aborted"
+    line, killed by hand via Sandbox.connect + kill). LESSON: when a
+    gated path opens for the first time, pre-audit the WHOLE chain
+    behind the gate (grep for the contract phrases the code promises —
+    "push + install" — and check each guarantee's scope — "teardown
+    runs on EVERY path" meant every path OUT OF EXECUTE), and expect
+    the first live run to be a discovery run. **The watcher's own
+    escalation IS the capacity-rollback recovery**: the 010L dispatch
+    landed (VERIFIED), then the afternoon capacity wall ROLLED THE
+    SESSION BACK (tab redirected home — the tablost class). The
+    queue_watch detected the stuck state (capacity modal + no
+    generation), ran its unstick (rc=1 — nothing to unstick into; the
+    session was destroyed), and escalated ON ITS OWN: void + fresh
+    create with the ORIGINAL prompt file + assault round 1/12 landed
+    the re-send VERIFIED. NO manual intervention — and manual
+    intervention at the wrong moment would have RACED the watcher's
+    in-flight create (the duplicate hazard). After a watcher
+    re-dispatch, UPDATE the spec's tab_prefix to the NEW tab (a
+    supervisor respawn carrying the stale prefix is the lesson-155
+    zombie class). **Provider-scope ruff baselines**: a new gate scope
+    (lab/providers/e2b, 39 pre-existing findings) must be baselined
+    BEFORE judging the worker's diff — line-shifted findings look like
+    new ones if you diff counts instead of finding-sets.
