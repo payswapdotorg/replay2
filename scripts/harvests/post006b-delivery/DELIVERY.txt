@@ -1,0 +1,34 @@
+POST-006 delivery (issue #20) — acceptance + accessibility verification of the R1 bridges
+
+commit: f73fb72b30a7c034d8c6ce483825225b04ae8af5
+base: 4a437bed48e5a7bdf68844c83798d3263696b870
+branch: post006/acceptance-accessibility
+
+Diffstat (base..HEAD):
+ apps/web/src/app/post006-accessibility.test.tsx    | 482 +++++++++++
+ apps/web/src/app/post006-discoverability.test.tsx  | 565 +++++++++++++
+ apps/web/src/app/post006-equivalence.test.tsx      | 220 +++++
+ apps/web/src/app/post006-routes.test.tsx           | 282 +++++++
+ docs/productization-evidence/POST-006/README.md    |  98 +++
+ .../acceptance-2026-09-26T06-17-35-942Z.md         | 279 +++++++
+ .../acceptance-2026-09-26T06-21-18-061Z.md         | 269 ++++++
+ .../PROD-033/runs/m-2026-09-26T06-22-01Z.md        | 225 +++++
+ .../PROD-033/runs/w-2026-09-26T06-21-37Z.md        | 313 +++++++
+ .../PROD-033/runs/x-2026-09-26T06-22-02Z.md        | 169 ++++
+ tools/post006/acceptance.ts                        | 924 +++++++++++++++++++++
+ 11 files changed, 3826 insertions(+)
+
+Notes:
+- All-new files only: no product source, no existing test, no shared
+  harness/guard touched (empty diff on spec/**, bun.lock, root package.json,
+  tools/deployed/**, tools/journey/**, backend/**).
+- Re-apply the station repair before verify (the recorded pod defect):
+  ln -sfn ../.bun/@types+node@24.13.6/node_modules/@types/node node_modules/@types/node
+- The live harness: bun tools/post006/acceptance.ts (chromium-1208 required:
+  ./node_modules/.bin/playwright install chromium).
+- Expected gates at HEAD on this station: typecheck PASS, lint PASS,
+  test 6085 pass / 1 fail (the PRE-EXISTING base defect V1, root-caused in
+  docs/productization-evidence/POST-006/README.md — not introduced by this
+  lane; reproduction: bun test apps/web/src/app/post004-navigation.test.tsx
+  apps/web/src/app/solution-composition-model.test.tsx), boundaries FAIL
+  (the PRE-EXISTING base defect V2: GBIM-001 evidence .ts files).

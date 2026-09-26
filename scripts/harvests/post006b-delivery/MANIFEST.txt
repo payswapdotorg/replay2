@@ -1,0 +1,15 @@
+MANIFEST — POST-006 delivery (sha256 per staged file)
+
+ee51d5ed8a2a13066596ff273e4f0494341f64567757fa42a69936cb7d504b8c  apps/web/src/app/post006-accessibility.test.tsx
+815a72be449dacd61e2ec108cdfff28a1930808640c5bf8d344fa73f41ce4c4d  apps/web/src/app/post006-discoverability.test.tsx
+01b22f6c844cbdc4150020d265db2b52dfb3826068dd67d4a84811cc318ce362  apps/web/src/app/post006-equivalence.test.tsx
+82342cb5e8dab23a0d613e54350c52130980bd7be354ee69e88bb3c0ae87e170  apps/web/src/app/post006-routes.test.tsx
+a558c424ddc68d1574633d0de49292b9110c9a9bb51273588f07d44f78ce172b  docs/productization-evidence/POST-006/README.md
+55f28b41ce5d00a5a9fd317fa4623103547c694d4ba9af1fde0e5c59b59ba263  docs/productization-evidence/POST-006/acceptance-2026-09-26T06-17-35-942Z.md
+944b0f157a3c3d8ba67cb338dd0e6d72cdfe3354d2c28b4dce21d4e278feba22  docs/productization-evidence/POST-006/acceptance-2026-09-26T06-21-18-061Z.md
+acd3500e9120fe3900f8986e27d765d1f5b1b620f36208c716a842b32fcb5042  docs/productization-evidence/PROD-033/runs/m-2026-09-26T06-22-01Z.md
+804a17a280612306eb10872a4f9655a1473909dcaf3857012608a9d8b65436ac  docs/productization-evidence/PROD-033/runs/w-2026-09-26T06-21-37Z.md
+64d89ced465b0eeb6d8098cae3257ec71939892828619f2f17d28909a1bcb84d  docs/productization-evidence/PROD-033/runs/x-2026-09-26T06-22-02Z.md
+28c05cb5c290f558c9da02b042bda8872587ffe9b9249969b16fd5e190363289  tools/post006/acceptance.ts
+1bfc56d000159ac11296219c757ea80f19e76284ba3b782ce502b844ce4d7244  aise-post006.bundle
+22f5ee9ebd38e6284ea29fabba997ce00abcc9342db716e0b4998581d1dd59ac  DELIVERY.txt
