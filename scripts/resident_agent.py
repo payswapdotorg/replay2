@@ -237,11 +237,16 @@ def boot_message():
             return
     except Exception:
         pass
-    outbox("resident agent online — " + status_text() + ". "
-           "Next operator action: LOG IN through the replay image (Sign in → "
-           "email → password; drag slider captchas slowly on the image; toggle "
-           "'DOM click' if a click lands wrong). Worker dispatch unlocks after "
-           "login. Task orders go to the operator agent in the CLI chat.")
+    if login_state() == "logged-in":
+        outbox("resident agent online — " + status_text() + ". "
+               "Login already active — worker dispatch unlocked. Task orders "
+               "go to the operator agent in the CLI chat.")
+    else:
+        outbox("resident agent online — " + status_text() + ". "
+               "Next operator action: LOG IN through the replay image (Sign in → "
+               "email → password; drag slider captchas slowly on the image; toggle "
+               "'DOM click' if a click lands wrong). Worker dispatch unlocks after "
+               "login. Task orders go to the operator agent in the CLI chat.")
     worklog(["resident agent started (boot message posted)",
              status_text()])
 
