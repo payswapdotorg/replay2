@@ -62,10 +62,24 @@ def close_tab(tid):
 
 
 def open_tab(url):
+    """Open a tab on the URL. The /json/new?url= param is IGNORED on some
+    Chrome builds (creates about:blank) — create the target then NAVIGATE
+    it via CDP (the proven pattern)."""
     req = urllib.request.Request(
-        CDP_HTTP + "/new?url=" + urllib.parse.quote(url, safe=""), method="PUT")
-    with urllib.request.urlopen(req, timeout=15) as r:
-        return json.load(r)
+        CDP_HTTP + "/new", method="PUT")
+    tab = json.load(urllib.request.urlopen(req, timeout=15))
+    try:
+        t = find_tab_by_id(tab["id"])
+        if t is not None:
+            c = channel.CDP(t["webSocketDebuggerUrl"], timeout=20)
+            try:
+                c.call("Page.enable", {}, timeout=10)
+                c.call("Page.navigate", {"url": url}, timeout=30)
+            finally:
+                c.close()
+    except Exception as e:  # noqa: BLE001
+        log("open_tab navigate failed: %s" % e)
+    return tab
 
 
 def dom_len(tab):
@@ -148,7 +162,10 @@ def main():
                         ft = open_tab(u)
                         time.sleep(8)
                         ft2 = find_tab_by_id(ft["id"])
-                        if ft2 is not None:
+                        # the fresh tab must have actually LOADED the chat
+                        # (not about:blank / still hydrating) before it can
+                        # arbitrate the wedge question
+                        if ft2 is not None and frag in (ft2.get("url") or ""):
                             fn = dom_len(ft2)
                             if fn is not None and fn > n:  # patched 2026-09-26: a wedged tab LIES by being SMALLER/STALE than a fresh load;
                                 # fresh-smaller means the tracked tab holds the LIVE uncommitted stream (REST/batch persists
@@ -168,6 +185,12 @@ def main():
                                     close_tab(ft["id"])
                                 except Exception:
                                     pass
+                        elif ft2 is not None:
+                            # still blank/loading — close it, retry next round
+                            try:
+                                close_tab(ft["id"])
+                            except Exception:
+                                pass
                     except Exception as e:  # noqa: BLE001
                         log("wedge-rotation probe failed for %s: %s" % (frag, e))
                 # periodic quiet status
