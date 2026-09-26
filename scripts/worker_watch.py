@@ -150,7 +150,9 @@ def main():
                         ft2 = find_tab_by_id(ft["id"])
                         if ft2 is not None:
                             fn = dom_len(ft2)
-                            if fn is not None and fn != n:
+                            if fn is not None and fn > n:  # patched 2026-09-26: a wedged tab LIES by being SMALLER/STALE than a fresh load;
+                                # fresh-smaller means the tracked tab holds the LIVE uncommitted stream (REST/batch persists
+                                # content only at turn end) — keep the tracked tab in that case.
                                 log("%s WEDGE ROTATION: tracked tab static %d, fresh tab %d — switching (the worker is ALIVE)" % (frag, n, fn))
                                 try:
                                     close_tab(t["id"])
