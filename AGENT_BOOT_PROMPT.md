@@ -3008,3 +3008,27 @@ chain: `head=payswapdotorg:${BRANCH}`.
     /api/v1/web-dev/workspaces/user-fc for never-bound slots and release
     them; a stuck slot at the queue head explains "everything lands,
     nothing generates" WITHOUT any account-level wall existing at all.
+
+## Lesson 162 (2026-09-26 00:30 UTC — AISE console: the 11.5h "outage" hold that was a busy generation slot)
+
+162. **Empty-done-turn probes with ZERO active workspaces on the account are NOT an
+    outage — they are a busy generation slot; check slot occupancy BEFORE concluding
+    platform outage, and never hold dispatch on an "outage" verdict you derived from
+    probe bounces alone.** 2026-09-25 13:00Z→00:30Z: the AISE console held all
+    dispatch on a "platform-wide generation outage" diagnosis (probe chats closing
+    done=True len=0 across models; fresh agent chats landing-then-reaping) while the
+    operator doctrine said never wait. The truth: parallel TL sessions (other
+    projects) held the account's ~1-generation-slot MODEL_CONCURRENCY_LIMIT all
+    evening — every probe bounced empty off the busy slot, and the platform reaped
+    the unspawned agent chats. The moment the parallel work wound down (00:28Z:
+    0/3 workspaces, no fresh chat activity anywhere on the account), a clean-estate
+    TRIPLE patient dispatch (purge stale tabs → 3 fresh tabs → staggered pinned
+    launches) landed ALL THREE workers in ~10 minutes with immediate turn spawn and
+    3/3 pod provisioning. The diagnostic ladder for "generation looks dead":
+    (1) `check_workspaces.py` — are OTHER workers holding slots right now?
+    (2) chats list — is ANY chat on the account actively updating?
+    (3) only if both are quiet AND a fresh dispatch still fails: suspect the
+    platform. And the recovery-watch design corollary: a "wait for a probe chat
+    with non-empty assistant content" loop is self-defeating while the slot is busy
+    (probes bounce empty until the slot frees, and once it frees ANY dispatch
+    works) — watch the SLOT (workspaces + chat activity), not the probe.
