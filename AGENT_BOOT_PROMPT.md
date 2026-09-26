@@ -3180,3 +3180,34 @@ chain: `head=payswapdotorg:${BRANCH}`.
     no-Agent-nav surface (hard location.reload() restores it), and that
     reload can wedge the renderer (lesson 160) — if eval times out after the
     reload, replace the tab, never reload again.
+
+## Lessons 172-173 (2026-09-26 07:5x UTC — the "no activity in the replay" resume: zombie watcher re-dispatch + double campaign)
+
+172. **`done` must retire the queue_watch spec ITSELF — a completion marker
+    named in a live spec is a hard dependency of `done`.** The CAMSCAN-010H
+    incident (2026-09-26): `dispatch_worker.py done camscan010h` recorded the
+    merge + freed the slot at 05:19 UTC but never touched the marker named in
+    `flags/queue_watch.spec.camscan010h` ("CAMSCAN-010H-DONE"). The watcher
+    (launched during the capacity grind with that marker as its exit
+    condition) re-dispatched the ALREADY-MERGED task three times
+    (05:20→07:12), each duplicate landing a fresh sandbox seat and sitting
+    "queued" — the operator saw "no activity in the replay" while the estate
+    silently churned on dead work. Ad-hoc recovery: `touch` the marker +
+    kill the watcher pid + void the live duplicate. Standing law: at EVERY
+    `done`, (a) touch the marker named in any queue_watch spec for that
+    session, (b) delete the spec file (the lesson-154 retirement ritual) —
+    until the dispatcher does this natively, the lead runs the ritual
+    manually. Resume-time corollary (extends lesson 155): audit specs
+    against MERGED WORK, not just live tabs — a spec whose WO is already
+    merged is a zombie by definition.
+
+173. **Before launching a campaign script, ps-audit for a live instance —
+    and when stopping one mid-run, SIGINT the python CHILD, never the bash
+    parent first.** Two simultaneous campaign_reference.sh instances
+    double-provision E2B sandboxes and race on runs/* evidence processing
+    (both use newest-dir detection). On any resume: `ps -ef | grep
+    campaign_` BEFORE launching. Kill order matters: the bash parent only
+    sleeps between attempts — SIGINT the `python3 tools/lab-cli/main.py run`
+    child (its SIGINT-safe destroy tears down the live E2B sandbox cleanly),
+    THEN TERM the bash loop. Killing the parent first orphans a
+    provisioning/running child holding a paid sandbox.
