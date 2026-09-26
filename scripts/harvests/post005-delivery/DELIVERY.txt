@@ -1,0 +1,34 @@
+commit: f5f846446ab67cbc8177155f321d19c15ffe235b
+base: c3f2e3b0715ad81a4bc7d8d10783409ccf90d355
+
+git diff --stat (base..head):
+ apps/android/app/src/main/AndroidManifest.xml      |  16 +
+ .../kotlin/org/payswap/aise/app/AppContainer.kt    |  41 +-
+ .../kotlin/org/payswap/aise/app/MainActivity.kt    |  20 +
+ .../payswap/aise/app/field/FieldJourneyRuntime.kt  |  22 +-
+ .../main/kotlin/org/payswap/aise/app/ui/AiseApp.kt |   1 +
+ .../payswap/aise/app/ui/screen/CaptureScreen.kt    |  46 ++-
+ .../payswap/aise/app/ui/screen/CaptureViewModel.kt |   9 +
+ .../aise/app/ui/screen/FieldJourneyViewModel.kt    |  39 +-
+ .../payswap/aise/core/adapter/FieldTaskDeepLink.kt | 285 ++++++++++++++
+ .../aise/core/adapter/MobileFieldAdapterProfile.kt |  15 +-
+ .../aise/core/adapter/FieldTaskDeepLinkTest.kt     | 156 ++++++++
+ apps/web/src/app/cross-device-bridges.test.tsx     | 416 +++++++++++++++++++++
+ apps/web/src/app/surfaces/BoqLens.tsx              | 189 +++++++++-
+ apps/web/src/app/surfaces/CaptureMission.tsx       | 259 ++++++++++++-
+ apps/web/src/app/surfaces/EngineeringCase.tsx      | 279 +++++++++++++-
+ apps/web/src/app/surfaces/Outcomes.tsx             | 215 ++++++++++-
+ docs/productization-evidence/POST-005/README.md    | 104 ++++++
+ .../POST-005/runs/m-2026-09-26T02-16-56Z.md        | 225 +++++++++++
+ .../POST-005/runs/w-2026-09-26T02-17-12Z.md        | 313 ++++++++++++++++
+ .../POST-005/runs/x-2026-09-26T02-17-02Z.md        | 169 +++++++++
+ .../FieldTaskHandoff.valid-field-capture-gap.json  |  23 ++
+ .../FieldTaskHandoff.valid-mobile-return.json      |  21 ++
+ .../FieldTaskHandoff.valid-post-work-capture.json  |  26 ++
+ packages/adapter-contract/package.json             |   5 +-
+ .../src/task-handoff.android-wiring.test.ts        | 126 +++++++
+ packages/adapter-contract/src/task-handoff.test.ts | 262 +++++++++++++
+ packages/adapter-contract/src/task-handoff.ts      | 371 ++++++++++++++++++
+ tools/journey/m.ts                                 |  78 ++++
+ tools/journey/x.ts                                 |  55 +++
+ 29 files changed, 3743 insertions(+), 43 deletions(-)
