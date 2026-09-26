@@ -3051,3 +3051,27 @@ chain: `head=payswapdotorg:${BRANCH}`.
     quota (100/day, account-wide — parallel sessions share it) blocks API creates but
     git-integration auto-deploys still work — push, then re-pin the alias.
 
+164. **The MONITOR inherits the wedged-renderer problem — automate the
+    rotation.** A worker-watch daemon sampling DOM length on a view tab
+    will report "static" the moment that tab's renderer wedges (observed
+    twice in one PA-020/023 round: the daemon said static-20-min while
+    fresh-tab probes showed the workers deep in implementation). The fix
+    is IN the daemon: when the tracked tab is static > 600s, open a FRESH
+    tab on the same URL, compare DOMs — if they differ, the tracked tab
+    LIES: switch tracking to the fresh tab, close the wedged one, log
+    "WEDGE ROTATION ... the worker is ALIVE". Also log ongoing growth
+    (every 300s per chat), not just the first GENERATING event — a
+    silent-after-first-growth design hid 40 minutes of visible progress.
+    (scripts/worker_watch.py carries both fixes.)
+165. **Vercel api-deployments-free-per-day is a SHARED, API-only bucket —
+    sequence deploys, don't retry them.** The 100/day quota is
+    account-wide (parallel sessions drain it together) and blocks v13 API
+    creates with `payment_required` (code api-deployments-free-per-day;
+    the error carries the reset epoch). Git-integration auto-deploys are a
+    DIFFERENT path (see the prior lesson) — if the project has one, a
+    plain push to main deploys without touching the quota. When the quota
+    is exhausted and no git integration exists: record the deployment lag
+    HONESTLY (material delta vs neutral), sequence deploy-dependent work
+    orders behind the reset, and dispatch the deploy-independent ones now
+    (the PA-024-before-PA-021 call). Check `limit.reset` in the error
+    before promising a time.
