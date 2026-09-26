@@ -3122,3 +3122,44 @@ chain: `head=payswapdotorg:${BRANCH}`.
     Also: this lesson was born on a diverged local clone that had not
     fetched — ALWAYS `git fetch` before claiming origin state from a
     stale remote-tracking ref.
+
+## Lessons 168-170 (2026-09-26 03:0x-06:2x UTC — Wave-8 trio execution: the find_tab fall-through bug; precise slot release; the day-long turn-death grind)
+
+168. **channel.find_tab(<TAB-ID-PREFIX>) silently falls through to the FIRST
+    chat.z.ai tab — tab IDs are NOT in URLs.** The pattern match
+    (`pattern in t['url']`) can never hit an id prefix, so find_tab returns
+    its fallback (the first chat tab) — EVERY "per-tab" DOM reading then
+    hits the SAME tab and produces phantom-identical readings across
+    sessions (three workers "all at 6,776 chars" was one tab read thrice).
+    THE LAW: resolve worker tabs by CHAT ID (`find_tab('<cid-prefix>')` —
+    chat ids ARE in /c/ URLs), and treat the chats-API tree (keyed by chat
+    id) as the only truth channel for session state; DOM reads are for
+    liveness/content only, after correct tab resolution.
+
+169. **Slot release must be SURGICAL (row-match by expiry+title), and
+    done≠released strikes every completed session.** The Wave-8 trio run:
+    every completed/merged worker's pod (REL, SEC, FV-002's) kept holding
+    slots until manually released; the queued sessions sat 55+ min because
+    3/3 were held by dead weight. The dashboard's mass release
+    (dash_sandbox_release.py) over-clicks (it releases LIVE rows too —
+    cost REL's live pod once; survivable via the continuation-nudge
+    re-provision, but wasteful). The precise pattern: per Release button,
+    walk up to the smallest row container, match the row text
+    (/Expires in Xm/ + title), click ONLY the target rows. And the
+    platform does NOT auto-admit queued sessions after a release — each
+    needs its own trigger (a begin-nudge via manual_send) to allocate a
+    pod.
+
+170. **The dead-turn grind under platform instability: nudge, verify
+    persistence, know when to void.** The day's pattern: agent turns
+    stream 10-20 min then die (content never commits to the tree; the pod
+    and its filesystem PERSIST; the DOM keeps the streamed text). The
+    manual_send nudge reliably resumes workers ("re-orient from your
+    intact sandbox") — REL survived 4 dead turns to deliver, SEC 3. The
+    wedge signature that means VOID (not nudge): sends land in the DOM
+    (SENT-VERIFIED) but the tree's user-count stops growing (the
+    DOM-staged-not-persisted hazard) — two consecutive unpersisted sends =
+    void + fresh dispatch. Also: STAGE THE BUNDLE EARLY (ask for the
+    snapshot-root cp at the first completion signal, not after the final
+    report) — the staged bundle survives every subsequent turn death, and
+    the harvest can proceed without the final report message.
