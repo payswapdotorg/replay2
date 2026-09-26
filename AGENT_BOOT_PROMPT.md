@@ -3163,3 +3163,20 @@ chain: `head=payswapdotorg:${BRANCH}`.
     snapshot-root cp at the first completion signal, not after the final
     report) — the staged bundle survives every subsequent turn death, and
     the harvest can proceed without the final report message.
+171. **A zombie turn locks the composer at the APPLICATION layer — dead-turn
+    revival is impossible; re-dispatch is the only recovery.** Signature
+    (pa025, 2026-09-26): the worker's turn hung mid-command (90+ min static,
+    zero command cards, zero stop buttons, zero generating indicators, fresh
+    tabs AGREEING — not a renderer wedge). Every send path fails SILENTLY:
+    insertText+Enter echoes but never lands; a real-mouse click on the
+    composer's send button fires NO network request (verify via
+    performance.getEntriesByType('resource') — only telemetry pings, no
+    message POST); raw key events do nothing. The platform holds the turn as
+    ACTIVE server-side and refuses submission while it is "running" — with
+    NO stop control exposed. Do not burn an hour on nudge variants: void the
+    chat, re-dispatch (lesson 127). Corollary for the re-dispatch battle
+    after a Chrome restart: session restore re-opens the hung chat's tabs
+    (close them by URL match), the restored home tab renders the degraded
+    no-Agent-nav surface (hard location.reload() restores it), and that
+    reload can wedge the renderer (lesson 160) — if eval times out after the
+    reload, replace the tab, never reload again.
