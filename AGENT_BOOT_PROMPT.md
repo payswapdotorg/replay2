@@ -3215,3 +3215,34 @@ chain: `head=payswapdotorg:${BRANCH}`.
     (4) if you DO re-dispatch redundantly, gate and merge the FIRST verified
     delivery, and void the sibling on its delivery (its push moves the
     branch — reset the branch to the merged sha after voiding).
+
+## Lesson 175 (2026-09-26 10:2x UTC — the batch-replay harvest: full delivery transit from the server-side message store when the pod is unreachable)
+
+175. **When a worker's turn is DONE server-side but its files are
+    unreachable (staged outside the files-API project root, or the chat
+    refuses continuation sends under capacity), RECONSTRUCT THE DELIVERY
+    FROM THE MESSAGE BATCH — do not void + re-dispatch.** The 010I case
+    (2026-09-26): the worker completed (939K-char turn, done=True) with
+    its bundle+diff staged at /home/z/work/ — a SIBLING of the pod's
+    files-API project root (the content endpoint 404s any such path;
+    ls-tree shows only the project dir). Three continuation sends to
+    request a copy all landed DOM-only (the tree's user-count stayed
+    frozen — the platform refused new turns on the capacity-saturated
+    chat). The recovery that worked: POST /api/v1/chats/<id>/messages/
+    batch with the tree's message ids → the final assistant message's
+    content_blocks.tool_calls array holds EVERY Edit/MultiEdit/Write call
+    with verbatim old_str/new_str/content payloads — replay them onto a
+    local worktree at the work order's base SHA (every old_str matching
+    exactly once PROVES the record is faithful), reproduce any post-edit
+    auto-fixes the worker ran (ruff --fix shows as a Bash call, not an
+    Edit — re-run it yourself), then re-run the full lead-gates battery
+    and a lead-side mutation red/green. Gates matching the worker's
+    claimed numbers = the reconstruction is delivery-equivalent; merge
+    it with a transit-note commit message. Constraints: this needs the
+    base SHA to be exact and the edits to be literal tool calls (a
+    worker that piped files through shell heredocs instead of Edit/Write
+    calls is harder — grep the Bash payloads for cat <<'EOF' blocks as
+    the fallback). Prevention for future work orders: REQUIRE the
+    delivery staging INSIDE the project dir ("the dir containing
+    package.json — the files API cannot see anything else") and name the
+    exact subdir in the work order text.
