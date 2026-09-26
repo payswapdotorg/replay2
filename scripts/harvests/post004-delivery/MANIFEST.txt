@@ -1,0 +1,13 @@
+fa17ba324b821cb19070b0149731b215213b48b35212c43f84155289355051f1  DELIVERY.txt
+fd5a994ff985d445d473e17382859a7ac98f48dc706e838a14768ad1fa0e65c2  aise-post004.bundle
+52b0f58b45f466869fb257b42089f9c2ea55f59e476f0b574d79296357f8584b  delivery/apps/web/src/app/AppShell.tsx
+b821f3f87d44d789e712a09f87c7480115937bc48bee4d3757a90520a9873c81  delivery/apps/web/src/app/post004-navigation.test.tsx
+fc2a782eb082fe0b390903ff13fbd464b0461ddddbe4b9aa83f357d5a652b832  delivery/apps/web/src/app/solution-composition-model.test.tsx
+511b8e4e57088100f8696b738882fad093e335020c72404319fa300ff1801919  delivery/apps/web/src/app/surfaces/Dashboard.tsx
+6631100298eca87f7fb344a9812452194021618c73b74b93fc91c817e836a9d9  delivery/apps/web/src/app/surfaces/InterventionStudio.tsx
+7dcf30762501ff84eef7e0c0e1135c19c4ec31857bd2bc7f89eac5fa05850fb6  delivery/apps/web/src/app/surfaces/ProjectOverview.tsx
+a252583c28ad42131297e814fc638f7b8b013a33747d7756f2889afc26762333  delivery/apps/web/src/app/surfaces/Projects.tsx
+13d95541436b8516b5cfe2c066e371963664c82466c839a8679b9e25545789e7  delivery/apps/web/src/app/surfaces/Solution.tsx
+e5982b71e7b407b96745779c4724356ad7ad78558688919d65bc7395bb232baa  delivery/docs/productization-evidence/PROD-033/runs/w-2026-09-26T00-53-05Z.md
+6c4ed5ba77bbabc85cfbd28d855d7d20f15f378053ff68676154a97f5ecbce69  delivery/docs/productization-evidence/PROD-033/runs/w-2026-09-26T01-12-11Z.md
+a417974f763f3424b74b182aca902ea2d64d8e249acc55ae93b37946e20b3660  delivery/docs/productization-evidence/PROD-033/runs/w-2026-09-26T01-18-18Z.md

@@ -11,9 +11,8 @@ sys.path.insert(0, "/home/z/replay2/scripts")
 from batch_probe import call  # noqa: E402
 
 SESSIONS = {
-    "post002": "04861f53-44ea-4b60-a769-794cc52ec036",
-    "post003": "b342d3ca-484d-4e8f-9489-0ad5bcc33eba",
     "post004": "ace489c2-e8ee-428f-b8fc-cc67028df914",
+    "post005": "d1168f27-be9c-4625-aae8-87d6e693fd06",
 }
 FILES_API = "https://chat.z.ai/api/v1/web-dev/workspaces/files"
 TOK = open("/home/z/replay2/scripts/flags/chat_token").read().strip().strip('"')

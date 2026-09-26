@@ -1,0 +1,42 @@
+commit: 6cdf1a5fe72d3695bb79a1539ebc32a4f58cf7d1
+base: 6a223f9fe74ea94138c4b62db8b228a615522e01
+
+POST-004 delivery — navigation/interaction hardening (issue #18), branch
+post004/nav-hardening. Bundle: aise-post004.bundle (git bundle of
+6a223f9..6cdf1a5, verified okay; the bundle requires base 6a223f9 present).
+
+Files changed vs base (path | insertions | deletions):
+
+ apps/web/src/app/AppShell.tsx                         | +128 | -28
+ apps/web/src/app/post004-navigation.test.tsx         | +552 | -0  (NEW — 25-test exit-gate suite)
+ apps/web/src/app/solution-composition-model.test.tsx | +5   | -1   (in-sync label expectation, no weakening)
+ apps/web/src/app/surfaces/Dashboard.tsx              | +58  | -15
+ apps/web/src/app/surfaces/InterventionStudio.tsx     | +371 | -26
+ apps/web/src/app/surfaces/ProjectOverview.tsx        | +2   | -2   (vocabulary only — structure preserved per plan §2B)
+ apps/web/src/app/surfaces/Projects.tsx               | +1   | -1
+ apps/web/src/app/surfaces/Solution.tsx               | +30  | -4
+ docs/productization-evidence/PROD-033/runs/w-2026-09-26T00-53-05Z.md | +313 | -0 (harness-generated BASE W-journey record)
+ docs/productization-evidence/PROD-033/runs/w-2026-09-26T01-12-11Z.md | +313 | -0 (harness-generated HEAD W-journey record)
+ docs/productization-evidence/PROD-033/runs/w-2026-09-26T01-18-18Z.md | +313 | -0 (harness-generated FINAL-head W-journey record)
+
+ 11 files changed, 2086 insertions(+), 77 deletions(-)
+
+Protected surfaces: spec/** untouched; packages/** untouched; backend/** untouched;
+apps/android/** untouched; bun.lock untouched; root package.json untouched;
+apps/web/src/styles/app.css untouched (all new UI reuses existing classes +
+native <details>); no test weakened, skipped or deleted (one in-sync label
+expectation updated — documented above and in the commit).
+
+Exit gates at final head 6cdf1a5:
+  verify      = VERIFY: PASS (5969 pass / 0 fail / 79290 expect() calls / 388 files;
+               boundaries: 1036 files, no cross-zone violations)  [base: 5944/0]
+  app.test.ts = PASS 2 (2 pass / 0 fail)  [base: 2/0]
+  W journey   = PASS (bun tools/journey/run.ts w → 25 PASS / 0 FAIL / 0 BLOCKED_NO_KVM,
+               JOURNEY HARNESS: PASS — unchanged vs base)
+  route map   = no capability lost (see the completion report table; also pinned
+               by post004-navigation.test.tsx 'the before/after route map')
+
+Live-Chromium worker verification (scratch scripts outside the repo,
+evidence in the completion report): 10 PASS / 1 expected-honest-empty-state
+across a production-like live serve and a demo-mode static serve, zero
+pageerror events.
