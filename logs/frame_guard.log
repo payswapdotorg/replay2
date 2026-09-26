@@ -1,0 +1,129 @@
+[2026-09-25 12:27:13] frame_guard v3 online — 300s cycle, trigger at 1 bad check(s)
+[2026-09-25 12:27:17] frame check BAD (1/1)
+[2026-09-25 12:27:17] replayd pid not found on :3100 (supervisor will spawn)
+[2026-09-25 12:27:47] Page.reload sent to active tab FF56DF2E1F51
+[2026-09-25 12:28:03] active-tab reload fixed the frame stream
+[2026-09-25 12:33:14] frame check BAD (1/1)
+[2026-09-25 12:33:14] replayd pid not found on :3100 (supervisor will spawn)
+[2026-09-25 12:33:34] Page.reload sent to active tab 8A6132E5C510
+[2026-09-25 12:34:12] active tab switched to healthy 37F5F4D57820… (full id written)
+[2026-09-25 12:34:22] healthy-tab switch fixed the frame stream
+[2026-09-25 12:39:28] frame check BAD (1/1)
+[2026-09-25 12:39:28] replayd pid not found on :3100 (supervisor will spawn)
+[2026-09-25 12:39:58] Page.reload sent to active tab 1C1EC4B68C30
+[2026-09-25 12:40:35] active tab switched to healthy 37F5F4D57820… (full id written)
+[2026-09-25 12:40:45] healthy-tab switch fixed the frame stream
+[2026-09-25 12:45:50] frame check BAD (1/1)
+[2026-09-25 12:45:50] replayd pid not found on :3100 (supervisor will spawn)
+[2026-09-25 12:46:20] Page.reload sent to active tab AD0F3C430860
+[2026-09-25 12:46:57] active tab switched to healthy 37F5F4D57820… (full id written)
+[2026-09-25 12:47:07] healthy-tab switch fixed the frame stream
+[2026-09-25 13:02:18] frame check BAD (1/1)
+[2026-09-25 13:02:18] replayd pid not found on :3100 (supervisor will spawn)
+[2026-09-25 13:02:48] Page.reload sent to active tab 1EC64E8E00DF
+[2026-09-25 13:03:25] active tab switched to healthy 37F5F4D57820… (full id written)
+[2026-09-25 13:03:35] healthy-tab switch fixed the frame stream
+[2026-09-25 13:08:45] frame check BAD (1/1)
+[2026-09-25 13:08:45] replayd pid not found on :3100 (supervisor will spawn)
+[2026-09-25 13:09:13] replayd restart fixed the frame stream
+[2026-09-25 13:09:23] frame check BAD (1/1)
+[2026-09-25 13:09:23] replayd pid not found on :3100 (supervisor will spawn)
+[2026-09-25 13:09:48] Page.reload sent to active tab 1C4B37787E54
+[2026-09-25 13:10:26] active tab switched to healthy 37F5F4D57820… (full id written)
+[2026-09-25 13:10:36] healthy-tab switch fixed the frame stream
+[2026-09-25 13:15:37] frame check BAD (1/1)
+[2026-09-25 13:15:37] replayd pid not found on :3100 (supervisor will spawn)
+[2026-09-25 13:16:03] Page.reload sent to active tab EC43D671D595
+[2026-09-25 13:16:40] active tab switched to healthy 37F5F4D57820… (full id written)
+[2026-09-25 13:16:50] healthy-tab switch fixed the frame stream
+[2026-09-25 13:32:00] frame check BAD (1/1)
+[2026-09-25 13:32:00] replayd pid not found on :3100 (supervisor will spawn)
+[2026-09-25 13:32:21] replayd restart fixed the frame stream
+[2026-09-25 13:42:31] frame check BAD (1/1)
+[2026-09-25 13:42:31] replayd pid not found on :3100 (supervisor will spawn)
+[2026-09-25 13:42:52] replayd restart fixed the frame stream
+[2026-09-25 14:03:03] frame check BAD (1/1)
+[2026-09-25 14:03:03] replayd pid not found on :3100 (supervisor will spawn)
+[2026-09-25 14:03:33] Page.reload sent to active tab 231018B3A377
+[2026-09-25 14:03:48] active-tab reload fixed the frame stream
+[2026-09-25 14:13:57] frame check BAD (1/1)
+[2026-09-25 14:13:57] replayd pid not found on :3100 (supervisor will spawn)
+[2026-09-25 14:14:24] Page.reload sent to active tab FF11E3259B1C
+[2026-09-25 14:14:42] active-tab reload fixed the frame stream
+[2026-09-25 14:14:52] frame check BAD (1/1)
+[2026-09-25 14:14:52] replayd pid not found on :3100 (supervisor will spawn)
+[2026-09-25 14:15:22] Page.reload sent to active tab 4BC322884C6E
+[2026-09-25 14:16:00] active tab switched to healthy 37F5F4D57820… (full id written)
+[2026-09-25 14:21:20] frame RECOVERED (after 1 bad checks)
+[2026-09-25 14:46:33] frame check BAD (1/1)
+[2026-09-25 14:46:33] replayd pid not found on :3100 (supervisor will spawn)
+[2026-09-25 14:47:00] Page.reload sent to active tab ED04F3FE31EF
+[2026-09-25 14:47:29] active tab switched to healthy 37F5F4D57820… (full id written)
+[2026-09-25 14:52:59] frame check BAD (2/1)
+[2026-09-25 14:58:09] frame RECOVERED (after 2 bad checks)
+[2026-09-25 15:08:20] frame check BAD (1/1)
+[2026-09-25 15:08:20] replayd pid not found on :3100 (supervisor will spawn)
+[2026-09-25 15:08:40] replayd restart fixed the frame stream
+[2026-09-25 15:13:51] frame check BAD (1/1)
+[2026-09-25 15:13:51] replayd pid not found on :3100 (supervisor will spawn)
+[2026-09-25 15:14:18] replayd restart fixed the frame stream
+[2026-09-25 15:14:28] frame check BAD (1/1)
+[2026-09-25 15:14:28] replayd pid not found on :3100 (supervisor will spawn)
+[2026-09-25 15:14:57] replayd restart fixed the frame stream
+[2026-09-25 15:30:16] frame check BAD (1/1)
+[2026-09-25 15:30:16] replayd pid not found on :3100 (supervisor will spawn)
+[2026-09-25 15:30:43] Page.reload sent to active tab BED247140180
+[2026-09-25 15:31:20] active tab switched to healthy 1CA3AFBC7B48… (full id written)
+[2026-09-25 15:31:30] healthy-tab switch fixed the frame stream
+[2026-09-25 15:46:42] frame check BAD (1/1)
+[2026-09-25 15:46:42] replayd pid not found on :3100 (supervisor will spawn)
+[2026-09-25 15:47:03] replayd restart fixed the frame stream
+[2026-09-25 15:52:04] frame check BAD (1/1)
+[2026-09-25 15:52:04] replayd pid not found on :3100 (supervisor will spawn)
+[2026-09-25 15:52:32] Page.reload sent to active tab 61B666247D0B
+[2026-09-25 15:52:47] active-tab reload fixed the frame stream
+[2026-09-25 15:57:59] frame check BAD (1/1)
+[2026-09-25 15:57:59] replayd pid not found on :3100 (supervisor will spawn)
+[2026-09-25 15:58:20] replayd restart fixed the frame stream
+[2026-09-25 16:23:32] frame check BAD (1/1)
+[2026-09-25 16:23:32] replayd pid not found on :3100 (supervisor will spawn)
+[2026-09-25 16:24:03] Page.reload sent to active tab 7784ADAF4F7E
+[2026-09-25 16:24:18] active-tab reload fixed the frame stream
+[2026-09-25 16:44:41] frame check BAD (1/1)
+[2026-09-25 16:44:41] replayd pid not found on :3100 (supervisor will spawn)
+[2026-09-25 16:45:02] replayd restart fixed the frame stream
+[2026-09-25 16:55:10] frame check BAD (1/1)
+[2026-09-25 16:55:10] replayd pid not found on :3100 (supervisor will spawn)
+[2026-09-25 16:55:37] Page.reload sent to active tab 77CF5FB29FAC
+[2026-09-25 16:56:14] active tab switched to healthy 1CA3AFBC7B48… (full id written)
+[2026-09-25 16:56:24] healthy-tab switch fixed the frame stream
+[2026-09-25 17:01:34] frame check BAD (1/1)
+[2026-09-25 17:01:34] replayd pid not found on :3100 (supervisor will spawn)
+[2026-09-25 17:02:04] Page.reload sent to active tab C828BA53C42F
+[2026-09-25 17:02:42] active tab switched to healthy 1CA3AFBC7B48… (full id written)
+[2026-09-25 17:02:52] healthy-tab switch fixed the frame stream
+[2026-09-25 17:43:07] frame check BAD (1/1)
+[2026-09-25 17:43:07] replayd pid not found on :3100 (supervisor will spawn)
+[2026-09-25 17:43:28] Page.reload sent to active tab 896D18167A6C
+[2026-09-25 17:44:05] active tab switched to healthy 5B8EAB1F6463… (full id written)
+[2026-09-25 17:44:15] healthy-tab switch fixed the frame stream
+[2026-09-25 18:19:24] frame check BAD (1/1)
+[2026-09-25 18:19:24] replayd pid not found on :3100 (supervisor will spawn)
+[2026-09-25 18:19:51] Page.reload sent to active tab A7856B1B9DB9
+[2026-09-25 18:20:17] active tab switched to healthy 74400EDE4D94… (full id written)
+[2026-09-25 18:20:29] healthy-tab switch fixed the frame stream
+[2026-09-25 18:25:35] frame check BAD (1/1)
+[2026-09-25 18:25:35] replayd pid not found on :3100 (supervisor will spawn)
+[2026-09-25 18:26:02] Page.reload sent to active tab 777A25D893EB
+[2026-09-25 18:26:28] active tab switched to healthy 74400EDE4D94… (full id written)
+[2026-09-25 18:26:38] healthy-tab switch fixed the frame stream
+[2026-09-25 18:36:50] frame check BAD (1/1)
+[2026-09-25 18:36:50] replayd pid not found on :3100 (supervisor will spawn)
+[2026-09-25 18:37:17] Page.reload sent to active tab BDBEFD279717
+[2026-09-25 18:37:44] active tab switched to healthy 74400EDE4D94… (full id written)
+[2026-09-25 18:43:13] frame check BAD (2/1)
+[2026-09-25 18:48:20] frame check BAD (3/1)
+[2026-09-25 18:53:26] frame check BAD (4/1)
+[2026-09-25 18:58:36] frame check BAD (5/1)
+[2026-09-25 19:03:44] frame check BAD (6/1)
+[2026-09-25 19:08:44] frame RECOVERED (after 6 bad checks)

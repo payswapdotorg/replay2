@@ -16,12 +16,13 @@ sys.path.insert(0, "/home/z/replay2/scripts")
 from batch_probe import call  # noqa: E402
 
 SESSIONS = {
-    "post002": "e8776d1a-337d-4da5-bc7a-8f52a7ad36af",
-    "post003": "83381538-73e8-4a5e-8bb8-4196faeaf7b8",
+    "post002": "04861f53-44ea-4b60-a769-794cc52ec036",
+    "post003": "b342d3ca-484d-4e8f-9489-0ad5bcc33eba",
+    "post004": "ace489c2-e8ee-428f-b8fc-cc67028df914",
 }
 OUTBOX = "/home/z/replay2/scripts/flags/agent_outbox.jsonl"
 LOG = "/home/z/replay2/scripts/logs/server_watch.log"
-POLL = 300  # 5 min
+POLL = 120  # 2 min — fast spawn-phase feedback (notices fire only on transitions)
 
 HEX40 = __import__("re").compile(r"\b[0-9a-f]{40}\b")
 PLACEHOLDER = __import__("re").compile(r"<[A-Za-z0-9_ -]{4,40}>")
