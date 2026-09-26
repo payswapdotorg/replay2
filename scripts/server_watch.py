@@ -16,7 +16,7 @@ sys.path.insert(0, "/home/z/replay2/scripts")
 from batch_probe import call  # noqa: E402
 
 SESSIONS = {
-    "post006": "f42b1ba5-c97b-415b-8d45-5944e83988db",
+    "post006b": "3031dabf-d50d-45e1-8c5f-3c56d53a36b2",
 }
 OUTBOX = "/home/z/replay2/scripts/flags/agent_outbox.jsonl"
 LOG = "/home/z/replay2/scripts/logs/server_watch.log"
