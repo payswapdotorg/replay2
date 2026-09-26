@@ -3075,3 +3075,21 @@ chain: `head=payswapdotorg:${BRANCH}`.
     orders behind the reset, and dispatch the deploy-independent ones now
     (the PA-024-before-PA-021 call). Check `limit.reset` in the error
     before promising a time.
+166. **A v13 "successful" deployment can be an EMPTY NO-OP on an
+    unconfigured twin project — the commit statuses are the deploy ground
+    truth, never the deployment list alone.** Diagnosis chain that found it:
+    the live surface showed pre-merge behavior right after a "READY"
+    deploy; the alias's OWNING project (GET /v9/projects — the domain list,
+    not the name similarity) was a DIFFERENT project that had built the
+    real app all along (rootDirectory apps/portal-host); the API-deployed
+    twin had no build config (1-second builds, "Skipping cache upload
+    because no files were prepared", GET files → "File tree not found").
+    The v6 deployment list's READY + githubCommitSha proves only that
+    SOMETHING deployed — check GET /repos/.../commits/{sha}/status for the
+    per-project Vercel contexts (success/failure + the target_url) before
+    claiming a deploy. The free-tier blockers surface THERE as commit-
+    status failures ("Deployment rate limited — retry in 24 hours" —
+    blocked webhooks DO NOT retry; a fresh push after the reset is the
+    trigger). Also: an unauthenticated POST to any /v1/* path answers 401
+    from the auth gate BEFORE routing — a 401 proves nothing about whether
+    a route exists.
