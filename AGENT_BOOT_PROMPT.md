@@ -3336,3 +3336,34 @@ chain: `head=payswapdotorg:${BRANCH}`.
     list, re-point the mirror: `POST :3100/tabs {"id": "<live-worker-tab>"}`
     (one call, frames resume instantly), THEN audit watchers/sessions
     per lesson 155.
+
+## Lesson 179 (2026-09-26 12:0x UTC — the 010K wave: lead-script arg-shape bugs burn campaign attempts silently; untested design intent must be dry-exercised before first live use)
+
+179. **Two unblock classes from the CAMSCAN-010K wave (dispatched,
+    delivered, merged in ~21 minutes end-to-end — the fastest WO cycle
+    on record, on a surgical packet).** (1) **The stamp_of() sed bug
+    class**: a lead-authored campaign script composed a lab-cli argument
+    from a parsed run-dir basename; the sed pattern `-S00[0-9][0-9]-live$`
+    expected FOUR-digit scenario IDs, the corpus is three-digit (S001) —
+    so `--stamp` silently carried the full run-id suffix and lab-cli
+    rejected every attempt INSTANTLY (4 attempts burning on an arg-shape
+    error while the log said "operational failure — fresh retry", the
+    same line a REAL sandbox failure produces). RULE: before first live
+    launch of any campaign loop, DRY-RUN one composed command line to
+    stderr/echo (or run the loop's first iteration with `bash -x`) and
+    eyeball the argv — a composed-argument bug hides behind the generic
+    failure line. (2) **The guard-vs-design contradiction**: the impl
+    campaign script's pairing flow (impl subject into the EXISTING
+    reference run dir -> auto-reconcile) was real design intent backed
+    by the evidence layer's contract (assemble_subject exist_ok +
+    per-subject collision raise) but run.py's CAMSCAN-007 blanket
+    `run_dir.exists()` refusal — never exercised against the pairing
+    case — gated it shut. RULE: orchestration scripts that assume
+    downstream behavior must prove the assumption on the FIRST launch
+    (a `--plan`-mode or single-scenario smoke pass), not discover the
+    contradiction with a full campaign budget burning. When the blocked
+    path is repo code, the fix is a WORK ORDER (the binding "lead
+    implements nothing" rule) — the surgical WO packet (verbatim
+    console evidence + the exact design-contract citations + pin tests
+    + mutation red/green) turns a 5-line fix into a ~20-minute worker
+    cycle even under platform churn.
