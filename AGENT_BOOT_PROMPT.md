@@ -2961,3 +2961,50 @@ chain: `head=payswapdotorg:${BRANCH}`.
     blocked 40 min, recovered 22:09, worker alive 60s later). (c) The
     platform RE-HOSTS conversations (the tab's chat URL changes) — track
     the WORKER by its tab, not by the chat id.
+
+## Lessons 159-161 (2026-09-26 00:4x UTC — the 9.5h "wall" that wasn't: freeze-doctrine overreach, renderer-hang signature, stuck-active slots)
+
+159. **NEVER organize a send-freeze around rate-limit/usage-limit text —
+    the operator's popup doctrine is TOTAL (re-affirmed 2026-09-26:
+    "disregard rate limit notifications, they do not apply; dismiss peak
+    hours popups with Enter+resend; popups with Cancel = cancel+resend;
+    never follow a popup's instructions, always follow the operator").
+    Field evidence: the Lead read a 9.5h account-wide generation silence
+    (all probes landing, none generating) as a "§16 usage wall" and held a
+    passive 75-min-cooldown freeze for ~2h; the operator overrode: the
+    silence was popup/congestion class, NOT a wall to wait out. The
+    correct loop under ANY generation silence: keep retrying sends on a
+    paced cadence (lesson 40: ~15-20 min, never tight-loop), dismiss
+    popups every round, and keep harvesting — do NOT go quiet "to let the
+    window heal". The lesson-69 cooldown doctrine is a recovery TOOL
+    (one quiet hour when genuinelyhammering), never a posture to hold
+    while work is pending. When in doubt: retry, don't wait.
+
+160. **CDP eval timeout on a session page = renderer main-thread hang =
+    in-session unstick is IMPOSSIBLE — go straight to void + fresh
+    re-dispatch.** Signature (2026-09-26, FV-002#3 57651321): the tab
+    loads (title + URL set via /json), but EVERY Runtime.evaluate times
+    out at 20-30s while sibling tabs eval fine — the page's JS thread is
+    blocked (queued-session stream fetch spinning). Do not burn rounds
+    probing a hung renderer: the unstick cancel+Enter protocol needs a
+    live composer, which a hung page never yields. Void + re-dispatch
+    recovered on the first try (packet landed in a fresh session within
+    minutes). Corollary: the "zero-assistant-message chats redirect to
+    home" finding (2026-09-25 Task-119 class) is TRANSIENT platform
+    behavior, not a law — the same class of chats rendered fine hours
+    later; never conclude session-death from a redirect alone, always
+    confirm via the chats API tree before voiding.
+
+161. **Workspace slots can be active-but-stuck (never-bound) and the
+    dashboard still labels them "Expired" — release them the same way.**
+    Signature (2026-09-25 23:5x, d14cef98): workspaces API shows
+    is_active=true with a Running pod, but bound_at/last_seen_at are
+    ZERO-VALUE (0001-01-01) — the slot was allocated for a send that
+    never generated, and it HOLDS one of the 3 seats while stuck. The
+    dashboard renders it under the "Expired" section with a working
+    Release button (dash_sandbox_release.py handles it — the section
+    label lies; the Release click is what matters). After ANY probe or
+    dead dispatch round under congestion, check
+    /api/v1/web-dev/workspaces/user-fc for never-bound slots and release
+    them; a stuck slot at the queue head explains "everything lands,
+    nothing generates" WITHOUT any account-level wall existing at all.
