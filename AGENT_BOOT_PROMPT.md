@@ -3246,3 +3246,50 @@ chain: `head=payswapdotorg:${BRANCH}`.
     delivery staging INSIDE the project dir ("the dir containing
     package.json — the files API cannot see anything else") and name the
     exact subdir in the work order text.
+## Lessons 175-177 (2026-09-26 ~09:5x UTC — the R31 cycle: the stall-revival loop, the glyph adjudication, the fourth-gap window)
+
+175. **The worker-stall diagnosis tree + the revival nudge.** A worker
+    turn that hangs after launching a foreground command shows: the DOM
+    frozen (block count static over 60s), NO ticking timer, NO error
+    banner, the pod still Running — the command died silently (the
+    container's own OOM/silent-death class). THE REVIVAL: a surgical nudge
+    naming the observed truth + resume-where-you-stand + (pre-loaded) the
+    transport recipe. The capacity wall eats the first send (cancel the
+    popup, NEVER Flash) — a gen-recovery loop (probe → cancel → trigger
+    nudge → block-growth SUCCESS) fires the turn within a cycle or two.
+    PRE-LOAD THE TRANSPORT INSTRUCTIONS IN THE DISPATCH PACKET: the relay
+    recipe (evidence/ + thin bundle + RELAY-MANIFEST with sha256s into the
+    WORKSPACE STORAGE ROOT — the dir the file tools write to, where
+    package.json/src/ live, NOT the repo clone dir) saves a full nudge
+    round-trip per wave.
+
+176. **The import-silent-failure class (caught twice in one cycle): a
+    bare `except Exception: continue` swallows NameError.** Two daemons
+    failed identically: a probe subprocess whose parse loop referenced
+    `json` / `sys` without the module imported at top level — the
+    NameError raised INSIDE the try was caught by the broad except and
+    looked like a parse failure. RULE: (a) always import what you use at
+    module top; (b) when a "parse failure" shows VALID JSON in its error
+    value, suspect the handler, not the data; (c) smoke-test a daemon by
+    IMPORTING it (exec_module) and calling its functions once before
+    launch. Sibling lessons this cycle: a marker string sent INSIDE a
+    nudge echo false-fires marker detectors (the strong truth is a
+    side-channel artifact — the relay manifest's head SHA; or count the
+    marker only in assistant blocks); `bun run --filter X build` (filter
+    BEFORE the script) not `bun run build --filter X`; and nohup-from-
+    tool-shell gets reaped (daemonize.py double-fork is the law — relearned).
+
+177. **The corpus-adjudication pattern + the fourth-gap window.** When a
+    worker's honest NOTE contradicts the corpus prose, the lead
+    adjudicates against the DEEPEST evidence (the captured DOM's own SVG
+    path beats any VLM description; a zoomed crop beats a full page) —
+    three independent reads, then REQUIRE-CHANGES with the exact fix list
+    (the glyph swap, the test flip, the corpus erratum IN THE REPO TREE,
+    the ledger row NOTE→RESOLVED). The worker that records its contrary
+    read and follows the binding anyway is the discipline WORKING. And
+    the gap windows are repeatable levers: VPN-off + fresh load lifted
+    BOTH the account-chrome gate (05:29Z) AND the shorts media gate
+    (09:31Z — readyState 4 after three consistent readyState-0 records);
+    when a gap window opens, capture IMMEDIATELY (the targeted DOM walk:
+    find the anchor element, walk up to the structural container, slice
+    the outerHTML + the geometry JSONs) — the window may not last.
