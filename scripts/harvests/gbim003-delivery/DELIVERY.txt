@@ -1,0 +1,53 @@
+commit: e84eeba0aaa7d635fa144b14c6d8984c44de127c
+base: 0bb8c87898ee59ceb5c37784078d7f6bcce82f10
+
+diffstat (base..HEAD):
+ apps/spatial-studio-spike/README.md                |   62 ++
+ apps/spatial-studio-spike/src/client/api-client.ts |   69 ++
+ .../src/client/components/Plan2D.tsx               |  207 ++++
+ .../src/client/components/SandboxApp.tsx           |  663 +++++++++++++
+ .../src/client/components/Scene3D.tsx              |  452 +++++++++
+ .../src/client/components/panes.tsx                | 1048 ++++++++++++++++++++
+ .../src/client/intent-builder.ts                   |  239 +++++
+ apps/spatial-studio-spike/src/client/styles.ts     |  231 +++++
+ apps/spatial-studio-spike/src/index.ts             |   13 +
+ apps/spatial-studio-spike/src/scene/scene-model.ts |  334 +++++++
+ apps/spatial-studio-spike/src/server/run-checks.ts |  699 +++++++++++++
+ apps/spatial-studio-spike/src/server/workspace.ts  | 1009 +++++++++++++++++++
+ apps/spatial-studio-spike/src/types.ts             |  279 ++++++
+ apps/spatial-studio-spike/tsconfig.json            |   23 +
+ docs/productization-evidence/GBIM-003/README.md    |   42 +
+ docs/productization-evidence/GBIM-003/SCORECARD.md |   34 +
+ .../GBIM-003/adapter-notes.md                      |  113 +++
+ .../GBIM-003/fixture-mapping.md                    |   69 ++
+ .../GBIM-003/ifc/fixture-room.ifc                  |  128 +++
+ .../GBIM-003/negative-tests.md                     |   47 +
+ .../productization-evidence/GBIM-003/provenance.md |   72 ++
+ .../GBIM-003/recommendation.md                     |   60 ++
+ .../GBIM-003/results/agent-trace.json              |   99 ++
+ .../GBIM-003/results/spike-results.json            |  169 ++++
+ .../GBIM-003/sandbox-host/MOUNT.md                 |   56 ++
+ .../GBIM-003/sandbox-host/page.tsx                 |   23 +
+ .../GBIM-003/sandbox-host/record-agent-trace.ts    |  125 +++
+ .../sandbox-host/routes/agent-compile-route.ts     |  119 +++
+ .../GBIM-003/sandbox-host/routes/apply-route.ts    |   35 +
+ .../GBIM-003/sandbox-host/routes/evidence-route.ts |   42 +
+ .../GBIM-003/sandbox-host/routes/identity-route.ts |   29 +
+ .../GBIM-003/sandbox-host/routes/ifc-route.ts      |   28 +
+ .../GBIM-003/sandbox-host/routes/open-route.ts     |   13 +
+ .../GBIM-003/sandbox-host/routes/preview-route.ts  |    9 +
+ .../GBIM-003/sandbox-host/routes/reset-route.ts    |    6 +
+ .../sandbox-host/routes/revise-opening-route.ts    |   21 +
+ .../GBIM-003/screenshots/01-studio-3d-initial.png  |  Bin 0 -> 154628 bytes
+ .../GBIM-003/screenshots/02-studio-3d-viewport.png |  Bin 0 -> 154628 bytes
+ .../GBIM-003/screenshots/03-plan-2d.png            |  Bin 0 -> 81221 bytes
+ .../GBIM-003/screenshots/04-plan-applied-wall.png  |  Bin 0 -> 73567 bytes
+ .../GBIM-003/screenshots/05-agent-equivalence.png  |  Bin 0 -> 150691 bytes
+ .../GBIM-003/screenshots/06-boq.png                |  Bin 0 -> 202699 bytes
+ .../GBIM-003/screenshots/07-ifc-interop.png        |  Bin 0 -> 145421 bytes
+ .../GBIM-003/screenshots/08-evidence-scorecard.png |  Bin 0 -> 187524 bytes
+ .../GBIM-003/screenshots/09-fallback.png           |  Bin 0 -> 137515 bytes
+ .../GBIM-003/screenshots/10-measure-section.png    |  Bin 0 -> 161062 bytes
+ .../GBIM-003/screenshots/11-final-studio.png       |  Bin 0 -> 153748 bytes
+ .../GBIM-003/semantic-comparison.md                |   85 ++
+ 48 files changed, 6752 insertions(+)
