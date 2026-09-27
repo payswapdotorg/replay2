@@ -3544,3 +3544,35 @@ chain: `head=payswapdotorg:${BRANCH}`.
     zero anyway); (4) the worker-watch DOM baseline (300K+ chars) is the
     fastest generation-spawn signal — the HTTP rail reads fail on saturated
     chats while the watch's tab probes carry the truth.
+
+## Lesson 188 (2026-09-27 20:5x UTC — the post-recycle redeploy triad: SingletonLock, profile-restore timing, registry re-registration; the starved-shell recovery END-GAME)
+
+188. **A recycled sandbox's redeploy has three fresh-clone traps, and the
+    starved-at-birth shell has a complete recovery arc.** (1) THE
+    SINGLETONLOCK TRAP: restoring a backed-up browser-profile into a fresh
+    clone BEFORE launching Chrome still dies — the profile carries the OLD
+    sandbox's SingletonLock/Cookie/Socket symlinks (hostname+pid encoded),
+    and Chrome exits with "profile appears to be in use by another Chromium
+    process". Fix: `rm -f scripts/browser-profile/Singleton{Lock,Cookie,Socket}`
+    then relaunch (deploy.sh's launch_stack or the watcher). The login
+    session itself survives — the restored profile carried a LIVE
+    logged-in state across a 3-day-old backup. (2) REGISTRY
+    RE-REGISTRATION: a fresh clone has an EMPTY flags/session_registry.jsonl
+    — dispatch_worker.py send/check refuse everything. Recovery: append
+    records manually for every live session (name, tab_id, url, sent:true)
+    — the registry format is one JSON line per record; then send/check/
+    done all work. (3) THE STARVED-SHELL END-GAME (extends 187's trigger
+    deadlock): the dead chat is not just un-nudgeable — DELETE it
+    server-side (fetch DELETE /api/v1/chats/{id} with the bearer token →
+    200/true → verify gone from the list) so it never haunts the list or
+    holds UI weight. Its prompt is recoverable from the tree (walk the
+    detail JSON for the user-role content — save to .replay-backup BEFORE
+    deleting). AND THE REPURPOSE TRICK: a live-but-idle worker that ENDED
+    its turn asking for its missing packet (the bungled BEGIN dispatch)
+    is a FREE SLOT — send it the extracted packet directly and it becomes
+    that worker (one fresh dispatch saved; register it under the original
+    name). Full arc that restored a 3-worker wave in ~40 minutes:
+    extract prompts via API → delete both dead shells → repurpose the
+    idle worker with packet A → send surgical resume to the stalled-alive
+    worker B → fresh-dispatch worker C through the capacity assault
+    (Cancel+re-pick+resend, the dispatcher's own ladder).
