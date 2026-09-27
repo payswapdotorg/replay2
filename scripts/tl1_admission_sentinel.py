@@ -46,6 +46,15 @@ CHATS = [
     ("tl1-a-004", "c51b52ae-e290-4f8f-a1a9-043ae2c0cf5f"),
 ]
 
+# reset#6 recovery (2026-09-27): the live chat set can change (fresh
+# re-dispatches produce new chat uuids) — flags/admission_chats.json, when
+# present, overrides the hardcoded list.
+try:
+    _ov = json.load(open(os.path.join(FLAGS, "admission_chats.json")))
+    CHATS = [(str(e[0]), str(e[1])) for e in _ov if len(e) >= 2]
+except Exception:
+    pass
+
 NUDGE = ("Begin the work order now — proceed with your packet from STEP ZERO. "
          "If you already began, continue exactly where you are. "
          "(Operational directive from the Tech Lead; duplicate-safe.)\n")
