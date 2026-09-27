@@ -68,8 +68,24 @@ def probe(ws):
         return {"capacity": None, "hasCancel": False, "generating": False}
 
 
-def dismiss_modal(ws):
-    """Cancel-button click first; Enter-key dispatch as the fallback."""
+def dismiss_modal(ws, agent_lane=False):
+    """Cancel-button click first; Enter-key dispatch as the fallback.
+
+    LESSON 185 (2026-09-27): on AGENT lanes a Cancel click on the peak popup
+    KILLS THE SESSION (observed: cancel -> promo interstitial -> /c/ URL
+    bounces home forever). The agent-lane dismissal is a PAGE RELOAD — it
+    clears the popup visual and keeps the queued turn server-side. Never
+    click Cancel on an agents-tab session.
+    """
+    if agent_lane:
+        try:
+            ws.call("Page.enable")
+            ws.call("Page.reload")
+            time.sleep(3.0)
+        except Exception as e:
+            return f"reload-exc:{type(e).__name__}"
+        st = probe(ws)
+        return f"reload(cancel-cleared={not st.get('hasCancel')})"
     try:
         r = ws.eval(dw.JS_CLICK_CANCEL, timeout=10)
     except Exception:
@@ -100,6 +116,32 @@ def main():
     if not rec or not rec.get("url"):
         print(f"no live record for {name} — needs a fresh dispatch, not unstick")
         sys.exit(2)
+    # LESSON 185: agent-lane sessions must never be Cancel-clicked. The
+    # registry's latest record carries the mode the dispatcher verified at
+    # create time (agents-tab) — a chip reset by a rollback does NOT demote
+    # the conversation, so registry truth wins over DOM chips.
+    agent_lane = (rec.get("mode") == "agents-tab")
+    print(f"[{name}] lane: {'AGENT (reload-only dismissal)' if agent_lane else 'chat (cancel+resend ok)'}")
+    if agent_lane:
+        # An agent session holding a VERIFIED send with a cosmetic popup must
+        # NOT be resent either — the queued turn drains on its own. Reload
+        # clears the visual; report and exit without touching the composer.
+        tab = tab_for(rec)
+        if not tab:
+            print(f"no live tab for {name} (url={rec['url']}) — needs re-dispatch")
+            sys.exit(3)
+        ws = channel.CDP(tab["webSocketDebuggerUrl"], timeout=60)
+        try:
+            st0 = probe(ws)
+            print(f"[{name}] state before: {st0}")
+            if st0.get("hasCancel") or st0.get("capacity"):
+                d = dismiss_modal(ws, agent_lane=True)
+                print(f"[{name}] agent-lane dismissal (reload): {d}")
+            else:
+                print(f"[{name}] no blocking popup — nothing to unstick (lesson 185: wait for the generation window)")
+            return 0
+        finally:
+            ws.close()
     tab = tab_for(rec)
     if not tab:
         print(f"no live tab for {name} (url={rec['url']}) — needs re-dispatch")

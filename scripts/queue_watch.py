@@ -146,6 +146,38 @@ def c2eval_cancel(c):
                        ".find(b => (b.innerText||'').trim()==='Cancel')", timeout=10)
 
 
+def agent_lane(name):
+    """True when the registry's latest record says this is an agents-tab
+    session (dispatcher-verified at create time). LESSON 185: agent-lane
+    sessions must never be Cancel-clicked (kills the session) and a VERIFIED
+    send must never be void-assaulted while the conversation is alive
+    server-side — the platform's generation window drains it."""
+    try:
+        rec = dw._find(name)
+        return bool(rec and rec.get("mode") == "agents-tab")
+    except Exception:
+        return False
+
+
+def server_alive(name):
+    """Probe the session's conversation server-side (probe_chat.py).
+    Returns (alive, msgs, note). Lesson 185 corollary: the chat index lags
+    after capacity events — DOM tab state (home/bounce) is NOT death; the
+    server message store is the truth gate."""
+    try:
+        rec = dw._find(name)
+        cid = ((rec or {}).get("url") or "").split("/c/")[-1].split("/")[0].split("?")[0]
+        if len(cid) < 30:
+            return False, 0, "no-cid"
+        pr = subprocess.run(
+            [sys.executable, os.path.join(BASE, "probe_chat.py"), cid, "Base SHA"],
+            cwd=BASE, capture_output=True, text=True, timeout=60)
+        d = json.loads(pr.stdout.strip().split("\n")[-1])
+        return bool(d.get("alive")), int(d.get("msgs") or 0), f"title={d.get('title','')[:30]}"
+    except Exception as e:
+        return False, 0, f"probe-exc:{type(e).__name__}"
+
+
 def state(tab_prefix):
     modal = False
     try:
@@ -425,53 +457,68 @@ def main():
                     return 0
             if st == "rate-limited":
                 note_ratelimit(name)
+            _skip_assault = False
             if st == "tablost" or st == "home":
-                # 2026-09-12 13:13 forensic: a rate-limited session is destroyed
-                # server-side within minutes; assaulting then re-dispatches into
-                # the SAME cooldown — infinite churn that burns allowance and
-                # possibly extends the lockout. Defer the assault until the
-                # cooldown window (65 min from the last rate-limit sighting)
-                # has passed.
-                rl_age = ratelimit_age(name)
-                if rl_age < RL_DEFER_AFTER:
-                    print(f"[{name}] {stamp} session destroyed ({st}) while account "
-                          f"rate-limited (last sighting {int(rl_age)}s ago) — DEFERRING "
-                          f"re-dispatch {int(RL_DEFER_AFTER - rl_age)}s (churn guard)",
-                          flush=True)
-                elif (os.path.exists(os.path.join(FLAGS, f"capacity_recover.{name}.json"))
-                      or os.path.exists(os.path.join(FLAGS, "capacity_recover.json"))):
-                    # LESSON 89(b) serialization (2026-09-13): while the
-                    # capacity-recover flag exists, recover_capacity.py OWNS the
-                    # create fight (supervisor-guarded). A second concurrent
-                    # churner here murders both (observed twice: renderer churn,
-                    # socket-already-closed). queue_watch only WATCHES for the
-                    # completion marker in this regime.
-                    print(f"[{name}] {stamp} session destroyed ({st}) but capacity_recover flag "
-                          f"present — recover_capacity.py owns the assault (serialized, lesson 89b)",
-                          flush=True)
-                elif hold_active(name):
-                    print(f"[{name}] {stamp} session destroyed ({st}) — OUTAGE-HOLD: re-dispatch suppressed", flush=True)
-                else:
-                    print(f"[{name}] {stamp} session destroyed ({st}) — re-dispatching (assault)", flush=True)
-                    # the dead session's registry record would make create() bail
-                    # with "already exists" — void it first
-                    run_with_hb(name, [sys.executable, os.path.join(BASE, "dispatch_worker.py"),
-                                     "void", name,
-                                     f"session destroyed while queued ({st}); queue_watch assault re-dispatch"])
-                    # registry-truth prompt file (2026-09-12: name-derived paths
-                    # crash on any non-WO- naming scheme — lesson 58 lineage)
-                    _pf = _prompt_file_for(name)
-                    if not _pf:
-                        print(f"[{name}] NO PROMPT FILE found (registry+legacy) — re-dispatch aborted", flush=True)
+                # LESSON 185 corollary (2026-09-27): on agent lanes the DOM
+                # tab state is NOT death — the chat index lags after capacity
+                # events and /c/ URLs bounce while the conversation is alive
+                # server-side. Gate the assault on the server truth probe.
+                if agent_lane(name):
+                    alive, msgs, note = server_alive(name)
+                    if alive:
+                        print(f"[{name}] {stamp} tab {st} but SERVER-SIDE ALIVE "
+                              f"({note}, msgs={msgs}) — lesson 185 index lag, WAITING (no assault)", flush=True)
+                        _skip_assault = True
                     else:
+                        print(f"[{name}] {stamp} tab {st} and server probe says DEAD ({note}) "
+                              "— agent-lane death confirmed, assault may proceed", flush=True)
+                if not _skip_assault:
+                    # 2026-09-12 13:13 forensic: a rate-limited session is destroyed
+                    # server-side within minutes; assaulting then re-dispatches into
+                    # the SAME cooldown — infinite churn that burns allowance and
+                    # possibly extends the lockout. Defer the assault until the
+                    # cooldown window (65 min from the last rate-limit sighting)
+                    # has passed.
+                    rl_age = ratelimit_age(name)
+                    if rl_age < RL_DEFER_AFTER:
+                        print(f"[{name}] {stamp} session destroyed ({st}) while account "
+                              f"rate-limited (last sighting {int(rl_age)}s ago) — DEFERRING "
+                              f"re-dispatch {int(RL_DEFER_AFTER - rl_age)}s (churn guard)",
+                              flush=True)
+                    elif (os.path.exists(os.path.join(FLAGS, f"capacity_recover.{name}.json"))
+                          or os.path.exists(os.path.join(FLAGS, "capacity_recover.json"))):
+                        # LESSON 89(b) serialization (2026-09-13): while the
+                        # capacity-recover flag exists, recover_capacity.py OWNS the
+                        # create fight (supervisor-guarded). A second concurrent
+                        # churner here murders both (observed twice: renderer churn,
+                        # socket-already-closed). queue_watch only WATCHES for the
+                        # completion marker in this regime.
+                        print(f"[{name}] {stamp} session destroyed ({st}) but capacity_recover flag "
+                              f"present — recover_capacity.py owns the assault (serialized, lesson 89b)",
+                              flush=True)
+                    elif hold_active(name):
+                        print(f"[{name}] {stamp} session destroyed ({st}) — OUTAGE-HOLD: re-dispatch suppressed", flush=True)
+                    else:
+                        print(f"[{name}] {stamp} session destroyed ({st}) — re-dispatching (assault)", flush=True)
+                        # the dead session's registry record would make create() bail
+                        # with "already exists" — void it first
                         run_with_hb(name, [sys.executable, os.path.join(BASE, "dispatch_worker.py"),
-                                     "create", name, _pf])
-                    # refresh tab prefix from the registry's latest record
-                    rec = dw._find(name)
-                    if rec:
-                        tab_prefix = (rec.get("tab_id") or "")[:8]
-                        print(f"[{name}] {stamp} new session tab={tab_prefix}", flush=True)
-                        write_spec(name, tab_prefix, marker)  # keep supervisor contract fresh
+                                         "void", name,
+                                         f"session destroyed while queued ({st}); queue_watch assault re-dispatch"])
+                        # registry-truth prompt file (2026-09-12: name-derived paths
+                        # crash on any non-WO- naming scheme — lesson 58 lineage)
+                        _pf = _prompt_file_for(name)
+                        if not _pf:
+                            print(f"[{name}] NO PROMPT FILE found (registry+legacy) — re-dispatch aborted", flush=True)
+                        else:
+                            run_with_hb(name, [sys.executable, os.path.join(BASE, "dispatch_worker.py"),
+                                         "create", name, _pf])
+                        # refresh tab prefix from the registry's latest record
+                        rec = dw._find(name)
+                        if rec:
+                            tab_prefix = (rec.get("tab_id") or "")[:8]
+                            print(f"[{name}] {stamp} new session tab={tab_prefix}", flush=True)
+                            write_spec(name, tab_prefix, marker)  # keep supervisor contract fresh
             # progress bookkeeping + never-wait recovery policy
             # 2026-09-27: the fingerprint (Ran/Todo counters + body len +
             # Stop presence) counts as progress — in-place AGENTS-mode
@@ -514,33 +561,49 @@ def main():
                     print(f"[{name}] {stamp} unstick rc={rc} — escalation path below owns it", flush=True)
             # second line: void + fresh re-dispatch (rate-limit text included —
             # those notifications DO NOT APPLY per the operator).
+            # LESSON 185 (2026-09-27): for AGENT lanes the void destroys a
+            # conversation that may still hold a VERIFIED, queued send — the
+            # platform's generation window can drain it long after the DOM
+            # goes static. Gate the void on the server truth probe: alive
+            # server-side (packet present, conversation intact) = patience,
+            # not churn. Dead server-side = assault as designed.
             _thresh = (QUEUED_STATIC_AFTER if st == "queued" else
                        (STUCK_ASSAULT_WORKRICH if ln >= 15000 else STUCK_ASSAULT_AFTER))
             if (st in ("queued-capacity", "rate-limited", "queued") and stuck_since
                     and time.time() - stuck_since > _thresh
                     and stuck_assaults < STUCK_ASSAULT_MAX and not hold_active(name)):
-                stuck_assaults += 1
-                stuck_since = 0
-                print(f"[{name}] {stamp} STUCK {_thresh}s in {st} (chars={ln}) — "
-                      f"assault #{stuck_assaults}/{STUCK_ASSAULT_MAX} (fresh dispatch beats a zombie session)",
-                      flush=True)
-                run_with_hb(name, [sys.executable, os.path.join(BASE, "dispatch_worker.py"),
-                                 "void", name,
-                                 f"stuck in {st} {_thresh}s with zero progress; "
-                                 f"staleness assault #{stuck_assaults}"])
-                _pf = _prompt_file_for(name)
-                if not _pf:
-                    print(f"[{name}] NO PROMPT FILE found (registry+legacy) — re-dispatch aborted", flush=True)
-                else:
+                _agent_alive = False
+                if agent_lane(name):
+                    _alive, _msgs, _note = server_alive(name)
+                    if _alive:
+                        _agent_alive = True
+                        print(f"[{name}] {stamp} STUCK {_thresh}s in {st} but SERVER-SIDE ALIVE "
+                              f"({_note}, msgs={_msgs}) — lesson 185: queued send preserved, "
+                              f"extending patience (no void)", flush=True)
+                        stuck_since = time.time()  # restart the clock; probe again next threshold
+                if not _agent_alive:
+                    stuck_assaults += 1
+                    stuck_since = 0
+                    print(f"[{name}] {stamp} STUCK {_thresh}s in {st} (chars={ln}) — "
+                          f"assault #{stuck_assaults}/{STUCK_ASSAULT_MAX} (fresh dispatch beats a zombie session)",
+                          flush=True)
                     run_with_hb(name, [sys.executable, os.path.join(BASE, "dispatch_worker.py"),
-                                 "create", name, _pf])
-                rec = dw._find(name)
-                if rec:
-                    tab_prefix = (rec.get("tab_id") or "")[:8]
-                    print(f"[{name}] {stamp} new session tab={tab_prefix}", flush=True)
-                    write_spec(name, tab_prefix, marker)
-                last_len = 0
-                rounds_since_progress = 0
+                                     "void", name,
+                                     f"stuck in {st} {_thresh}s with zero progress; "
+                                     f"staleness assault #{stuck_assaults}"])
+                    _pf = _prompt_file_for(name)
+                    if not _pf:
+                        print(f"[{name}] NO PROMPT FILE found (registry+legacy) — re-dispatch aborted", flush=True)
+                    else:
+                        run_with_hb(name, [sys.executable, os.path.join(BASE, "dispatch_worker.py"),
+                                     "create", name, _pf])
+                    rec = dw._find(name)
+                    if rec:
+                        tab_prefix = (rec.get("tab_id") or "")[:8]
+                        print(f"[{name}] {stamp} new session tab={tab_prefix}", flush=True)
+                        write_spec(name, tab_prefix, marker)
+                    last_len = 0
+                    rounds_since_progress = 0
         except Exception as e:
             print(f"[{name}] {time.strftime('%H:%M:%S')} loop-error {type(e).__name__} — continuing", flush=True)
         heartbeat(name)  # also tick after loop errors (busy states are not hangs)
