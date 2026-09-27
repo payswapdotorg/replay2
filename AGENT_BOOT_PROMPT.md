@@ -3404,7 +3404,7 @@ chain: `head=payswapdotorg:${BRANCH}`.
 
 ## Lesson 181 (2026-09-27 08:0x-08:2x UTC — AISE console: the overnight mass reclamation; a queued packet is NOT durable)
 
-180. **Idle agent sessions queued behind a capacity gate get MASS-RECLAIMED
+181. **Idle agent sessions queued behind a capacity gate get MASS-RECLAIMED
     server-side — a landed-and-queued packet is NOT durable, and
     registry "sent=true" only means the turn was accepted, not that it
     will ever run.** The AISE QA wave (5 lanes) landed packets 20:14Z Sep
