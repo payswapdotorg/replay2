@@ -617,6 +617,44 @@ def ensure_queue_watch():
         log(f"queue_watch[{name}] restarted: tab={spec.get('tab_prefix')}")
 
 
+def ensure_wave_loop():
+    """Resurrect the resident wave loop (the operator's continuous-watch
+    order). Parent identity = 'resident_wave_loop.py' on the cmdline WITHOUT
+    a --baseline/--review child flag. Hung detection: flags/wave_loop.
+    heartbeat stale >900s (its cycle is 60s + probe work) -> SIGKILL +
+    restart. Children (--baseline/--review) are NEVER touched here — they
+    are one-shot dfork orphans by design."""
+    import glob as _glob
+    r = subprocess.run(["pgrep", "-f", "resident_wave_loop.py$"],
+                       capture_output=True, text=True)
+    pids = [p for p in (r.stdout or "").split("\n") if p.strip()]
+    if pids:
+        try:
+            hb = os.path.join(FLAGS, "wave_loop.heartbeat")
+            age = time.time() - os.path.getmtime(hb)
+            if age > 900:
+                log(f"wave_loop HUNG (pid {pids[0]}, heartbeat "
+                    f"{int(age)}s stale) — SIGKILL + restart")
+                subprocess.run(["kill", "-9", pids[0]], capture_output=True)
+                time.sleep(1)
+            else:
+                return
+        except FileNotFoundError:
+            return
+    # dead (or killed hung) — check again post-kill
+    r = subprocess.run(["pgrep", "-f", "resident_wave_loop.py$"],
+                       capture_output=True, text=True)
+    if r.returncode == 0 and r.stdout.strip():
+        return
+    log("wave_loop DEAD — restarting (operator standing order: "
+        "continuous resident watch, no early returns)")
+    subprocess.Popen(
+        [PY, os.path.join(BASE, "dfork_launch.py"), "/tmp/wave_loop.log",
+         PY, os.path.join(BASE, "resident_wave_loop.py")],
+        stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL,
+        start_new_session=True)
+
+
 _lane_specs_seen = set()
 
 
@@ -801,6 +839,7 @@ def main():
             ensure_capacity_recovery()
             ensure_tab_gc()
             ensure_queue_watch()
+            ensure_wave_loop()
             ensure_stall_recovery()
             # ensure_freeze_probe_watch() — DISABLED 2026-09-25: operator doctrine
             # override ("it is not capacity blocked; disregard rate-limit
