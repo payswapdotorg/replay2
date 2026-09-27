@@ -754,6 +754,16 @@ def cycle(s):
                      f"{wo_id} — the Lead CLI session must author it")
                 continue
             ok, why = prompt_base_valid(pp, fr["currentBase"])
+            if not ok and "placeholder base" in why:
+                # mechanical render: fill <BASE_SHA> with the governed base
+                txt = open(pp).read().replace(
+                    "<BASE_SHA>", fr["currentBase"])
+                rp = pp.replace(".md", f"-rendered-{int(time.time())}.md")
+                open(rp, "w").write(txt)
+                outbox(f"[{name}] prompt rendered mechanically: "
+                       f"<BASE_SHA> -> {fr['currentBase'][:10]} "
+                       f"(governed main head)")
+                pp, (ok, why) = rp, (True, "rendered")
             if not ok:
                 note(s, f"prompt_base_{name}",
                      f"[{name}] PROMPT-RENDER-NEEDED ({why}) — Lead must "
