@@ -3401,3 +3401,29 @@ chain: `head=payswapdotorg:${BRANCH}`.
     (lab/providers/e2b, 39 pre-existing findings) must be baselined
     BEFORE judging the worker's diff — line-shifted findings look like
     new ones if you diff counts instead of finding-sets.
+
+## Lesson 181 (2026-09-27 08:0x-08:2x UTC — AISE console: the overnight mass reclamation; a queued packet is NOT durable)
+
+180. **Idle agent sessions queued behind a capacity gate get MASS-RECLAIMED
+    server-side — a landed-and-queued packet is NOT durable, and
+    registry "sent=true" only means the turn was accepted, not that it
+    will ever run.** The AISE QA wave (5 lanes) landed packets 20:14Z Sep
+    26 behind the peak-hours popup; generation stayed congested all
+    night; by ~08:00Z Sep 27 ALL FOUR gated chats were reclaimed — every
+    /c/{id} navigation bounced to chat.z.ai/ home (auth verified fine via
+    a control tab that still rendered). The fifth lane (dead-stream
+    stall) died independently. The tell: the lane watcher logged a tiny
+    "+38 chars DOM growth — GENERATING" minutes before the tab died; that
+    was the SESSION-EXPIRED notice rendering, not generation — sub-100-
+    char growth on a lane that sat static for hours is a DEATH marker,
+    not a life marker. Liveness probe that separates the cases: navigate
+    a tab to the /c/ URL — a LIVE chat loads its history; a DEAD one
+    bounces to home (or 404s). Never trust a DOM-growth signal under ~1KB
+    without reading the text. Doctrine when a wave is caught behind a
+    gate overnight: probe liveness FIRST (URL bounce test), void the
+    zombies, re-dispatch fresh — the packets on disk are the only
+    durable artifact; treat the platform's queue as best-effort.
+    Corollary: keep at most ONE daemon instance per lane (a double
+    peak_retry collision was racing cancel+resubmit on the same tabs —
+    setsid launches must be followed by a ps check AND a log-freshness
+    check before relaunching).
