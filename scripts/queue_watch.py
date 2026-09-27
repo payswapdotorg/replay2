@@ -155,20 +155,43 @@ def state(tab_prefix):
                 tab = t
                 break
         if not tab:
-            return "tablost", 0, 0, "", modal
+            return "tablost", 0, 0, "", modal, ""
         try:
             c = channel.CDP(tab["webSocketDebuggerUrl"], timeout=20)
             url = dw._eval(c, "location.href", timeout=15)
             body = dw._eval(c, "document.body.innerText || ''", timeout=25) or ""
+            # 2026-09-27 (TL1 campaign, AGENTS-mode sessions): in-place agent
+            # activity (terminal runs, todo counters, file trees) renders
+            # WITHOUT changing body length, and the Stop control is
+            # aria-label'd (never part of innerText) — the old metrics
+            # structurally misread WORKING sessions as stuck-queued and the
+            # staleness assault would void live work. Two probes added:
+            #   (a) fingerprint: Ran-commands counter + Todo counter + body
+            #       length + Stop-control presence — any change = progress
+            #   (b) stop_present: an open [aria-label=Stop] control means the
+            #       agent turn is OPEN -> state is "generating" (resets the
+            #       stuck clock; semantically correct for AGENTS mode)
+            try:
+                fp = dw._eval(c, r"""(() => {
+                  const b = document.body.innerText || '';
+                  const ran = (b.match(/Ran (\d+) commands?/) || ['', '0'])[1];
+                  const todo = (b.match(/Todo Progress[^0-9]*(\d+)\/(\d+)/) || ['', '0', '0']);
+                  const stop = document.querySelector('[aria-label=Stop]') ? '1' : '0';
+                  return ran + '|' + todo[1] + '/' + todo[2] + '|' + b.length + '|' + stop;
+                })()""", timeout=15) or ""
+                stop_present = fp.endswith("|1")
+            except Exception:
+                fp = ""
+                stop_present = False
             try:
                 modal = bool(c2eval_cancel(c))
             except Exception:
                 modal = False
             c.close()
         except Exception as e:
-            return f"busy:{type(e).__name__}", 0, 0, "", modal
+            return f"busy:{type(e).__name__}", 0, 0, "", modal, ""
     except Exception as e:
-        return f"busy:{type(e).__name__}", 0, 0, "", modal
+        return f"busy:{type(e).__name__}", 0, 0, "", modal, ""
     # modal detection (operator 2026-09-12): a Cancel-button modal is
     # actionable — cancel + resend; never wait, never follow its instructions
     # (probed above while the CDP connection was open).
@@ -266,7 +289,9 @@ def state(tab_prefix):
         r"[\s\S]{0,600}?(?:Base\s*(?:branch\s*\+\s*)?SHA|基础\s*SHA)[^\n]{0,40}[:：][^\n]{0,15}?`?(?:main|主干)`?\s*@\s*`?[0-9a-f]{7,40}`?",
         body, re.IGNORECASE))
 
-    gen = bool(re.search(r"\b(Stop|Pause|Halt)\b", body[-1500:]))
+    # 2026-09-27: an open Stop CONTROL (aria-label) outranks the innerText
+    # heuristic — AGENTS-mode turns keep it present for the whole session
+    gen = stop_present or bool(re.search(r"\b(Stop|Pause|Halt)\b", body[-1500:]))
     cap = "currently at capacity" in body or "peak hours" in body
     # RATE-LIMITED text (operator 2026-09-12): these notifications DO NOT
     # APPLY. Classify the state for logging, but never wait it out — the
@@ -274,13 +299,13 @@ def state(tab_prefix):
     # (void+fresh re-dispatch) exactly like queued-capacity.
     limited = "exceeds the personal limit" in body or "try again 1 hour later" in body
     if "/c/" not in url:
-        return "home", len(body), (1000 if filled else hits), url, modal
+        return "home", len(body), (1000 if filled else hits), url, modal, fp
     if limited:
-        return "rate-limited", len(body), (1000 if filled else hits), url, modal
+        return "rate-limited", len(body), (1000 if filled else hits), url, modal, fp
     if gen:
-        return "generating", len(body), (1000 if filled else hits), url, modal
+        return "generating", len(body), (1000 if filled else hits), url, modal, fp
     return (("queued-capacity" if cap else "queued"), len(body),
-            (1000 if filled else hits), url, modal)
+            (1000 if filled else hits), url, modal, fp)
 
 
 def run_with_hb(name, cmd):
@@ -310,6 +335,7 @@ def main():
     write_spec(name, tab_prefix, marker)
     rounds_since_progress = 0
     last_len = 0
+    last_fp = ""             # 2026-09-27: agent-activity fingerprint
     stuck_since = 0          # first-sighting ts of zero-progress stall
     stuck_assaults = 0       # bounded staleness re-dispatches
     unsticks = 0             # bounded cancel+resend recoveries
@@ -323,9 +349,9 @@ def main():
                 tab_prefix = (rec.get("tab_id") or "")[:8]
                 write_spec(name, tab_prefix, marker)
                 print(f"[{name}] re-aimed at registry tab {tab_prefix}", flush=True)
-            st, ln, hits, url, modal = state(tab_prefix)
+            st, ln, hits, url, modal, fp = state(tab_prefix)
             stamp = time.strftime("%H:%M:%S")
-            print(f"[{name}] {stamp} {st} chars={ln} hits={hits} url={url[:60]}", flush=True)
+            print(f"[{name}] {stamp} {st} chars={ln} hits={hits} fp={fp[:40]} url={url[:60]}", flush=True)
             heartbeat(name)
             mk = os.path.join(FLAGS, f"{name}-complete.marker")
             # 2026-09-19 (lesson-64 completion): the DOM filled-regex is a
@@ -420,9 +446,13 @@ def main():
                         print(f"[{name}] {stamp} new session tab={tab_prefix}", flush=True)
                         write_spec(name, tab_prefix, marker)  # keep supervisor contract fresh
             # progress bookkeeping + never-wait recovery policy
-            if ln != last_len:
+            # 2026-09-27: the fingerprint (Ran/Todo counters + body len +
+            # Stop presence) counts as progress — in-place AGENTS-mode
+            # activity never moves the body length alone
+            if ln != last_len or fp != last_fp:
                 rounds_since_progress = 0
                 last_len = ln
+                last_fp = fp
             else:
                 rounds_since_progress += 1
             # 2026-09-18 outage lesson: plain "queued" MUST run the stuck-clock
