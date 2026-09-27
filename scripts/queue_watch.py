@@ -256,8 +256,13 @@ def state(tab_prefix):
     # original patch was working-copy-only at the old sandbox; 12-vector
     # suite: 4 genuine shapes pass, prompt/plan/unrelated echoes fail,
     # LEASE/TAKE/WEB regressions pass).
+    # 2026-09-27 (TL1 campaign, reset #5 re-apply): TL1- prefix added for the
+    # Flauz substrate program (TL1-001..005; same report shape "TL1-00X
+    # COMPLETION REPORT" + "Base SHA: main @ <hex>", same placeholder-proof
+    # rule — the packet template's base-SHA line carries a non-hex
+    # placeholder, so prompt/plan echoes can never satisfy the gate).
     filled = filled or bool(re.search(
-        r"(?:===?|##+)?\s*(?:LEASE|TAKE|WEB|FV)-\d+\s*(?:COMPLETION\s*REPORT|完成报告)\s*(?:===?|#+)?"
+        r"(?:===?|##+)?\s*(?:LEASE|TAKE|WEB|FV|TL1)-\d+\s*(?:COMPLETION\s*REPORT|完成报告)\s*(?:===?|#+)?"
         r"[\s\S]{0,600}?(?:Base\s*(?:branch\s*\+\s*)?SHA|基础\s*SHA)[^\n]{0,40}[:：][^\n]{0,15}?`?(?:main|主干)`?\s*@\s*`?[0-9a-f]{7,40}`?",
         body, re.IGNORECASE))
 
