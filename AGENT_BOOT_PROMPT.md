@@ -3517,3 +3517,30 @@ chain: `head=payswapdotorg:${BRANCH}`.
     is the integrity truth when a manifest hash mismatches (the R33-A bundle
     was NEWER than its manifest — evidence-only commits after the manifest
     write; the verify + lineage check decides, never the stale hash).
+
+## Lesson 187 (2026-09-27 16:1x UTC — the evening-peak congestion anatomy: the two send paths degrade independently; the queued-chat trigger deadlock; the fresh-dispatch route)
+
+187. **Under platform-wide congestion the IN-CHAT continuation path and the
+    NEW-TASK create path degrade INDEPENDENTLY — diagnose which one lives
+    before choosing the recovery.** The R34 evening-peak case: three worker
+    chats sat with packets server-side but unspawned turns; every in-chat
+    nudge (manual_send AND surgical insert+click through alive tabs)
+    staged-but-unpersisted (3+ consecutive); the model-menu step of the
+    create flow died on renderer-swap sockets — while the SAME create flow,
+    retried on a ~9-minute pace, landed VERIFIED. THE LADDER: (1) when
+    in-chat nudges fail twice, run ONE cheap create probe (a real packet on
+    a genuinely-needed session, never a junk probe) — if it lands, the
+    recovery for every stuck chat is VOID + FRESH DISPATCH (the New-Task
+    path allocates its own tab + pod; the packet lands; the turn spawns
+    when capacity admits); (2) THE TRIGGER DEADLOCK: a queued chat with NO
+    pod cannot be nudged — its tabs redirect home (the zero-assistant
+    binding loss, worse after a Chrome restart: only chats WITH assistant
+    messages keep their restored tabs) — the begin-nudge (lesson 169) is
+    unreachable; the fresh dispatch is the ONLY trigger; (3) a turn that
+    dies with its pod EXPIRED loses its partial state entirely — the
+    partial-results.md discipline only helps while the pod lives; when a
+    dead turn's pod is past expiry, void + fresh dispatch immediately (the
+    nudge would re-provision an empty pod and the worker restarts from
+    zero anyway); (4) the worker-watch DOM baseline (300K+ chars) is the
+    fastest generation-spawn signal — the HTTP rail reads fail on saturated
+    chats while the watch's tab probes carry the truth.
