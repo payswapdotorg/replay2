@@ -209,7 +209,13 @@ def harvest(name):
         log(name, "bundle fetch incomplete — retry next round")
         return False
     # verify
-    v = subprocess.run(["git", "bundle", "verify", bpath], capture_output=True, text=True, cwd=outdir)
+    # verify INSIDE a repo that contains the prerequisite commits (the
+    # Lead's Flauz clone at the pinned base) — `git bundle verify` checks
+    # prerequisite existence in the surrounding repo; the harvest outdir is
+    # not a repository (the 2026-09-27 false VERIFY-FAILED)
+    GATE_REPO = "/home/z/Flauz"
+    v = subprocess.run(["git", "bundle", "verify", os.path.abspath(bpath)],
+                       capture_output=True, text=True, cwd=GATE_REPO)
     ok = v.returncode == 0
     head = None
     if ok:
