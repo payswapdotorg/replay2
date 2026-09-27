@@ -142,6 +142,122 @@ def live_chat_for(name):
     return best
 
 
+def reload_member_tabs(chat):
+    """Renderer-wedge self-heal (2026-09-27 22:13 lesson): a wedged tab
+    times out every CDP fetch, blinding the loop's truth channel; one
+    Page.reload on the tabs watching the chat restores it."""
+    if not chat:
+        return 0
+    try:
+        import channel
+        tabs = [t for t in channel.list_tabs()
+                if chat[:8] in (t.get("url") or "")]
+    except Exception:
+        return 0
+    hits = 0
+    for t in tabs:
+        try:
+            ws = channel.CDP(t["webSocketDebuggerUrl"], timeout=30)
+            try:
+                ws.call("Page.reload", {"ignoreCache": True}, timeout=30)
+                hits += 1
+            finally:
+                ws.close()
+        except Exception:
+            continue
+    return hits
+
+
+def reap_stale_tabs(s):
+    """Close tabs pointing at SUPERSEDED registry chats (the 22:13 lesson:
+    29 tabs => 20+ churning renderers => CDP fetch timeouts). Protected:
+    the active console tab, each member's state chat + newest live record
+    (tab AND chat — covers assault-in-flight), every queue_watch spec tab.
+    Home tabs, turbovpn (VPN egress) and UNKNOWN /c/ uuids (operator's own
+    chats, fresh sends pre-record) are never touched."""
+    try:
+        import websocket as _wsmod
+        ver = json.loads(urllib.request.urlopen(
+            "http://127.0.0.1:9222/json/version", timeout=10).read())
+        tabs = json.loads(urllib.request.urlopen(
+            "http://127.0.0.1:9222/json", timeout=10).read())
+    except Exception:
+        return 0
+    try:
+        active = open(os.path.join(FLAGS, "active_tab.txt")).read().strip()
+    except Exception:
+        active = ""
+    protected, known = set(), set()
+    if active:
+        protected.add(active[:8])
+    recs = records()
+    for name in WO:
+        o = s["orders"].get(name) or {}
+        if o.get("chat"):
+            protected.add(o["chat"][:8])
+        newest = None
+        for r in recs:
+            if r.get("name") != name or r.get("action") in ("void", "failed"):
+                continue
+            if r.get("url") and "/c/" in r["url"]:
+                m = re.search(r"/c/([0-9a-f-]{36})", r["url"])
+                if m and (newest is None
+                          or r.get("ts", 0) >= newest[2]):
+                    newest = ((r.get("tab_id") or "")[:8], m.group(1),
+                              r.get("ts", 0))
+        if newest:
+            protected.add(newest[0])
+            protected.add(newest[1][:8])
+        try:
+            spec = json.load(open(os.path.join(
+                FLAGS, f"queue_watch.spec.{name}")))
+            tp = (spec.get("tab_prefix") or "")[:8]
+            if tp:
+                protected.add(tp)
+        except Exception:
+            pass
+    for r in recs:
+        if r.get("url") and "/c/" in r["url"]:
+            m = re.search(r"/c/([0-9a-f-]{36})", r["url"])
+            if m:
+                known.add(m.group(1)[:8])
+    try:
+        ws = _wsmod.create_connection(ver["webSocketDebuggerUrl"], timeout=20)
+    except Exception:
+        return 0
+    closed, mid = 0, 1
+    try:
+        for t in tabs:
+            if t.get("type") != "page":
+                continue
+            tid, url = t.get("id", ""), (t.get("url") or "")
+            if "chat.z.ai" not in url or "/c/" not in url:
+                continue
+            if tid[:8] in protected:
+                continue
+            cu = url.split("/c/")[-1][:8]
+            if cu in protected or cu not in known:
+                continue
+            try:
+                ws.send(json.dumps({"id": mid, "method": "Target.closeTarget",
+                                    "params": {"targetId": tid}}))
+                while True:
+                    d = json.loads(ws.recv())
+                    if d.get("id") == mid:
+                        break
+                if (d.get("result") or {}).get("success"):
+                    closed += 1
+                mid += 1
+            except Exception:
+                break
+    finally:
+        try:
+            ws.close()
+        except Exception:
+            pass
+    return closed
+
+
 def probe(chat):
     r = sh([PY, os.path.join(BASE, "probe_chat.py"), chat, MARKER],
            timeout=90)
@@ -384,8 +500,16 @@ def parse_vitest(txt):
 
 
 def parse_lint(txt):
-    # biome summary variants: "Found 5 errors and 68 warnings and 8 infos."
-    # / "Found 5 errors and 68 warnings and 8 formatting errors."
+    # biome 2.x prints separate summary lines: "Found 5 errors." /
+    # "Found 68 warnings." / "Found 8 infos." (verified live 2026-09-27)
+    e = re.search(r"Found\s+(\d+)\s+errors?\.", txt)
+    w = re.search(r"Found\s+(\d+)\s+warnings?\.", txt)
+    i = re.search(r"Found\s+(\d+)\s+infos?\.", txt)
+    if e or w or i:
+        return (int(e.group(1)) if e else 0,
+                int(w.group(1)) if w else 0,
+                int(i.group(1)) if i else 0)
+    # older combined formats as fallback
     m = re.search(r"Found\s+(\d+)\s+errors?\s+and\s+(\d+)\s+warnings?"
                   r"\s+and\s+(\d+)\s+(?:infos?|formatting\s+errors?)", txt)
     if m:
@@ -394,6 +518,42 @@ def parse_lint(txt):
     if m:
         return (int(m.group(1)), int(m.group(2)), 0)
     return (None, None, None)
+
+
+def _mem_available_mb():
+    try:
+        for line in open("/proc/meminfo"):
+            if line.startswith("MemAvailable:"):
+                return int(line.split()[1]) // 1024
+    except Exception:
+        pass
+    return 4096
+
+
+def chrome_restart_for_memory():
+    """Free Chrome's ~2.8GB so tsc survives on this 4GB box. Killing the
+    browser is SAFE and PROVEN (3x today): worker turns run SERVER-SIDE;
+    probes are API-based; the supervisor's ensure_browser restarts the
+    stack within ~30s and the login persists in the profile; assaults
+    reconnect and continue their rounds."""
+    try:
+        r = sh(["pgrep", "-f", "remote-debugging-port=9222"], timeout=10)
+        for p in (r.stdout or "").split():
+            try:
+                os.kill(int(p), 9)
+            except Exception:
+                pass
+    except Exception:
+        pass
+    for _ in range(48):                      # up to 4 min for the restart
+        time.sleep(5)
+        try:
+            urllib.request.urlopen(
+                "http://localhost:9222/json/version", timeout=3).read()
+            return True
+        except Exception:
+            continue
+    return False
 
 
 def battery(clone, surface):
@@ -418,7 +578,14 @@ def battery(clone, surface):
         return r
 
     # typecheck is heap-capped (the PPR-018 Lead lesson: tsc gets OOM-
-    # killed alongside the Chrome instance on this box)
+    # killed alongside the Chrome instance on this box). If free memory
+    # cannot fit tsc (~1.6GB peak), restart Chrome first — the supervisor
+    # revives it and everything reconnects (proven 3x today).
+    if _mem_available_mb() < 1800:
+        log(f"low memory ({_mem_available_mb()}MB avail) — restarting "
+            f"Chrome for the battery")
+        chrome_restart_for_memory()
+        time.sleep(5)
     run("typecheck", ["bun", "run", "typecheck"],
         env_extra={"NODE_OPTIONS": "--max-old-space-size=2048"})
     run("lint", ["bun", "run", "lint"])
@@ -711,6 +878,15 @@ def note(s, key, text):
 
 def cycle(s):
     open(HB, "w").write(str(int(time.time())))
+    s["cycles"] = s.get("cycles", 0) + 1
+    if s["cycles"] % 10 == 0:
+        try:
+            n = reap_stale_tabs(s)
+            if n:
+                outbox(f"[loop] reaped {n} stale browser tab(s) — "
+                       f"renderer relief (22:13 lesson)")
+        except Exception:
+            pass
     fr, pg = roadmap()
     if not fr or not pg:
         log("roadmap unreadable — cycle skipped")
@@ -808,7 +984,14 @@ def cycle(s):
         p = probe(chat)
         if p is None:
             s["probe_errs"][name] = s["probe_errs"].get(name, 0) + 1
-            if s["probe_errs"][name] == PROBE_ERR_LIMIT:
+            n_err = s["probe_errs"][name]
+            if n_err in (3, 10):
+                hits = reload_member_tabs(chat)
+                outbox(f"[loop] probe failures x{n_err} — reloaded "
+                       f"{hits} renderer(s) on "
+                       f"{chat[:8] if chat else name} "
+                       f"(wedge self-heal)")
+            if n_err == PROBE_ERR_LIMIT:
                 outbox("[loop] probe failures x5 — browser/login may be "
                        "down; grinders continue regardless")
             continue
