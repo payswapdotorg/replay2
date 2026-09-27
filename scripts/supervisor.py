@@ -231,13 +231,68 @@ def ensure_tab_gc():
     `home[2:]` kept the two OLDEST (leaked stale tabs) and closed the NEWEST
     — i.e. it killed live creates' tabs mid-shell-wait (the "err:socket is
     already closed" shell-stage failure storm of 10:2x-10:5x UTC). Keep the
-    newest FOUR instead (three waves can assault concurrently + one spare)."""
+    newest FOUR instead (three waves can assault concurrently + one spare).
+
+    2026-09-27 fix (TL1 wave-3 crunch): the listing order is NOT stable —
+    observed NEWEST-FIRST under Chrome 153 (a fresh liveness-probe tab died
+    at +7s twice while four stale home tabs survived; home[:-4] closed the
+    NEWEST tabs — the exact storm the 09-20 fix tried to prevent, reborn by
+    ordering flip). Order-blind approach now:
+      - every home tab gets a GRACE period (first-seen + GC_GRACE) before it
+        is closeable — fresh creates/probes are protected by time, not order;
+      - tabs named in live registry records (tab_id of create/send records)
+        and the replayd active tab are NEVER closed;
+      - beyond that, keep at most MAX_HOME tabs, closing the
+        longest-first-seen first; leaked tabs (crashed creates) age out."""
+    import time as _time
+    GC_GRACE = 600      # s a newly-seen home tab is protected
+    MAX_HOME = 4        # steady-state cap (3-wave assaults + spare)
+    state_path = os.path.join(FLAGS, "tab_gc_state.json")
+    try:
+        state = json.load(open(state_path)) if os.path.exists(state_path) else {}
+    except Exception:
+        state = {}
+    now = _time.time()
     try:
         import urllib.request
         tabs = json.load(urllib.request.urlopen("http://127.0.0.1:3100/tabs", timeout=10))
-        home = [t for t in tabs.get("tabs", [])
+        all_tabs = tabs.get("tabs", [])
+        home = [t for t in all_tabs
                 if (t.get("url") or "").rstrip("/") == "https://chat.z.ai"]
-        for t in home[:-4]:
+        # record first-seen for every current home tab; prune state for gone tabs
+        seen_now = {t["id"] for t in home}
+        for t in home:
+            state.setdefault(t["id"], now)
+        state = {k: v for k, v in state.items() if k in seen_now}
+        # never close: registry-referenced tabs + replayd active tab
+        keep_ids = set()
+        try:
+            reg_path = os.path.join(FLAGS, "session_registry.jsonl")
+            if os.path.exists(reg_path):
+                with open(reg_path) as fh:
+                    for line in fh:
+                        try:
+                            r = json.loads(line)
+                        except Exception:
+                            continue
+                        tid = r.get("tab_id")
+                        if tid:
+                            keep_ids.add(tid)
+        except Exception:
+            pass
+        try:
+            active = open(os.path.join(FLAGS, "active_tab.txt")).read().strip()
+            if active:
+                keep_ids.add(active)
+        except Exception:
+            pass
+        # closeable: past grace, not protected
+        closeable = [t for t in home
+                     if t["id"] not in keep_ids
+                     and now - state.get(t["id"], now) > GC_GRACE]
+        closeable.sort(key=lambda t: state.get(t["id"], 0))  # oldest first-seen first
+        excess = len(home) - MAX_HOME
+        for t in closeable[:max(0, excess)]:
             try:
                 urllib.request.urlopen(
                     "http://127.0.0.1:9222/json/close/" + t["id"], timeout=5).read()
@@ -245,6 +300,11 @@ def ensure_tab_gc():
                 pass
     except Exception:
         pass
+    finally:
+        try:
+            json.dump(state, open(state_path, "w"))
+        except Exception:
+            pass
 
 
 def ensure_watcher():

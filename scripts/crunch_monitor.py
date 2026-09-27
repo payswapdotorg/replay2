@@ -5,7 +5,7 @@ wave-3 capacity crunch.
 Every CHECK_EVERY seconds, probe the three wave-3 chats server-side (from a
 live chat.z.ai tab's auth context) and log STATUS TRANSITIONS only:
   - wedged-chat recovery:  http-500 -> readable (n, roles)
-  - canary generation:     T006-2 msgs grows past 1 / assistant role appears
+  - canary generation:     T006-3 msgs grows past 1 / assistant role appears
   - anything readable:     title/n/roles/updated deltas
 
 Exit conditions: none (runs until killed). The Tech Lead lifts the outage
@@ -23,9 +23,9 @@ sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 import channel  # noqa: E402
 
 CHATS = {
-    "T005-2": "cab6f499-86c3-4f3a-ab76-14965b4df796",
-    "T006-2": "1e14fe28-575f-4a7a-92c4-40358a65a55a",
-    "T007-2": "05709447-0c47-4c72-b3ba-efd0cedbcef0",
+    "T005-3": "1d5e2743-6cdd-4944-ac51-dada2996eb33",
+    "T006-3": "f71dda4b-84c0-4d54-bf2f-ac4826c93339",
+    "T007-3": "26153daa-6d79-4d8e-b9f4-9cda73f32d6c",
 }
 CHECK_EVERY = 300  # 5 min
 
