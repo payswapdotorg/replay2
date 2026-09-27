@@ -163,7 +163,16 @@ def server_alive(name):
     """Probe the session's conversation server-side (probe_chat.py).
     Returns (alive, msgs, note). Lesson 185 corollary: the chat index lags
     after capacity events — DOM tab state (home/bounce) is NOT death; the
-    server message store is the truth gate."""
+    server message store is the truth gate.
+    2026-09-27 (wave-3 crunch forensics): an http-500 on the chat read is
+    UNCERTAINTY, not death — a continuation send landing during a capacity
+    crunch wedges the chat RECORD (every read 500s) while the message store
+    is intact and the platform can unwedge it when the window drains.
+    Treating 500 as death let the assault ladder void + churn during the
+    crunch (observed: T005-2/T007-2 500ing while T006-2 + old chats read
+    fine — the 500 tracks the send, not the chat's existence). Probe
+    errors must read as ALIVE-for-patience so the void gate stays closed
+    until a definitive not-found."""
     try:
         rec = dw._find(name)
         cid = ((rec or {}).get("url") or "").split("/c/")[-1].split("/")[0].split("?")[0]
@@ -173,9 +182,22 @@ def server_alive(name):
             [sys.executable, os.path.join(BASE, "probe_chat.py"), cid, "Base SHA"],
             cwd=BASE, capture_output=True, text=True, timeout=60)
         d = json.loads(pr.stdout.strip().split("\n")[-1])
+        if d.get("err"):
+            # distinguish DEFINITIVE death (not-found) from UNCERTAINTY
+            # (5xx read error / probe machinery failure):
+            #  - http-404/403 "not found" = the chat is destroyed server-side
+            #    (lesson 40 ladder) -> death verdict, assault may proceed
+            #  - http-5xx = the chat record is wedged (send-during-crunch
+            #    forensics above) or the API is flaking -> patience, the
+            #    platform can unwedge it when the window drains
+            e = str(d.get("err"))
+            if "http-404" in e or "http-403" in e:
+                return False, 0, f"probe-dead:{e}"
+            return True, 0, f"probe-uncertain:{e}"
         return bool(d.get("alive")), int(d.get("msgs") or 0), f"title={d.get('title','')[:30]}"
     except Exception as e:
-        return False, 0, f"probe-exc:{type(e).__name__}"
+        # probe machinery failure is also uncertainty — never a death verdict
+        return True, 0, f"probe-exc:{type(e).__name__}"
 
 
 def state(tab_prefix):
