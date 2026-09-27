@@ -777,6 +777,11 @@ def cycle(s):
             continue
         s["probe_errs"][name] = 0
         age = p.get("now", 0) - p.get("updated", 0)
+        msgs = p.get("msgs", 0)
+        # work-rich = the assistant produced real content (the calibrated
+        # 900s/3600s stuck doctrine: long tool calls can go quiet ~1h)
+        arich = any(m.get("role") == "assistant" and m.get("len", 0) > 2000
+                    for m in (p.get("last") or []))
         if p.get("reportInAssistant"):
             if st != "complete":
                 o["status"] = "complete"
@@ -793,31 +798,47 @@ def cycle(s):
                 o["harvest"] = dest
                 o["chat"] = chat
                 st = "harvested"
-        elif p.get("msgs", 0) >= 2 and age < STALE_S:
-            if st != "live":
-                outbox(f"[{name}] LIVE — chat {chat[:8]} generating "
-                       f"(msgs={p['msgs']}, age {age}s)")
-            o["status"] = "live"
-            o["chat"] = chat
-            o["since"] = int(time.time())
-            continue
-        else:
-            if st == "live" or age > STALE_S:
-                outbox(f"[{name}] worker turn DEAD (chat {chat[:8]}, "
-                       f"static {age}s) — partial harvest + release + "
-                       f"re-dispatch (never-wait)")
-                dest, info = harvest_pod(name, chat, partial=True)
-                if dest:
-                    outbox(f"[{name}] partial harvested {info} -> {dest}")
+        elif msgs == 1:
+            # turn birth in progress (fresh send; a re-send into the same
+            # chat resets msgs to 1) — verdict window per the calibrated
+            # doctrine: acceptance shows msgs>=2 within ~15-30s
+            if age > 900:
+                outbox(f"[{name}] send never accepted (chat {chat[:8]}, "
+                       f"msgs=1 for {age}s) — release + re-dispatch")
                 release_dead_slots()
                 void_record(name, chat,
-                            f"wave_loop death: static {age}s, no report")
+                            f"wave_loop: msgs=1 for {age}s (never accepted)")
                 o["status"] = "grinding"
                 o["chat"] = None
                 pp = prompt_path(name)
                 if pp and not grinder_alive(name):
                     launch_assault(name, pp)
-                continue
+            elif o.get("status") != "sent":
+                o["status"] = "sent"
+            continue
+        elif msgs >= 2 and (age < 1800 or (arich and age < 3600)):
+            if st != "live":
+                outbox(f"[{name}] LIVE — chat {chat[:8]} generating "
+                       f"(msgs={msgs}, age {age}s, work-rich={arich})")
+            o["status"] = "live"
+            o["chat"] = chat
+            o["since"] = int(time.time())
+            continue
+        else:
+            outbox(f"[{name}] worker turn DEAD (chat {chat[:8]}, static "
+                   f"{age}s, work-rich={arich}) — partial harvest + "
+                   f"release + re-dispatch (never-wait)")
+            dest, info = harvest_pod(name, chat, partial=True)
+            if dest:
+                outbox(f"[{name}] partial harvested {info} -> {dest}")
+            release_dead_slots()
+            void_record(name, chat,
+                        f"wave_loop death: static {age}s, no report")
+            o["status"] = "grinding"
+            o["chat"] = None
+            pp = prompt_path(name)
+            if pp and not grinder_alive(name):
+                launch_assault(name, pp)
             continue
         # harvested -> spawn the detached review child (one at a time)
         if o.get("status") == "harvested" and not review_child_alive():
