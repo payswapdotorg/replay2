@@ -3428,6 +3428,7 @@ chain: `head=payswapdotorg:${BRANCH}`.
     setsid launches must be followed by a ps check AND a log-freshness
     check before relaunching).
 
+<<<<<<< HEAD
 ## Lessons 182-184 (2026-09-27 08:0x UTC — the R33 active-dispatch wave: the deploy-webhook retrigger ladder; the login-probe purge; the done≠released slot at wave scale)
 
 182. **A git-app deploy silence with ZERO commit statuses is the
@@ -3470,3 +3471,26 @@ chain: `head=payswapdotorg:${BRANCH}`.
     pre-dispatch checklist that made it clean: workspaces 0/3 → purge stale
     tabs (179) → serialize creates (142) → verify each lands server-side
     (HTTP rail) → arm worker_watch with wedge rotation (164) on all three.
+=======
+## Lesson 182 (2026-09-27 09:2x-09:4x UTC — AISE console: agent-lane popup semantics; the fresh-chat index lag)
+
+182. **The peak-hours popup means OPPOSITE things on chat lanes vs agent
+    lanes — cancel is safe on chats, DESTRUCTIVE on agents.** On a chat
+    lane, Cancel rolls the staged message back into the composer and you
+    resubmit (the classic pattern). On an AGENT session, clicking Cancel
+    on the peak popup KILLS THE SESSION: observed live — cancel → the tab
+    navigated to a promo interstitial ("Code faster with ZCode...
+    AutoClaw") → every later navigation to the /c/{id} URL bounces to
+    home; the registry row had "sent: VERIFIED" yet the chat was gone.
+    The correct agent-lane play when the peak popup holds a VERIFIED
+    send: LEAVE THE POPUP (or reload the page — clears the visual, keeps
+    the queued turn server-side) and let the platform's generation window
+    drain it; NEVER click Cancel and NEVER switch models. Corollary
+    (the bounce-test refinement): a FRESH agent chat (<~1h old) whose
+    /c/{id} URL bounces to home is NOT necessarily dead — the chat index
+    propagates slowly (the chats API 500s in the same window). Verify
+    existence via the home page's recent-chats sidebar (the chat title,
+    e.g. "QA-001 — ...", appears there while /c/ routing still fails)
+    before declaring death. Distinguish: sidebar-listed = alive (wait);
+    absent-from-sidebar + bounce = actually dead (re-dispatch).
+>>>>>>> ec18131 (Lesson 182: agent-lane cancel destroys sessions; fresh-chat index lag fakes death)
