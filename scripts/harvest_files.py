@@ -71,7 +71,17 @@ def main():
             if "error" in d:
                 print(f"ERROR {fp}: {d['error'][:200]}")
                 continue
-            local = os.path.join(outdir, os.path.basename(fp))
+            # 2026-09-27 22:58 lesson: basename-only staging is
+            # collision-lossy (844 files => multiple README.md/package.json
+            # overwrite each other, path provenance destroyed). Write to
+            # the FULL relative path under <chat8>/tree/ instead.
+            rel = fp.replace("\\", "/").lstrip("./")
+            if (not rel or rel.startswith("/")
+                    or ".." in rel.split("/")):
+                print(f"SKIP-UNSAFE {fp}")
+                continue
+            local = os.path.join(outdir, "tree", rel)
+            os.makedirs(os.path.dirname(local), exist_ok=True)
             if "text" in d:
                 open(local, "w", encoding="utf-8").write(d["text"])
                 print(f"OK {fp} -> {local} ({len(d['text'])} chars text)")

@@ -373,10 +373,15 @@ def workspaces():
     r = sh([PY, os.path.join(BASE, "check_workspaces.py")], timeout=120)
     txt = r.stdout or ""
     ws = {}
+    # 2026-09-27 22:55 lesson: the status lines TRUNCATE chat ids to 7 hex
+    # chars (chat=chat-36b5bff), so the old 8-hex line regex matched NOTHING
+    # — every partial harvest silently failed with "no workspace (pod
+    # GC'd?)" while the pods sat alive. Parse the JSON section instead
+    # (full ids); function_name always precedes chat_id in each object.
     for m in re.finditer(
-            r"chat-(?P<c>[0-9a-f]{8})[0-9a-f-]*\s+ws=(?P<w>ws-[0-9a-f-]+)"
-            r"(?:\s+active=(?P<a>\w+))?", txt):
-        ws[m.group("c")] = (m.group("w"), m.group("a") or "?")
+            r'"function_name":\s*"(ws-[0-9a-f-]+)"[^{}]*?'
+            r'"chat_id":\s*"chat-([0-9a-f]{8})', txt):
+        ws[m.group(2)] = (m.group(1), "?")
     at_cap = '"total": 3' in txt.replace(" ", "")
     return ws, txt, at_cap
 
@@ -431,25 +436,42 @@ def harvest_pod(name, chat, partial):
     log(f"[{name}] harvesting {len(keep)} files from {wsid}")
     flat_dir = os.path.join(HARVEST, chat8)
     os.makedirs(flat_dir, exist_ok=True)
+    # clear collision-lossy flat residue from pre-2026-09-27 runs
+    for old in os.listdir(flat_dir):
+        if old != "tree":
+            try:
+                p = os.path.join(flat_dir, old)
+                if os.path.isdir(p):
+                    shutil.rmtree(p, ignore_errors=True)
+                else:
+                    os.remove(p)
+            except Exception:
+                pass
     for i in range(0, len(keep), 40):
         sh([PY, os.path.join(BASE, "harvest_files.py"), chat, wsid]
-           + keep[i:i + 40], timeout=600)
-    for p in keep:
-        flat = os.path.join(flat_dir, os.path.basename(p))
-        if not os.path.exists(flat):
-            continue
-        rp = p.lstrip("./")
-        m = re.search(r"(?:^|/)Zeck/(.+)$", rp)
-        if m:
-            dst = os.path.join(dest, m.group(1))
-        else:
-            dst = os.path.join(dest, "_podscratch",
-                               rp.replace("/", "_"))
-        os.makedirs(os.path.dirname(dst), exist_ok=True)
-        try:
-            shutil.move(flat, dst)
-        except Exception:
-            pass
+           + keep[i:i + 40], timeout=900)
+    # 2026-09-27 tree layout: harvest_files.py now preserves full relative
+    # paths under <chat8>/tree/ — the reorganize maps Zeck/* to the dest
+    # root (worker repo) and everything else to _podtree/ (upstream clones,
+    # scratch) with path provenance intact.
+    tree_dir = os.path.join(flat_dir, "tree")
+    moved = 0
+    if os.path.isdir(tree_dir):
+        for root, _dirs, fnames in os.walk(tree_dir):
+            for fn in fnames:
+                local = os.path.join(root, fn)
+                rel = os.path.relpath(local, tree_dir)
+                m = re.search(r"(?:^|/)Zeck/(.+)$", rel)
+                dst = (os.path.join(dest, m.group(1)) if m
+                       else os.path.join(dest, "_podtree", rel))
+                os.makedirs(os.path.dirname(dst), exist_ok=True)
+                try:
+                    shutil.move(local, dst)
+                    moved += 1
+                except Exception:
+                    pass
+    if not moved:
+        return None, "tree staging empty after download"
     try:
         shutil.rmtree(flat_dir, ignore_errors=True)
     except Exception:
