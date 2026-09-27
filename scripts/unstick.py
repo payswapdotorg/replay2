@@ -25,6 +25,27 @@ sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 import channel
 import dispatch_worker as dw
 
+BASE = os.path.dirname(os.path.abspath(__file__))
+
+
+def prompt_file_for(name):
+    """Registry-first prompt lookup with case-tolerant staged fallback.
+
+    2026-09-27 fix (TradRL T006): BASE was referenced here but never defined
+    — the unstick crashed with NameError BEFORE the resend, leaving the
+    modal dismissed but no new generation attempt. Also try the UPPERCASE
+    staged variant (queue_watch lesson-58 lineage) before giving up.
+    """
+    for s in dw._sessions():
+        if s.get("name") == name and s.get("prompt_file"):
+            if os.path.exists(s["prompt_file"]):
+                return s["prompt_file"]
+    for cand in (os.path.join(BASE, "worker-prompts", f"{name}.md"),
+                 os.path.join(BASE, "worker-prompts", f"{name.upper()}.md")):
+        if os.path.exists(cand):
+            return cand
+    return None
+
 
 def tab_for(rec):
     """Resolve the live tab for a session record (tab_id prefix, then URL)."""
@@ -95,8 +116,10 @@ def main():
         # prompt_file — _find only carries tab_id/url onto the resolved
         # record. Fall back to the canonical staged prompt path instead of
         # crashing with KeyError (the crash aborted the whole unstick).
-        pf = rec.get("prompt_file") or os.path.join(
-            BASE, "worker-prompts", f"{name}.md")
+        pf = rec.get("prompt_file") or prompt_file_for(name)
+        if not pf:
+            print(f"[{name}] NO PROMPT FILE (registry+staged) — cannot resend")
+            return 1
         prompt = open(pf, encoding="utf-8").read()
         res = channel.send_text(prompt, tab=tab)
         print(f"[{name}] resend: ok={res['ok']} proof={res['proof']} detail={res['detail'][:200]}")
