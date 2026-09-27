@@ -3401,3 +3401,93 @@ chain: `head=payswapdotorg:${BRANCH}`.
     (lab/providers/e2b, 39 pre-existing findings) must be baselined
     BEFORE judging the worker's diff — line-shifted findings look like
     new ones if you diff counts instead of finding-sets.
+
+## Lesson 181 (2026-09-27 08:0x-08:2x UTC — AISE console: the overnight mass reclamation; a queued packet is NOT durable)
+
+181. **Idle agent sessions queued behind a capacity gate get MASS-RECLAIMED
+    server-side — a landed-and-queued packet is NOT durable, and
+    registry "sent=true" only means the turn was accepted, not that it
+    will ever run.** The AISE QA wave (5 lanes) landed packets 20:14Z Sep
+    26 behind the peak-hours popup; generation stayed congested all
+    night; by ~08:00Z Sep 27 ALL FOUR gated chats were reclaimed — every
+    /c/{id} navigation bounced to chat.z.ai/ home (auth verified fine via
+    a control tab that still rendered). The fifth lane (dead-stream
+    stall) died independently. The tell: the lane watcher logged a tiny
+    "+38 chars DOM growth — GENERATING" minutes before the tab died; that
+    was the SESSION-EXPIRED notice rendering, not generation — sub-100-
+    char growth on a lane that sat static for hours is a DEATH marker,
+    not a life marker. Liveness probe that separates the cases: navigate
+    a tab to the /c/ URL — a LIVE chat loads its history; a DEAD one
+    bounces to home (or 404s). Never trust a DOM-growth signal under ~1KB
+    without reading the text. Doctrine when a wave is caught behind a
+    gate overnight: probe liveness FIRST (URL bounce test), void the
+    zombies, re-dispatch fresh — the packets on disk are the only
+    durable artifact; treat the platform's queue as best-effort.
+    Corollary: keep at most ONE daemon instance per lane (a double
+    peak_retry collision was racing cancel+resubmit on the same tabs —
+    setsid launches must be followed by a ps check AND a log-freshness
+    check before relaunching).
+
+## Lessons 182-184 (2026-09-27 08:0x UTC — the R33 active-dispatch wave: the deploy-webhook retrigger ladder; the login-probe purge; the done≠released slot at wave scale)
+
+182. **A git-app deploy silence with ZERO commit statuses is the
+    blocked-webhook class — the fresh-push-after-reset is the trigger, and
+    the diagnosis is one API call.** The WebFlix case: every main push from
+    00:55Z Sep 26 (R31 merge, R32 merge, a retrigger) produced NO deployment
+    for 22h+. The one-call diagnosis: `GET api.github.com/repos/<o>/<r>/
+    commits/<sha>/status` — **zero statuses on every push = the webhook
+    never fired** (vs. a failed deploy, which reports a failure status; vs.
+    the alias-pin class of lesson 163, which deploys fine but serves old).
+    The recovery that landed: after the deploy-quota reset epoch passed
+    (>24h since the block), ONE fresh empty push (`git commit --allow-empty
+    -m "deploy retrigger …"` + push — 178873a) fired the webhook and the
+    production deploy landed within ~3 minutes. Ladder: (1) commit-status
+    check (never deploy-blind); (2) if zero statuses and <24h since the
+    last failed window, wait for the reset epoch; (3) fresh empty push; (4)
+    only then suspect the integration itself (operator-side reconnection).
+
+183. **`browser_login: no-browser` while CDP answers = STALE MERGED-SESSION
+    TABS' wedged renderers blocking the probe — purge, don't restart.** The
+    08:09Z case: two chat tabs from merged-and-done waves (r31/r32, both
+    completed 20h+) sat renderer-wedged; the console's login probe read
+    their timeouts as no-browser while the operator's session was alive in
+    the profile. The lesson-146 purge (close every stale /c/ session tab,
+    open ONE fresh chat.z.ai tab) flipped the probe to logged-in within
+    seconds — the localStorage token survives, no cookie re-injection
+    needed on a warm profile. Extends lesson 123's differential: before any
+    Chrome restart, close the DONE waves' session tabs — they are probe
+    poison and dispatch dead weight.
+
+184. **At wave scale the done≠released slot compounds: purge + guard before
+    every wave, and the phantom-create burst costs 4-6 assault rounds per
+    create — budget for it, never conclude "platform full".** The R33
+    dispatch: the R32 worker's pod still held one of the 3 seats 22h after
+    its merge (dash_sandbox_release with the Expired-only guard freed it);
+    then each of the three creates (r33a/b/c) fought 4-6 rounds of
+    phantom-create + capacity popups before landing VERIFIED — the
+    r30b_assault pattern (lesson 144) carried all three through under the
+    never-wait doctrine, zero waits, zero model compromises. The
+    pre-dispatch checklist that made it clean: workspaces 0/3 → purge stale
+    tabs (179) → serialize creates (142) → verify each lands server-side
+    (HTTP rail) → arm worker_watch with wedge rotation (164) on all three.
+## Lesson 185 (2026-09-27 09:2x-09:4x UTC — AISE console: agent-lane popup semantics; the fresh-chat index lag)
+
+185. **The peak-hours popup means OPPOSITE things on chat lanes vs agent
+    lanes — cancel is safe on chats, DESTRUCTIVE on agents.** On a chat
+    lane, Cancel rolls the staged message back into the composer and you
+    resubmit (the classic pattern). On an AGENT session, clicking Cancel
+    on the peak popup KILLS THE SESSION: observed live — cancel → the tab
+    navigated to a promo interstitial ("Code faster with ZCode...
+    AutoClaw") → every later navigation to the /c/{id} URL bounces to
+    home; the registry row had "sent: VERIFIED" yet the chat was gone.
+    The correct agent-lane play when the peak popup holds a VERIFIED
+    send: LEAVE THE POPUP (or reload the page — clears the visual, keeps
+    the queued turn server-side) and let the platform's generation window
+    drain it; NEVER click Cancel and NEVER switch models. Corollary
+    (the bounce-test refinement): a FRESH agent chat (<~1h old) whose
+    /c/{id} URL bounces to home is NOT necessarily dead — the chat index
+    propagates slowly (the chats API 500s in the same window). Verify
+    existence via the home page's recent-chats sidebar (the chat title,
+    e.g. "QA-001 — ...", appears there while /c/ routing still fails)
+    before declaring death. Distinguish: sidebar-listed = alive (wait);
+    absent-from-sidebar + bounce = actually dead (re-dispatch).
