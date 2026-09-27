@@ -47,6 +47,25 @@ os.makedirs(LOGDIR, exist_ok=True)
 _conns = {}            # tab_id -> _TabConn
 _conns_lock = threading.Lock()
 _seen_lock = threading.Lock()
+
+# ---- hidden-tab input throttling (root cause of "slow captcha drags",
+#      verified 2026-09-27): Chrome defers CDP input acks ~0.5-5s for tabs
+#      that are not the front tab (Input.dispatchMouseEvent measured 3.2s
+#      avg on a hidden tab vs 13.7ms after Page.bringToFront). We track the
+#      front tab and re-front ours before dispatching input.
+_front_tab_id = ""
+_front_lock = threading.Lock()
+
+# ---- viewport cache: Page.getLayoutMetrics per dragmove goes through the
+#      CAPTURE channel (shared with screenshots, ~70ms holds); a short TTL
+#      cache removes that contention so dragmoves never queue behind frames.
+_vp_cache = {}          # tab_id -> (ts, w, h)
+_vp_lock = threading.Lock()
+_VP_TTL = 2.0
+
+# event kinds that dispatch Input.* to the renderer (hidden-tab-throttled)
+_INPUT_KINDS = {"click", "dblclick", "dragstart", "dragmove", "dragend",
+                "move", "key", "enter", "type", "scroll", "drag"}
 _last_good_frame = b""   # stale-serving cache (lesson 102)
 _last_good_ts = 0.0
 _last_good_lock = threading.Lock()
@@ -117,10 +136,39 @@ def pick_tab(tabs=None):
     for t in tabs:
         if t.get("id") == aid:
             return t
+    # stored pointer is stale (tab closed / sandbox reset) — resolve fresh
+    # and SELF-HEAL the pointer so frames, input and /healthz agree on one
+    # tab instead of re-resolving (and re-writing) on every request.
+    picked = None
     for t in tabs:
         if "chat.z.ai" in (t.get("url") or ""):
-            return t
-    return tabs[0]
+            picked = t
+            break
+    if picked is None:
+        picked = tabs[0]
+    try:
+        open(os.path.join(FLAGS, "active_tab.txt"), "w").write(picked.get("id", ""))
+    except Exception:
+        pass
+    return picked
+
+
+def ensure_front(tid, c, force=False):
+    """Bring tab to front before input dispatch. Chrome throttles CDP input
+    acks on hidden tabs (0.5-5s per event); after bringToFront the same
+    dispatch lands in ~14ms. force=True re-fronts even if tracked (used at
+    drag start / on click — cheap insurance when an extension or worker
+    dispatcher stole focus without our knowledge). Never raises."""
+    global _front_tab_id
+    with _front_lock:
+        if not force and _front_tab_id == tid:
+            return
+    try:
+        c.capture("Page.bringToFront", {}, timeout=3)
+        with _front_lock:
+            _front_tab_id = tid
+    except Exception:
+        pass  # wedged renderer: proceed — the input may be slow, not lost
 
 
 def conn_for(tab):
@@ -176,23 +224,40 @@ def send_input(tid, c, method, params, timeout=8):
 
 # ----------------------------------------------------------------- geometry
 
-def viewport(c):
+def viewport(c, tid=None):
+    """Viewport size, TTL-cached per tab. The uncached CDP round-trip goes
+    through the capture channel (shared with screenshots); during a live
+    drag with frames polling at ~100ms that added up to ~70ms stalls per
+    dragmove. The viewport does not change mid-drag, so a 2s cache is safe."""
+    key = tid or ""
+    now = time.time()
+    with _vp_lock:
+        hit = _vp_cache.get(key)
+        if hit and now - hit[0] < _VP_TTL:
+            return hit[1], hit[2]
     try:
         m = c.capture("Page.getLayoutMetrics", {}, timeout=8)
     except Exception:
+        with _vp_lock:
+            hit = _vp_cache.get(key)
+            if hit:
+                return hit[1], hit[2]   # stale beats the default guess
         return 1440.0, 756.0
     v = m.get("cssVisualViewport") or {}
     w = float(v.get("clientWidth") or 0)
     h = float(v.get("clientHeight") or 0)
-    if w > 50 and h > 50:
-        return w, h
-    l = m.get("cssLayoutViewport") or {}
-    return float(l.get("clientWidth") or 1440), float(l.get("clientHeight") or 756)
+    if not (w > 50 and h > 50):
+        l = m.get("cssLayoutViewport") or {}
+        w = float(l.get("clientWidth") or 1440)
+        h = float(l.get("clientHeight") or 756)
+    with _vp_lock:
+        _vp_cache[key] = (now, w, h)
+    return w, h
 
 
-def resolve_pt(payload, c, frac_keys=("fx", "fy"), abs_keys=("x", "y")):
+def resolve_pt(payload, c, tid=None, frac_keys=("fx", "fy"), abs_keys=("x", "y")):
     if frac_keys[0] in payload and frac_keys[1] in payload:
-        w, h = viewport(c)
+        w, h = viewport(c, tid)
         return float(payload[frac_keys[0]]) * w, float(payload[frac_keys[1]]) * h
     return float(payload.get(abs_keys[0], 0)), float(payload.get(abs_keys[1], 0))
 
@@ -264,8 +329,14 @@ def handle_event(payload):
     tid = tab["id"]
     c = conn_for(tab)
 
+    # Anti-throttle: input to a hidden tab stalls 0.5-5s per event. Front
+    # our tab before any Input.* dispatch (dragstart/click always re-front —
+    # an extension or worker dispatcher may have stolen focus meanwhile).
+    if kind in _INPUT_KINDS:
+        ensure_front(tid, c, force=(kind in ("click", "dragstart")))
+
     if kind == "click":
-        x, y = resolve_pt(payload, c)
+        x, y = resolve_pt(payload, c, tid)
         target = None
         try:
             target = c.eval(_PROBE_JS % (x, y), timeout=12)
@@ -281,7 +352,7 @@ def handle_event(payload):
         return {"ok": True, "kind": "click", "x": round(x), "y": round(y), "target": target}
 
     if kind == "domclick":
-        x, y = resolve_pt(payload, c)
+        x, y = resolve_pt(payload, c, tid)
         res = c.eval(_DOMCLICK_JS % (x, y), timeout=12) or {"ok": False}
         res["kind"] = "domclick"
         res["x"] = round(x)
@@ -289,7 +360,7 @@ def handle_event(payload):
         return res
 
     if kind == "dblclick":
-        x, y = resolve_pt(payload, c)
+        x, y = resolve_pt(payload, c, tid)
         for typ in ("mousePressed", "mouseReleased", "mousePressed", "mouseReleased"):
             send_input(tid, c, "Input.dispatchMouseEvent", {
                 "type": typ, "x": x, "y": y, "button": "left", "clickCount": 2, "buttons": 1})
@@ -297,7 +368,7 @@ def handle_event(payload):
 
     # ---- streamed drag (THE fix for slider captchas) ----
     if kind == "dragstart":
-        x, y = resolve_pt(payload, c)
+        x, y = resolve_pt(payload, c, tid)
         # hover first (some sliders require it), then press
         send_input(tid, c, "Input.dispatchMouseEvent", {"type": "mouseMoved", "x": x, "y": y})
         send_input(tid, c, "Input.dispatchMouseEvent", {
@@ -305,13 +376,13 @@ def handle_event(payload):
         return {"ok": True, "kind": "dragstart", "x": round(x), "y": round(y)}
 
     if kind == "dragmove":
-        x, y = resolve_pt(payload, c)
+        x, y = resolve_pt(payload, c, tid)
         send_input(tid, c, "Input.dispatchMouseEvent", {
             "type": "mouseMoved", "x": x, "y": y, "button": "left", "buttons": 1})
         return {"ok": True, "kind": "dragmove", "x": round(x), "y": round(y)}
 
     if kind == "dragend":
-        x, y = resolve_pt(payload, c)
+        x, y = resolve_pt(payload, c, tid)
         # exact final position first, then release
         try:
             send_input(tid, c, "Input.dispatchMouseEvent", {
@@ -323,7 +394,7 @@ def handle_event(payload):
         return {"ok": True, "kind": "dragend", "x": round(x), "y": round(y)}
 
     if kind == "move":
-        x, y = resolve_pt(payload, c)
+        x, y = resolve_pt(payload, c, tid)
         send_input(tid, c, "Input.dispatchMouseEvent", {"type": "mouseMoved", "x": x, "y": y})
         return {"ok": True, "kind": "move"}
 
@@ -349,7 +420,7 @@ def handle_event(payload):
         return {"ok": True, "kind": "type", "chars": len(text), "focus": focus}
 
     if kind == "scroll":
-        x, y = resolve_pt(payload, c)
+        x, y = resolve_pt(payload, c, tid)
         send_input(tid, c, "Input.dispatchMouseEvent", {
             "type": "mouseWheel", "x": x, "y": y,
             "deltaX": 0, "deltaY": float(payload.get("deltaY", 120))})
@@ -358,7 +429,7 @@ def handle_event(payload):
     if kind == "drag":
         # legacy batch drag (kept for compatibility; FIXED fromFx/fromFy bug)
         import time as _time
-        w, h = viewport(c)
+        w, h = viewport(c, tid)
         if "fromFx" in payload:
             fx, fy = float(payload["fromFx"]) * w, float(payload["fromFy"]) * h
         else:
@@ -557,6 +628,16 @@ class Handler(BaseHTTPRequestHandler):
                 if tid:
                     try:
                         open(os.path.join(FLAGS, "active_tab.txt"), "w").write(tid)
+                    except Exception:
+                        pass
+                    # front the newly selected tab NOW: the operator just
+                    # switched to it in the console — input must not hit the
+                    # hidden-tab throttle path (0.5-5s/event).
+                    try:
+                        tab = next((t for t in channel.list_tabs()
+                                    if t.get("id") == tid), None)
+                        if tab:
+                            ensure_front(tid, conn_for(tab), force=True)
                     except Exception:
                         pass
                     self._json({"ok": True, "id": tid})
