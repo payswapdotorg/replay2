@@ -3368,7 +3368,6 @@ chain: `head=payswapdotorg:${BRANCH}`.
     + mutation red/green) turns a 5-line fix into a ~20-minute worker
     cycle even under platform churn.
 
-<<<<<<< HEAD
 ## Lesson 180 (2026-09-26 13:4x UTC — the 010L wave: first-live-exercise gaps cluster; the watcher's own escalation is the capacity-rollback recovery)
 
 180. **First-live-exercise gaps CLUSTER — budget for a second unblock
@@ -3577,7 +3576,6 @@ chain: `head=payswapdotorg:${BRANCH}`.
     idle worker with packet A → send surgical resume to the stalled-alive
     worker B → fresh-dispatch worker C through the capacity assault
     (Cancel+re-pick+resend, the dispatcher's own ladder).
-=======
 ## Lesson 189 (2026-09-27 20:5x-21:0x UTC — the TL2 campaign day: the dead-pointer mirror freeze class closed by guard v4; the clean-path phantom; the 26h generation-dispatch outage posture)
 
 1. **Dead-pointer mirror freeze (lesson-178 recurrence) — CLOSED by frame_guard v4.** The mirror froze twice in one morning on `active_tab.txt` naming a tab id absent from CDP `/json/list` (overnight site tab churn destroys tabs; replayd's stale-serving cache (lesson 102) keeps `/frame` at 200+JPEG so `frame_ok()` cannot see it). v4 adds `active_tab_alive()` per 300s cycle (id must exist as a live CDP page target; CDP-unreachable returns True — tooling hiccups must not churn the mirror) and on death switches immediately to a healthy tab, HOME tab preferred (no `/c/` path — never lands inside a worker chat). Four production self-heals in the first 12h (11:37, 12:37, 14:38, 19:03). The guard being itself DEAD (empty pidfile, silent since the prior day) was part of the failure — write the pidfile on manual relaunch (`launch_detached.py` + `echo PID > scripts/frame_guard.pid`).
@@ -3585,4 +3583,61 @@ chain: `head=payswapdotorg:${BRANCH}`.
 3. **The double-probe redundancy.** The automated hourly probe loop (freeze_probe_watch) and session-driven manual probes can both run during an outage watch — doubling the real cadence (two sends minutes apart) in violation of the spacing doctrine. One stream only; verdicts read from the loop's log.
 4. **The generation-dispatch outage class (server-side, NOT usage-limit).** Signature: sends land server-side, chat created, assistant placeholder created, gen NEVER fires, ZERO sandbox pods created (a real generation creates a pod — the telltale). Account-block/slot/midnight-reset all ruled out. Distinct from the §16 usage-limit family: the hourly probe-spacing doctrine does NOT apply (nothing is being consumed by failures — the dispatch is simply dead). Deadline posture: queue MULTIPLE lottery tickets in parallel (operator doctrine: 3 concurrent workers; queue_watch armed per tab; the site holds the queued chats), tighten probe cadence (20 min), and arm an auto-recovery chain so TL reaction time leaves the critical path.
 5. **Parallel queued-dispatch is the recovery play.** Three WOs dispatched into the dead queue (A re-used its existing queued chat — its ticket from 05:14 was still live server-side; B recovered from a capacity popup via the assault loop; C needed one phantom void + re-create). All three queue_watches armed via spec files (supervisor auto-arms within 10s); the mirror points at Worker A so the operator watches the first fire.
->>>>>>> 223536f (lesson 189: frame_guard v4 dead-pointer self-heal; clean-path phantom verify loop; outage-class probe doctrine; parallel queued-dispatch recovery posture)
+## Lesson 190 (2026-09-27 22:2x-23:xx UTC — post-W106 wave-1: the sentinel registry-shape trap; the send-shape vs live()-shape mismatch double-dispatch risk)
+
+192. **Custom sentinels that gate re-dispatch on the session registry MUST
+    match the registry's actual record shape.** `dispatch_worker.py create`
+    writes `{name, tab_id, url, ts, prompt_file, prompt_chars, mode, model,
+    skill, insert_pct, sent:true}` — there is NO `action` field on create
+    records (void/done records add it later). A sentinel `live()` that
+    checks `rec.get("action") not in TERMINAL` returns False for a
+    successfully-sent session → the sentinel logs "dispatch failed" and
+    RE-DISPATCHES the same work order next cycle (duplicate session, wasted
+    slot). Neutralization that worked: SIGSTOP the sentinel the instant the
+    first bogus "failed" line appears (the in-flight create child survives
+    — subprocess children are not signaled by a parent STOP), verify the
+    registry shows `sent:true` for every session, then SIGKILL the sentinel.
+    RULE: treat `sent:true` (or any record) as LIVE unless a later
+    void/failed/done record exists for that name; read the dispatcher's
+    registry code before writing a gate against it.
+
+## Lesson 191 (2026-09-27 22:47-23:xx UTC — evening-peak turn death at the exploration/implementation boundary; the continuation joins the SAME queue)
+
+191. **During evening peak a generating worker turn can die at the
+    exploration→implementation boundary (observed: todo 2/9, 36 commands,
+    14 files explored, then zero growth, no stop button, composer
+    re-enabled) with NO error marker anywhere in the transcript — not the
+    usage-limit signature ("No response, Please try again later" absent),
+    not a capacity popup, nothing.** The turn is simply dead server-side
+    while the sandbox pod stays LIVE (TTL running). The documented
+    recovery — a continuation message via `dispatch_worker.py send` —
+    lands VERIFIED (body grows by the message) but then JOINS THE SAME
+    server-side admission queue as every other waiting session; it does
+    not jump the line. Diagnosis discipline that worked: (a) transcript
+    growth over a 2-min window (zero + no stop button + todo incomplete =
+    dead turn; zero + stop button = long tool run, keep waiting); (b) a
+    VLM screenshot pass for ground truth (virtualized innerText lies —
+    the same body can read 8378 chars at one scroll position and 57330 at
+    another; always re-measure after scroll/expand, and treat absolute
+    len as scroll-position-dependent, never as a monotonic progress
+    counter); (c) the sandbox dashboard confirms the pod lives (expiry
+    countdown) — a dead turn with a live pod means CONTINUATION is the
+    correct recovery (never void+re-dispatch: the pod's partial state
+    dies with it, lesson 187(3)).
+
+## Lesson 192 (2026-09-27 22:3x UTC — dash_sandbox_release.py scope bug: the first div containing "Sandbox" text is too small)
+
+190. **The dashboard sandbox-release scope finder (`first div whose
+    innerText includes 'Sandbox'`) can select a tiny heading container
+    instead of the section** → `scope.querySelectorAll('button')` finds
+    zero Release buttons → "RELEASED: 0" with live_skipped=0 (the guard
+    message never prints because nothing was even found — distinguish
+    this from an actual live-guard skip, which prints "GUARD: skipped N
+    LIVE sandbox(es)"). The robust scope is the DUMP_JS pattern: find the
+    text node whose exact trimmed text is 'Sandbox', then walk up ~5
+    parent levels to the section root, and click Release buttons from
+    THERE, matching target rows by exact session-name text and skipping
+    any row containing 'Expires in' (live TTL) — the generic
+    /\bLive\b/ regex guard also false-positives when the section root's
+    innerText includes the 'Live' heading above the live row (the whole
+    section is one innerText blob), so per-ROW text matching is required.
