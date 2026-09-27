@@ -378,27 +378,49 @@ def parse_vitest(txt):
         return int(m.group(1))
     if re.search(r"Tests\s+\d+\s+passed", txt):
         return 0
+    if re.search(r"No test files found", txt):
+        return 0
     return None
 
 
 def parse_lint(txt):
+    # biome summary variants: "Found 5 errors and 68 warnings and 8 infos."
+    # / "Found 5 errors and 68 warnings and 8 formatting errors."
     m = re.search(r"Found\s+(\d+)\s+errors?\s+and\s+(\d+)\s+warnings?"
-                  r"\s+and\s+(\d+)\s+infos?", txt)
-    return tuple(int(x) for x in m.groups()) if m else (None, None, None)
+                  r"\s+and\s+(\d+)\s+(?:infos?|formatting\s+errors?)", txt)
+    if m:
+        return tuple(int(x) for x in m.groups())
+    m = re.search(r"Found\s+(\d+)\s+errors?\s+and\s+(\d+)\s+warnings?", txt)
+    if m:
+        return (int(m.group(1)), int(m.group(2)), 0)
+    return (None, None, None)
 
 
 def battery(clone, surface):
     rep = {}
 
-    def run(key, cmd, timeout=2400):
+    def run(key, cmd, timeout=2400, env_extra=None, retry_on_signal=True):
         t0 = time.time()
-        r = sh(cmd, timeout=timeout, cwd=clone)
+        import os as _os
+        env = dict(_os.environ)
+        if env_extra:
+            env.update(env_extra)
+        r = subprocess.run(cmd, capture_output=True, text=True,
+                           timeout=timeout, cwd=clone, env=env)
+        if r.returncode < 0 and retry_on_signal:
+            # signal-killed (OOM under Chrome pressure) — one retry
+            time.sleep(10)
+            r = subprocess.run(cmd, capture_output=True, text=True,
+                               timeout=timeout, cwd=clone, env=env)
+        full = (r.stdout or "") + "\n" + (r.stderr or "")
         rep[key] = {"rc": r.returncode, "secs": int(time.time() - t0),
-                    "tail": ((r.stdout or "")[-5000:]
-                             + (r.stderr or "")[-2500:])}
+                    "full": full, "tail": full[-5000:]}
         return r
 
-    run("typecheck", ["bun", "run", "typecheck"])
+    # typecheck is heap-capped (the PPR-018 Lead lesson: tsc gets OOM-
+    # killed alongside the Chrome instance on this box)
+    run("typecheck", ["bun", "run", "typecheck"],
+        env_extra={"NODE_OPTIONS": "--max-old-space-size=2048"})
     run("lint", ["bun", "run", "lint"])
     run("unit", ["bun", "run", "test:unit"])
     run("architecture", ["bun", "run", "test:architecture"])
@@ -409,8 +431,13 @@ def battery(clone, surface):
         run(f"compat_{surface}",
             ["bunx", "vitest", "run", f"compat/{surface}"])
     for k in list(rep):
-        rep[k]["failed"] = parse_vitest(rep[k]["tail"])
-    rep["_lint_counts"] = parse_lint(rep.get("lint", {}).get("tail", ""))
+        if isinstance(rep[k], dict):
+            rep[k]["failed"] = parse_vitest(rep[k].get("full", ""))
+    rep["_lint_counts"] = parse_lint(rep.get("lint", {}).get("full", ""))
+    # trim full outputs (parsed already) so cache/report files stay small
+    for k in list(rep):
+        if isinstance(rep[k], dict) and len(rep[k].get("full", "")) > 9000:
+            rep[k]["full"] = rep[k]["full"][-9000:]
     return rep
 
 
