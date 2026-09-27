@@ -415,6 +415,11 @@ def battery(clone, surface):
 
 
 def prepare_clone(base_sha, tag):
+    """clean-room clone at EXACTLY base_sha. The local Zeck clone's main
+    branch can be stale (shallow clone; roadmap() only refreshes its
+    remote-tracking origin/main) — so after the fast local clone we fetch
+    the TRUE main through the local repo's remote-tracking ref and hard-
+    fail if the base checkout does not land exactly."""
     d = os.path.join(VERIFY, tag)
     if os.path.exists(d):
         shutil.rmtree(d, ignore_errors=True)
@@ -425,8 +430,20 @@ def prepare_clone(base_sha, tag):
                 "https://github.com/payswapdotorg/Zeck.git", d], timeout=900)
         if r.returncode != 0:
             raise RuntimeError("clone failed")
-    sh(["git", "-C", d, "checkout", "--quiet", "-B", "verify", base_sha],
-       timeout=120)
+    # the true main: /home/z/Zeck's remote-tracking origin/main is kept
+    # fresh by roadmap() every cycle
+    sh(["git", "-C", d, "fetch", "--quiet", ZECK,
+        "refs/remotes/origin/main:refs/heads/wave-main"], timeout=600)
+    r = sh(["git", "-C", d, "checkout", "--quiet", "-B", "verify",
+            base_sha], timeout=120)
+    if r.returncode != 0:
+        raise RuntimeError(
+            f"base checkout failed: {base_sha[:10]} not reachable — "
+            f"stale frontier currentBase?")
+    r = sh(["git", "-C", d, "rev-parse", "HEAD"], timeout=30)
+    if r.stdout.strip() != base_sha:
+        raise RuntimeError(f"base mismatch: {r.stdout.strip()[:10]} != "
+                           f"{base_sha[:10]}")
     r = sh(["bun", "install", "--frozen-lockfile"], cwd=d, timeout=1500)
     if r.returncode != 0:
         sh(["bun", "install"], cwd=d, timeout=1500)
@@ -510,11 +527,25 @@ def review_and_deliver(name, chat, harvest_dir, base_sha):
                f"battery at {base_sha[:8]} (harvest {harvest_dir})")
         baseline = baseline_for(base_sha)
         clone = prepare_clone(base_sha, f"cand-{name}")
+        # snapshot bun-install churn BEFORE overlay (the PPR-018 lesson:
+        # bun can rewrite package.json/lockfile — never commit that churn
+        # unless the harvest itself carries those files)
+        r0 = sh(["git", "-C", clone, "status", "--porcelain"], timeout=60)
+        churn = [l[3:] for l in (r0.stdout or "").split("\n") if l.strip()]
         n = overlay(clone, harvest_dir)
         if n == 0:
             outbox(f"[{name}] REVIEW PARKED: harvest overlay empty — the "
                    f"interactive Lead may need an op-stream replay")
             return verdict("parked", {"reason": "empty overlay"})
+        overlaid = set()
+        for root, _, files in os.walk(harvest_dir):
+            for f in files:
+                rel = os.path.relpath(os.path.join(root, f), harvest_dir)
+                if not OVERLAY_SKIP.search(rel):
+                    overlaid.add(rel)
+        for f in churn:
+            if f not in overlaid:
+                sh(["git", "-C", clone, "checkout", "--", f], timeout=60)
         r = sh(["git", "-C", clone, "status", "--porcelain"], timeout=60)
         new_files = [l[3:] for l in (r.stdout or "").split("\n")
                      if l.strip()]
