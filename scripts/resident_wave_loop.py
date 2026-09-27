@@ -190,6 +190,15 @@ def reap_stale_tabs(s):
     protected, known = set(), set()
     if active:
         protected.add(active[:8])
+    # 2026-09-27 23:10 lesson: any chat with a LIVE POD is precious — it
+    # holds unharvested work and resume capability (the 36b5bff8 corpus
+    # work was nearly lost twice to the reaper closing its watch tab).
+    try:
+        wpods, _, _ = workspaces()
+        for c8 in wpods:
+            protected.add(c8)
+    except Exception:
+        pass
     recs = records()
     for name in WO:
         o = s["orders"].get(name) or {}
