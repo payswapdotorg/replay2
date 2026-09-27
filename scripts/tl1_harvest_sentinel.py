@@ -41,6 +41,7 @@ SESSIONS = {
     "tl1-b-002": ["tl1-002-delivery.bundle", "tl1-002-release-shell.md"],
     "tl1-c-003": ["tl1-003-delivery.bundle", "tl1-003-service-seam.md"],
     "tl1-a-004": ["tl1-004-delivery.bundle", "tl1-004-core-change-budget.md"],
+    "tl1-b-005": ["tl1-005-delivery.bundle", "tl1-005-packaging-parity.md"],
 }
 
 
