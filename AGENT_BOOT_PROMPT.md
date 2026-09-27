@@ -3294,9 +3294,143 @@ chain: `head=payswapdotorg:${BRANCH}`.
     find the anchor element, walk up to the structural container, slice
     the outerHTML + the geometry JSONs) — the window may not last.
 
-## Lessons 178-180 (2026-09-27 08:0x UTC — the R33 active-dispatch wave: the deploy-webhook retrigger ladder; the login-probe purge; the done≠released slot at wave scale)
+## Lesson 178 (2026-09-26 11:2x UTC — the 010H four-hour zombie: retirement ATOMICITY, DOM-text marker semantics, land-then-reap, and the stale-mirror "no activity")
 
-178. **A git-app deploy silence with ZERO commit statuses is the
+178. **Watcher retirement is an ATOMICITY requirement — lessons 119
+    (kill-then-rm) and 154 (rm-then-kill) both lost races; the order
+    debate was misframed.** Field evidence (2026-09-26, the 010H zombie):
+    a kill-then-despec pair executed with a ~minutes gap between the two
+    steps let the supervisor respawn the watcher from the still-present
+    spec (pid 14507 at 07:38) — the respawned watcher then re-dispatched
+    ALREADY-MERGED work for 4 HOURS (duplicates at 07:41, 08:29, 10:22,
+    11:22), jamming all three sandbox slots and causing two land-then-
+    reap kills of the next work order. The reliable form is ONE shell
+    invocation with zero gap — `kill <pid> && rm flags/queue_watch.spec.<name>`
+    — plus `rm flags/queue_watch_heartbeat.<name>`; and the standing fix:
+    `done`/`void` must perform the kill-and-despec ritual NATIVELY (the
+    lead-side manual ritual is where races live).
+    **The queue_watch completion gate is the DOM REPORT TEXT, not flags
+    files.** Touching `flags/<MARKER>` is INERT — the watcher greps the
+    rendered session page for the marker string (the report headline).
+    A "touch the marker" recovery that does not put the marker into the
+    session's report text (or kill the watcher) accomplishes nothing;
+    the assault loop keeps cycling. When manually retiring: kill+despec
+    is the ONLY reliable act; the flags file is a human-readable note.
+    **Land-then-reap under slot contention is a platform queue cull,
+    not a dispatch defect.** With 3/3 slots held (stale pods + a
+    regenerating duplicate), a freshly-LANDED session (server-verified
+    user message at the chats API) was reaped minutes later (chats API
+    500 "chat not found") — twice (010J, 010J-2). Recovery is ALWAYS a
+    fresh re-dispatch with the original prompt packet (j-3 landed and
+    spawned); never continuation-sends into the dead chat. Prevention:
+    release stale slots BEFORE dispatching (targeted_release.py — one
+    row by title substring, the live-duplicate-beside-live-worker case)
+    and ps-audit for duplicate-title regenerators before every create.
+    **"No activity in the replay" has TWO silent causes beyond dead
+    workers**: (a) the estate churning on zombie duplicates (lesson 172
+    — nothing new generates, slots burn); (b) the console mirroring a
+    DEAD tab — `flags/active_tab.txt` can hold a closed tab's id (the
+    frame endpoint then serves a frozen/blank view while the estate is
+    fully alive). Resume checklist: `curl :3100/healthz` (active field)
+    vs `curl :9222/json/list` — if the active id is not in the live tab
+    list, re-point the mirror: `POST :3100/tabs {"id": "<live-worker-tab>"}`
+    (one call, frames resume instantly), THEN audit watchers/sessions
+    per lesson 155.
+
+## Lesson 179 (2026-09-26 12:0x UTC — the 010K wave: lead-script arg-shape bugs burn campaign attempts silently; untested design intent must be dry-exercised before first live use)
+
+179. **Two unblock classes from the CAMSCAN-010K wave (dispatched,
+    delivered, merged in ~21 minutes end-to-end — the fastest WO cycle
+    on record, on a surgical packet).** (1) **The stamp_of() sed bug
+    class**: a lead-authored campaign script composed a lab-cli argument
+    from a parsed run-dir basename; the sed pattern `-S00[0-9][0-9]-live$`
+    expected FOUR-digit scenario IDs, the corpus is three-digit (S001) —
+    so `--stamp` silently carried the full run-id suffix and lab-cli
+    rejected every attempt INSTANTLY (4 attempts burning on an arg-shape
+    error while the log said "operational failure — fresh retry", the
+    same line a REAL sandbox failure produces). RULE: before first live
+    launch of any campaign loop, DRY-RUN one composed command line to
+    stderr/echo (or run the loop's first iteration with `bash -x`) and
+    eyeball the argv — a composed-argument bug hides behind the generic
+    failure line. (2) **The guard-vs-design contradiction**: the impl
+    campaign script's pairing flow (impl subject into the EXISTING
+    reference run dir -> auto-reconcile) was real design intent backed
+    by the evidence layer's contract (assemble_subject exist_ok +
+    per-subject collision raise) but run.py's CAMSCAN-007 blanket
+    `run_dir.exists()` refusal — never exercised against the pairing
+    case — gated it shut. RULE: orchestration scripts that assume
+    downstream behavior must prove the assumption on the FIRST launch
+    (a `--plan`-mode or single-scenario smoke pass), not discover the
+    contradiction with a full campaign budget burning. When the blocked
+    path is repo code, the fix is a WORK ORDER (the binding "lead
+    implements nothing" rule) — the surgical WO packet (verbatim
+    console evidence + the exact design-contract citations + pin tests
+    + mutation red/green) turns a 5-line fix into a ~20-minute worker
+    cycle even under platform churn.
+
+## Lesson 180 (2026-09-26 13:4x UTC — the 010L wave: first-live-exercise gaps cluster; the watcher's own escalation is the capacity-rollback recovery)
+
+180. **First-live-exercise gaps CLUSTER — budget for a second unblock
+    WO after opening any never-exercised path.** The 010K pairing
+    guard was opened at 11:41; the first live implementation run then
+    exposed TWO more never-exercised defects in the same flow (the APK
+    push step the driver contract promised but never wired — adb
+    install ran on a HOST path inside the sandbox; and run.py's
+    no-leak teardown invariant guarding execute() only, so a raising
+    provision() orphaned its paid sandbox — live-proven: the sandbox
+    was still running 11 min past the campaign's "cleanly aborted"
+    line, killed by hand via Sandbox.connect + kill). LESSON: when a
+    gated path opens for the first time, pre-audit the WHOLE chain
+    behind the gate (grep for the contract phrases the code promises —
+    "push + install" — and check each guarantee's scope — "teardown
+    runs on EVERY path" meant every path OUT OF EXECUTE), and expect
+    the first live run to be a discovery run. **The watcher's own
+    escalation IS the capacity-rollback recovery**: the 010L dispatch
+    landed (VERIFIED), then the afternoon capacity wall ROLLED THE
+    SESSION BACK (tab redirected home — the tablost class). The
+    queue_watch detected the stuck state (capacity modal + no
+    generation), ran its unstick (rc=1 — nothing to unstick into; the
+    session was destroyed), and escalated ON ITS OWN: void + fresh
+    create with the ORIGINAL prompt file + assault round 1/12 landed
+    the re-send VERIFIED. NO manual intervention — and manual
+    intervention at the wrong moment would have RACED the watcher's
+    in-flight create (the duplicate hazard). After a watcher
+    re-dispatch, UPDATE the spec's tab_prefix to the NEW tab (a
+    supervisor respawn carrying the stale prefix is the lesson-155
+    zombie class). **Provider-scope ruff baselines**: a new gate scope
+    (lab/providers/e2b, 39 pre-existing findings) must be baselined
+    BEFORE judging the worker's diff — line-shifted findings look like
+    new ones if you diff counts instead of finding-sets.
+
+## Lesson 181 (2026-09-27 08:0x-08:2x UTC — AISE console: the overnight mass reclamation; a queued packet is NOT durable)
+
+181. **Idle agent sessions queued behind a capacity gate get MASS-RECLAIMED
+    server-side — a landed-and-queued packet is NOT durable, and
+    registry "sent=true" only means the turn was accepted, not that it
+    will ever run.** The AISE QA wave (5 lanes) landed packets 20:14Z Sep
+    26 behind the peak-hours popup; generation stayed congested all
+    night; by ~08:00Z Sep 27 ALL FOUR gated chats were reclaimed — every
+    /c/{id} navigation bounced to chat.z.ai/ home (auth verified fine via
+    a control tab that still rendered). The fifth lane (dead-stream
+    stall) died independently. The tell: the lane watcher logged a tiny
+    "+38 chars DOM growth — GENERATING" minutes before the tab died; that
+    was the SESSION-EXPIRED notice rendering, not generation — sub-100-
+    char growth on a lane that sat static for hours is a DEATH marker,
+    not a life marker. Liveness probe that separates the cases: navigate
+    a tab to the /c/ URL — a LIVE chat loads its history; a DEAD one
+    bounces to home (or 404s). Never trust a DOM-growth signal under ~1KB
+    without reading the text. Doctrine when a wave is caught behind a
+    gate overnight: probe liveness FIRST (URL bounce test), void the
+    zombies, re-dispatch fresh — the packets on disk are the only
+    durable artifact; treat the platform's queue as best-effort.
+    Corollary: keep at most ONE daemon instance per lane (a double
+    peak_retry collision was racing cancel+resubmit on the same tabs —
+    setsid launches must be followed by a ps check AND a log-freshness
+    check before relaunching).
+
+## Lessons 182-184 (2026-09-27 08:0x UTC — the R33 active-dispatch wave: the deploy-webhook retrigger ladder; the login-probe purge; the done≠released slot at wave scale)
+
+182. **A git-app deploy silence with ZERO commit statuses is the
     blocked-webhook class — the fresh-push-after-reset is the trigger, and
     the diagnosis is one API call.** The WebFlix case: every main push from
     00:55Z Sep 26 (R31 merge, R32 merge, a retrigger) produced NO deployment
@@ -3312,7 +3446,7 @@ chain: `head=payswapdotorg:${BRANCH}`.
     last failed window, wait for the reset epoch; (3) fresh empty push; (4)
     only then suspect the integration itself (operator-side reconnection).
 
-179. **`browser_login: no-browser` while CDP answers = STALE MERGED-SESSION
+183. **`browser_login: no-browser` while CDP answers = STALE MERGED-SESSION
     TABS' wedged renderers blocking the probe — purge, don't restart.** The
     08:09Z case: two chat tabs from merged-and-done waves (r31/r32, both
     completed 20h+) sat renderer-wedged; the console's login probe read
@@ -3324,7 +3458,7 @@ chain: `head=payswapdotorg:${BRANCH}`.
     Chrome restart, close the DONE waves' session tabs — they are probe
     poison and dispatch dead weight.
 
-180. **At wave scale the done≠released slot compounds: purge + guard before
+184. **At wave scale the done≠released slot compounds: purge + guard before
     every wave, and the phantom-create burst costs 4-6 assault rounds per
     create — budget for it, never conclude "platform full".** The R33
     dispatch: the R32 worker's pod still held one of the 3 seats 22h after

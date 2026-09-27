@@ -16,12 +16,12 @@ type TabsInfo = { active: string; new: string[]; tabs: Tab[] };
 type Msg = { ts: number; from: "operator" | "agent"; text: string };
 type Inbox = { thread: Msg[]; agent_heartbeat_ms: number; watcher_alive: boolean };
 
-const CONSOLE_VERSION = "v6.1 · realtime drag";
+const CONSOLE_VERSION = "v6.2 · fast drag";
 const START_URL = "https://chat.z.ai/";
-const FRAME_FAST_MS = 220; // while dragging / right after an event
+const FRAME_FAST_MS = 110; // while dragging / right after an event (~9fps)
 const FRAME_IDLE_MS = 1300; // steady state
 const FRAME_FAIL_MS = 700; // quick retry while frames are failing
-const MOVE_MIN_INTERVAL_MS = 45; // dragmove throttle
+const MOVE_MIN_INTERVAL_MS = 25; // dragmove throttle (40 moves/s)
 const DRAG_START_THRESHOLD = 0.004; // fraction of viewport before dragstart fires
 
 function ago(ms: number): string {
@@ -56,7 +56,8 @@ export default function Console() {
   const lastMovePosRef = useRef<{ fx: number; fy: number } | null>(null);
   const dragCountRef = useRef(0);
   const fastUntilRef = useRef(0);
-  const queueRef = useRef<Promise<unknown>>(Promise.resolve());
+  const dragQueueRef = useRef<Record<string, unknown>[]>([]);
+  const dragPumpingRef = useRef(false);
   const domModeRef = useRef(false);
   domModeRef.current = domMode;
   const sendRef = useRef<
@@ -197,23 +198,39 @@ export default function Console() {
     [refreshFrame, bumpFast]
   );
 
-  // Ordered fire-and-forget queue for streamed drag events. Strict ordering
-  // (each request waits for the previous) so moves never arrive out of order.
+  // Ordered send queue for streamed drag events, with dragmove COALESCING.
+  // Ordering is strict (dragstart → moves → dragend — each request waits for
+  // the previous), but a queued-but-unsent dragmove is REPLACED by the newest
+  // position, so a slow hop never builds a backlog: the browser always gets
+  // the freshest position within one round-trip. Absolute positions make
+  // dropped intermediate moves semantically safe.
   const queueEvent = useCallback((payload: Record<string, unknown>) => {
     bumpFast();
-    queueRef.current = queueRef.current
-      .then(async () => {
-        try {
-          await fetch("/api/event", {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify(payload),
-          });
-        } catch {
-          /* next event still queued */
+    if (payload.type === "dragmove") {
+      // drop every queued (not yet in-flight) dragmove — superseded
+      dragQueueRef.current = dragQueueRef.current.filter((p) => p.type !== "dragmove");
+    }
+    dragQueueRef.current.push(payload);
+    if (dragPumpingRef.current) return;
+    dragPumpingRef.current = true;
+    (async () => {
+      try {
+        while (dragQueueRef.current.length > 0) {
+          const p = dragQueueRef.current.shift()!;
+          try {
+            await fetch("/api/event", {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify(p),
+            });
+          } catch {
+            /* keep pumping — next event still queued */
+          }
         }
-      })
-      .catch(() => {});
+      } finally {
+        dragPumpingRef.current = false;
+      }
+    })();
   }, [bumpFast]);
 
   useEffect(() => {

@@ -404,8 +404,16 @@ def _active_session_keywords(extra=None):
         #       -> 'architect', 'rulings' — 'rulings' matches the row title)
         #   (b) the prompt file's first-line work-item prefix ('# UI-009 —
         #       ...' -> 'ui-009') for rows titled from the prompt head
+        # 2026-09-26 fix (W4 modal stall): the word-keyword derivation
+        # contributed the bare brand token 'flauz' for EVERY live session
+        # (all names are flauz-<lane>-wN) — one substring keyword that
+        # matches ALL Flauz sandbox rows in the concurrency modal, so the
+        # automatic release refused to free ANY stale holder (J/K sat
+        # blocked behind two done Wave-3 sandboxes for ~an hour until a
+        # manual override). Generic shared tokens are never lane
+        # discriminators: skip them.
         for w in re.split(r"[^A-Za-z0-9]+", n or ""):
-            if len(w) >= 5:
+            if len(w) >= 5 and w.lower() not in ("flauz", "worker"):
                 kws.append(w.lower())
         pf = s.get("prompt_file") or ""
         if pf and os.path.isfile(pf):
@@ -1598,7 +1606,13 @@ def send(name, message):
               f"body {body_before}->{body_after})")
         _save({"action": "send", "name": name, "tab_id": tab["id"], "ts": int(time.time()),
                "msg_chars": len(message), "sent": ok, "kind": "continuation",
+               "url": (tab.get("url") or "").split("#")[0],
                "note": reason})
+        # 2026-09-26 fix (W4 roll cascade): send records carried no url, so
+        # _find's fallback re-attached the session to the ORIGINAL create-url
+        # (a dead pre-roll chat) after every send into a rolled chat — the
+        # next send then refused ("tab is NOT on session — destroyed").
+        # Recording the live tab url keeps the registry tracking the roll.
         return 0 if ok else 2
     finally:
         c.close()

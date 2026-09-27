@@ -25,3 +25,7 @@ scripts/extensions/*.zip
 
 # live dispatch packets carry the push token — never commit
 scripts/prompts/
+
+# regenerable staging clones (Flauz mirror / lab remotes) — never commit
+scripts/harvests/flauz-land/
+scripts/harvests/lab-clone/

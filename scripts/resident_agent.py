@@ -239,8 +239,11 @@ def boot_message():
         pass
     if login_state() == "logged-in":
         outbox("resident agent online — " + status_text() + ". "
-               "Login already active — worker dispatch unlocked. Task orders "
-               "go to the operator agent in the CLI chat.")
+               "Login already active — worker dispatch unlocked; no action "
+               "needed. Watch the work: pick any Z.ai tab in the console tab "
+               "strip; message the agent in this panel (messages land in the "
+               "operator inbox). Task orders also reach the operator agent in "
+               "the CLI chat.")
     else:
         outbox("resident agent online — " + status_text() + ". "
                "Next operator action: LOG IN through the replay image (Sign in → "
