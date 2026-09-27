@@ -3293,3 +3293,46 @@ chain: `head=payswapdotorg:${BRANCH}`.
     when a gap window opens, capture IMMEDIATELY (the targeted DOM walk:
     find the anchor element, walk up to the structural container, slice
     the outerHTML + the geometry JSONs) — the window may not last.
+
+## Lessons 178-180 (2026-09-27 08:0x UTC — the R33 active-dispatch wave: the deploy-webhook retrigger ladder; the login-probe purge; the done≠released slot at wave scale)
+
+178. **A git-app deploy silence with ZERO commit statuses is the
+    blocked-webhook class — the fresh-push-after-reset is the trigger, and
+    the diagnosis is one API call.** The WebFlix case: every main push from
+    00:55Z Sep 26 (R31 merge, R32 merge, a retrigger) produced NO deployment
+    for 22h+. The one-call diagnosis: `GET api.github.com/repos/<o>/<r>/
+    commits/<sha>/status` — **zero statuses on every push = the webhook
+    never fired** (vs. a failed deploy, which reports a failure status; vs.
+    the alias-pin class of lesson 163, which deploys fine but serves old).
+    The recovery that landed: after the deploy-quota reset epoch passed
+    (>24h since the block), ONE fresh empty push (`git commit --allow-empty
+    -m "deploy retrigger …"` + push — 178873a) fired the webhook and the
+    production deploy landed within ~3 minutes. Ladder: (1) commit-status
+    check (never deploy-blind); (2) if zero statuses and <24h since the
+    last failed window, wait for the reset epoch; (3) fresh empty push; (4)
+    only then suspect the integration itself (operator-side reconnection).
+
+179. **`browser_login: no-browser` while CDP answers = STALE MERGED-SESSION
+    TABS' wedged renderers blocking the probe — purge, don't restart.** The
+    08:09Z case: two chat tabs from merged-and-done waves (r31/r32, both
+    completed 20h+) sat renderer-wedged; the console's login probe read
+    their timeouts as no-browser while the operator's session was alive in
+    the profile. The lesson-146 purge (close every stale /c/ session tab,
+    open ONE fresh chat.z.ai tab) flipped the probe to logged-in within
+    seconds — the localStorage token survives, no cookie re-injection
+    needed on a warm profile. Extends lesson 123's differential: before any
+    Chrome restart, close the DONE waves' session tabs — they are probe
+    poison and dispatch dead weight.
+
+180. **At wave scale the done≠released slot compounds: purge + guard before
+    every wave, and the phantom-create burst costs 4-6 assault rounds per
+    create — budget for it, never conclude "platform full".** The R33
+    dispatch: the R32 worker's pod still held one of the 3 seats 22h after
+    its merge (dash_sandbox_release with the Expired-only guard freed it);
+    then each of the three creates (r33a/b/c) fought 4-6 rounds of
+    phantom-create + capacity popups before landing VERIFIED — the
+    r30b_assault pattern (lesson 144) carried all three through under the
+    never-wait doctrine, zero waits, zero model compromises. The
+    pre-dispatch checklist that made it clean: workspaces 0/3 → purge stale
+    tabs (179) → serialize creates (142) → verify each lands server-side
+    (HTTP rail) → arm worker_watch with wedge rotation (164) on all three.
