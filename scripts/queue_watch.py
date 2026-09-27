@@ -183,6 +183,33 @@ def state(tab_prefix):
             except Exception:
                 fp = ""
                 stop_present = False
+            # 2026-09-27 (server-truth gate): the Stop control LIES for
+            # queued-pending sessions — the client renders it optimistically
+            # while the server has NO assistant record (the turn never
+            # opened; observed on tl1-b/c: prompt server-side, Stop present,
+            # zero assistant records for 30+ min). Only trust Stop when the
+            # server confirms the turn is open: the chat's LAST history
+            # message (by timestamp) must be an assistant record. If the
+            # last is a user message, the session is PENDING regardless of
+            # the Stop control -> downgrade to the queued path so the stuck
+            # clock keeps running. Probe failure leaves stop_present as-is
+            # (never downgrade on uncertainty).
+            if stop_present and "/c/" in (url or ""):
+                try:
+                    import urllib.request as _ur
+                    _cid = url.split("/c/")[-1].split("/")[0].split("?")[0].strip("/")
+                    _tok = open(os.path.join(FLAGS, "chat_token")).read().strip().strip('"')
+                    _rq = _ur.Request(f"https://chat.z.ai/api/v1/chats/{_cid}",
+                                      headers={"Authorization": f"Bearer {_tok}"})
+                    with _ur.urlopen(_rq, timeout=15) as _r:
+                        _j = json.loads(_r.read().decode())
+                    _hist = ((_j.get("chat") or _j).get("history") or {}).get("messages") or {}
+                    _vals = list(_hist.values()) if isinstance(_hist, dict) else list(_hist)
+                    _last = sorted(_vals, key=lambda m: m.get("timestamp") or 0)[-1] if _vals else None
+                    if _last is not None and _last.get("role") != "assistant":
+                        stop_present = False  # pending, not generating
+                except Exception:
+                    pass  # probe failed — keep the DOM verdict
             try:
                 modal = bool(c2eval_cancel(c))
             except Exception:
