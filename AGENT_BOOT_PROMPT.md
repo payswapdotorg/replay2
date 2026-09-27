@@ -3368,6 +3368,7 @@ chain: `head=payswapdotorg:${BRANCH}`.
     + mutation red/green) turns a 5-line fix into a ~20-minute worker
     cycle even under platform churn.
 
+<<<<<<< HEAD
 ## Lesson 180 (2026-09-26 13:4x UTC — the 010L wave: first-live-exercise gaps cluster; the watcher's own escalation is the capacity-rollback recovery)
 
 180. **First-live-exercise gaps CLUSTER — budget for a second unblock
@@ -3576,3 +3577,12 @@ chain: `head=payswapdotorg:${BRANCH}`.
     idle worker with packet A → send surgical resume to the stalled-alive
     worker B → fresh-dispatch worker C through the capacity assault
     (Cancel+re-pick+resend, the dispatcher's own ladder).
+=======
+## Lesson 189 (2026-09-27 20:5x-21:0x UTC — the TL2 campaign day: the dead-pointer mirror freeze class closed by guard v4; the clean-path phantom; the 26h generation-dispatch outage posture)
+
+1. **Dead-pointer mirror freeze (lesson-178 recurrence) — CLOSED by frame_guard v4.** The mirror froze twice in one morning on `active_tab.txt` naming a tab id absent from CDP `/json/list` (overnight site tab churn destroys tabs; replayd's stale-serving cache (lesson 102) keeps `/frame` at 200+JPEG so `frame_ok()` cannot see it). v4 adds `active_tab_alive()` per 300s cycle (id must exist as a live CDP page target; CDP-unreachable returns True — tooling hiccups must not churn the mirror) and on death switches immediately to a healthy tab, HOME tab preferred (no `/c/` path — never lands inside a worker chat). Four production self-heals in the first 12h (11:37, 12:37, 14:38, 19:03). The guard being itself DEAD (empty pidfile, silent since the prior day) was part of the failure — write the pidfile on manual relaunch (`launch_detached.py` + `echo PID > scripts/frame_guard.pid`).
+2. **The clean-path phantom chat.** `dispatch_worker.py create`'s server-side existence check (LIST-first, lesson 89e/99) runs ONLY on the capacity-popup branch. A send that completes with NO popup takes the early exit: "prompt sent: VERIFIED" + registry `sent: true` — on a chat that does NOT exist server-side (phantom `/c/` URL; UI-verified, server-absent). Rule: after EVERY create, verify the chat id in `/api/v1/chats/list` yourself; phantom → `void <name>` (closes the tab, frees the name) → re-create until REAL. The create's "already exists" guard no-ops silently on a second attempt (check the create LOG TAIL — "[1/7].." lines may be hours-old append history, the tail is the truth).
+3. **The double-probe redundancy.** The automated hourly probe loop (freeze_probe_watch) and session-driven manual probes can both run during an outage watch — doubling the real cadence (two sends minutes apart) in violation of the spacing doctrine. One stream only; verdicts read from the loop's log.
+4. **The generation-dispatch outage class (server-side, NOT usage-limit).** Signature: sends land server-side, chat created, assistant placeholder created, gen NEVER fires, ZERO sandbox pods created (a real generation creates a pod — the telltale). Account-block/slot/midnight-reset all ruled out. Distinct from the §16 usage-limit family: the hourly probe-spacing doctrine does NOT apply (nothing is being consumed by failures — the dispatch is simply dead). Deadline posture: queue MULTIPLE lottery tickets in parallel (operator doctrine: 3 concurrent workers; queue_watch armed per tab; the site holds the queued chats), tighten probe cadence (20 min), and arm an auto-recovery chain so TL reaction time leaves the critical path.
+5. **Parallel queued-dispatch is the recovery play.** Three WOs dispatched into the dead queue (A re-used its existing queued chat — its ticket from 05:14 was still live server-side; B recovered from a capacity popup via the assault loop; C needed one phantom void + re-create). All three queue_watches armed via spec files (supervisor auto-arms within 10s); the mirror points at Worker A so the operator watches the first fire.
+>>>>>>> 223536f (lesson 189: frame_guard v4 dead-pointer self-heal; clean-path phantom verify loop; outage-class probe doctrine; parallel queued-dispatch recovery posture)

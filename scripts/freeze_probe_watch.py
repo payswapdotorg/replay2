@@ -35,13 +35,14 @@ OUTBOX = os.path.join(FLAGS, "agent_outbox.jsonl")
 LOG = "/tmp/freeze_probe_watch.log"
 PY = "/home/z/.venv/bin/python3"
 LAST_ATTEMPT = os.path.join(FLAGS, "freeze_probe_last.txt")
-MIN_SPACING = 3300       # s — a restarted instance never probes sooner
-                          # than ~55 min after the last landed attempt (§16)
-
+MIN_SPACING = 1200       # s — restart-safe spacing (2026-09-27 18:15 deadline tuning:
+                          # operator directive "progress fast, deadline midnight" + this outage
+                          # is server-dispatch class, NOT the §16 usage-limit class that set
+                          # 55-min spacing; 20-min cadence bounds recovery-detection latency)
 # freeze until (UTC HH:MM) — hourly spacing after the last failed attempt
 # (2026-09-24 12:26 DOWN probe, sandbox-reset #3 redeploy)
 FIRST_PROBE_UTC = "00:00"  # reset #4: stale 13:30 pin expired 2026-09-24; hourly loop resumed (last probe 03:56 DOWN)
-HOURLY = 3600
+HOURLY = 1200  # 2026-09-27 deadline tuning: 20-min DOWN-probe cadence (was 3600)
 
 
 def log(line):
@@ -128,17 +129,17 @@ def main():
             except FileNotFoundError:
                 pass
             outbox("[lead] HEALTHY probe! Generation capacity is back "
-                   "(hourly-probe protocol, §16). Recovery chain firing: "
-                   "both lanes re-dispatch fresh now; completion watches "
-                   "will re-arm automatically.")
-            log("marker written — endgame_recover takes over; exiting")
+                   "(20-min probe protocol). TL2 recovery chain firing: "
+                   "Workers A/B/C re-dispatch fresh now; completion watches "
+                   "re-arm via supervisor.")
+            log("marker written — tl2_recover chain takes over; exiting")
             return 0
         if rc == 2:
             log(f"TOOLFAIL — {verdict} (retry in 10 min, not an attempt)")
             time.sleep(600)
             continue
         _note_attempt()
-        log(f"DOWN — {verdict}; next probe in 60 min (hourly max, §16c)")
+        log(f"DOWN — {verdict}; next probe in 20 min (deadline cadence)")
         time.sleep(HOURLY)
 
 

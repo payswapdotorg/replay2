@@ -20,6 +20,17 @@ fabric (standalone process; freeze-safe: local HTTP/CDP only, zero sends):
     3. every cycle OK again -> log recovery line.
 
 Exit: never (daemon). Logs: logs/frame_guard.log. Outbox on persistent fail.
+
+v4 (2026-09-27 10:2x): DEAD-POINTER DETECTION. The stale-serving cache
+(lesson 102) keeps /frame at 200+JPEG even when active_tab.txt names a tab
+that no longer exists, so frame_ok() alone cannot see this freeze class —
+it recurred twice in one morning (07:38 + 10:25 manual fixes, lesson-178
+class: the mirror pointed at dead id 143C6E4A after overnight tab churn).
+Each cycle now ALSO verifies the active tab id exists as a live CDP page
+target; a dead pointer is switched to a healthy tab immediately (home tab
+preferred — no /c/ path), before the BAD ladder runs. Also: the guard was
+found DEAD itself (empty pidfile, no process, silent since Sep 25) — the
+supervisor does not reliably ensure it; relaunch is manual/launch_detached.
 """
 import json
 import os
@@ -66,6 +77,28 @@ def frame_ok():
         return head[:3] == b"\xff\xd8\xff"
     except Exception:
         return False
+
+
+def active_tab_alive():
+    """v4: True iff active_tab.txt names a live CDP page target.
+
+    A dead pointer is definitive (absent from /json/list); CDP being
+    unreachable is NOT a dead-tab verdict (tooling failure must not churn
+    the mirror — returns True so no switch fires on a transient CDP hiccup).
+    An empty/short id counts as dead (guard also covers boot races)."""
+    try:
+        aid = open(os.path.join(FLAGS, "active_tab.txt")).read().strip()
+    except Exception:
+        return False
+    if len(aid) != 32:
+        return False
+    try:
+        tabs = json.load(urllib.request.urlopen(
+            "http://127.0.0.1:9222/json/list", timeout=5))
+        return any(t.get("id") == aid and t.get("type") == "page"
+                   for t in tabs)
+    except Exception:
+        return True
 
 
 def replayd_pid():
@@ -128,6 +161,12 @@ async def t():
         "http://127.0.0.1:9222/json/list", timeout=5))
     pages = [x for x in tabs if x.get("type") == "page"
              and "chat.z.ai" in (x.get("url") or "")]
+    # v4: prefer the HOME tab (no /c/ path) so a switch lands somewhere
+    # stable, not inside a worker chat the machinery may be watching.
+    def _rank(x):
+        u = x.get("url") or ""
+        return 0 if ("/c/" not in u and u.rstrip("/").endswith("chat.z.ai")) else 1
+    pages.sort(key=_rank)
     for tab in pages:
         try:
             ws = await websockets.connect(tab["webSocketDebuggerUrl"])
@@ -170,11 +209,25 @@ def switch_healthy_tab():
 
 
 def main():
-    log(f"frame_guard v3 online — {INTERVAL}s cycle, trigger at {BAD_STREAK_TRIGGER} bad check(s)")
+    log(f"frame_guard v4 online — {INTERVAL}s cycle, trigger at {BAD_STREAK_TRIGGER} bad check(s), dead-pointer detection active")
     bad = 0
     alerted = False
     while True:
         ok = frame_ok()
+        if not active_tab_alive():
+            log("active-tab pointer DEAD (lesson-178 class; stale cache masks it) — switching")
+            if switch_healthy_tab():
+                time.sleep(10)
+                if frame_ok() and active_tab_alive():
+                    log("healthy-tab switch fixed the dead-pointer freeze")
+                    if alerted:
+                        outbox("[lead] Console mirror re-pointed to a live tab automatically (v4 guard).")
+                        alerted = False
+                    bad = 0
+                    time.sleep(INTERVAL)
+                    continue
+            log("dead-pointer switch did not fully recover — escalating to BAD ladder")
+            ok = False
         if ok:
             if bad:
                 log(f"frame RECOVERED (after {bad} bad checks)")
