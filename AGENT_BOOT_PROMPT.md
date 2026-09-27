@@ -3491,3 +3491,29 @@ chain: `head=payswapdotorg:${BRANCH}`.
     e.g. "QA-001 — ...", appears there while /c/ routing still fails)
     before declaring death. Distinguish: sidebar-listed = alive (wait);
     absent-from-sidebar + bounce = actually dead (re-dispatch).
+## Lesson 186 (2026-09-27 11:5x UTC — the R33 wave's transferable laws: the require-changes loop on a done session; the pointer-events inheritance class; the relay manifest format drift)
+
+186. **The require-changes loop works IN-CHAT on a harvested session, and the
+    worker's fix turn can find the defect's second half.** The R33-A cycle:
+    the lead harvested + verified + sent ONE surgical require-changes
+    (elementFromPoint probes as the evidence, the exact fix law, the
+    verification bar) into the SAME chat; the worker's fix turn (a) fixed
+    the collision exactly per the bar, (b) FOUND THE SECOND HALF the lead
+    missed (the pill inherited pointer-events:none from the stage root —
+    unclickable even where uncovered), (c) added the regression tests, (d)
+    re-ran every gate, (e) re-relayed. LESSONS: (1) the require-changes
+    message may STAGE-WITHOUT-PERSIST on a completed chat (the lesson-160/170
+    DOM-staged hazard) — verify the tree's message count grew, retry once,
+    and only then consider the -2 fresh-dispatch fallback; (2) a saturated
+    done-session chat RECOVERS when its tabs are closed (the stream-fetch
+    spin lives in the TABS, not the chat) — `dispatch_worker.py done` closes
+    them and a fresh tab reads the chat cleanly; (3) the frozen-turn corpse
+    signature (chars static 20+ min past the TTL wall, report posted
+    server-side) means: harvest what's relayed, mark done, let the fix ride
+    the in-chat continuation. ALSO: the relay manifest format DRIFTS per
+    worker (sha-then-path vs path-then-sha, bare lists vs hashed lines,
+    absolute /home/z/my-project prefixes) — the harvest must probe both
+    orders and normalize the prefix before fetching, and git-bundle-verify
+    is the integrity truth when a manifest hash mismatches (the R33-A bundle
+    was NEWER than its manifest — evidence-only commits after the manifest
+    write; the verify + lineage check decides, never the stale hash).
