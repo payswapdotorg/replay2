@@ -3641,3 +3641,44 @@ chain: `head=payswapdotorg:${BRANCH}`.
     /\bLive\b/ regex guard also false-positives when the section root's
     innerText includes the 'Live' heading above the live row (the whole
     section is one innerText blob), so per-ROW text matching is required.
+
+## Lesson 193 (2026-09-28 00:4x-01:2x UTC — the resurrection storm: killing recovery processes is futile while flags exist; the staged-resume cross-contamination; untitled = never admitted)
+
+193. **Four interlocking laws from the post-midnight churn.** (1) THE
+    RESURRECTION STORM: `kill`ing recover_capacity.py / dispatch creates
+    changes nothing — the SUPERVISOR relaunches them every cycle while any
+    `flags/capacity_recover*.json` exists (per-session flag files, not just
+    the legacy single flag). To actually stop a recovery cycle: kill the
+    processes AND delete every `capacity_recover*.json` (the .pid files are
+    cosmetic). (2) STAGED-RESUME CROSS-CONTAMINATION: the dispatcher's
+    staged-resume path ("composer holds N chars — Enter") matches ANY tab
+    with a pre-filled composer — with two concurrent create processes, one
+    process's Enter sends the OTHER process's staged prompt (observed: the
+    w111 create's "LANDED" URL actually held the w110 prompt, 7338 vs
+    7333 chars, found only by length-matching user messages across chats).
+    NEVER run two dispatch creates concurrently; a supervisor recovery for
+    session X and a manual create for session Y count as two. (3) UNTITLED
+    = NEVER ADMITTED: a session still titled "New Chat" 25+ min after a
+    prompt-landing was never admitted as an agent task (staged-resume
+    landings through the composer do NOT create tasks); only the full
+    verified create flow (or its assault) admits + titles a task. A dead
+    untitled chat is a dead end — delete it and re-dispatch fresh.
+    (4) LENGTH-FINGERPRINTING: chats_http detail gives user-message lengths
+    — 7333 vs 7338 vs 7963 vs 8292 chars uniquely identify which work
+    order landed in which chat when URLs lie; use it before adopting any
+    session record after churn.
+
+## Lesson 194 (2026-09-28 00:5x UTC — the phantom purge; server-side DELETE as routine hygiene)
+
+194. **Assault rounds leak phantom chats server-side and duplicate tasks
+    get ADMITTED by recovering processes you forgot about.** A
+    supervisor-resurrected recovery created a THIRD W110 chat that got
+    titled+admitted while the working W110 lane was already live — before
+    it could spawn and steal a sandbox slot, DELETE it server-side:
+    `fetch DELETE /api/v1/chats/{id}` with the site bearer token
+    (flags/chat_token) returns 200 and the chat is gone (the lesson-188
+    end-game pattern, now routine). Nightly hygiene: after any churn
+    window, list recent chats, length-fingerprint every entry, DELETE
+    duplicates + dead-end untitled landings, and release every stale
+    sandbox row (when NO worker is live, releasing ALL rows is safe —
+    per-row matching is only needed when live pods exist).
