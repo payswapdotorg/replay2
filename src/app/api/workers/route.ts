@@ -90,7 +90,7 @@ function readLines(p: string): string[] {
  *  launched by the operator flow log to /tmp/queue_watch_<name>.log;
  *  supervisor-resurrected ones append to logs/queue-watch.log (all
  *  sessions mixed). Read both, filter by session name, take the latest. */
-function parseWatcherLog(name: string): {
+function parseWatcherLog(name: string, origName?: string): {
   state: State;
   chars: number;
   moving: boolean;
@@ -98,8 +98,10 @@ function parseWatcherLog(name: string): {
   lastRoundMs: number;
 } {
   const sources = [
+    join("/tmp", `queue_watch_${origName || name}.log`),
     join("/tmp", `queue_watch_${name}.log`),
     join(SCRIPTS, "logs", "queue-watch.log"),
+    join(SCRIPTS, "logs", `queue_watch_${origName || name}.log`),
   ];
   // only the FRESHEST source is live — the other holds stale lines from a
   // previous incarnation (the mixed log also carries other sessions' lines,
@@ -113,7 +115,8 @@ function parseWatcherLog(name: string): {
       const m = l.match(
         /^\[(\S+)\]\s+\d{2}:\d{2}:\d{2}\s+(\S+)\s+chars=(\d+)\s+hits=\d+/,
       );
-      if (!m || m[1] !== name) continue;
+      // log lines carry the ORIGINAL-case session name (flauz-A2-tl2)
+      if (!m || (m[1] !== name && m[1] !== (origName || name))) continue;
       rounds.push({ raw: l, state: m[2], chars: Number(m[3]), src: live.p });
     }
   }
@@ -241,17 +244,20 @@ export async function GET() {
   // fight trail) + total create count (the assault cycle count)
   const latestAny = new Map<string, { rec: Rec; creates: number }>();
   const dispatched = new Set<string>();
+  const specName = new Map<string, string>(); // lowercase -> ORIGINAL-case name
   for (const r of recs) {
     const name = (r.name || "").toLowerCase();
     // r03 (single-wave era), r24w1 (wave era), r35a/r34b2 (suffixed era:
     // round + lane letter + optional attempt digit). The regex must accept
-    // every naming generation or the panel silently goes empty.
-    if (!/^r\d+[a-z0-9]*$/.test(name)) continue;
+    // every naming generation or the panel silently goes empty. flauz-*-tl2
+    // (the TL2 Agent OS surge era) joins the accepted generations.
+    if (!/^(?:r\d+[a-z0-9]*|flauz-[a-z0-9]+-tl2)$/.test(name)) continue;
     if (r.action === "void") {
       // a void is bookkeeping, not a dispatch
       continue;
     }
     dispatched.add(name);
+    specName.set(name, r.name || name); // spec files use the ORIGINAL case
     const cur = live.get(name);
     if (r.sent && r.url) {
       live.set(name, { rec: r, dispatches: (cur?.dispatches ?? 0) + 1 });
@@ -273,7 +279,12 @@ export async function GET() {
   // Control, not the live strip.
   const workers: WorkerInfo[] = [];
   for (const [name, { rec, dispatches }] of live) {
-    const specPath = join(FLAGS, `queue_watch.spec.${name}`);
+    // spec files use the ORIGINAL-case name (flauz-A2-tl2, not the
+    // lowercased key) — check both spellings or the lane goes invisible.
+    const origName = specName.get(name) || name;
+    const specPath = existsSync(join(FLAGS, `queue_watch.spec.${origName}`))
+      ? join(FLAGS, `queue_watch.spec.${origName}`)
+      : join(FLAGS, `queue_watch.spec.${name}`);
     if (!existsSync(specPath)) continue; // retired — no live watcher
     let tabPrefix = (rec.tab_id || "").slice(0, 8);
     if (existsSync(specPath)) {
@@ -285,8 +296,11 @@ export async function GET() {
       }
     }
     const complete = existsSync(join(FLAGS, `${name}-complete.marker`));
-    const log = parseWatcherLog(name);
-    const hbAge = Date.now() - mtimeMs(join(FLAGS, `queue_watch_heartbeat.${name}`));
+    const log = parseWatcherLog(name, origName);
+    const hbPath = existsSync(join(FLAGS, `queue_watch_heartbeat.${origName}`))
+      ? join(FLAGS, `queue_watch_heartbeat.${origName}`)
+      : join(FLAGS, `queue_watch_heartbeat.${name}`);
+    const hbAge = Date.now() - mtimeMs(hbPath);
     const watcherAlive = hbAge >= 0 && hbAge < 600_000;
     const head = rec.prompt_file ? readLines(rec.prompt_file)[0] || "" : "";
     const { title, lane } = parseHeader(head);
@@ -299,7 +313,7 @@ export async function GET() {
       chatUrl: rec.url || null,
       tabId: tabPrefix || null,
       dispatches,
-      lastRoundMs: mtimeMs(join("/tmp", `queue_watch_${name}.log`)),
+      lastRoundMs: mtimeMs(live.p),
       watcherAlive,
       lastStateLine: log.lastLine.slice(0, 200),
     });
