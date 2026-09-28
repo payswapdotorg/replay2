@@ -692,7 +692,7 @@ def prepare_clone(base_sha, tag):
 
 
 OVERLAY_SKIP = re.compile(
-    r"(^|/)(_podscratch/|_podtree/|report_excerpt|REQUIRED_CHANGES|"
+    r"(^|/)(_podscratch/|_podtree/|spec/|report_excerpt|REQUIRED_CHANGES|"
     r"lead_review|lead_verdict|\.tgz$)")
 
 
@@ -849,8 +849,19 @@ def review_and_deliver(name, chat, harvest_dir, base_sha):
                     f"{len(new_files)}. Provenance: lead_review.json in the "
                     f"harvest."})
         num = pr["number"]
-        mg = gh("PUT", f"pulls/{num}/merge", {"merge_method": "merge"})
-        merge_sha = mg.get("sha", "")
+        # 2026-09-28 02:25 lesson: PUT /pulls/N/merge returns 405 while the
+        # PR is not yet mergeable (GitHub computes mergeability async) —
+        # poll-and-retry instead of parking the whole delivery.
+        merge_sha = ""
+        for _ in range(10):
+            try:
+                mg = gh("PUT", f"pulls/{num}/merge",
+                        {"merge_method": "merge"})
+                merge_sha = mg.get("sha", "")
+                if merge_sha:
+                    break
+            except Exception:
+                time.sleep(6)
         if not merge_sha:
             outbox(f"[{name}] REVIEW PARKED: merge API refused PR #{num}")
             return verdict("parked", {"reason": f"merge refused PR #{num}",
@@ -994,6 +1005,21 @@ def cycle(s):
             continue
         if st in ("in_review",):
             continue                      # parked for the interactive Lead
+        # 2026-09-28 01:42 lesson (second attempt): the spawn must precede
+        # chat resolution TOO — an r2 assault can void the harvested chat's
+        # registry record, sending the flow into the grinding path before
+        # the spawn. The harvested member carries its own chat in state.
+        if st == "harvested" and not review_child_alive():
+            r = sh([PY, os.path.join(BASE, "dfork_launch.py"),
+                    f"/tmp/review_{name}.log", PY,
+                    os.path.join(BASE, "resident_wave_loop.py"),
+                    "--review", name, o.get("chat") or "",
+                    o.get("harvest") or "", fr["currentBase"]], timeout=60)
+            if r.returncode == 0:
+                o["status"] = "in_review_running"
+                outbox(f"[{name}] review child launched (clean-room "
+                       f"differential battery)")
+            continue
         cand = live_chat_for(name)
         chat = cand[0] if cand else None
         if not chat:
@@ -1134,17 +1160,6 @@ def cycle(s):
             if pp and not grinder_alive(name):
                 launch_assault(name, pp)
             continue
-        # harvested -> spawn the detached review child (one at a time)
-        if o.get("status") == "harvested" and not review_child_alive():
-            r = sh([PY, os.path.join(BASE, "dfork_launch.py"),
-                    f"/tmp/review_{name}.log", PY,
-                    os.path.join(BASE, "resident_wave_loop.py"),
-                    "--review", name, o.get("chat", chat),
-                    o.get("harvest", ""), fr["currentBase"]], timeout=60)
-            if r.returncode == 0:
-                o["status"] = "in_review_running"
-                outbox(f"[{name}] review child launched (clean-room "
-                       f"differential battery)")
 
 
 def main():
