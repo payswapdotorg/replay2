@@ -1144,8 +1144,15 @@ def cycle(s):
             elif o.get("status") != "sent":
                 o["status"] = "sent"
             continue
-        elif msgs >= 2 and (grew or qw_fresh or quiet < 2400
-                           or age < 1800 or (arich and age < 3600)):
+        elif msgs >= 2 and (grew or (qw_fresh and quiet < 3600)
+                           or quiet < 2400 or age < 1800
+                           or (arich and age < 3600)):
+            # 2026-09-28 04:10 zombie-guard: a RESPAWNED watch (the ring
+            # re-arms specs) keeps qw_fresh true forever — a watched turn
+            # with 1h+ of no batch flush and no report is a zombie (the
+            # 93f3c711 case: frozen at 733 for 55 min while its re-armed
+            # watch polled a collapsed DOM). qw_fresh only counts within
+            # the 1h window; beyond that the death verdict fires.
             if st != "live":
                 outbox(f"[{name}] LIVE — chat {chat[:8]} generating "
                        f"(msgs={msgs}, batchChars={bchars}, "
