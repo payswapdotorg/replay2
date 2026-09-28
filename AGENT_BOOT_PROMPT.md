@@ -3848,3 +3848,42 @@ endpoint, GET the registry list (project count + names), negative control.
 1. **The console's workers-panel must accept EVERY naming era — INCLUDING CASE.** The wave-2 lanes (flauz-A2-tl2 etc.) were invisible to the operator's live-orchestration strip for two stacked reasons: (a) the name filter accepted only r\d+ generations (lesson 197's class, recurring with every new era), and (b) the API lowercases session names for map keys but spec/log/heartbeat FILES carry the ORIGINAL case — existsSync(`queue_watch.spec.flauz-a2-tl2`) is false while the real file is `queue_watch.spec.flauz-A2-tl2`. LAW: every path lookup over session-derived filenames must try the ORIGINAL-case name first, lowercase second; and the name regex gets extended AT DISPATCH TIME whenever a new naming era begins, not after the operator reports an empty panel.
 2. **Held session tabs on BUSY agent pages wedge exactly like completed-chat tabs.** The queue_watches for S1/S2 read their own session tabs and got WebSocketTimeoutException every cycle (chars=0) while the CHATS were verifiably generating (fresh-tab reads showed real progress). The watch's busy: state is honest about this ("tab busy, not dead") and the tab is alive in CDP — but a wedged tab is one crash away from a tabloss verdict, which fires the assault (void + re-dispatch) against a HEALTHY session. THE HOLD AS AN ASSAULT SUPPRESSOR: `flags/outage_hold.txt` makes hold_active() true for every queue_watch, suppressing assault re-dispatch globally while a TRUSTED watcher (fresh-tab-per-read) owns completion detection. The hold is not just for outages — it is the isolation switch between watch generations.
 3. **Two watchers, one job split by trust.** The legacy queue_watch (held-tab DOM reads, supervisor-resurrectable, the console's liveness source) provides heartbeats + panel state; the fresh-tab watcher (lesson-196 hardened) provides TRUTH (completion + in-window harvest + S3 dispatch). Never let the legacy watcher's verdicts (chars=0 on a wedged tab) drive dispatch decisions when a fresh-tab watcher contradicts them.
+## Lesson 199: the freeze-break endgame — reclamation cycles, honest-BLOCKED stubs, and the double landing (2026-09-28 06:5x-08:0x UTC — AISE QA wave closure)
+
+199. **Five interlocking laws from the QA-wave endgame.** (1) **The
+    reclamation cycle during a provisioning freeze**: fighters land chats
+    that sit queued ~20 min then get RECLAIMED server-side (absent from the
+    chats list; the tab bounces home) — a landed-and-queued packet is NOT
+    durable (extends lesson 181) and the cycle repeats until the platform
+    recovers. The fighters' continuous assault is correct and self-healing
+    through the whole cycle. (2) **The honest-BLOCKED stub signature**: a
+    landed chat whose assistant reply carries the report format with
+    `Status: BLOCKED` + "no tool access" + the base SHA transcribed from
+    the packet = the toolless stub (lesson 186). batch_probe's
+    filled_report gate FALSE-POSITIVES on these (the honest BLOCKED report
+    quotes hex40 SHAs inside the marker window) — adjudicate by READING the
+    Status/Branch/Verify lines, never by the gate alone. The
+    anti-fabrication discipline held across every stub (workers confessed
+    toollessness instead of inventing output — the prompt's CRITICAL
+    ANTI-FABRICATION RULE is doing its job). (3) **The freeze-break double
+    landing**: when allocations resumed (after 13h), BOTH concurrent
+    fighters landed VERIFIED with live sandboxes within 60s of each other —
+    the multi-hour fight machinery needed zero intervention at the break;
+    watch_landing's new-workspace-row signal is the earliest detector, and
+    the flag-cleared = double-verified-landing semantics held. (4) **Dead-
+    chat hygiene is a full cycle**: after reclamation, kill the watches +
+    rm the markers + prune endgame_lanes.json BEFORE re-arming fighters,
+    then re-register on the fresh landing (the supervisor relaunches the
+    completion watch within 15s of a new marker). (5) **The purge age-guard
+    saves landings**: chat-hygiene deletion (lesson 194) must ALWAYS keep a
+    >10-minute recency guard — the two chats that became the winning
+    landings were 8-9 minutes old at purge time and survived only because
+    of it. Also proven this cycle: the out-of-lane flag pattern (a worker
+    CORRECTLY refuses a cross-surface fix it discovers, names file:line in
+    its report Notes, and the Lead converts it into a surgical successor
+    work order — QA-006 for the deployed-checks selector — the lane
+    discipline working exactly as designed); and the estate cadence under
+    fighter churn: purge stale tabs, reload before diagnosing a static
+    lane tab, and fresh-tab-at-same-URL for wedged renderers (the turn
+    keeps running server-side; the batch endpoint commits only at turn
+    END — judge mid-run liveness by DOM growth, not batch chars).
