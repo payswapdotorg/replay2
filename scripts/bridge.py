@@ -324,12 +324,50 @@ def gh(repo, path, token=""):
         return {}
 
 
+def _jwt_email(tok):
+    """Decode any email-looking string from a JWT payload (guest discrimination).
+    2026-09-28 reset lesson (same class as the 2026-09-15 reset-2 lesson in
+    watcher.py): a fresh profile auto-creates a GUEST session whose home page
+    ALSO renders a composer — 'has composer' alone false-positives
+    'logged-in' on the console while dispatch is impossible. Only a
+    non-guest JWT email proves an operator login."""
+    try:
+        import re
+        parts = str(tok).split(".")
+        if len(parts) < 2:
+            return ""
+        seg = parts[1]
+        seg += "=" * (-len(seg) % 4)
+        payload = base64.urlsafe_b64decode(seg.encode()).decode("utf-8", "replace")
+        m = re.search(r"[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}", payload)
+        return m.group(0) if m else ""
+    except Exception:
+        return ""
+
+
 def _login_state(tab, connect_timeout=10, eval_timeout=8):
-    """Generic login heuristic: a visible composer means a session exists;
-    a 'Sign in' affordance means logged out."""
+    """Login state with GUEST discrimination (2026-09-28): decode the JWT
+    email INSIDE the open CDP connection — guest-*@guest.com means
+    logged-out(guest) even when a composer renders (guest home pages have
+    composers too; that heuristic alone produced a false 'logged-in' for
+    ~1h after the reset while the wave-3 dispatch gate stayed correctly
+    shut)."""
     cdp = channel.CDP(tab["webSocketDebuggerUrl"], timeout=connect_timeout)
     try:
         body = cdp.eval("document.body.innerText || ''", timeout=eval_timeout) or ""
+        tok = ""
+        try:
+            tok = cdp.eval(
+                "(localStorage.getItem('token')||'').replace(/^\"|\"$/g,'')",
+                timeout=max(2, eval_timeout - 2)) or ""
+        except Exception:
+            tok = ""
+        email = _jwt_email(tok)
+        if email:
+            if "guest" in email.lower():
+                return "logged-out(guest)"
+            return "logged-in(%s)" % email.split("@")[0]
+        # no decodable email in this tab: fall back to the composer heuristic
         has_composer = cdp.eval(
             "!!document.querySelector('textarea, #chat-input, div[contenteditable=true]')",
             timeout=max(2, eval_timeout - 2))
@@ -370,11 +408,19 @@ def cmd_status():
             except Exception:
                 continue
             states.append(st)
-            if st == "logged-in":
+            if st.startswith("logged-in"):
                 break
-        if "logged-in" in states:
-            out["browser_login"] = "logged-in"
-        elif "logged-out" in states:
+        # 2026-09-28 guest discrimination: a JWT non-guest email wins; the
+        # guest marker (logged-out(guest)) is stronger than a bare
+        # logged-out because it also invalidates composer-only readings.
+        li = [s for s in states if s.startswith("logged-in")]
+        guest = [s for s in states if s == "logged-out(guest)"]
+        plain_out = [s for s in states if s == "logged-out"]
+        if li:
+            out["browser_login"] = li[0]
+        elif guest:
+            out["browser_login"] = "logged-out(guest)"
+        elif plain_out:
             out["browser_login"] = "logged-out"
         elif states:
             out["browser_login"] = states[0]
