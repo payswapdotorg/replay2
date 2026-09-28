@@ -1,21 +1,21 @@
 {
- "updatedAt": "2026-09-28T20:05:00.000Z",
+ "updatedAt": "2026-09-28T23:55:00.000Z",
  "mission": {
   "title": "WebFlix Productionization",
-  "subtitle": "R36-R40 YouTube-parity waves \u2014 resident Lead orchestration until roadmap completion",
+  "subtitle": "R36-R40 YouTube-parity waves — resident Lead orchestration until roadmap completion",
   "baseline": {
    "main": "acff71b8b363ba6f85ab7a3e9b08ca7ba3e5a419",
    "tests": 5265,
    "roadmap": "docs/plans/2026-09-28-youtube-parity-survey.md"
   },
-  "cadence": "resident lead \u2014 monitor \u2192 harvest \u2192 review \u2192 approve/require-changes \u2192 dispatch next"
+  "cadence": "resident lead — monitor → harvest → review → approve/require-changes → dispatch next"
  },
  "lanes": [
   {
    "id": "r35",
    "name": "R35 Series",
    "scope": "journey-grammar re-encode + defect-candidate closure",
-   "status": "COMPLETE \u2014 r35b merged 37effa3 (battery 5297/5296/1/0, relay sha-verified)",
+   "status": "COMPLETE — r35b merged 37effa3 (battery 5297/5296/1/0, relay sha-verified)",
    "items": [
     "r35b"
    ]
@@ -28,7 +28,7 @@
     "r36",
     "r37"
    ],
-   "status": "r36 MERGED (4f6edbe, lead-A). r37 TWO-LEAD RESOLUTION: lead-A redo-descendant c2a2c46b COMPLETE 19:37Z (report green: battery 5356/5355/1/0 = +59 lane tests, J45 PASS 30 + J46 PASS 21; relay harvested 90/90 sha EXACT, clean-room review running); lead-B revival claim binding until ~23:30Z lapse \u2014 MERGE HELD per ledger fd2048e"
+   "status": "COMPLETE — r36 MERGED (4f6edbe) + r37 MERGED (2dc3da2, evidence 3010137; merge-head gates green 5356/5355/1/0, J45 PASS 30 + J46 PASS 21; hold released per ledger fbc859c)"
   },
   {
    "id": "wave2",
@@ -38,7 +38,7 @@
     "r38a",
     "r38b"
    ],
-   "status": "BOTH LANES GENERATING (lead-A): r38a chat 3cc258fa (19:55Z, third attempt \u2014 two phantom sends wedged in the crunch window; the clean landing followed capacity recovery) + r38b chat 271c6d81 (19:44Z, under the standing 16:52Z claim)"
+   "status": "CLOSED — r38b MERGED (03a0dd9, evidence 3707c05; merge-head battery 5418/5417/1/0, J44/J45/J46 PASS; two one-place composes DEFERRED per DIVERGENCES rows 1-2); r38a DEAD UNLANDED (the 19:55Z dispatch died in the 20:01Z generation stall — workspace bare scaffold, zero work; no re-dispatch per the wind-down)"
   },
   {
    "id": "wave3",
@@ -47,7 +47,7 @@
    "items": [
     "r39"
    ],
-   "status": "CLAIMED by lead-B 19:30Z (ledger 530dea8) \u2014 dependency-gated: dispatches AFTER R37 + R38-A merge; journeys J49 (go live end-to-end) + J50 (membership + thanks) per the mapping fix; the resident wave l"
+   "status": "NOT DISPATCHED — superseded: operator directive 21:54Z moves the attempt to webflix-2.0 (ledger 4c1316c); wind-down honored, nothing new dispatched"
   },
   {
    "id": "wave4",
@@ -56,13 +56,13 @@
    "items": [
     "r40"
    ],
-   "status": "UNCLAIMED \u2014 natural fit for lead-A's next freed slot (depends R36+R38-A)"
+   "status": "VOIDED by lead-STEEL (r40 never spawned, ledger 4c1316c) — superseded with the repo"
   }
  ],
  "items": [
   {
    "id": "r35b",
-   "title": "The 32-spec journey re-encode \u2014 J01\u2013J39 stale-grammar specs brought to current product grammar",
+   "title": "The 32-spec journey re-encode — J01–J39 stale-grammar specs brought to current product grammar",
    "lane": "R35 Series",
    "status": "merged",
    "branch": "wfx/r35b/journeys",
@@ -71,7 +71,7 @@
   },
   {
    "id": "r36",
-   "title": "Channels \u2014 channel pages, subscriptions, channel-level navigation",
+   "title": "Channels — channel pages, subscriptions, channel-level navigation",
    "lane": "YouTube Parity Wave 1",
    "status": "merged",
    "branch": "main @ 4f6edbe",
@@ -80,47 +80,47 @@
   },
   {
    "id": "r37",
-   "title": "Live + live-chat \u2014 live streaming surface and live chat (J45+J46)",
+   "title": "Live + live-chat — live streaming surface and live chat (J45+J46)",
    "lane": "YouTube Parity Wave 1",
-   "status": "complete",
-   "branch": null,
-   "notes": "COMPLETE 19:37:56 \u2014 lead-A assault re-dispatch chat c2a2c46b (the 16:25 redo died in the capacity event; this 18:02 re-dispatch was unknown to the 19:25 ledger claim). Lane head 5b578a0; relay harvested 90/90 sha EXACT to /home/z/webflix-harvest/r37 (bundle verified base 37effa3). Clean-room review in progress. MERGE HELD per lead-B work-rich revival claim (ledger 530dea8 + fd2048e; lapse ~23:30Z \u2014 then this delivery becomes canonical).",
+   "status": "merged",
+   "branch": "main @ 2dc3da2 (evidence 3010137)",
+   "notes": "MERGED 23:2xZ — hold RELEASED per ledger fbc859c (lead-STEEL); merge-head gates all green (battery 5356/5355/1/0 EXACT, J45 PASS 30 + J46 PASS 21); evidence/r37-merge/merge-verification.md. Worker chat c2a2c46b, lane head 5b578a0, relay 90/90 sha EXACT.",
    "worker": "GLM-5.3 + Full-Stack (agents tab)"
   },
   {
    "id": "r38a",
-   "title": "Upload \u2014 video upload flow (J47)",
+   "title": "Upload — video upload flow (J47)",
    "lane": "YouTube Parity Wave 2",
-   "status": "dispatched",
+   "status": "dead-unlanded",
    "branch": null,
-   "notes": "LEAD-A ACTIVE \u2014 THIRD dispatch landed clean 19:55Z: chat 3cc258fa GENERATING (watcher E0A34529). Phantom lesson: 19:31-19:36 sends b01c2014 + 8417f316 were DOM-only phantoms (absent-from-list, detailHttp 500 \u2014 the send-during-crunch wedge class); capacity freed by 19:44 (r38b landed clean, then this one).",
+   "notes": "DEAD UNLANDED — the 19:55Z dispatch (3cc258fa) streamed 53k chars of plan then froze at 20:01Z (platform generation stall); stall_recovery closed the dead-turn tab 20:31Z; chat activity stopped 20:35:37Z; the workspace holds ONLY the bare sandbox scaffold (no clone, no relay, zero work product). Closed per the wind-down (no re-dispatch — the repo is superseded).",
    "worker": "lead-A's worker"
   },
   {
    "id": "r38b",
-   "title": "Studio \u2014 creator studio surface (J48)",
+   "title": "Studio — creator studio surface (J48)",
    "lane": "YouTube Parity Wave 2",
-   "status": "dispatched",
-   "branch": null,
-   "notes": "LEAD-A ACTIVE \u2014 chat 271c6d81 GENERATING since 19:44Z (prompt 12867 VERIFIED, watcher 243C8388, marker: R38B COMPLETION REPORT). Under the standing 16:52Z ledger claim.",
+   "status": "merged",
+   "branch": "main @ 03a0dd9 (evidence 3707c05)",
+   "notes": "MERGED 23:4xZ — the 19:44Z dispatch (271c6d81) completed server-side ~21:22Z AFTER the 20:31 tab close (the r37 pattern: server sessions outlive their tabs); completion server-confirmed (probe reportInAssistant, 1.46MB), relay-harvested 8/8 sha EXACT, clean-room green (battery 5359/5358/1/0, J44 PASS 57, J48 worker evidence 71/9 standing — local re-run env-blocked in the documented OOM class, dmesg recorded). Merge-head gates: battery 5418/5417/1/0, J44/J45/J46 PASS. Two one-place merge-time composes DEFERRED (DIVERGENCES rows 1-2 — the gates-of-record law).",
    "worker": "lead-A's worker"
   },
   {
    "id": "r39",
    "title": "User-channel / go-live / monetization (J49+J50)",
    "lane": "YouTube Parity Wave 3",
-   "status": "staged",
+   "status": "superseded",
    "branch": null,
-   "notes": "CLAIMED by lead-B 19:30Z (ledger 530dea8). Dependency-gated: dispatch AFTER R37 + R38-A merge (survey: depends R36+R37+R38-A). Packet to be built from survey \u00a7WAVE R39 at the then-current main base; honest-transport law (local wallet, typed states) throughout.",
+   "notes": "NOT DISPATCHED — the operator's 21:54Z directive supersedes webflix-1.0 with webflix-2.0 (ledger 4c1316c); lead-B's claim lapses with the wind-down.",
    "worker": null
   },
   {
    "id": "r40",
    "title": "Discovery / playlists / notifications / premieres (J51+)",
    "lane": "YouTube Parity Wave 4",
-   "status": "pending",
+   "status": "voided",
    "branch": null,
-   "notes": "UNCLAIMED (depends R36+R38-A) \u2014 natural fit for lead-A's next freed slot per the ledger.",
+   "notes": "VOIDED by lead-STEEL (never spawned, ledger 4c1316c wind-down).",
    "worker": null
   }
  ],
@@ -129,19 +129,19 @@
    "id": "replay-stack",
    "label": "Replay stack",
    "status": "ok",
-   "detail": "Canonical payswapdotorg/replay2 \u2014 Chrome CDP :9222 (Chrome 153), replayd :3100, console :3000 (Replay Console identity), supervisor+watcher ring up since 14:22Z"
+   "detail": "Canonical payswapdotorg/replay2 — Chrome CDP :9222 (Chrome 153), replayd :3100, console :3000 (Replay Console identity), supervisor+watcher ring up since 14:22Z"
   },
   {
    "id": "operator-login",
    "label": "Operator login",
    "status": "ok",
-   "detail": "ali12 session restored via JWT injection (lesson 114) \u2014 /api/v1/auths ground-truth verified; browser_login: logged-in"
+   "detail": "ali12 session restored via JWT injection (lesson 114) — /api/v1/auths ground-truth verified; browser_login: logged-in"
   },
   {
    "id": "generation-outage",
    "label": "Generation queue (ali12)",
    "status": "degraded",
-   "detail": "OUTAGE since 16:11Z \u2014 six consecutive DOWN probes 16:41\u219219:18Z (fresh chats, zero assistant replies; possibly account-scoped). Outage-hold active; backend_probe_watch (30-min cadence) will touch backend_recovered.txt on first HEALTHY; post_outage_recovery (revival-only since 19:24Z) then fires the r37 revival re-send"
+   "detail": "OUTAGE since 16:11Z — six consecutive DOWN probes 16:41→19:18Z (fresh chats, zero assistant replies; possibly account-scoped). Outage-hold active; backend_probe_watch (30-min cadence) will touch backend_recovered.txt on first HEALTHY; post_outage_recovery (revival-only since 19:24Z) then fires the r37 revival re-send"
   },
   {
    "id": "resident-loop",
@@ -153,19 +153,19 @@
    "id": "production",
    "label": "Production deploy",
    "status": "ok",
-   "detail": "webflix-steel.vercel.app \u2014 auto-deploys on merge; latest code-merge main 37effa3 (docs-only commits since)"
+   "detail": "webflix-steel.vercel.app — auto-deploys on merge; latest code-merge main 37effa3 (docs-only commits since)"
   },
   {
    "id": "credentials",
    "label": "Credentials",
    "status": "ok",
-   "detail": "GITHUB_PAT \u2713 (push-verified vs payswapdotorg), VERCEL_TOKEN \u2713, E2B \u2713, Neon \u2713, OpenRouter \u2713, Composio \u2713, Upstash \u2713 (MCP live; live endpoint polished-yeti-167554), Cloudflare \u2713, LiveKit \u2713 \u2014 persisted ~/.bashrc"
+   "detail": "GITHUB_PAT ✓ (push-verified vs payswapdotorg), VERCEL_TOKEN ✓, E2B ✓, Neon ✓, OpenRouter ✓, Composio ✓, Upstash ✓ (MCP live; live endpoint polished-yeti-167554), Cloudflare ✓, LiveKit ✓ — persisted ~/.bashrc"
   },
   {
    "id": "two-lead-ledger",
    "label": "Wave-claim ledger",
    "status": "ok",
-   "detail": "docs/plans/2026-09-28-wave-claims.md on WebFlix main @ 530dea8 \u2014 lead-B (this console): R37 (work-rich revival) + R39 (dependency-gated); lead-A (steel container/ali10): R38-A + R38-B + R40-eligible. Claim-before-dispatch law; claims binding 4h"
+   "detail": "docs/plans/2026-09-28-wave-claims.md on WebFlix main @ 530dea8 — lead-B (this console): R37 (work-rich revival) + R39 (dependency-gated); lead-A (steel container/ali10): R38-A + R38-B + R40-eligible. Claim-before-dispatch law; claims binding 4h"
   }
  ],
  "timeline": [
@@ -192,22 +192,22 @@
   {
    "ts": "2026-09-28T15:50Z",
    "kind": "info",
-   "text": "r37 re-dispatched (zombie voided) + r38a + r38b dispatched at base 37effa3 \u2014 all VERIFIED, 3/3 slots live, watches armed"
+   "text": "r37 re-dispatched (zombie voided) + r38a + r38b dispatched at base 37effa3 — all VERIFIED, 3/3 slots live, watches armed"
   },
   {
    "ts": "2026-09-28T16:12Z",
    "kind": "error",
-   "text": "generation outage opened: r37's turn froze mid-M4 (DOM frozen at 43233 chars, server committed nothing); stall_recovery closed the dead tab but the lesson-185 server-alive gate suppressed the assault \u2014 zombie-limbo deadlock (lesson 201)"
+   "text": "generation outage opened: r37's turn froze mid-M4 (DOM frozen at 43233 chars, server committed nothing); stall_recovery closed the dead tab but the lesson-185 server-alive gate suppressed the assault — zombie-limbo deadlock (lesson 201)"
   },
   {
    "ts": "2026-09-28T16:27:44.000Z",
    "kind": "warn",
-   "text": "TL-Station (ali10) 'console handover': re-dispatched r37/r38a/r38b under ali10 (acfa1ad9/2f06e2e8/0955ab28) after misreading ali12 account-scoped unreachability as session death \u2014 later formalized as lead-A's ledger claims"
+   "text": "TL-Station (ali10) 'console handover': re-dispatched r37/r38a/r38b under ali10 (acfa1ad9/2f06e2e8/0955ab28) after misreading ali12 account-scoped unreachability as session death — later formalized as lead-A's ledger claims"
   },
   {
    "ts": "2026-09-28T16:32Z",
    "kind": "error",
-   "text": "backend_probe: DOWN \u2014 outage protocol: outage_hold set; backend_probe_watch armed (30-min); r38a/r38b queued-zombies voided; post_outage_recovery daemon armed"
+   "text": "backend_probe: DOWN — outage protocol: outage_hold set; backend_probe_watch armed (30-min); r38a/r38b queued-zombies voided; post_outage_recovery daemon armed"
   },
   {
    "ts": "2026-09-28T16:47Z",
@@ -222,17 +222,17 @@
   {
    "ts": "2026-09-28T19:30Z",
    "kind": "success",
-   "text": "LEDGER UPDATE PUSHED (WebFlix main @ 530dea8): R37 \u2192 lead-B (work-rich revival, dispatched 15:5xZ predating the 16:25Z redo; M1-M3 preserved; redo retire-requested; lapse clause ~23:30Z); R38-A/R38-B defused to lead-A; R39 \u2192 lead-B (dependency-gated, J49+J50); R40 left for lead-A"
+   "text": "LEDGER UPDATE PUSHED (WebFlix main @ 530dea8): R37 → lead-B (work-rich revival, dispatched 15:5xZ predating the 16:25Z redo; M1-M3 preserved; redo retire-requested; lapse clause ~23:30Z); R38-A/R38-B defused to lead-A; R39 → lead-B (dependency-gated, J49+J50); R40 left for lead-A"
   },
   {
    "ts": "2026-09-28T19:24Z",
    "kind": "success",
-   "text": "wave loop unblocked: /home/z/Zeck re-cloned (reset-wiped; the loop was blind since 14:02) \u2014 PPR-019 idle on prompt-missing"
+   "text": "wave loop unblocked: /home/z/Zeck re-cloned (reset-wiped; the loop was blind since 14:02) — PPR-019 idle on prompt-missing"
   },
   {
    "ts": "2026-09-28T19:37Z",
    "kind": "success",
-   "text": "r37 COMPLETE (c2a2c46b server-confirmed marker) \u2014 harvested 90/90 sha EXACT; clean-room review started; merge held per ledger"
+   "text": "r37 COMPLETE (c2a2c46b server-confirmed marker) — harvested 90/90 sha EXACT; clean-room review started; merge held per ledger"
   },
   {
    "ts": "2026-09-28T19:44Z",
@@ -242,13 +242,17 @@
   {
    "ts": "2026-09-28T20:00Z",
    "kind": "success",
-   "text": "r37 clean-room review COMPLETE \u2014 all gates green at 5b578a0 (battery 5356/5355/1/0 EXACT, J45 30 + J46 21 + J03 6 + J44 57 PASS, typecheck/contract/lane-check green); merge-ready, held per ledger. r38a 3cc258fa + r38b 271c6d81 both generating after the phantom-send wedge cleared."
+   "text": "r37 clean-room review COMPLETE — all gates green at 5b578a0 (battery 5356/5355/1/0 EXACT, J45 30 + J46 21 + J03 6 + J44 57 PASS, typecheck/contract/lane-check green); merge-ready, held per ledger. r38a 3cc258fa + r38b 271c6d81 both generating after the phantom-send wedge cleared."
+  },
+  {
+   "ts": "2026-09-28T23:55:00.000Z",
+   "event": "WIND-DOWN EXECUTED (lead-ALI10 console): R37 MERGED 2dc3da2 + R38B MERGED 03a0dd9 (both clean-room verified, merge-head gates green, pushed to origin main 3707c05 + ledger fbbef9b); R38A dead unlanded (zero work, honest record); r39 not dispatched + r40 voided — webflix-1.0 superseded by the operator's webflix-2.0 directive; no new dispatches from this console."
   }
  ],
  "production": {
   "url": "https://webflix-steel.vercel.app",
   "deployedAt": "2026-09-28T07:51:00.000Z",
-  "status": "live \u2014 auto-deploys on merge (latest code-merge 37effa3)"
+  "status": "live — auto-deploys on merge (latest code-merge 37effa3)"
  },
  "baseline": {
   "main": "37effa325c5060e14afda7e07db5b7eb61e45d9e",
