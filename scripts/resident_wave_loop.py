@@ -66,7 +66,9 @@ PROMPT_DIRS = [
     "/home/z/my-project/recovery/worker-prompts",
 ]
 VERIFY = "/tmp/wave-verify"
-MARKER = "END REPORT"
+MARKER = "COMPLETION REPORT"  # 2026-09-28 fix: the filled-report window follows the HEADLINE,
+                            # not the END REPORT terminator (c7d84c84 delivered a full
+                            # report that probed false for 8 hours)
 CYCLE = 60
 STALE_S = 30 * 60
 PROBE_ERR_LIMIT = 5
@@ -676,8 +678,8 @@ def prepare_clone(base_sha, tag):
 
 
 OVERLAY_SKIP = re.compile(
-    r"(^|/)(_podscratch/|report_excerpt|REQUIRED_CHANGES|lead_review|"
-    r"lead_verdict|\.tgz$)")
+    r"(^|/)(_podscratch/|_podtree/|report_excerpt|REQUIRED_CHANGES|"
+    r"lead_review|lead_verdict|\.tgz$)")
 
 
 def overlay(clone, harvest_dir):
@@ -1029,6 +1031,23 @@ def cycle(s):
         s["probe_errs"][name] = 0
         age = p.get("now", 0) - p.get("updated", 0)
         msgs = p.get("msgs", 0)
+        # 2026-09-28 00:10 THE PHANTOM-DEATH FIX: the chat-level updated_at
+        # freezes at the stub for server-side turns (c7d84c84 ran 2h15m
+        # invisible, delivered a full report at 23:59:43 while the loop had
+        # declared it dead at 22:15). The TRUE liveness channel is the
+        # batch-store assistant payload size (batchChars) — it grows on
+        # every block flush. A turn is LIVE while batchChars grows; DEAD
+        # only after 40 min of NO growth and no report.
+        bchars = ((p.get("batch") or {}).get("chars")) or 0
+        if o.get("chat") != chat:
+            o["batch_chars"] = 0
+            o["batch_grew_at"] = int(time.time())
+        grew = bchars > (o.get("batch_chars") or 0) + 50
+        if grew:
+            o["batch_chars"] = bchars
+            o["batch_grew_at"] = int(time.time())
+        quiet = int(time.time()) - o.get(
+            "batch_grew_at", o.get("since") or int(time.time()))
         # work-rich = the assistant produced real content (the calibrated
         # 900s/3600s stuck doctrine: long tool calls can go quiet ~1h)
         arich = any(m.get("role") == "assistant" and m.get("len", 0) > 2000
@@ -1067,26 +1086,29 @@ def cycle(s):
             elif o.get("status") != "sent":
                 o["status"] = "sent"
             continue
-        elif msgs >= 2 and (age < 1800 or (arich and age < 3600)):
+        elif msgs >= 2 and (grew or quiet < 2400 or age < 1800
+                           or (arich and age < 3600)):
             if st != "live":
                 outbox(f"[{name}] LIVE — chat {chat[:8]} generating "
-                       f"(msgs={msgs}, age {age}s, work-rich={arich})")
+                       f"(msgs={msgs}, batchChars={bchars}, "
+                       f"quiet {quiet}s, chatAge {age}s)")
             o["status"] = "live"
             o["chat"] = chat
             o["since"] = int(time.time())
             continue
         else:
-            outbox(f"[{name}] worker turn DEAD (chat {chat[:8]}, static "
-                   f"{age}s, work-rich={arich}) — partial harvest + "
-                   f"release + re-dispatch (never-wait)")
+            outbox(f"[{name}] worker turn DEAD (chat {chat[:8]}, batch "
+                   f"static {quiet}s @ {bchars} chars, chatAge {age}s) — "
+                   f"partial harvest + release + re-dispatch (never-wait)")
             dest, info = harvest_pod(name, chat, partial=True)
             if dest:
                 outbox(f"[{name}] partial harvested {info} -> {dest}")
             release_dead_slots()
             void_record(name, chat,
-                        f"wave_loop death: static {age}s, no report")
+                        f"wave_loop death: batch static {quiet}s, no report")
             o["status"] = "grinding"
             o["chat"] = None
+            o["batch_chars"] = 0
             pp = prompt_path(name)
             if pp and not grinder_alive(name):
                 launch_assault(name, pp)

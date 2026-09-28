@@ -70,6 +70,7 @@ def main():
           }
           const ids = byTs.map(m => m.id).filter(Boolean);
           let batchMsgs = 0, batchAssistant = 0, batchChecked = false;
+          let batchChars = 0;
           try {
             if (ids.length) {
               const br = await fetch('/api/v1/chats/%s/messages/batch', {
@@ -102,6 +103,7 @@ def main():
                   // window right after the headline.
                   const whole = JSON.stringify(m);
                   if (whole.length > 400) batchAssistant++;
+                  batchChars += whole.length;
                   let mi = -1;
                   while ((mi = whole.indexOf(%s, mi + 1)) >= 0) {
                     const win = whole.slice(mi, mi + 450);
@@ -116,7 +118,7 @@ def main():
           return JSON.stringify({alive: true, title: j.title, updated: j.updated_at,
             now: Math.floor(Date.now() / 1000), msgs: byTs.length,
             last, reportInAssistant,
-            batch: {checked: batchChecked, msgs: batchMsgs, assistantish: batchAssistant}});
+            batch: {checked: batchChecked, msgs: batchMsgs, assistantish: batchAssistant, chars: batchChars}});
         })()""" % (cid, json.dumps(marker), json.dumps(marker), cid, json.dumps(marker))
         raw = ws.eval(js, await_promise=True, timeout=30)
         d = json.loads(raw)
