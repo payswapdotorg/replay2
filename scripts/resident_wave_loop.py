@@ -428,8 +428,14 @@ HARVEST_EXCLUDE = re.compile(
 
 def harvest_pod(name, chat, partial):
     chat8 = chat[:8]
+    # 2026-09-28 00:50 lesson: partial=False made dest == flat_dir — the
+    # reorganize moved files INTO the staging tree and the final rmtree
+    # deleted the whole harvest (self-destruction; the COMPLETE path had
+    # never run before the marker fix). Always suffix the dest.
     dest = os.path.join(
-        HARVEST, chat8 + (f"-partial{int(time.time())}" if partial else ""))
+        HARVEST, chat8
+        + (f"-partial{int(time.time())}" if partial
+           else f"-complete{int(time.time())}"))
     os.makedirs(dest, exist_ok=True)
     ws, _, _ = workspaces()
     wsid = None
