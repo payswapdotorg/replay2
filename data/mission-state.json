@@ -15,30 +15,47 @@
       "id": "r35",
       "name": "R35 Series",
       "scope": "journey-grammar re-encode + defect-candidate closure",
-      "status": "COMPLETE — r35b merged 37effa3 (battery 5297/5296/1/0, relay sha-verified)"
+      "status": "COMPLETE — r35b merged 37effa3 (battery 5297/5296/1/0, relay sha-verified)",
+      "items": [
+        "r35b"
+      ]
     },
     {
       "id": "wave1",
       "name": "YouTube Parity Wave 1",
       "scope": "channels + live/live-chat",
+      "items": [
+        "r36",
+        "r37"
+      ],
       "status": "r36 MERGED (4f6edbe, lead-A). r37: TWO-LEAD DECONFLICTION RESOLVED 19:30Z per the wave-claim ledger (WebFlix main @ 530dea8) — R37 belongs to THIS console (lead-B): chat f149e0b2 is server-side ALIVE + WORK-RICH (M1-M3 in its sandbox, 13/13 bridge lane tests; froze mid-M4 in the 16:11Z outage); revival re-send ARMED on first HEALTHY (post_outage_recovery daemon, revival-only since 19:24Z). Lead-A's 16:25Z redo (acfa1ad9, ali10) retire-requested via the ledger; lapse-honesty: if ali12 generation stays down past ~23:30Z the claim lapses and the redo becomes canonical."
     },
     {
       "id": "wave2",
       "name": "YouTube Parity Wave 2",
       "scope": "upload + studio",
+      "items": [
+        "r38a",
+        "r38b"
+      ],
       "status": "DEFERRED TO LEAD-A per the wave-claim ledger (claims 16:25Z/16:52Z predate; one work item = one live session): r38a (ali10 chat 2f06e2e8) + r38b (ali10 chat 0955ab28) are lead-A's lanes. This console's queued-zombie re-creates were VOIDED 16:33Z and the recovery-daemon re-create legs DEFUSED 19:24Z — no duplicate dispatch will fire from here."
     },
     {
       "id": "wave3",
       "name": "YouTube Parity Wave 3",
       "scope": "user-channel / go-live / monetization",
+      "items": [
+        "r39"
+      ],
       "status": "CLAIMED by lead-B 19:30Z (ledger 530dea8) — dependency-gated: dispatches AFTER R37 + R38-A merge; journeys J49 (go live end-to-end) + J50 (membership + thanks) per the mapping fix; the resident wave loop owns the dispatch"
     },
     {
       "id": "wave4",
       "name": "YouTube Parity Wave 4",
       "scope": "discovery / playlists / notifications / premieres",
+      "items": [
+        "r40"
+      ],
       "status": "UNCLAIMED — natural fit for lead-A's next freed slot (depends R36+R38-A)"
     }
   ],
@@ -65,34 +82,34 @@
       "id": "r37",
       "title": "Live + live-chat — live streaming surface and live chat (J45+J46)",
       "lane": "YouTube Parity Wave 1",
-      "status": "awaiting-revival",
+      "status": "dispatched",
       "branch": null,
-      "notes": "THIS CONSOLE'S LANE (lead-B per ledger 530dea8): chat f149e0b2 server-side ALIVE, WORK-RICH (M1-M3 complete in its sandbox incl. 13/13 bridge lane tests; froze mid-M4 in the 16:11Z outage; the 16:31Z revival send was rejected + rolled back). Revival re-send ARMED in post_outage_recovery (revival-only since 19:24Z); queue_watch live on tab 7FC70BE2 (marker: R37 COMPLETION REPORT). Lead-A's 16:25Z redo retire-requested; claim lapses ~23:30Z if ali12 generation stays down.",
+      "notes": "AWAITING-REVIVAL — THIS CONSOLE'S LANE (lead-B per ledger 530dea8): chat f149e0b2 server-side ALIVE, WORK-RICH (M1-M3 complete in its sandbox incl. 13/13 bridge lane tests; froze mid-M4 in the 16:11Z outage; the 16:31Z revival send was rejected + rolled back). Revival re-send ARMED in post_outage_recovery (revival-only since 19:24Z); queue_watch live on tab 7FC70BE2 (marker: R37 COMPLETION REPORT). Lead-A's 16:25Z redo retire-requested; claim lapses ~23:30Z if ali12 generation stays down.",
       "worker": "GLM-5.3 + Full-Stack (agents tab)"
     },
     {
       "id": "r38a",
       "title": "Upload — video upload flow (J47)",
       "lane": "YouTube Parity Wave 2",
-      "status": "deferred-leadA",
+      "status": "pending",
       "branch": null,
-      "notes": "LEAD-A'S LANE per the wave-claim ledger (claimed 16:25Z, chat 2f06e2e8 under ali10, packet worker-prompts/r38a-upload.md base 37effa3). This console's original dispatch (6a38925d) was a queued-zombie, VOIDED 16:33Z; recovery-daemon re-create leg DEFUSED 19:24Z.",
+      "notes": "DEFERRED TO LEAD-A — R38-A upload (J47). This console's original dispatch (6a38925d) was a queued-zombie, VOIDED 16:33Z; recovery-daemon re-create leg DEFUSED 19:24Z.",
       "worker": "lead-A's worker"
     },
     {
       "id": "r38b",
       "title": "Studio — creator studio surface (J48)",
       "lane": "YouTube Parity Wave 2",
-      "status": "deferred-leadA",
+      "status": "pending",
       "branch": null,
-      "notes": "LEAD-A'S LANE per the wave-claim ledger (claimed 16:52Z, chat 0955ab28 under ali10, packet worker-prompts/r38b-studio.md base 78c6a5d). This console's original dispatch (edc09b79) was a queued-zombie, VOIDED 16:33Z; recovery-daemon re-create leg DEFUSED 19:24Z.",
+      "notes": "DEFERRED TO LEAD-A — R38-B studio (J48). This console's original dispatch (edc09b79) was a queued-zombie, VOIDED 16:33Z; recovery-daemon re-create leg DEFUSED 19:24Z.",
       "worker": "lead-A's worker"
     },
     {
       "id": "r39",
       "title": "User-channel / go-live / monetization (J49+J50)",
       "lane": "YouTube Parity Wave 3",
-      "status": "claimed",
+      "status": "staged",
       "branch": null,
       "notes": "CLAIMED by lead-B 19:30Z (ledger 530dea8). Dependency-gated: dispatch AFTER R37 + R38-A merge (survey: depends R36+R37+R38-A). Packet to be built from survey §WAVE R39 at the then-current main base; honest-transport law (local wallet, typed states) throughout.",
       "worker": null
@@ -184,7 +201,7 @@
     },
     {
       "ts": "2026-09-28T16:27:44.000Z",
-      "kind": "warning",
+      "kind": "warn",
       "text": "TL-Station (ali10) 'console handover': re-dispatched r37/r38a/r38b under ali10 (acfa1ad9/2f06e2e8/0955ab28) after misreading ali12 account-scoped unreachability as session death — later formalized as lead-A's ledger claims"
     },
     {
