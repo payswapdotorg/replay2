@@ -1145,8 +1145,14 @@ def cycle(s):
                 o["status"] = "sent"
             continue
         elif msgs >= 2 and (grew or (qw_fresh and quiet < 3600)
-                           or quiet < 2400 or age < 1800
+                           or quiet < 2400 or (age < 1800 and quiet < 3600)
                            or (arich and age < 3600)):
+            # 2026-09-28 07:00 lesson: the platform touches updated_at as a
+            # background heartbeat — age<1800 alone kept a 0-block stalled
+            # turn live forever. The live verdict now ALSO requires batch
+            # movement within the last hour (a genuinely-generating turn
+            # streams blocks server-side even when the DOM is frozen — the
+            # c7d84c84 invisible run accumulated 391 blocks).
             # 2026-09-28 04:10 zombie-guard: a RESPAWNED watch (the ring
             # re-arms specs) keeps qw_fresh true forever — a watched turn
             # with 1h+ of no batch flush and no report is a zombie (the
