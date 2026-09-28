@@ -324,15 +324,15 @@ def gh(repo, path, token=""):
         return {}
 
 
-def _login_state(tab):
+def _login_state(tab, connect_timeout=10, eval_timeout=8):
     """Generic login heuristic: a visible composer means a session exists;
     a 'Sign in' affordance means logged out."""
-    cdp = channel.CDP(tab["webSocketDebuggerUrl"], timeout=10)
+    cdp = channel.CDP(tab["webSocketDebuggerUrl"], timeout=connect_timeout)
     try:
-        body = cdp.eval("document.body.innerText || ''", timeout=8) or ""
+        body = cdp.eval("document.body.innerText || ''", timeout=eval_timeout) or ""
         has_composer = cdp.eval(
             "!!document.querySelector('textarea, #chat-input, div[contenteditable=true]')",
-            timeout=6)
+            timeout=max(2, eval_timeout - 2))
         if "Sign in" in body or "Log in" in body:
             return "logged-out"
         if has_composer:
@@ -352,11 +352,34 @@ def cmd_status():
     try:
         # Login is a profile-wide property: read it from a chat.z.ai tab even
         # when the ACTIVE tab is something else (e.g. the TurboVPN popup tab).
+        # 2026-09-28 multi-tab probe: under worker-fighter churn the FIRST
+        # chat.z.ai tab can be wedged, mid-load (page:0), or a composer-less
+        # surface (settings -> page:N) — a one-tab probe flapped no-browser /
+        # page:N while the profile was logged in the whole time. Probe up to
+        # 3 tabs with tight timeouts: a composer on ANY tab proves logged-in
+        # (short-circuit); "Sign in" is only trusted when NO tab shows a
+        # composer; the ambiguous page:N reading only when all probes were
+        # ambiguous. Worst case 3x(connect 4 + eval 3 + eval 2) = 27s, inside
+        # the 30s route timeout; the common case is one healthy tab in ~1s.
         tabs = channel.list_tabs()
-        tab = next((t for t in tabs if "chat.z.ai" in (t.get("url") or "")),
-                   tabs[0] if tabs else None)
-        if tab:
-            out["browser_login"] = _login_state(tab)
+        chat_tabs = [t for t in tabs if "chat.z.ai" in (t.get("url") or "")][:3]
+        states = []
+        for tab in chat_tabs:
+            try:
+                st = _login_state(tab, connect_timeout=4, eval_timeout=3)
+            except Exception:
+                continue
+            states.append(st)
+            if st == "logged-in":
+                break
+        if "logged-in" in states:
+            out["browser_login"] = "logged-in"
+        elif "logged-out" in states:
+            out["browser_login"] = "logged-out"
+        elif states:
+            out["browser_login"] = states[0]
+        else:
+            out["browser_login"] = "no-browser"
     except Exception:
         out["browser_login"] = "no-browser"
     if conf["repo"]:

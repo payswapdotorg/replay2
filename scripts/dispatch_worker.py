@@ -1047,14 +1047,36 @@ def create(name, prompt_file):
                     # escalating to a full re-pick round (the model menu is
                     # flaky under load; the re-pick loses ~half the time).
                     try:
+                        # 2026-09-28 cross-wire fix: the OLD length-only check
+                        # (>= 90% of OUR prompt length) lets a CONCURRENT lane's
+                        # LONGER staged prompt pass — the qa005 fighter sent
+                        # qa004's 9972-char text under its own name (chats titled
+                        # "QA-004 ..." from qa005 registry rows). Verify the
+                        # staged text IS OUR OWN prompt: tight length band AND
+                        # head-prefix match; foreign text is CLEARED, never sent.
                         _staged = _eval(c,
                             "(() => { const i = document.querySelector('#chat-input, textarea');"
-                            " if (!i) return '-1';"
+                            " if (!i) return '-1|';"
                             " const v = (i.value !== undefined) ? i.value : (i.textContent || '');"
-                            " return String(v.length); })()",
+                            " return String(v.length) + '|' + v.slice(0, 120); })()",
                             timeout=12)
-                        if _staged.isdigit() and int(_staged) >= int(len(prompt) * 0.9):
-                            print(f"      [staged-resume] composer holds {len(prompt)} chars — Enter")
+                        _slen_s, _, _shead = (_staged or "").partition("|")
+                        _slen = int(_slen_s) if _slen_s.isdigit() else -1
+                        _head_ok = _shead.strip()[:100] == prompt.strip()[:100]
+                        _len_ok = (int(len(prompt) * 0.98) <= _slen <= int(len(prompt) * 1.02))
+                        if _slen > 0 and not (_head_ok and _len_ok):
+                            # FOREIGN staged text (another lane's prompt sat in a
+                            # shared tab): clear it so the next assault round
+                            # inserts OUR prompt fresh — NEVER send it.
+                            print(f"      [staged-resume] FOREIGN staged text (len={_slen}, "
+                                  f"head-match={_head_ok}) — clearing composer, no send")
+                            try:
+                                _eval(c, JS_FOCUS_COMPOSER, timeout=10)
+                                _eval(c, JS_CLEAR_COMPOSER, timeout=10)
+                            except Exception:
+                                pass
+                        elif _slen > 0:
+                            print(f"      [staged-resume] composer holds OWN prompt ({_slen} chars) — Enter")
                             _eval(c, JS_FOCUS_COMPOSER, timeout=15)
                             time.sleep(0.2)
                             # 2026-09-25 lesson: a leftover model-menu overlay EATS

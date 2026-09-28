@@ -40,6 +40,11 @@ MARKERS = {
     # 2026-09-23 endgame lanes (names lack the hyphen; the packets' headlines have it)
     "prod033": ["PROD-033 COMPLETION REPORT", "PROD-033 完成报告", "WORKER_COMMIT"],
     "hfx302": ["HFX-302 COMPLETION REPORT", "HFX-302 完成报告", "WORKER_COMMIT"],
+    # 2026-09-27 QA-fix wave (web production sweep D1-D8)
+    "qa002": ["QA-002 COMPLETION REPORT", "QA-002 完成报告"],
+    "qa003": ["QA-003 COMPLETION REPORT", "QA-003 完成报告"],
+    "qa004": ["QA-004 COMPLETION REPORT", "QA-004 完成报告"],
+    "qa005": ["QA-005 COMPLETION REPORT", "QA-005 完成报告"],
 }
 
 

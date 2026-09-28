@@ -3720,3 +3720,110 @@ chain: `head=payswapdotorg:${BRANCH}`.
 2. **queue_watch spec files are live ammunition, not declarations.** A spec whose named session/chat does not exist yet triggers the watch's tabloss assault path: it voids and RE-DISPATCHES on its own. Write spec files AT DISPATCH TIME only, never as pre-staging. (Production proof overnight 2026-09-28: B and C tabs were destroyed by site churn ~05:28 and their watches re-dispatched both lanes automatically — void records + fresh chats + fresh tabs + registry sent:true, zero TL involvement. The assault loop is a proven unattended-recovery primitive.)
 3. **Chat-title derivation is NOT generation.** The backend derives chat titles server-side from the landed user message while generation stays dead (probe chats titled "Exact 'OK' Reply" with assistant len=0; a re-dispatched WO chat titled "Flauz TL2 Orchestration Tasks" the same way). The ONLY reliable UP signal is assistant message content length > 0 via chats_http detail. Never infer platform recovery from titles or chat-list position.
 4. **The surge staging pattern for a charter that lands mid-outage.** Read the charter doc + WORK-REGISTRY entries + each secondment's home-handoff section from origin/main FIRST (the repo is the guide, not memory), then write complete work orders BEFORE any slot frees: self-contained context, branch policy naming the CURRENT head sha, read-first list citing real files/symbols (verify they exist via git ls-tree), M1-M5 milestones mapped onto the charter's acceptance criteria, hard rules carrying the charter's bans (contract reuse, no runtime deps, no src/vs), transit bundles + literal marker lines. Staged 2026-09-28: flauz-tl2-s1/s2/s3.md (markers FLAUZ-TL2-S{1,2,3}-REPORT END, delivery prefixes flauz-delivery/tl2-s{1,2,3}-*/, branches flauz/tl2/s{1,2,3}-*).
+
+## Lesson 186: the toolless-continuation law (2026-09-27 ~11:40 UTC — qa wave round-5)
+
+Only a FRESH agents-tab "New Task" create allocates a sandbox. Every
+continuation path runs TOOLLESS:
+
+- A nudge into a packet-only chat is context-blind (lesson: the model sees
+  only the nudge — atomic create-send remains the only healthy dispatch).
+- A nudge into an ACK-STUB chat (packet consumed, model acked "I'll start
+  by setting up the workspace", turn closed) HAS the full work order in
+  context but STILL no sandbox: the model itself confesses "I don't
+  actually have a live terminal" and begins role-playing execution.
+  Observed on 9922cb4f (qa003 stub) 2026-09-27; same class as the qa002
+  push-nudge fabrication (its released sandbox never came back).
+- Even the session whose ORIGINAL create had a sandbox loses it on
+  release; the continuation turn does not re-provision it.
+
+Therefore: ack-stub chats are unrevivable junk UNLESS workspaces/user-fc
+shows a live workspace for their chat_id (the create actually allocated).
+Check `POST /api/v1/web-dev/workspaces/user-fc` (urllib + Bearer from
+flags/chat_token works) before ever nudging; if no workspace row exists,
+the only path is a fresh create. Detect "allocations resumed" platform-wide
+by watching for ANY new workspace row appearing — during a capacity phase
+zero new allocations happen and every fresh create either queues (reaped)
+or acks-and-closes (stub).
+
+Also institutionalized this round: Lead-started daemons die at Bash-tool
+session end (per-invocation cgroup kill; setsid does not escape). To start
+anything persistent, go through a SURVIVING process — the supervisor's
+capacity_recover.<name>.json flag convention (stem = session name so the
+create-machinery's self-written flags converge instead of duplicating).
+
+## Lesson 187: vercel git deployments do not auto-promote on the aise project (2026-09-27 ~16:45 UTC)
+
+The aise vercel project auto-BUILDS every main push (deployment goes READY
+with the correct commit + fresh esbuild bundle), but the production domain
+aise-tan.vercel.app does NOT re-point to it — targets.production.aliasAssigned
+stays dated (Sep 22) and the domain keeps serving the previous production
+deployment's code. Symptom: live probes show old behavior minutes-to-hours
+after a READY deployment (demo registry bootstrapping 2 projects; the fixed
+endpoint still 403). The alias API rejects *.vercel.app subdomain assignment
+("invalid_alias"). FIX: `bunx vercel promote <deployment-uid> --token=$VERCEL_TOKEN`
+(4s). After every merge-to-main + auto-build, PROMOTE explicitly, then verify
+live with the fast probes: mint POST /api/v1/auth/demo, GET the defect
+endpoint, GET the registry list (project count + names), negative control.
+
+## Lesson 188: the staged-resume cross-wire — concurrent fighters share one composer (2026-09-28 00:5x UTC — AISE QA endgame, qa004/qa005 freeze fight)
+
+188. **The staged-resume path verified only the LENGTH of whatever text sat
+    in the composer (>= 90% of the fighter's OWN prompt length) and then
+    printed its own prompt's length — so a concurrent lane's LONGER staged
+    prompt passed the check and got SENT under the wrong lane's name.**
+    Field evidence: two recover_capacity fighters (qa004 prompt 9972 chars,
+    qa005 prompt 6993 chars) fought the provisioning freeze concurrently on
+    the shared browser; when the qa005 fighter's reconnect found a tab whose
+    composer held qa004's staged 9972-char text, `9972 >= 6993*0.9` passed
+    and it Enter-sent QA004's packet — landing chats titled "QA-004 NL Fix
+    Report" / "QA-004 NL Area-Binding Fix Report" from registry rows
+    recorded as name=qa005, prompt_chars=6993 (the registry recorded the
+    fighter's own prompt length, not what was actually sent). The check is
+    one-directional: only the SHORTER-prompt lane can cross-send the longer
+    lane's text (the reverse fails the length gate), which is why only
+    qa005-attributed chats carried QA004 content, never the reverse.
+    FIX (dispatch_worker.py staged-resume, 2026-09-28): the probe now
+    returns `len|first-120-chars`; staged-resume fires ONLY on a head-prefix
+    match (first ~100 chars, whitespace-stripped) AND a tight ±2% length
+    band; FOREIGN staged text is CLEARED (JS_CLEAR_COMPOSER) and never
+    sent, and the log prints the ACTUAL staged length. Post-patch proof:
+    "[staged-resume] composer holds OWN prompt (9972 chars) — Enter" →
+    LANDED, chat titled with the correct lane's content. RULES: (a) any
+    send path that resumes STAGED composer state must verify CONTENT
+    IDENTITY, not length (length-only checks are blind to concurrent
+    lanes sharing the browser); (b) registry prompt_chars records intent,
+    never the sent bytes — the chat TITLE (platform-generated from the
+    first user message) is the cheapest content-truth signal when the
+    detail API lags (lesson 185); (c) after patching a sender, grep the
+    live log for the new line format to prove the subprocess chain picked
+    it up (recover_capacity re-execs dispatch_worker.py per round — patches
+    take effect on the NEXT round with no fighter restart).
+
+## Lesson 196: the login-probe flap under fighter churn — multi-tab probe + estate hygiene (2026-09-28 06:2x-06:3x UTC — AISE QA endgame watch)
+
+196. **`/api/status` flapping `no-browser` / `page:N` while the profile is
+    logged in is a ONE-TAB PROBE DEFECT, not a login problem.** The status
+    probe read the FIRST chat.z.ai tab only; under worker-fighter churn that
+    tab can be (a) a wedged renderer (CDP eval timeout → "no-browser"),
+    (b) mid-load (page:0), or (c) a composer-less surface like
+    /settings/dashboard (page:1838 — no composer, no "Sign in" → ambiguous).
+    Meanwhile healthy home tabs beside it all showed composers. FIX
+    (bridge.py, 2026-09-28): probe up to 3 chat.z.ai tabs with TIGHT
+    timeouts (connect 4s / eval 3s — worst case 27s, inside the 30s route
+    budget); a composer on ANY tab short-circuits to "logged-in"; "Sign in"
+    is only trusted when NO tab shows a composer; the ambiguous page:N
+    reading only when every probe was ambiguous. Per-tab exceptions are
+    skipped, not fatal. Post-patch: probe green through continued churn.
+    **Estate hygiene is the sibling duty**: every failed fighter round
+    abandons a tab (about:blank left behind; socket-closed errors pile up
+    as CDP strain), wedged /c/ session tabs accumulate, and the MIRROR can
+    point at a dead tab (healthz `active` id no longer in /json/list — the
+    console then serves a frozen view while the estate is alive; re-point
+    with `POST :3100/tabs {"id": "<live>"}`). Periodic purge during long
+    freeze fights: close turbovpn/about:blank/settings/chrome-error tabs
+    (NEVER a fighter's in-flight tab — check the recover log's latest
+    "tab XXXXXXXX" lines first), keep ~2 healthy home tabs, re-point the
+    mirror at a verified-composer tab. The purge visibly UNBLOCKED the
+    fighters (rounds that died at "page shell never loaded (socket is
+    already closed)" progressed to full 7/7 sends immediately after).
