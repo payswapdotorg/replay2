@@ -124,13 +124,18 @@ def read_chat_dom(cid, needle):
     try:
         c = CDP(tab["webSocketDebuggerUrl"], timeout=40)
         best = ""
-        for _ in range(6):  # wait up to ~24s for the history render
+        stable = 0
+        for _ in range(8):  # up to ~32s: full render + length stability
             time.sleep(4)
             body = c.eval("document.body.innerText || ''", timeout=25) or ""
             if len(body) > len(best):
                 best = body
-            if needle in best and len(best) > 4000:
-                break
+                stable = 0
+            elif len(body) == len(best) and len(best) > 3000:
+                stable += 1
+                if stable >= 2:
+                    break
+            # shorter reads are transient render states — keep the longest
         c.close()  # NEVER leak CDP connections
         return best
     except Exception as e:
