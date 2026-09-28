@@ -86,54 +86,54 @@
       "id": "wfx2-a",
       "title": "Account surfaces — History / Playlists CRUD / Liked / Watch later / notifications",
       "lane": "Wave 2 — Account + Creator",
-      "status": "queued",
+      "status": "pending",
       "branch": null,
-      "notes": "Unclaimed. Dependency-gated on the bible + boot. Claimable by this console per the ledger law once the gates land.",
+      "notes": "UNCLAIMED — dependency-gated on the bible (WFX2-S) + boot (WFX2-B). Claimable by this console per the ledger law (claim-before-dispatch) once the gates land; full lane scope in the lane record above.",
       "worker": null
     },
     {
       "id": "wfx2-u",
       "title": "Upload + Creator Studio — upload flow (+ AI helpers) + full studio surfaces",
       "lane": "Wave 2 — Account + Creator",
-      "status": "queued",
+      "status": "pending",
       "branch": null,
-      "notes": "Unclaimed. Dependency-gated on the bible + boot.",
+      "notes": "UNCLAIMED — dependency-gated on the bible + boot (Wave 2).",
       "worker": null
     },
     {
       "id": "wfx2-d",
       "title": "Discovery — Shorts, Trending, Search, Explore, Subscriptions feed",
       "lane": "Wave 3 — Discovery + Social",
-      "status": "queued",
+      "status": "pending",
       "branch": null,
-      "notes": "Unclaimed; follows Wave 2.",
+      "notes": "UNCLAIMED — Wave 3; follows Wave 2.",
       "worker": null
     },
     {
       "id": "wfx2-c",
       "title": "Channels — tabs, customize, memberships, community posts",
       "lane": "Wave 3 — Discovery + Social",
-      "status": "queued",
+      "status": "pending",
       "branch": null,
-      "notes": "Unclaimed; follows Wave 2.",
+      "notes": "UNCLAIMED — Wave 3; follows Wave 2.",
       "worker": null
     },
     {
       "id": "wfx2-l",
       "title": "Live — browse, live chat (socket.io mini-service), premieres",
       "lane": "Wave 4 — Live + Polish",
-      "status": "queued",
+      "status": "pending",
       "branch": null,
-      "notes": "Unclaimed; final wave.",
+      "notes": "UNCLAIMED — final wave; the closing parity audit vs the bible.",
       "worker": null
     },
     {
       "id": "wfx2-p",
       "title": "Polish — settings, premium, help/feedback, report history, voice search, PWA, parity audit",
       "lane": "Wave 4 — Live + Polish",
-      "status": "queued",
+      "status": "pending",
       "branch": null,
-      "notes": "Unclaimed; the closing parity audit vs the bible.",
+      "notes": "UNCLAIMED — final wave; the closing parity audit vs the bible.",
       "worker": null
     }
   ],
@@ -158,8 +158,8 @@
     },
     {
       "id": "webflix-1.0",
-      "label": "WebFlix 1.0 (superseded)",
-      "status": "archived",
+      "label": "WebFlix 1.0 (superseded — archived)",
+      "status": "ok",
       "detail": "CLOSED at main 3707c05 + ledger fbbef9b — R35b/R36/R37/R38-B merged (battery 5418/5417/1/0 at head), R38-A dead unlanded, r39/r40 superseded; two deferred merge-time composes recorded in DIVERGENCES rows 1-2 for any future polish pass"
     }
   ],
