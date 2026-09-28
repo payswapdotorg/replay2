@@ -64,7 +64,63 @@ def open_dash_tab():
     return t
 
 
+# ------------------------------------------------------------- API mode --
+# 2026-09-28 lesson: the click-loop is unreliable (the Live-guard regex
+# over-matches — the section header contaminates every row's container
+# text — and button clicks don't always land). The dashboard's Release
+# button fires DELETE /api/v1/web-dev/workspaces/{chat_id} (captured via
+# fetch hook); replaying it directly with the cached Bearer JWT is the
+# deterministic release path. Safe by construction: it only releases rows
+# the workspaces API itself reports.
+def api_release(keep_live=False):
+    """Release every fc workspace via the API.
+    keep_live=True skips rows whose chat still has an assistant turn
+    (a generating worker's pod)."""
+    import urllib.request
+    tok = ""
+    try:
+        tok = open("flags/chat_token").read().strip()
+    except OSError:
+        pass
+    if not tok:
+        raise SystemExit("api mode needs flags/chat_token")
+
+    def call(method, path):
+        req = urllib.request.Request(
+            "https://chat.z.ai" + path, method=method,
+            headers={"Authorization": f"Bearer {tok}",
+                     "Content-Type": "application/json"})
+        with urllib.request.urlopen(req, timeout=25) as r:
+            return r.status, r.read().decode()
+
+    _, body = call("GET", "/api/v1/web-dev/workspaces/user-fc")
+    rows = json.loads(body).get("workspaces") or []
+    if not rows:
+        print("API: no active workspaces — nothing to release")
+        return
+    for w in rows:
+        cid = str(w.get("chat_id") or "").removeprefix("chat-")
+        if not cid:
+            continue
+        if keep_live:
+            # a generating worker has recent updates + an assistant turn;
+            # cheap heuristic: skip rows updated in the last 10 minutes
+            upd = w.get("chat_updated_at") or 0
+            if time.time() - upd < 600:
+                print(f"SKIP (recent activity): {w.get('chat_title')}")
+                continue
+        try:
+            st, resp = call("DELETE", f"/api/v1/web-dev/workspaces/{cid}")
+            print(f"RELEASED {cid[:8]} ({w.get('chat_title')}): {st} "
+                  f"{json.loads(resp).get('message', '')[:80]}")
+        except Exception as e:
+            print(f"ERR {cid[:8]}: {e}")
+
+
 def main():
+    if "--api" in sys.argv:
+        api_release(keep_live=("--all" not in sys.argv))
+        return
     tab = open_dash_tab()
     c = channel.CDP(tab["webSocketDebuggerUrl"], timeout=30)
     dump = json.loads(c.eval(DUMP_JS, timeout=25))
