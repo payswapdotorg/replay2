@@ -14,11 +14,16 @@ This daemon (run detached; supervisor keeps it alive via spec below):
   3. re-sends the r37 revival directive (dispatch_worker.py send) and
      verifies the server-side commit (chats-API msgs grows) — bounded
      retries; a failed verification leaves the watcher ladder in charge;
-  4. re-creates r38a + r38b from their original prompt files (staggered;
-     create() runs the full verified assault loop incl. capacity modals);
-  5. starts a queue_watch.py per new session (it writes its own spec, the
-     supervisor adopts it);
-  6. logs a heartbeat to flags/post_outage_recovery.heartbeat every cycle.
+  4. logs a heartbeat to flags/post_outage_recovery.heartbeat every cycle.
+
+DEFUSED 2026-09-28 ~19:30 UTC (Task 130): the r38a/r38b re-create legs were
+REMOVED per the wave-claim ledger (WebFlix main @ 2ae1c13,
+docs/plans/2026-09-28-wave-claims.md): lead-A (steel container) claimed
+R38-A @16:25Z and R38-B @16:52Z — one work item = one live session (lesson
+201). This daemon now owns ONLY the r37 revival (lead-B's work-rich lane:
+M1-M3 + 13/13 bridge tests in its sandbox, dispatched 15:5xZ, predating
+lead-A's 16:25Z redo claim). R39 is claimed by lead-B but dependency-gated
+(R36+R37+R38-A merge first) — the resident wave loop dispatches it.
 
 Never clicks Cancel on GLM-5.3 capacity (create() owns that policy). Never
 waits a cooldown: this daemon's wait is the DESIGNED outage-hold, released
@@ -163,14 +168,12 @@ def main():
                 log("outage hold already lifted")
             # 1) r37 revival first (protect the M1-M3 work from any assault)
             send_revival()
-            # 2) re-create r38a + r38b (staggered)
-            tab_a = create_worker("r38a", R38A_PROMPT)
-            time.sleep(30)
-            tab_b = create_worker("r38b", R38B_PROMPT)
-            # 3) watchers for the new sessions
-            start_watcher("r38a", tab_a, "R38A COMPLETION REPORT")
-            start_watcher("r38b", tab_b, "R38B COMPLETION REPORT")
-            log("post-outage recovery COMPLETE — normal wave cadence resumes")
+            # 2) r38a/r38b re-create DEFUSED per the wave-claim ledger
+            #    (lead-A owns R38-A @16:25Z + R38-B @16:52Z; one work item =
+            #    one live session — lesson 201). create_worker/start_watcher
+            #    retained above for reference; NOT called anymore.
+            log("post-outage recovery COMPLETE — r37 revival sent; "
+                "r38a/r38b deferred to lead-A per the wave-claim ledger")
             return  # one-shot: its job is done; the wave loop + watchers own the rest
         except Exception as e:
             log(f"cycle error: {type(e).__name__}: {e}")
