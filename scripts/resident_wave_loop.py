@@ -947,7 +947,30 @@ def cycle(s):
             pass
     fr, pg = roadmap()
     if not fr or not pg:
-        log("roadmap unreadable — cycle skipped")
+        # 2026-09-28 19:24 lesson (5 silent hours): "roadmap unreadable" is
+        # OPAQUE when the root cause is the reset-wiped ZECK checkout. Say
+        # the specific cause (rate-limited) + drop a flag file the console
+        # ring can surface. NEVER auto-clone: arming a dispatch program is
+        # an operator decision (the dep_rescue law documents the manual
+        # re-clone: payswapdotorg/Zeck).
+        cause = "unknown"
+        if not os.path.isdir(ZECK):
+            cause = ("ZECK CHECKOUT MISSING — reset-wiped; re-clone "
+                     "payswapdotorg/Zeck (dep_rescue law), then the next "
+                     "cycle resumes")
+        elif not fr:
+            cause = "frontier-state.json unreadable at origin/main"
+        else:
+            cause = "program-state.json unreadable at origin/main"
+        mf = os.path.join(FLAGS, "roadmap_unreadable.cause")
+        now = time.time()
+        try:
+            last = float(open(mf).read().split("|")[0] or 0)
+        except Exception:
+            last = 0
+        if now - last > 600:
+            open(mf, "w").write(f"{now}|{cause}")
+            log(f"roadmap unreadable — cycle skipped (cause: {cause})")
         return
     # promote dependency-complete successors + track current wave
     for sid in next_successors(fr, pg) + remaining_wave(pg):
