@@ -1,262 +1,203 @@
 {
- "updatedAt": "2026-09-28T23:55:00.000Z",
- "mission": {
-  "title": "WebFlix Productionization",
-  "subtitle": "R36-R40 YouTube-parity waves — resident Lead orchestration until roadmap completion",
+  "updatedAt": "2026-09-28T23:50:00.000Z",
+  "mission": {
+    "title": "WebFlix 2.0 — Complete YouTube Clone",
+    "subtitle": "ZTube interface contract (d1ezj447xe91-deploy.space-z.ai), feature-for-feature youtube.com functionality, complete backend per feature — operator directive 21:54Z; repo payswapdotorg/webflix-2.0",
+    "baseline": {
+      "main": "6b992aa5359c699b8132de4035b6eab8dcdfa29e",
+      "tests": 0,
+      "roadmap": "docs/plans/2026-09-28-webflix2-roadmap.md + docs/plans/wave-claims.md (repo: payswapdotorg/webflix-2.0)"
+    },
+    "cadence": "resident lead (this console = lead-ALI10) — monitor Wave 1 (lead-STEEL) → re-verify others' merges on own gates → claim + dispatch per the 2.0 ledger law (claim-before-dispatch, push-order precedence, 4h binding)"
+  },
+  "lanes": [
+    {
+      "id": "w1-boot",
+      "name": "Wave 1 — Boot Shell",
+      "scope": "Scaffold + full Prisma schema + ZTube app shell + home feed + seed + gates (branch wfx2/boot-shell)",
+      "status": "DISPATCHED — claimed by lead-STEEL 22:25Z (4h-binding to ~02:25Z); not yet merged at this console's last check 23:48Z (repo holds only the seed commit)",
+      "items": ["wfx2-b"]
+    },
+    {
+      "id": "w1-bible",
+      "name": "Wave 1 — YouTube Bible",
+      "scope": "docs/specs/*.md — per-feature complete YouTube functionality bible: behavior + data model + API + acceptance (branch wfx2/youtube-bible)",
+      "status": "DISPATCHED — claimed by lead-STEEL 22:25Z; THE functionality contract all later lanes implement to",
+      "items": ["wfx2-s"]
+    },
+    {
+      "id": "w1-watch",
+      "name": "Wave 1 — Watch Vertical",
+      "scope": "Complete watch experience: player, engagement, comments, related — full backend (branch wfx2/watch-vertical)",
+      "status": "DISPATCHED — claimed by lead-STEEL 22:25Z (4h-binding to ~02:25Z)",
+      "items": ["wfx2-w"]
+    },
+    {
+      "id": "wave2",
+      "name": "Wave 2 — Account + Creator",
+      "scope": "WFX2-A account (History, Playlists CRUD, Liked, Watch later, notifications bell menu w/ real events + read states + per-channel prefs) + WFX2-U upload + studio (upload flow + AI helpers, Studio Dashboard/Content/Analytics/Revenue/Comments/Moderation/Experiments)",
+      "status": "QUEUED — dependency-gated on WFX2-S (bible) + WFX2-B (boot scaffold); this console claims per ledger law when the gates land",
+      "items": ["wfx2-a", "wfx2-u"]
+    },
+    {
+      "id": "wave3",
+      "name": "Wave 3 — Discovery + Social",
+      "scope": "WFX2-D discovery (Shorts vertical feed, Trending + tabs, Search + filters/sort, Explore categories, Subscriptions feed) + WFX2-C channels (tabs, customize dialog, memberships tiers + member-only enforcement, community posts)",
+      "status": "QUEUED — unclaimed; follows Wave 2",
+      "items": ["wfx2-d", "wfx2-c"]
+    },
+    {
+      "id": "wave4",
+      "name": "Wave 4 — Live + Polish",
+      "scope": "WFX2-L live (live browse, live chat socket.io mini-service, premieres) + WFX2-P polish (settings, premium page, help/feedback, report history, voice search, PWA, parity audit vs the bible)",
+      "status": "QUEUED — unclaimed; final wave",
+      "items": ["wfx2-l", "wfx2-p"]
+    }
+  ],
+  "items": [
+    {
+      "id": "wfx2-b",
+      "title": "Boot shell — scaffold, full Prisma schema, ZTube app shell, home feed, seed, gates",
+      "lane": "Wave 1 — Boot Shell",
+      "status": "dispatched",
+      "branch": "wfx2/boot-shell",
+      "notes": "lead-STEEL's worker (dispatched 22:25Z). This console monitors the repo; on merge it re-verifies on its own gates per the 2.0 ledger law.",
+      "worker": "lead-STEEL's worker (agents tab)"
+    },
+    {
+      "id": "wfx2-s",
+      "title": "YouTube bible — docs/specs/*.md per-feature functionality contract",
+      "lane": "Wave 1 — YouTube Bible",
+      "status": "dispatched",
+      "branch": "wfx2/youtube-bible",
+      "notes": "lead-STEEL's worker (dispatched 22:25Z). The contract every later lane implements to; gaps found in the field become addenda.",
+      "worker": "lead-STEEL's worker (agents tab)"
+    },
+    {
+      "id": "wfx2-w",
+      "title": "Watch vertical — player, engagement, comments, related (full backend)",
+      "lane": "Wave 1 — Watch Vertical",
+      "status": "dispatched",
+      "branch": "wfx2/watch-vertical",
+      "notes": "lead-STEEL's worker (dispatched 22:25Z).",
+      "worker": "lead-STEEL's worker (agents tab)"
+    },
+    {
+      "id": "wfx2-a",
+      "title": "Account surfaces — History / Playlists CRUD / Liked / Watch later / notifications",
+      "lane": "Wave 2 — Account + Creator",
+      "status": "queued",
+      "branch": null,
+      "notes": "Unclaimed. Dependency-gated on the bible + boot. Claimable by this console per the ledger law once the gates land.",
+      "worker": null
+    },
+    {
+      "id": "wfx2-u",
+      "title": "Upload + Creator Studio — upload flow (+ AI helpers) + full studio surfaces",
+      "lane": "Wave 2 — Account + Creator",
+      "status": "queued",
+      "branch": null,
+      "notes": "Unclaimed. Dependency-gated on the bible + boot.",
+      "worker": null
+    },
+    {
+      "id": "wfx2-d",
+      "title": "Discovery — Shorts, Trending, Search, Explore, Subscriptions feed",
+      "lane": "Wave 3 — Discovery + Social",
+      "status": "queued",
+      "branch": null,
+      "notes": "Unclaimed; follows Wave 2.",
+      "worker": null
+    },
+    {
+      "id": "wfx2-c",
+      "title": "Channels — tabs, customize, memberships, community posts",
+      "lane": "Wave 3 — Discovery + Social",
+      "status": "queued",
+      "branch": null,
+      "notes": "Unclaimed; follows Wave 2.",
+      "worker": null
+    },
+    {
+      "id": "wfx2-l",
+      "title": "Live — browse, live chat (socket.io mini-service), premieres",
+      "lane": "Wave 4 — Live + Polish",
+      "status": "queued",
+      "branch": null,
+      "notes": "Unclaimed; final wave.",
+      "worker": null
+    },
+    {
+      "id": "wfx2-p",
+      "title": "Polish — settings, premium, help/feedback, report history, voice search, PWA, parity audit",
+      "lane": "Wave 4 — Live + Polish",
+      "status": "queued",
+      "branch": null,
+      "notes": "Unclaimed; the closing parity audit vs the bible.",
+      "worker": null
+    }
+  ],
+  "infra": [
+    {
+      "id": "replay-stack",
+      "label": "Replay stack",
+      "status": "ok",
+      "detail": "Canonical payswapdotorg/replay2 @ c845c31 — Chrome CDP :9222 (Chrome 153, TurboVPN tunnel egress 198.244.234.214), replayd :3100, console :3000 (two-view UI), supervisor+watcher ring + resident_wave_loop up since 18:03Z"
+    },
+    {
+      "id": "operator-login",
+      "label": "Operator login",
+      "status": "ok",
+      "detail": "ali10 logged-in (bridge status 23:48Z; /api/v1/auths/ ground-truth verified at cutover) — dispatch-capable for this console's claims"
+    },
+    {
+      "id": "webflix2-watch",
+      "label": "WebFlix 2.0 repo watch",
+      "status": "ok",
+      "detail": "webflix2_watch.py armed 23:5xZ — polls payswapdotorg/webflix-2.0 (+ webflix-1.0 wind-down tail) every 60s; monitor-only (claims are operator decisions per the ledger law); events → data/webflix2-events.json"
+    },
+    {
+      "id": "webflix-1.0",
+      "label": "WebFlix 1.0 (superseded)",
+      "status": "archived",
+      "detail": "CLOSED at main 3707c05 + ledger fbbef9b — R35b/R36/R37/R38-B merged (battery 5418/5417/1/0 at head), R38-A dead unlanded, r39/r40 superseded; two deferred merge-time composes recorded in DIVERGENCES rows 1-2 for any future polish pass"
+    }
+  ],
+  "timeline": [
+    {
+      "ts": "2026-09-28T21:54Z",
+      "kind": "info",
+      "text": "OPERATOR DIRECTIVE — webflix-1.0 superseded; new attempt: payswapdotorg/webflix-2.0 (clone the ZTube interface, every feature its complete youtube.com functionality + backend)"
+    },
+    {
+      "ts": "2026-09-28T22:25Z",
+      "kind": "success",
+      "text": "webflix-2.0 seeded (6b992aa: README interface contract + stack laws + roadmap + wave-claims ledger); lead-STEEL claims + dispatches Wave 1 (WFX2-B boot / WFX2-S bible / WFX2-W watch), 4h-binding to ~02:25Z"
+    },
+    {
+      "ts": "2026-09-28T23:2xZ",
+      "kind": "success",
+      "text": "webflix-1.0 wind-down: R37 MERGED 2dc3da2 (gates green 5356/5355/1/0) — hold released per ledger fbc859c"
+    },
+    {
+      "ts": "2026-09-28T23:4xZ",
+      "kind": "success",
+      "text": "webflix-1.0 wind-down: R38-B MERGED 03a0dd9 (merge-head battery 5418/5417/1/0, J44/J45/J46 PASS); R38-A dead unlanded (honest record); repo closed at 3707c05"
+    },
+    {
+      "ts": "2026-09-28T23:50Z",
+      "kind": "info",
+      "text": "MISSION MIGRATED (this console, lead-ALI10) — Mission Control now tracks WebFlix 2.0; webflix2_watch armed; Wave 2 claim ready on bible+boot landing per the ledger law"
+    }
+  ],
+  "production": {
+    "url": "https://d1ezj447xe91-deploy.space-z.ai/",
+    "deployedAt": "2026-09-28T21:54Z",
+    "status": "reference interface (ZTube) — no 2.0 deployment yet; first deploy follows the Wave 1 boot merge (webflix-1.0's vercel deployment is historical)"
+  },
   "baseline": {
-   "main": "acff71b8b363ba6f85ab7a3e9b08ca7ba3e5a419",
-   "tests": 5265,
-   "roadmap": "docs/plans/2026-09-28-youtube-parity-survey.md"
-  },
-  "cadence": "resident lead — monitor → harvest → review → approve/require-changes → dispatch next"
- },
- "lanes": [
-  {
-   "id": "r35",
-   "name": "R35 Series",
-   "scope": "journey-grammar re-encode + defect-candidate closure",
-   "status": "COMPLETE — r35b merged 37effa3 (battery 5297/5296/1/0, relay sha-verified)",
-   "items": [
-    "r35b"
-   ]
-  },
-  {
-   "id": "wave1",
-   "name": "YouTube Parity Wave 1",
-   "scope": "channels + live/live-chat",
-   "items": [
-    "r36",
-    "r37"
-   ],
-   "status": "COMPLETE — r36 MERGED (4f6edbe) + r37 MERGED (2dc3da2, evidence 3010137; merge-head gates green 5356/5355/1/0, J45 PASS 30 + J46 PASS 21; hold released per ledger fbc859c)"
-  },
-  {
-   "id": "wave2",
-   "name": "YouTube Parity Wave 2",
-   "scope": "upload + studio",
-   "items": [
-    "r38a",
-    "r38b"
-   ],
-   "status": "CLOSED — r38b MERGED (03a0dd9, evidence 3707c05; merge-head battery 5418/5417/1/0, J44/J45/J46 PASS; two one-place composes DEFERRED per DIVERGENCES rows 1-2); r38a DEAD UNLANDED (the 19:55Z dispatch died in the 20:01Z generation stall — workspace bare scaffold, zero work; no re-dispatch per the wind-down)"
-  },
-  {
-   "id": "wave3",
-   "name": "YouTube Parity Wave 3",
-   "scope": "user-channel / go-live / monetization",
-   "items": [
-    "r39"
-   ],
-   "status": "NOT DISPATCHED — superseded: operator directive 21:54Z moves the attempt to webflix-2.0 (ledger 4c1316c); wind-down honored, nothing new dispatched"
-  },
-  {
-   "id": "wave4",
-   "name": "YouTube Parity Wave 4",
-   "scope": "discovery / playlists / notifications / premieres",
-   "items": [
-    "r40"
-   ],
-   "status": "VOIDED by lead-STEEL (r40 never spawned, ledger 4c1316c) — superseded with the repo"
+    "main": "6b992aa5359c699b8132de4035b6eab8dcdfa29e",
+    "tests": 0,
+    "roadmap": "docs/plans/2026-09-28-webflix2-roadmap.md (repo: payswapdotorg/webflix-2.0)"
   }
- ],
- "items": [
-  {
-   "id": "r35b",
-   "title": "The 32-spec journey re-encode — J01–J39 stale-grammar specs brought to current product grammar",
-   "lane": "R35 Series",
-   "status": "merged",
-   "branch": "wfx/r35b/journeys",
-   "notes": "MERGED to main 37effa3 (battery 5297/5296/1/0, relay sha-verified, OOM ceiling documented). Chat deleted (hygiene).",
-   "worker": "GLM-5.3 + Full-Stack (agents tab)"
-  },
-  {
-   "id": "r36",
-   "title": "Channels — channel pages, subscriptions, channel-level navigation",
-   "lane": "YouTube Parity Wave 1",
-   "status": "merged",
-   "branch": "main @ 4f6edbe",
-   "notes": "MERGED by lead-A 14:19Z (channels, J44). Journey J44 PASS recorded at this base during r35b merge verification.",
-   "worker": "GLM-5.3 + Full-Stack (agents tab)"
-  },
-  {
-   "id": "r37",
-   "title": "Live + live-chat — live streaming surface and live chat (J45+J46)",
-   "lane": "YouTube Parity Wave 1",
-   "status": "merged",
-   "branch": "main @ 2dc3da2 (evidence 3010137)",
-   "notes": "MERGED 23:2xZ — hold RELEASED per ledger fbc859c (lead-STEEL); merge-head gates all green (battery 5356/5355/1/0 EXACT, J45 PASS 30 + J46 PASS 21); evidence/r37-merge/merge-verification.md. Worker chat c2a2c46b, lane head 5b578a0, relay 90/90 sha EXACT.",
-   "worker": "GLM-5.3 + Full-Stack (agents tab)"
-  },
-  {
-   "id": "r38a",
-   "title": "Upload — video upload flow (J47)",
-   "lane": "YouTube Parity Wave 2",
-   "status": "blocked",
-   "branch": null,
-   "notes": "DEAD UNLANDED — the 19:55Z dispatch (3cc258fa) streamed 53k chars of plan then froze at 20:01Z (platform generation stall); stall_recovery closed the dead-turn tab 20:31Z; chat activity stopped 20:35:37Z; the workspace holds ONLY the bare sandbox scaffold (no clone, no relay, zero work product). Closed per the wind-down (no re-dispatch — the repo is superseded).",
-   "worker": "lead-A's worker"
-  },
-  {
-   "id": "r38b",
-   "title": "Studio — creator studio surface (J48)",
-   "lane": "YouTube Parity Wave 2",
-   "status": "merged",
-   "branch": "main @ 03a0dd9 (evidence 3707c05)",
-   "notes": "MERGED 23:4xZ — the 19:44Z dispatch (271c6d81) completed server-side ~21:22Z AFTER the 20:31 tab close (the r37 pattern: server sessions outlive their tabs); completion server-confirmed (probe reportInAssistant, 1.46MB), relay-harvested 8/8 sha EXACT, clean-room green (battery 5359/5358/1/0, J44 PASS 57, J48 worker evidence 71/9 standing — local re-run env-blocked in the documented OOM class, dmesg recorded). Merge-head gates: battery 5418/5417/1/0, J44/J45/J46 PASS. Two one-place merge-time composes DEFERRED (DIVERGENCES rows 1-2 — the gates-of-record law).",
-   "worker": "lead-A's worker"
-  },
-  {
-   "id": "r39",
-   "title": "User-channel / go-live / monetization (J49+J50)",
-   "lane": "YouTube Parity Wave 3",
-   "status": "superseded",
-   "branch": null,
-   "notes": "NOT DISPATCHED — the operator's 21:54Z directive supersedes webflix-1.0 with webflix-2.0 (ledger 4c1316c); lead-B's claim lapses with the wind-down.",
-   "worker": null
-  },
-  {
-   "id": "r40",
-   "title": "Discovery / playlists / notifications / premieres (J51+)",
-   "lane": "YouTube Parity Wave 4",
-   "status": "voided",
-   "branch": null,
-   "notes": "VOIDED by lead-STEEL (never spawned, ledger 4c1316c wind-down).",
-   "worker": null
-  }
- ],
- "infra": [
-  {
-   "id": "replay-stack",
-   "label": "Replay stack",
-   "status": "ok",
-   "detail": "Canonical payswapdotorg/replay2 — Chrome CDP :9222 (Chrome 153), replayd :3100, console :3000 (Replay Console identity), supervisor+watcher ring up since 14:22Z"
-  },
-  {
-   "id": "operator-login",
-   "label": "Operator login",
-   "status": "ok",
-   "detail": "ali12 session restored via JWT injection (lesson 114) — /api/v1/auths ground-truth verified; browser_login: logged-in"
-  },
-  {
-   "id": "generation-outage",
-   "label": "Generation queue (ali12)",
-   "status": "degraded",
-   "detail": "OUTAGE since 16:11Z — six consecutive DOWN probes 16:41→19:18Z (fresh chats, zero assistant replies; possibly account-scoped). Outage-hold active; backend_probe_watch (30-min cadence) will touch backend_recovered.txt on first HEALTHY; post_outage_recovery (revival-only since 19:24Z) then fires the r37 revival re-send"
-  },
-  {
-   "id": "resident-loop",
-   "label": "Resident wave loop",
-   "status": "ok",
-   "detail": "resident_wave_loop.py online (supervisor-owned); r37 queue_watch live (tab 7FC70BE2, heartbeat fresh)"
-  },
-  {
-   "id": "production",
-   "label": "Production deploy",
-   "status": "ok",
-   "detail": "webflix-steel.vercel.app — auto-deploys on merge; latest code-merge main 37effa3 (docs-only commits since)"
-  },
-  {
-   "id": "credentials",
-   "label": "Credentials",
-   "status": "ok",
-   "detail": "GITHUB_PAT ✓ (push-verified vs payswapdotorg), VERCEL_TOKEN ✓, E2B ✓, Neon ✓, OpenRouter ✓, Composio ✓, Upstash ✓ (MCP live; live endpoint polished-yeti-167554), Cloudflare ✓, LiveKit ✓ — persisted ~/.bashrc"
-  },
-  {
-   "id": "two-lead-ledger",
-   "label": "Wave-claim ledger",
-   "status": "ok",
-   "detail": "docs/plans/2026-09-28-wave-claims.md on WebFlix main @ 530dea8 — lead-B (this console): R37 (work-rich revival) + R39 (dependency-gated); lead-A (steel container/ali10): R38-A + R38-B + R40-eligible. Claim-before-dispatch law; claims binding 4h"
-  }
- ],
- "timeline": [
-  {
-   "ts": "2026-09-28T12:30:00.000Z",
-   "kind": "warn",
-   "text": "Sandbox rebuild: wrong local replay (diverged, unpushed commits) removed per operator order; fresh clone of canonical payswapdotorg/replay2 @ 7f25c2a"
-  },
-  {
-   "ts": "2026-09-28T14:22Z",
-   "kind": "info",
-   "text": "replay rebuilt from canonical 7aa0b54 after full local wipe; operator session recovered via JWT injection (ali12); ground-truth verified /api/v1/auths"
-  },
-  {
-   "ts": "2026-09-28T14:29Z",
-   "kind": "info",
-   "text": "r35b relay harvested from live worker sandbox via files API (364 files, 22.5MB, manifest sha EXACT)"
-  },
-  {
-   "ts": "2026-09-28T15:30Z",
-   "kind": "info",
-   "text": "r35b MERGED to main 37effa3 + pushed (battery 5297/5296/1/0 at merge head, J06 PASS, J44 functional; OOM ceiling documented); r35b chat deleted (hygiene)"
-  },
-  {
-   "ts": "2026-09-28T15:50Z",
-   "kind": "info",
-   "text": "r37 re-dispatched (zombie voided) + r38a + r38b dispatched at base 37effa3 — all VERIFIED, 3/3 slots live, watches armed"
-  },
-  {
-   "ts": "2026-09-28T16:12Z",
-   "kind": "error",
-   "text": "generation outage opened: r37's turn froze mid-M4 (DOM frozen at 43233 chars, server committed nothing); stall_recovery closed the dead tab but the lesson-185 server-alive gate suppressed the assault — zombie-limbo deadlock (lesson 201)"
-  },
-  {
-   "ts": "2026-09-28T16:27:44.000Z",
-   "kind": "warn",
-   "text": "TL-Station (ali10) 'console handover': re-dispatched r37/r38a/r38b under ali10 (acfa1ad9/2f06e2e8/0955ab28) after misreading ali12 account-scoped unreachability as session death — later formalized as lead-A's ledger claims"
-  },
-  {
-   "ts": "2026-09-28T16:32Z",
-   "kind": "error",
-   "text": "backend_probe: DOWN — outage protocol: outage_hold set; backend_probe_watch armed (30-min); r38a/r38b queued-zombies voided; post_outage_recovery daemon armed"
-  },
-  {
-   "ts": "2026-09-28T16:47Z",
-   "kind": "info",
-   "text": "lead-A published the wave-claim ledger on WebFlix main (78c6a5d/2ae1c13): R36+R38-A+R37-redo+R38-B claimed by lead-A (steel container); claim-before-dispatch law established"
-  },
-  {
-   "ts": "2026-09-28T19:24Z",
-   "kind": "success",
-   "text": "post_outage_recovery DEFUSED to revival-only (r38a/r38b re-create legs removed + daemon dfork-relaunched): prevents duplicate dispatch of lead-A's claimed lanes on backend recovery"
-  },
-  {
-   "ts": "2026-09-28T19:30Z",
-   "kind": "success",
-   "text": "LEDGER UPDATE PUSHED (WebFlix main @ 530dea8): R37 → lead-B (work-rich revival, dispatched 15:5xZ predating the 16:25Z redo; M1-M3 preserved; redo retire-requested; lapse clause ~23:30Z); R38-A/R38-B defused to lead-A; R39 → lead-B (dependency-gated, J49+J50); R40 left for lead-A"
-  },
-  {
-   "ts": "2026-09-28T19:24Z",
-   "kind": "success",
-   "text": "wave loop unblocked: /home/z/Zeck re-cloned (reset-wiped; the loop was blind since 14:02) — PPR-019 idle on prompt-missing"
-  },
-  {
-   "ts": "2026-09-28T19:37Z",
-   "kind": "success",
-   "text": "r37 COMPLETE (c2a2c46b server-confirmed marker) — harvested 90/90 sha EXACT; clean-room review started; merge held per ledger"
-  },
-  {
-   "ts": "2026-09-28T19:44Z",
-   "kind": "info",
-   "text": "r38b fresh dispatch 271c6d81 under lead-A claim; r38a 8417f316 queued-capacity; ledger addendum pushed (fd2048e)"
-  },
-  {
-   "ts": "2026-09-28T20:00Z",
-   "kind": "success",
-   "text": "r37 clean-room review COMPLETE — all gates green at 5b578a0 (battery 5356/5355/1/0 EXACT, J45 30 + J46 21 + J03 6 + J44 57 PASS, typecheck/contract/lane-check green); merge-ready, held per ledger. r38a 3cc258fa + r38b 271c6d81 both generating after the phantom-send wedge cleared."
-  },
-  {
-   "ts": "2026-09-28T23:55:00.000Z",
-   "event": "WIND-DOWN EXECUTED (lead-ALI10 console): R37 MERGED 2dc3da2 + R38B MERGED 03a0dd9 (both clean-room verified, merge-head gates green, pushed to origin main 3707c05 + ledger fbbef9b); R38A dead unlanded (zero work, honest record); r39 not dispatched + r40 voided — webflix-1.0 superseded by the operator's webflix-2.0 directive; no new dispatches from this console."
-  }
- ],
- "production": {
-  "url": "https://webflix-steel.vercel.app",
-  "deployedAt": "2026-09-28T07:51:00.000Z",
-  "status": "live — auto-deploys on merge (latest code-merge 37effa3)"
- },
- "baseline": {
-  "main": "37effa325c5060e14afda7e07db5b7eb61e45d9e",
-  "tests": 5297,
-  "roadmap": "docs/plans/2026-09-28-youtube-parity-survey.md"
- }
 }
