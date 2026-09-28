@@ -1042,6 +1042,13 @@ def cycle(s):
                 outbox("[loop] probe failures x5 — browser/login may be "
                        "down; grinders continue regardless")
             continue
+        # 2026-09-28 00:58 lesson: under CDP contention the probe's batch
+        # fetch can flake (batch.checked=false, chars=0, report=false) —
+        # treating that as a valid verdict re-creates phantom deaths. A
+        # probe without a checked batch store is a FAILED probe.
+        if not ((p.get("batch") or {}).get("checked")):
+            s["probe_errs"][name] = s["probe_errs"].get(name, 0) + 1
+            continue
         s["probe_errs"][name] = 0
         age = p.get("now", 0) - p.get("updated", 0)
         msgs = p.get("msgs", 0)
