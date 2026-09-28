@@ -26,12 +26,8 @@ PY = "/home/z/.venv/bin/python3"
 CADENCE = 120
 
 LANES = [
-    ("A2", "d5223082-c51a-4aa4-b115-3e771bddeccc",
-     "flauz-delivery/tl2-a2-orchestration-m4m5", "tl2-a2-orchestration-m4m5.bundle",
-     "FLAUZ-TL2-A2-REPORT END", "/home/z/tl2-harvest/a2-m4m5"),
-    ("S1", "7a53fc90-adf0-453b-8415-e3716926f45d",
-     "flauz-delivery/tl2-s1-service-integration", "tl2-s1-service-integration.bundle",
-     "FLAUZ-TL2-S1-REPORT END", "/home/z/tl2-harvest/s1-service"),
+    # 08:50 — A2 + S1 RETIRED (landed via PR #26, harvested through the
+    # Bearer path during the logout window). S2 is the remaining lane.
     ("S2", "0c8db875-695e-40b7-853b-8f055d5ca596",
      "flauz-delivery/tl2-s2-resource-exec", "tl2-s2-resource-exec.bundle",
      "FLAUZ-TL2-S2-REPORT END", "/home/z/tl2-harvest/s2-resource"),
@@ -135,12 +131,12 @@ def workspaces_map():
 def run_harvest(name, chat_id, ws_id, prefix, bundle, dest):
     os.makedirs(dest, exist_ok=True)
     log(f"  [{name}] HARVEST start ws={ws_id}")
-    r1 = subprocess.run([PY, os.path.join(BASE, "harvest_robust.py"),
-                         chat_id, ws_id, prefix, os.path.join(dest, "delivery")],
+    r1 = subprocess.run([PY, os.path.join(BASE, "harvest_bearer.py"),
+                         chat_id, ws_id, prefix + "/", os.path.join(dest, "delivery")],
                         capture_output=True, text=True, timeout=900)
     tail1 = (r1.stdout or "").strip().splitlines()[-1:] if r1.stdout else []
     log(f"  [{name}] harvest_delivery rc={r1.returncode}: {tail1}")
-    r2 = subprocess.run([PY, os.path.join(BASE, "fetch_one.py"),
+    r2 = subprocess.run([PY, os.path.join(BASE, "harvest_bearer.py"),
                          chat_id, ws_id, bundle, os.path.join(dest, "root", bundle)],
                         capture_output=True, text=True, timeout=300)
     tail2 = (r2.stdout or "").strip().splitlines()[-1:] if r2.stdout else []

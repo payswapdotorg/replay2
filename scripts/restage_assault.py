@@ -21,12 +21,11 @@ import resend_prompt as rp
 import chats_http as ch
 
 LANES = [
-    ("A", "a0e4ed45-cca4-4651-ae57-8ef01d89c269",
-     "/home/z/replay2/scripts/worker-prompts/restage/flauz-tl2-a-restage.md"),
-    ("B", "ac121b3f-effd-4cde-941c-ff19960bbf2a",
-     "/home/z/replay2/scripts/worker-prompts/restage/flauz-tl2-b-restage.md"),
-    ("C", "a48e023b-a372-4e00-bbab-bfe495a79597",
-     "/home/z/replay2/scripts/worker-prompts/restage/flauz-tl2-c-restage.md"),
+    # B/C re-stages RETIRED 07:05 — their deliveries are landed (PR #23); further
+    # turns on their chats would be pure churn. A-orig re-stage retired (fresh pod
+    # would reply WORKSPACE-LOST). The A-replica continuation is the live recovery.
+    ("A-CONT", "487c77c6-d132-4b87-a701-4b7b609b8270",
+     "/home/z/replay2/scripts/worker-prompts/restage/flauz-tl2-a-continue.md"),
 ]
 LOG = "/home/z/replay2/scripts/logs/restage_assault.log"
 MAX_ROUNDS = 40
