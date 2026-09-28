@@ -1,5 +1,5 @@
 import { execFile } from "child_process";
-import { readFileSync } from "fs";
+import { existsSync, readFileSync } from "fs";
 import { join } from "path";
 import { promisify } from "util";
 
@@ -8,12 +8,15 @@ const execFileAsync = promisify(execFile);
 /**
  * Path + interpreter resolution for the replay stack.
  *
- * The Next.js dev server runs with cwd = repo root (launch_dev.py sets it),
- * so scripts/ sits at <root>/scripts. The python interpreter is resolved by
- * deploy.sh (it needs the `websocket` module) and recorded in
- * scripts/python_bin.txt; we read it once at module load.
+ * The console dev server runs with cwd = /home/z/my-project (the sandbox's
+ * user-visible Next.js app), while the replay stack (scripts/, flags/, logs/)
+ * lives in the deployed replay2 repo. REPLAY_ROOT resolves that repo —
+ * env-overridable, default /home/z/replay2.
+ *
+ * The python interpreter is resolved by deploy.sh (it needs the `websocket`
+ * module) and recorded in scripts/python_bin.txt; we read it lazily.
  */
-const ROOT = process.cwd();
+const ROOT = process.env.REPLAY_ROOT || "/home/z/replay2";
 export const SCRIPTS = join(ROOT, "scripts");
 export const FLAGS = join(SCRIPTS, "flags");
 export const BRIDGE = join(SCRIPTS, "bridge.py");
@@ -57,7 +60,7 @@ export async function runBridgeJson(cmd: string, arg?: string, timeoutMs = 25000
     timeout: timeoutMs,
     maxBuffer: 4 * 1024 * 1024,
   });
-  const text = String(stdout).trim().split("\n").pop() || "{}";
+  const text = stdout.toString("utf-8").trim().split("\n").pop() || "{}";
   return JSON.parse(text);
 }
 
@@ -65,4 +68,13 @@ export function timeoutSignal(ms: number): AbortSignal {
   const ctl = new AbortController();
   setTimeout(() => ctl.abort(), ms);
   return ctl.signal;
+}
+
+/** True when the deployed replay repo (scripts/ dir) is present. */
+export function replayStackPresent(): boolean {
+  try {
+    return existsSync(SCRIPTS);
+  } catch {
+    return false;
+  }
 }
