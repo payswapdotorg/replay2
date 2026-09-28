@@ -3682,3 +3682,34 @@ chain: `head=payswapdotorg:${BRANCH}`.
     duplicates + dead-end untitled landings, and release every stale
     sandbox row (when NO worker is live, releasing ALL rows is safe —
     per-row matching is only needed when live pods exist).
+
+## Lesson 189 (2026-09-28 05:4x UTC — the pod-cycling night: the 429-wrapped "sandbox is inactive"; the harvest-during-turn law; the permanent-chat composition recovery)
+
+189. **The workspaces files API's "sandbox is inactive" error arrives WRAPPED
+    AS HTTP 429 — read the body before concluding "rate limited."** The night
+    of the R34 close: the a3 worker's pod cycled inactive within minutes of
+    each turn's end, and every ls-tree/content call answered 429 with
+    {"detail":"...sandbox is inactive"} — the direct-API path shows only
+    "Too Many Requests" (the body is hidden by urllib's default error); the
+    in-page fetch path shows the truth. THE HARVEST-DURING-TURN LAW: the
+    files are only readable while a pod is ACTIVE, and the pod is only
+    active while a turn RUNS — so a relay harvest must execute DURING a
+    generating turn (send the worker a keep-busy read-only verification task,
+    harvest in parallel the moment the len grows). THE WORKSPACE-UNBINDING
+    RECOVERY, two paths: (1) the worker's own FILE-TOOLS WRITE re-binds a
+    vanished workspace (a fresh write_file call re-creates the binding —
+    verified live); (2) THE PERMANENT-CHAT COMPOSITION RECOVERY — the
+    worker pastes the composition docs as fenced code blocks (first line =
+    filename) and the lead parses them from the transcript; the CHAT is the
+    most durable transport in the stack (it survives pod death, workspace
+    unbinding, and platform recycling). THE REFLOW DISCLOSURE: chat-pasted
+    text reflows (the rendering collapses line breaks — the bytes differ
+    from the original sha256s); the recovered copy must carry an honest
+    note (the manifest's hashes are the original-byte authority; the
+    substance is complete). ALSO: the turn-churn night pattern — under
+    sustained GLM-5.3 saturation the account serializes (~one turn at a
+    time, each ending after 10-30 min); the lead's cadence: re-enter on
+    every churn (a surgical resumption naming the last visible step), keep
+    every lane's instructions PERSISTED (verify the tree, not the DOM —
+    the stage-without-persist hazard recurs), and harvest the moment a
+    completion report lands (the pod clock is ticking).
