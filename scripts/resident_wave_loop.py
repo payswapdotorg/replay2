@@ -461,6 +461,14 @@ def harvest_pod(name, chat, partial):
     for i in range(0, len(keep), 40):
         sh([PY, os.path.join(BASE, "harvest_files.py"), chat, wsid]
            + keep[i:i + 40], timeout=900)
+        # 2026-09-28 00:30 lesson: a harvest inside cycle() blocks the
+        # cycle-start heartbeat for its whole 25-45 min — the supervisor
+        # (>900s stale) SIGKILLs the loop MID-HARVEST. Keep the heartbeat
+        # alive between batches.
+        try:
+            open(HB, "w").write(str(int(time.time())))
+        except Exception:
+            pass
     # 2026-09-27 tree layout: harvest_files.py now preserves full relative
     # paths under <chat8>/tree/ — the reorganize maps Zeck/* to the dest
     # root (worker repo) and everything else to _podtree/ (upstream clones,
