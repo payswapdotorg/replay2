@@ -13,7 +13,9 @@ below BEFORE writing anything.
   the real-time transport (the WS seam), live chat replay on archived live
   VODs timed to the playhead, and the chat grammar (member badges, pinned
   message, slow mode, emojis). Premieres are DEFERRED to R40 — do not build
-  them. Do not start R36 (channels) or any other item.
+  them. R36 (channels) is ALREADY MERGED at your base — build on it (the
+  channel Live tab composes with your /live rail); never modify R36's
+  surfaces. Do not start R38 (upload/studio) or any other item.
 - Owned surface (the ONLY files you may create/modify):
   - `apps/web/src/app/live/**` (NEW — the /live browse)
   - `apps/web/src/components/live/**` (NEW — the live surfaces + live chat UI)
@@ -45,8 +47,12 @@ below BEFORE writing anything.
 - Explicitly NOT yours: `apps/web/src/app/channel/**`,
   `apps/web/src/components/channel/**`, `packages/domain/src/graph/**`,
   `apps/web/src/components/search/**`, `apps/web/src/components/cards/**`,
-  `apps/web/src/components/player/ChannelRow.tsx` (R36 — a CONCURRENT worker
-  lane; never create, modify or plan around them), `apps/api/**`,
+  `apps/web/src/components/player/ChannelRow.tsx` (R36 — MERGED at your base;
+  read-only for you), `apps/web/src/app/upload/**`,
+  `apps/web/src/components/upload/**`, `apps/web/src/host/local-catalog/**`
+  (R38-A — a CONCURRENT worker lane), `apps/web/src/app/studio/**`,
+  `apps/web/src/components/studio/**` (R38-B — a CONCURRENT worker lane;
+  never create, modify or plan around any of them), `apps/api/**`,
   `apps/desktop/**`, `apps/mobile/**`, every other package (`persistence`,
   `experience`, `actions`, `client-runtime`, `platform-contracts`,
   `model-fabric`, `native-media`, `recommendation`, `torrent-engine`),
@@ -56,7 +62,8 @@ below BEFORE writing anything.
   bridge pattern is your precedent).
 - THE LIVE-DESIGNATION LAW: the live truth is encoded at the connector/
   fixture + view-model layer (your owned surface) — you do NOT touch the
-  domain graph (R36 owns it this wave). An item is live, or is an archived
+  domain graph (R36 landed it at your base; read-only for you). An item is
+  live, or is an archived
   live VOD, because its connector metadata says so; the surfaces derive,
   never guess.
 - THE HONEST-TRANSPORT LAW (R28, binding): viewer counts, chat participants,
@@ -81,16 +88,17 @@ below BEFORE writing anything.
 ```bash
 git clone https://github.com/payswapdotorg/WebFlix.git
 cd WebFlix
-git checkout acff71b8b363ba6f85ab7a3e9b08ca7ba3e5a419   # main (R35-A)
-git rev-parse HEAD          # must print acff71b8b363ba6f85ab7a3e9b08ca7ba3e5a419
+git checkout 37effa325c5060e14afda7e07db5b7eb61e45d9e   # main (R36 + R35b merges)
+git rev-parse HEAD          # must print 37effa325c5060e14afda7e07db5b7eb61e45d9e
 bun install
 git checkout -b wfx/r37/live
 bun run ci
 ```
 
-Baseline expectation (the battery of record at main): **5265 pass / 1 fail / 0
-skip** — the 1 fail is the pre-existing platform failure of record; your
-regression floor is "no NEW failures and pass count ≥ 5265 + your lane tests".
+Baseline expectation (the battery of record at main): **5297 tests / 5296
+pass / 1 skip / 0 fail** — the 1 skip is the pre-existing R11 webtorrent
+platform issue of record; your regression floor is "no NEW failures and pass
+count ≥ 5296 + your lane tests".
 Record the exact totals from your own baseline run in `evidence/r37/guards.md`.
 If the baseline is red beyond the 1 pre-existing fail, STOP and report.
 
@@ -163,8 +171,8 @@ Encode `journeys/web/j45-live-watch-chat.ts` (the J45 live watch + chat
 round trip) and `journeys/web/j46-chat-replay-scrub.ts` (the J46 chat
 replay scrub) per the harness laws; register both additively. Run the
 affected existing journeys that your surfaces touch (J01–J44 affected set —
-note J44 is R36's concurrent lane: if it is not present at your base, your
-affected set is J01–J43) and prove no regression. Full gate per §4, then
+J44 is R36's creator-channel journey, PRESENT at your base) and prove no
+regression. Full gate per §4, then
 the relay (§5).
 
 ## 4. Verification — the honest gate
@@ -203,14 +211,14 @@ Then report in the chat (no source code, no tokens, exact shape):
 ```
 === R37 COMPLETION REPORT ===
 branch: wfx/r37/live
-base: acff71b8b363ba6f85ab7a3e9b08ca7ba3e5a419
+base: 37effa325c5060e14afda7e07db5b7eb61e45d9e
 live designation: <how items declare live truth (connector layer)>
 /live browse: <landed surfaces + the honest viewer-count backing>
 watch live mode: <the composition + what the grammar states honestly>
 live chat: <the transport (bridge/dev double) + the chat grammar landed (badges/pinned/slow/emojis)>
 chat replay: <the log artifact + the playhead binding + the scrub proof>
 journeys: J45 <pass/fail> + J46 <pass/fail> + affected journeys <exact totals>
-battery: <exact totals vs the 5265/1/0 floor + your lane test count>
+battery: <exact totals vs the 5296/1/0 floor + your lane test count>
 honesty: <the typed-absence states you encoded, per surface>
 defect-candidates: <any named product defects found, or "none">
 relay: RELAY-MANIFEST.txt + webflix-r37-live.bundle + evidence/r37/** written via file-tools
