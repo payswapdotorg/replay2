@@ -91,7 +91,7 @@
    "id": "r38a",
    "title": "Upload — video upload flow (J47)",
    "lane": "YouTube Parity Wave 2",
-   "status": "dead-unlanded",
+   "status": "blocked",
    "branch": null,
    "notes": "DEAD UNLANDED — the 19:55Z dispatch (3cc258fa) streamed 53k chars of plan then froze at 20:01Z (platform generation stall); stall_recovery closed the dead-turn tab 20:31Z; chat activity stopped 20:35:37Z; the workspace holds ONLY the bare sandbox scaffold (no clone, no relay, zero work product). Closed per the wind-down (no re-dispatch — the repo is superseded).",
    "worker": "lead-A's worker"
