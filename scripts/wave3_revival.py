@@ -57,6 +57,12 @@ TOK_FILE = os.path.join(FLAGS, "chat_token")
 
 CADENCE = 120
 DEAD_MIN = 15 * 60        # seconds post-dispatch before dead-admission call
+NO_TURN_MIN = 30 * 60     # workspace provisioned but assistant turn never
+                         # fired => turn-death zombie (2026-09-28 evening
+                         # class: pods provision under the generation-
+                         # dispatch outage, roles=[user] only, no title,
+                         # thread-bounce DOM; per-chat send gate law =
+                         # fresh-chat cure, never fight the zombie)
 FREEZE_MIN = 25 * 60      # seconds of frozen mid-thread chars => turn-death
 PROBE_MIN = 30 * 60       # seconds between parallel probes
 LANE_ORDER = ["flauz-F1-tl2", "flauz-F2-tl2", "flauz-F3-tl2", "flauz-F4-tl2"]
@@ -203,16 +209,40 @@ def dom_read(cid, settle_rounds=4):
 
 # ------------------------------------------------------------ dispatch steps --
 
-def void_lane(name, reason):
+def void_lane(name, reason, chat_id=None):
     try:
         r = subprocess.run([PY, os.path.join(BASE, "dispatch_worker.py"),
                             "void", name, reason],
                            capture_output=True, text=True, timeout=150)
         log(f"  [{name}] void rc={r.returncode}: {(r.stdout or '').strip()[:70]}")
-        return r.returncode == 0
     except Exception as e:
         log(f"  [{name}] void error: {e}")
-        return False
+    # 2026-09-28 law: a voided lane's POD must be released or the sandbox
+    # cap re-fills with dead rows (root cause of the 16:10-18:10 streak).
+    # DELETE /api/v1/web-dev/workspaces/{chat_id} with the cached JWT.
+    cid = chat_id
+    if not cid:
+        try:
+            for l in read_lanes():
+                if l.get("name") == name:
+                    cid = l.get("chat")
+                    break
+        except Exception:
+            pass
+    if cid:
+        try:
+            tok = _tok()
+            if tok:
+                req = urllib.request.Request(
+                    f"https://chat.z.ai/api/v1/web-dev/workspaces/{cid}",
+                    method="DELETE",
+                    headers={"Authorization": f"Bearer {tok}",
+                             "Content-Type": "application/json"})
+                with urllib.request.urlopen(req, timeout=20) as r:
+                    log(f"  [{name}] pod released ({cid[:8]}): "
+                        f"{r.read().decode()[:80]}")
+        except Exception as e:
+            log(f"  [{name}] pod release err: {e}")
 
 
 def _latest_sent_record(name):
@@ -279,7 +309,21 @@ def assess(lanes):
         if not cid or l.get("harvested"):
             continue
         if wsmap.get(cid):
-            st[name] = {"live": True, "reason": "workspace"}
+            # provisioned — but is the turn alive? A pod with no assistant
+            # turn is a turn-death zombie (send gate law: fresh-chat cure).
+            turn = has_assistant_turn(cid)
+            age = time.time() - (l.get("created_at") or 0)
+            if turn is True:
+                st[name] = {"live": True, "reason": "workspace+turn"}
+            elif turn is None:
+                st[name] = {"live": True, "reason": "ws (turn unknown)"}
+            elif age > NO_TURN_MIN:
+                st[name] = {"live": False,
+                            "reason": "provisioned-not-generating "
+                                      f"(ws, no turn, {int(age / 60)}m)"}
+            else:
+                st[name] = {"live": True,
+                            "reason": f"ws provisioned, turn pending {int(age / 60)}m"}
             continue
         turn = has_assistant_turn(cid)
         if turn is True:
