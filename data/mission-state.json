@@ -102,7 +102,7 @@
    "lane": "YouTube Parity Wave 2",
    "status": "dispatched",
    "branch": null,
-   "notes": "LEAD-A ACTIVE \u2014 re-dispatched 19:44Z chat 271c6d61 under the standing 16:52Z ledger claim (prompt 12867 VERIFIED, watcher armed). The 16:52 send never landed a chat record; the 18:02 duplicate was yielded 18:15Z per the ledger.",
+   "notes": "LEAD-A ACTIVE \u2014 re-dispatched 19:44Z chat 271c6d81 under the standing 16:52Z ledger claim (prompt 12867 VERIFIED, watcher armed). The 16:52 send never landed a chat record; the 18:02 duplicate was yielded 18:15Z per the ledger.",
    "worker": "lead-A's worker"
   },
   {
@@ -237,7 +237,7 @@
   {
    "ts": "2026-09-28T19:44Z",
    "kind": "info",
-   "text": "r38b fresh dispatch 271c6d61 under lead-A claim; r38a 8417f316 queued-capacity; ledger addendum pushed (fd2048e)"
+   "text": "r38b fresh dispatch 271c6d81 under lead-A claim; r38a 8417f316 queued-capacity; ledger addendum pushed (fd2048e)"
   }
  ],
  "production": {
