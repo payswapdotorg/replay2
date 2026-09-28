@@ -13,6 +13,7 @@ When the first lane completes: dispatch F4 once (the freed slot).
 When F4 completes and harvests, dispatch its record too. Exit when all
 four lanes are harvested.
 """
+import fcntl
 import json
 import os
 import subprocess
@@ -28,11 +29,9 @@ FLAGS = os.path.join(BASE, "flags")
 LOG = os.path.join(BASE, "logs", "tl2_wave3_watch.log")
 OUTBOX = os.path.join(FLAGS, "agent_outbox.jsonl")
 STATE = os.path.join(FLAGS, "wave3_lanes.json")
+STATE_LOCK = os.path.join(FLAGS, "wave3_lanes.lock")
 PY = "/home/z/.venv/bin/python3"
 CADENCE = 120
-F4_DISPATCHED = os.path.join(FLAGS, "wave3-f4-dispatched.marker")
-
-_state = {}
 
 
 def log(line):
@@ -50,15 +49,52 @@ def outbox(text):
         pass
 
 
-def load_lanes():
-    if not os.path.exists(STATE):
-        return []
+def _locked(fn):
+    """Shared state lock — wave3_revival.py mutates the same file (new chat
+    ids from dead-admission revivals); read-modify-write must be atomic on
+    both sides or one daemon clobbers the other's updates."""
+    os.makedirs(FLAGS, exist_ok=True)
+    lk = open(STATE_LOCK, "w")
+    fcntl.flock(lk, fcntl.LOCK_EX)
     try:
-        with open(STATE) as f:
-            st = json.load(f)
-        return st.get("lanes", [])
-    except Exception:
+        return fn()
+    finally:
+        fcntl.flock(lk, fcntl.LOCK_UN)
+        lk.close()
+
+
+def load_lanes():
+    def rd():
+        if os.path.exists(STATE):
+            try:
+                with open(STATE) as f:
+                    return json.load(f).get("lanes", [])
+            except Exception:
+                return []
         return []
+    return _locked(rd)
+
+
+def mark_harvested(name):
+    """Reload + set harvested=True atomically (never write a stale copy)."""
+    def wr():
+        lanes = []
+        if os.path.exists(STATE):
+            try:
+                with open(STATE) as f:
+                    lanes = json.load(f).get("lanes", [])
+            except Exception:
+                lanes = []
+        for l in lanes:
+            if l.get("name") == name:
+                l["harvested"] = True
+                break
+        tmp = STATE + ".tmp"
+        with open(tmp, "w") as f:
+            json.dump({"lanes": lanes}, f, indent=1)
+        os.replace(tmp, STATE)
+        return lanes
+    return _locked(wr)
 
 
 def read_chat_dom(cid):
@@ -247,14 +283,15 @@ def mark_f4_chat(lanes):
 
 
 def main():
-    log("=== tl2_wave3_watch start (dynamic lanes from wave3_lanes.json)")
+    log("=== tl2_wave3_watch start (dynamic lanes from wave3_lanes.json; "
+        "dispatch sequencing owned by wave3_revival.py)")
+    _state = {}
     while True:
         try:
             lanes = load_lanes()
             if not lanes:
                 time.sleep(CADENCE)
                 continue
-            mark_f4_chat(lanes)
             watch = [l for l in lanes if l.get("chat") and not l.get("harvested")]
             if not watch:
                 done = [l for l in lanes if l.get("harvested")]
@@ -294,13 +331,7 @@ def main():
                     ws = wsmap.get(cid)
                     if ws:
                         if run_harvest(name, cid, ws, prefix, dest):
-                            lane["harvested"] = True
-                            st = {"lanes": lanes}
-                            tmp = STATE + ".tmp"
-                            with open(tmp, "w") as f:
-                                json.dump(st, f, indent=1)
-                            os.replace(tmp, STATE)
-                            dispatch_f4(lanes)
+                            mark_harvested(name)
                         else:
                             s["stable"] = 0
                     else:
