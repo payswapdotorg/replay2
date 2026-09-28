@@ -355,8 +355,13 @@ def main():
                         log(f"[probe] cap probe alongside {live}: "
                             f"creating {cand['name']}")
                         last_probe = time.time()
+                        # lesson 2026-09-28: void-first when the candidate
+                        # holds an old chat — otherwise the registry's stale
+                        # sent record turns the probe into a no-op that
+                        # "re-dispatches" onto the zombie chat id.
                         dispatch_or_revive(cand["name"], cand["prompt"],
-                                           cand.get("chat"), revive=False,
+                                           cand.get("chat"),
+                                           revive=bool(cand.get("chat")),
                                            probe=True)
                 time.sleep(CADENCE)
                 continue
