@@ -1,5 +1,5 @@
 {
-  "updatedAt": "2026-09-28T12:55:00.000Z",
+  "updatedAt": "2026-09-28T15:55:00.000Z",
   "mission": {
     "title": "WebFlix Productionization",
     "subtitle": "R36-R40 YouTube-parity waves \u2014 resident Lead orchestration until roadmap completion",
@@ -15,43 +15,31 @@
       "id": "r35",
       "name": "R35 Series",
       "scope": "journey-grammar re-encode + defect-candidate closure",
-      "items": [
-        "r35b"
-      ]
+      "status": "COMPLETE \u2014 r35b merged 37effa3 (battery 5297/5296/1/0, relay sha-verified)"
     },
     {
-      "id": "r36-r37",
+      "id": "wave1",
       "name": "YouTube Parity Wave 1",
       "scope": "channels + live/live-chat",
-      "items": [
-        "r36",
-        "r37"
-      ]
+      "status": "r36 MERGED (4f6edbe); r37 re-dispatched (chat f149e0b2, generating)"
     },
     {
-      "id": "r38",
+      "id": "wave2",
       "name": "YouTube Parity Wave 2",
       "scope": "upload + studio",
-      "items": [
-        "r38a",
-        "r38b"
-      ]
+      "status": "r38a (chat 6a38925d) + r38b (chat edc09b79) dispatched + verified, generating"
     },
     {
-      "id": "r39",
+      "id": "wave3",
       "name": "YouTube Parity Wave 3",
       "scope": "user-channel / go-live / monetization",
-      "items": [
-        "r39"
-      ]
+      "status": "queued \u2014 depends R36+R37+R38-A"
     },
     {
-      "id": "r40",
+      "id": "wave4",
       "name": "YouTube Parity Wave 4",
-      "scope": "discovery / playlists / notifications",
-      "items": [
-        "r40"
-      ]
+      "scope": "discovery / playlists / notifications / premieres",
+      "status": "queued \u2014 depends R36+R38-A"
     }
   ],
   "items": [
@@ -186,11 +174,32 @@
       "ts": "2026-09-28T12:52:00.000Z",
       "kind": "success",
       "text": "r36 + r37 packets rebuilt from survey truth and RE-DISPATCHED (both VERIFIED, GLM-5.3 + Full-Stack, agents tab); watches armed \u2014 3/3 slots live"
+    },
+    {
+      "ts": "2026-09-28T14:22Z",
+      "event": "replay rebuilt from canonical 7aa0b54 after full local wipe; operator session recovered via JWT injection (ali12); ground-truth verified /api/v1/auths"
+    },
+    {
+      "ts": "2026-09-28T14:29Z",
+      "event": "r35b relay harvested from live worker sandbox via files API (364 files, 22.5MB, manifest sha EXACT)"
+    },
+    {
+      "ts": "2026-09-28T15:30Z",
+      "event": "r35b MERGED to main 37effa3 + pushed (battery 5297/5296/1/0 at merge head, J06 PASS, J44 functional; OOM ceiling documented); r35b chat deleted (hygiene)"
+    },
+    {
+      "ts": "2026-09-28T15:50Z",
+      "event": "r37 re-dispatched (zombie voided) + r38a + r38b dispatched at base 37effa3 \u2014 all VERIFIED, 3/3 slots live, watches armed"
     }
   ],
   "production": {
     "url": "https://webflix-steel.vercel.app",
     "deployedAt": "2026-09-28T07:51:00.000Z",
     "status": "live @ main acff71b"
+  },
+  "baseline": {
+    "main": "37effa325c5060e14afda7e07db5b7eb61e45d9e",
+    "tests": 5297,
+    "roadmap": "docs/plans/2026-09-28-youtube-parity-survey.md"
   }
 }
