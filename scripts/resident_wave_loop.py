@@ -1095,6 +1095,17 @@ def cycle(s):
             o["batch_grew_at"] = int(time.time())
         quiet = int(time.time()) - o.get(
             "batch_grew_at", o.get("since") or int(time.time()))
+        # 2026-09-28 03:12 lesson: content_blocks commit only at turn END —
+        # batchChars NEVER grows mid-run (93f3c711 generated 12.8K DOM chars
+        # with batch frozen at 733). The queue_watch heartbeat (written on
+        # every poll while its tab renders growth) is the mid-run liveness
+        # signal; a fresh heartbeat + growth in its log = generating.
+        qw_fresh = False
+        try:
+            qw_fresh = (time.time() - os.path.getmtime(os.path.join(
+                FLAGS, f"queue_watch_heartbeat.{name}"))) < 300
+        except FileNotFoundError:
+            pass
         # work-rich = the assistant produced real content (the calibrated
         # 900s/3600s stuck doctrine: long tool calls can go quiet ~1h)
         arich = any(m.get("role") == "assistant" and m.get("len", 0) > 2000
@@ -1133,8 +1144,8 @@ def cycle(s):
             elif o.get("status") != "sent":
                 o["status"] = "sent"
             continue
-        elif msgs >= 2 and (grew or quiet < 2400 or age < 1800
-                           or (arich and age < 3600)):
+        elif msgs >= 2 and (grew or qw_fresh or quiet < 2400
+                           or age < 1800 or (arich and age < 3600)):
             if st != "live":
                 outbox(f"[{name}] LIVE — chat {chat[:8]} generating "
                        f"(msgs={msgs}, batchChars={bchars}, "
