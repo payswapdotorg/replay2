@@ -90,7 +90,31 @@ def send_revival():
     return False
 
 
+WEBFLIX = "/home/z/WebFlix"
+BRANCH_BY_NAME = {"r38a": "wfx/r38a/upload", "r38b": "wfx/r38b/studio"}
+
+
+def duplicate_delivered(name):
+    """Parallel-lead guard (lesson 201): if the work item's branch already
+    exists on the WebFlix remote (e.g. the TL-Station ali10 duplicate
+    delivered first), do NOT double-dispatch — leave it for Lead review."""
+    br = BRANCH_BY_NAME.get(name)
+    if not br:
+        return False
+    try:
+        run(["git", "-C", WEBFLIX, "fetch", "origin", "--quiet"], timeout=120)
+        rr = run(["git", "-C", WEBFLIX, "rev-parse", "--verify", f"origin/{br}"], timeout=30)
+        return rr.returncode == 0
+    except Exception as e:
+        log(f"branch check for {name} failed: {e}")
+        return False  # unverifiable = proceed (the normal path)
+
+
 def create_worker(name, prompt):
+    if duplicate_delivered(name):
+        log(f"SKIP create {name}: branch {BRANCH_BY_NAME[name]} already on the remote "
+            "(parallel-lead duplicate delivered?) — Lead review owns it")
+        return None
     r = run([sys.executable, os.path.join(BASE, "dispatch_worker.py"),
              "create", name, prompt], timeout=580)
     out = (r.stdout or "") + (r.stderr or "")
