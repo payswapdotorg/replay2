@@ -177,19 +177,28 @@
     },
     {
       "ts": "2026-09-28T14:22Z",
-      "event": "replay rebuilt from canonical 7aa0b54 after full local wipe; operator session recovered via JWT injection (ali12); ground-truth verified /api/v1/auths"
+      "kind": "info",
+      "text": "replay rebuilt from canonical 7aa0b54 after full local wipe; operator session recovered via JWT injection (ali12); ground-truth verified /api/v1/auths"
     },
     {
       "ts": "2026-09-28T14:29Z",
-      "event": "r35b relay harvested from live worker sandbox via files API (364 files, 22.5MB, manifest sha EXACT)"
+      "kind": "info",
+      "text": "r35b relay harvested from live worker sandbox via files API (364 files, 22.5MB, manifest sha EXACT)"
     },
     {
       "ts": "2026-09-28T15:30Z",
-      "event": "r35b MERGED to main 37effa3 + pushed (battery 5297/5296/1/0 at merge head, J06 PASS, J44 functional; OOM ceiling documented); r35b chat deleted (hygiene)"
+      "kind": "info",
+      "text": "r35b MERGED to main 37effa3 + pushed (battery 5297/5296/1/0 at merge head, J06 PASS, J44 functional; OOM ceiling documented); r35b chat deleted (hygiene)"
     },
     {
       "ts": "2026-09-28T15:50Z",
-      "event": "r37 re-dispatched (zombie voided) + r38a + r38b dispatched at base 37effa3 — all VERIFIED, 3/3 slots live, watches armed"
+      "kind": "info",
+      "text": "r37 re-dispatched (zombie voided) + r38a + r38b dispatched at base 37effa3 — all VERIFIED, 3/3 slots live, watches armed"
+    },
+    {
+      "ts": "2026-09-28T16:27:44.000Z",
+      "kind": "success",
+      "text": "console handover: r37/r38a/r38b re-dispatched at this console (ali10), watches armed — 3/3 slots live"
     }
   ],
   "production": {
