@@ -1,5 +1,5 @@
 {
-  "updatedAt": "2026-09-28T16:27:44.000Z",
+  "updatedAt": "2026-09-28T16:36:00.000Z",
   "mission": {
     "title": "WebFlix Productionization",
     "subtitle": "R36-R40 YouTube-parity waves — resident Lead orchestration until roadmap completion",
@@ -21,13 +21,13 @@
       "id": "wave1",
       "name": "YouTube Parity Wave 1",
       "scope": "channels + live/live-chat",
-      "status": "r36 MERGED (4f6edbe); r37 re-dispatched at this console (chat acfa1ad9, under ali10) — the pre-reset parallel-lead sessions unreachable"
+      "status": "r36 MERGED (4f6edbe); r37 ali12 chat f149e0b2 ALIVE + WORK-RICH (M1-M3 done in its sandbox, 13/13 bridge lane tests; froze mid-M4 in the 16:1x generation outage) — revival staged for post-HEALTHY re-send. TL-Station 16:27 duplicate acfa1ad9 (ali10) = FALSE-POSITIVE handover, void-on-sight."
     },
     {
       "id": "wave2",
       "name": "YouTube Parity Wave 2",
       "scope": "upload + studio",
-      "status": "r38a (chat 2f06e2e8) + r38b (chat 0955ab28) re-dispatched at this console (ali10), watches armed"
+      "status": "r38a + r38b were queued-zombies (URL rolled home, never generated) — VOIDED 16:33; post-HEALTHY re-dispatch queued under ali12 (recovery daemon armed, original packets). TL-Station duplicates 2f06e2e8/0955ab28 (ali10) = void-on-sight for any lead that can reach them."
     },
     {
       "id": "wave3",
@@ -199,6 +199,31 @@
       "ts": "2026-09-28T16:27:44.000Z",
       "kind": "success",
       "text": "console handover: r37/r38a/r38b re-dispatched at this console (ali10), watches armed — 3/3 slots live"
+    },
+    {
+      "ts": "2026-09-28T16:12Z",
+      "kind": "error",
+      "text": "generation outage opened: r37's turn froze mid-M4 (DOM frozen at 43233 chars, server committed nothing); stall_recovery closed the dead tab 16:12 but the lesson-185 server-alive gate suppressed the assault — zombie-limbo deadlock (lesson 201)"
+    },
+    {
+      "ts": "2026-09-28T16:25Z",
+      "kind": "info",
+      "text": "fresh-tab triage (triage_zombies.py): r37 alive client-side, freeze-point = mid-M4 start (M1-M3 complete incl. 13/13 bridge tests); r38a/r38b rolled home = destroyed-queued zombies"
+    },
+    {
+      "ts": "2026-09-28T16:31Z",
+      "kind": "info",
+      "text": "r37 tab-reopen recorded (7FC70BE2); revival directive sent VERIFIED — but the generation queue REJECTED it ('No response' + doctype SyntaxError) and the user message ROLLED BACK server-side (msgs stayed 2): revival must be re-sent post-HEALTHY"
+    },
+    {
+      "ts": "2026-09-28T16:32Z",
+      "kind": "error",
+      "text": "backend_probe: DOWN (probe landed in fresh chat, no assistant reply) — outage protocol: flags/outage_hold.txt set; backend_probe_watch armed (30-min cadence); r38a/r38b voided; post_outage_recovery daemon armed (re-send r37 revival + re-create r38a/r38b on first HEALTHY)"
+    },
+    {
+      "ts": "2026-09-28T16:36Z",
+      "kind": "warning",
+      "text": "DECONFLICTION (parallel-lead law, lesson 201): TL-Station's 16:27 'handover' was a FALSE POSITIVE — account-scoped unreachability (ali10 cannot read ali12 chats) is NOT session death. The ali12 console owns this wave: r37 is work-rich (M1-M3 in its sandbox). ONE WORK ITEM = ONE LIVE SESSION — TL-Station duplicates (acfa1ad9/2f06e2e8/0955ab28 under ali10) are void-on-sight; re-dispatching another console's live item collides branches (wfx/r37/live, wfx/r38a/upload, wfx/r38b/studio)"
     }
   ],
   "production": {
