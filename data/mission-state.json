@@ -1,53 +1,90 @@
 {
-  "updatedAt": "2026-09-28T12:40:00.000Z",
+  "updatedAt": "2026-09-28T12:55:00.000Z",
   "mission": {
     "title": "WebFlix Productionization",
-    "subtitle": "R36-R40 YouTube-parity waves — resident Lead orchestration until roadmap completion",
+    "subtitle": "R36-R40 YouTube-parity waves \u2014 resident Lead orchestration until roadmap completion",
     "baseline": {
       "main": "acff71b8b363ba6f85ab7a3e9b08ca7ba3e5a419",
       "tests": 5265,
       "roadmap": "docs/plans/2026-09-28-youtube-parity-survey.md"
     },
-    "cadence": "resident lead — monitor → harvest → review → approve/require-changes → dispatch next"
+    "cadence": "resident lead \u2014 monitor \u2192 harvest \u2192 review \u2192 approve/require-changes \u2192 dispatch next"
   },
   "lanes": [
-    { "id": "r35", "name": "R35 Series", "scope": "journey-grammar re-encode + defect-candidate closure", "items": ["r35b"] },
-    { "id": "r36-r37", "name": "YouTube Parity Wave 1", "scope": "channels + live/live-chat", "items": ["r36", "r37"] },
-    { "id": "r38", "name": "YouTube Parity Wave 2", "scope": "upload + studio", "items": ["r38a", "r38b"] },
-    { "id": "r39", "name": "YouTube Parity Wave 3", "scope": "user-channel / go-live / monetization", "items": ["r39"] },
-    { "id": "r40", "name": "YouTube Parity Wave 4", "scope": "discovery / playlists / notifications", "items": ["r40"] }
+    {
+      "id": "r35",
+      "name": "R35 Series",
+      "scope": "journey-grammar re-encode + defect-candidate closure",
+      "items": [
+        "r35b"
+      ]
+    },
+    {
+      "id": "r36-r37",
+      "name": "YouTube Parity Wave 1",
+      "scope": "channels + live/live-chat",
+      "items": [
+        "r36",
+        "r37"
+      ]
+    },
+    {
+      "id": "r38",
+      "name": "YouTube Parity Wave 2",
+      "scope": "upload + studio",
+      "items": [
+        "r38a",
+        "r38b"
+      ]
+    },
+    {
+      "id": "r39",
+      "name": "YouTube Parity Wave 3",
+      "scope": "user-channel / go-live / monetization",
+      "items": [
+        "r39"
+      ]
+    },
+    {
+      "id": "r40",
+      "name": "YouTube Parity Wave 4",
+      "scope": "discovery / playlists / notifications",
+      "items": [
+        "r40"
+      ]
+    }
   ],
   "items": [
     {
       "id": "r35b",
-      "title": "The 32-spec journey re-encode — J01–J39 stale-grammar specs brought to current product grammar",
+      "title": "The 32-spec journey re-encode \u2014 J01\u2013J39 stale-grammar specs brought to current product grammar",
       "lane": "R35 Series",
       "status": "dispatched",
       "branch": null,
-      "notes": "LIVE — chat 230d7669 generating (M1 grammar survey in progress). Packet recovered from chat tree after sandbox rebuild; adopted post-reset; queue_watch armed (marker: R35B COMPLETION REPORT).",
+      "notes": "LIVE \u2014 chat 230d7669 generating (M1 grammar survey in progress). Packet recovered from chat tree after sandbox rebuild; adopted post-reset; queue_watch armed (marker: R35B COMPLETION REPORT).",
       "worker": "GLM-5.3 + Full-Stack (agents tab)"
     },
     {
       "id": "r36",
-      "title": "Channels — channel pages, subscriptions, channel-level navigation",
+      "title": "Channels \u2014 channel pages, subscriptions, channel-level navigation",
       "lane": "YouTube Parity Wave 1",
-      "status": "pending",
+      "status": "dispatched",
       "branch": null,
-      "notes": "Original chat b764f1bd RECLAIMED server-side (chat not found). Packet lost with the 09:53 reset — needs rebuild from survey + repo truth, then fresh dispatch.",
-      "worker": null
+      "notes": "RE-DISPATCHED 12:52 UTC \u2014 chat f90e17bb, prompt VERIFIED (11225 chars). Packet rebuilt from survey WAVE R36 spec. queue_watch armed (marker: R36 COMPLETION REPORT).",
+      "worker": "GLM-5.3 + Full-Stack (agents tab)"
     },
     {
       "id": "r37",
-      "title": "Live + live-chat — live streaming surface and live chat",
+      "title": "Live + live-chat \u2014 live streaming surface and live chat",
       "lane": "YouTube Parity Wave 1",
-      "status": "pending",
+      "status": "dispatched",
       "branch": null,
-      "notes": "Original chat f7f04c45 RECLAIMED server-side (chat not found). Packet lost with the 09:53 reset — needs rebuild from survey + repo truth, then fresh dispatch.",
-      "worker": null
+      "notes": "RE-DISPATCHED 12:52 UTC \u2014 chat 28c1e59c, prompt VERIFIED (12537 chars). Packet rebuilt from survey WAVE R37 spec (premieres deferred to R40). queue_watch armed (marker: R37 COMPLETION REPORT).",
+      "worker": "GLM-5.3 + Full-Stack (agents tab)"
     },
     {
       "id": "r38a",
-      "title": "Upload — video upload flow",
+      "title": "Upload \u2014 video upload flow",
       "lane": "YouTube Parity Wave 2",
       "status": "pending",
       "branch": null,
@@ -56,7 +93,7 @@
     },
     {
       "id": "r38b",
-      "title": "Studio — creator studio surface",
+      "title": "Studio \u2014 creator studio surface",
       "lane": "YouTube Parity Wave 2",
       "status": "pending",
       "branch": null,
@@ -83,19 +120,73 @@
     }
   ],
   "infra": [
-    { "id": "replay-stack", "label": "Replay stack", "status": "ok", "detail": "Canonical payswapdotorg/replay2 @ 7f25c2a — Chrome CDP :9222, replayd :3100, console :3000, supervisor+watcher ring up (rebuilt 12:33 UTC)" },
-    { "id": "operator-login", "label": "Operator login", "status": "ok", "detail": "Session restored from salvaged tokens — browser_login: logged-in, no operator action required" },
-    { "id": "resident-loop", "label": "Resident wave loop", "status": "ok", "detail": "resident_wave_loop.py online (supervisor-owned); r35b queue_watch armed (pid 18641)" },
-    { "id": "production", "label": "Production deploy", "status": "ok", "detail": "webflix-steel.vercel.app → 200 @ main acff71b (R35-A)" },
-    { "id": "credentials", "label": "Credentials", "status": "ok", "detail": "GitHub PAT ✓ (re-supplied 12:2x, push-verified), VERCEL_TOKEN ✓, E2B ✓, Neon ✓, OpenRouter ✓, Composio ✓, Upstash ✓, Cloudflare ✓, LiveKit ✓" }
+    {
+      "id": "replay-stack",
+      "label": "Replay stack",
+      "status": "ok",
+      "detail": "Canonical payswapdotorg/replay2 @ 7f25c2a \u2014 Chrome CDP :9222, replayd :3100, console :3000, supervisor+watcher ring up (rebuilt 12:33 UTC)"
+    },
+    {
+      "id": "operator-login",
+      "label": "Operator login",
+      "status": "ok",
+      "detail": "Session restored from salvaged tokens \u2014 browser_login: logged-in, no operator action required"
+    },
+    {
+      "id": "resident-loop",
+      "label": "Resident wave loop",
+      "status": "ok",
+      "detail": "resident_wave_loop.py online (supervisor-owned); r35b queue_watch armed (pid 18641)"
+    },
+    {
+      "id": "production",
+      "label": "Production deploy",
+      "status": "ok",
+      "detail": "webflix-steel.vercel.app \u2192 200 @ main acff71b (R35-A)"
+    },
+    {
+      "id": "credentials",
+      "label": "Credentials",
+      "status": "ok",
+      "detail": "GitHub PAT \u2713 (re-supplied 12:2x, push-verified), VERCEL_TOKEN \u2713, E2B \u2713, Neon \u2713, OpenRouter \u2713, Composio \u2713, Upstash \u2713, Cloudflare \u2713, LiveKit \u2713"
+    }
   ],
   "timeline": [
-    { "ts": "2026-09-28T12:30:00.000Z", "kind": "warn", "text": "Sandbox rebuild: wrong local replay (diverged, unpushed commits) removed per operator order; fresh clone of canonical payswapdotorg/replay2 @ 7f25c2a" },
-    { "ts": "2026-09-28T12:33:00.000Z", "kind": "success", "text": "deploy.sh: full stack UP (Chrome CDP, replayd, console, supervisor ring)" },
-    { "ts": "2026-09-28T12:33:30.000Z", "kind": "success", "text": "Login session restored from salvaged cookies+localStorage — dispatch unlocked without operator action" },
-    { "ts": "2026-09-28T12:35:00.000Z", "kind": "success", "text": "r35b found ALIVE server-side (chat 230d7669, generating); packet recovered verbatim from chat tree (9965 chars)" },
-    { "ts": "2026-09-28T12:36:00.000Z", "kind": "info", "text": "r35b adopted into registry; queue_watch armed; lane visible in live orchestration panel (generating, 13840 chars)" },
-    { "ts": "2026-09-28T12:38:00.000Z", "kind": "error", "text": "r36 (b764f1bd) + r37 (f7f04c45) chats RECLAIMED server-side — packets lost with reset; fresh rebuild + dispatch required" }
+    {
+      "ts": "2026-09-28T12:30:00.000Z",
+      "kind": "warn",
+      "text": "Sandbox rebuild: wrong local replay (diverged, unpushed commits) removed per operator order; fresh clone of canonical payswapdotorg/replay2 @ 7f25c2a"
+    },
+    {
+      "ts": "2026-09-28T12:33:00.000Z",
+      "kind": "success",
+      "text": "deploy.sh: full stack UP (Chrome CDP, replayd, console, supervisor ring)"
+    },
+    {
+      "ts": "2026-09-28T12:33:30.000Z",
+      "kind": "success",
+      "text": "Login session restored from salvaged cookies+localStorage \u2014 dispatch unlocked without operator action"
+    },
+    {
+      "ts": "2026-09-28T12:35:00.000Z",
+      "kind": "success",
+      "text": "r35b found ALIVE server-side (chat 230d7669, generating); packet recovered verbatim from chat tree (9965 chars)"
+    },
+    {
+      "ts": "2026-09-28T12:36:00.000Z",
+      "kind": "info",
+      "text": "r35b adopted into registry; queue_watch armed; lane visible in live orchestration panel (generating, 13840 chars)"
+    },
+    {
+      "ts": "2026-09-28T12:38:00.000Z",
+      "kind": "error",
+      "text": "r36 (b764f1bd) + r37 (f7f04c45) chats RECLAIMED server-side \u2014 packets lost with reset; fresh rebuild + dispatch required"
+    },
+    {
+      "ts": "2026-09-28T12:52:00.000Z",
+      "kind": "success",
+      "text": "r36 + r37 packets rebuilt from survey truth and RE-DISPATCHED (both VERIFIED, GLM-5.3 + Full-Stack, agents tab); watches armed \u2014 3/3 slots live"
+    }
   ],
   "production": {
     "url": "https://webflix-steel.vercel.app",
