@@ -393,7 +393,9 @@ def main():
                 if time.time() - last_probe > PROBE_MIN:
                     queued = ([l for l in lanes if not l.get("harvested")
                                and l.get("name") in dead]
-                              + [l for l in lanes if not l.get("chat")])
+                              + [l for l in lanes
+                                 if not l.get("chat")
+                                 and not l.get("harvested")])
                     if queued:
                         cand = min(queued, key=lambda l: LANE_ORDER.index(l["name"]))
                         log(f"[probe] cap probe alongside {live}: "
@@ -413,7 +415,9 @@ def main():
             # no lane live: serial dispatch in lane order
             queued = ([l for l in lanes if not l.get("harvested")
                        and l.get("name") in dead]
-                      + [l for l in lanes if not l.get("chat")])
+                      + [l for l in lanes
+                         if not l.get("chat")
+                         and not l.get("harvested")])
             if queued:
                 cand = min(queued, key=lambda l: LANE_ORDER.index(l["name"]))
                 revive = bool(cand.get("chat"))
