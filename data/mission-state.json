@@ -1,203 +1,218 @@
 {
-  "updatedAt": "2026-09-28T23:50:00.000Z",
-  "mission": {
-    "title": "WebFlix 2.0 — Complete YouTube Clone",
-    "subtitle": "ZTube interface contract (d1ezj447xe91-deploy.space-z.ai), feature-for-feature youtube.com functionality, complete backend per feature — operator directive 21:54Z; repo payswapdotorg/webflix-2.0",
-    "baseline": {
-      "main": "6b992aa5359c699b8132de4035b6eab8dcdfa29e",
-      "tests": 0,
-      "roadmap": "docs/plans/2026-09-28-webflix2-roadmap.md + docs/plans/wave-claims.md (repo: payswapdotorg/webflix-2.0)"
-    },
-    "cadence": "resident lead (this console = lead-ALI10) — monitor Wave 1 (lead-STEEL) → re-verify others' merges on own gates → claim + dispatch per the 2.0 ledger law (claim-before-dispatch, push-order precedence, 4h binding)"
-  },
-  "lanes": [
-    {
-      "id": "w1-boot",
-      "name": "Wave 1 — Boot Shell",
-      "scope": "Scaffold + full Prisma schema + ZTube app shell + home feed + seed + gates (branch wfx2/boot-shell)",
-      "status": "DISPATCHED — claimed by lead-STEEL 22:25Z (4h-binding to ~02:25Z); not yet merged at this console's last check 23:48Z (repo holds only the seed commit)",
-      "items": ["wfx2-b"]
-    },
-    {
-      "id": "w1-bible",
-      "name": "Wave 1 — YouTube Bible",
-      "scope": "docs/specs/*.md — per-feature complete YouTube functionality bible: behavior + data model + API + acceptance (branch wfx2/youtube-bible)",
-      "status": "DISPATCHED — claimed by lead-STEEL 22:25Z; THE functionality contract all later lanes implement to",
-      "items": ["wfx2-s"]
-    },
-    {
-      "id": "w1-watch",
-      "name": "Wave 1 — Watch Vertical",
-      "scope": "Complete watch experience: player, engagement, comments, related — full backend (branch wfx2/watch-vertical)",
-      "status": "DISPATCHED — claimed by lead-STEEL 22:25Z (4h-binding to ~02:25Z)",
-      "items": ["wfx2-w"]
-    },
-    {
-      "id": "wave2",
-      "name": "Wave 2 — Account + Creator",
-      "scope": "WFX2-A account (History, Playlists CRUD, Liked, Watch later, notifications bell menu w/ real events + read states + per-channel prefs) + WFX2-U upload + studio (upload flow + AI helpers, Studio Dashboard/Content/Analytics/Revenue/Comments/Moderation/Experiments)",
-      "status": "QUEUED — dependency-gated on WFX2-S (bible) + WFX2-B (boot scaffold); this console claims per ledger law when the gates land",
-      "items": ["wfx2-a", "wfx2-u"]
-    },
-    {
-      "id": "wave3",
-      "name": "Wave 3 — Discovery + Social",
-      "scope": "WFX2-D discovery (Shorts vertical feed, Trending + tabs, Search + filters/sort, Explore categories, Subscriptions feed) + WFX2-C channels (tabs, customize dialog, memberships tiers + member-only enforcement, community posts)",
-      "status": "QUEUED — unclaimed; follows Wave 2",
-      "items": ["wfx2-d", "wfx2-c"]
-    },
-    {
-      "id": "wave4",
-      "name": "Wave 4 — Live + Polish",
-      "scope": "WFX2-L live (live browse, live chat socket.io mini-service, premieres) + WFX2-P polish (settings, premium page, help/feedback, report history, voice search, PWA, parity audit vs the bible)",
-      "status": "QUEUED — unclaimed; final wave",
-      "items": ["wfx2-l", "wfx2-p"]
-    }
-  ],
-  "items": [
-    {
-      "id": "wfx2-b",
-      "title": "Boot shell — scaffold, full Prisma schema, ZTube app shell, home feed, seed, gates",
-      "lane": "Wave 1 — Boot Shell",
-      "status": "dispatched",
-      "branch": "wfx2/boot-shell",
-      "notes": "lead-STEEL's worker (dispatched 22:25Z). This console monitors the repo; on merge it re-verifies on its own gates per the 2.0 ledger law.",
-      "worker": "lead-STEEL's worker (agents tab)"
-    },
-    {
-      "id": "wfx2-s",
-      "title": "YouTube bible — docs/specs/*.md per-feature functionality contract",
-      "lane": "Wave 1 — YouTube Bible",
-      "status": "dispatched",
-      "branch": "wfx2/youtube-bible",
-      "notes": "lead-STEEL's worker (dispatched 22:25Z). The contract every later lane implements to; gaps found in the field become addenda.",
-      "worker": "lead-STEEL's worker (agents tab)"
-    },
-    {
-      "id": "wfx2-w",
-      "title": "Watch vertical — player, engagement, comments, related (full backend)",
-      "lane": "Wave 1 — Watch Vertical",
-      "status": "dispatched",
-      "branch": "wfx2/watch-vertical",
-      "notes": "lead-STEEL's worker (dispatched 22:25Z).",
-      "worker": "lead-STEEL's worker (agents tab)"
-    },
-    {
-      "id": "wfx2-a",
-      "title": "Account surfaces — History / Playlists CRUD / Liked / Watch later / notifications",
-      "lane": "Wave 2 — Account + Creator",
-      "status": "pending",
-      "branch": null,
-      "notes": "UNCLAIMED — dependency-gated on the bible (WFX2-S) + boot (WFX2-B). Claimable by this console per the ledger law (claim-before-dispatch) once the gates land; full lane scope in the lane record above.",
-      "worker": null
-    },
-    {
-      "id": "wfx2-u",
-      "title": "Upload + Creator Studio — upload flow (+ AI helpers) + full studio surfaces",
-      "lane": "Wave 2 — Account + Creator",
-      "status": "pending",
-      "branch": null,
-      "notes": "UNCLAIMED — dependency-gated on the bible + boot (Wave 2).",
-      "worker": null
-    },
-    {
-      "id": "wfx2-d",
-      "title": "Discovery — Shorts, Trending, Search, Explore, Subscriptions feed",
-      "lane": "Wave 3 — Discovery + Social",
-      "status": "pending",
-      "branch": null,
-      "notes": "UNCLAIMED — Wave 3; follows Wave 2.",
-      "worker": null
-    },
-    {
-      "id": "wfx2-c",
-      "title": "Channels — tabs, customize, memberships, community posts",
-      "lane": "Wave 3 — Discovery + Social",
-      "status": "pending",
-      "branch": null,
-      "notes": "UNCLAIMED — Wave 3; follows Wave 2.",
-      "worker": null
-    },
-    {
-      "id": "wfx2-l",
-      "title": "Live — browse, live chat (socket.io mini-service), premieres",
-      "lane": "Wave 4 — Live + Polish",
-      "status": "pending",
-      "branch": null,
-      "notes": "UNCLAIMED — final wave; the closing parity audit vs the bible.",
-      "worker": null
-    },
-    {
-      "id": "wfx2-p",
-      "title": "Polish — settings, premium, help/feedback, report history, voice search, PWA, parity audit",
-      "lane": "Wave 4 — Live + Polish",
-      "status": "pending",
-      "branch": null,
-      "notes": "UNCLAIMED — final wave; the closing parity audit vs the bible.",
-      "worker": null
-    }
-  ],
-  "infra": [
-    {
-      "id": "replay-stack",
-      "label": "Replay stack",
-      "status": "ok",
-      "detail": "Canonical payswapdotorg/replay2 @ c845c31 — Chrome CDP :9222 (Chrome 153, TurboVPN tunnel egress 198.244.234.214), replayd :3100, console :3000 (two-view UI), supervisor+watcher ring + resident_wave_loop up since 18:03Z"
-    },
-    {
-      "id": "operator-login",
-      "label": "Operator login",
-      "status": "ok",
-      "detail": "ali10 logged-in (bridge status 23:48Z; /api/v1/auths/ ground-truth verified at cutover) — dispatch-capable for this console's claims"
-    },
-    {
-      "id": "webflix2-watch",
-      "label": "WebFlix 2.0 repo watch",
-      "status": "ok",
-      "detail": "webflix2_watch.py armed 23:5xZ — polls payswapdotorg/webflix-2.0 (+ webflix-1.0 wind-down tail) every 60s; monitor-only (claims are operator decisions per the ledger law); events → data/webflix2-events.json"
-    },
-    {
-      "id": "webflix-1.0",
-      "label": "WebFlix 1.0 (superseded — archived)",
-      "status": "ok",
-      "detail": "CLOSED at main 3707c05 + ledger fbbef9b — R35b/R36/R37/R38-B merged (battery 5418/5417/1/0 at head), R38-A dead unlanded, r39/r40 superseded; two deferred merge-time composes recorded in DIVERGENCES rows 1-2 for any future polish pass"
-    }
-  ],
-  "timeline": [
-    {
-      "ts": "2026-09-28T21:54Z",
-      "kind": "info",
-      "text": "OPERATOR DIRECTIVE — webflix-1.0 superseded; new attempt: payswapdotorg/webflix-2.0 (clone the ZTube interface, every feature its complete youtube.com functionality + backend)"
-    },
-    {
-      "ts": "2026-09-28T22:25Z",
-      "kind": "success",
-      "text": "webflix-2.0 seeded (6b992aa: README interface contract + stack laws + roadmap + wave-claims ledger); lead-STEEL claims + dispatches Wave 1 (WFX2-B boot / WFX2-S bible / WFX2-W watch), 4h-binding to ~02:25Z"
-    },
-    {
-      "ts": "2026-09-28T23:2xZ",
-      "kind": "success",
-      "text": "webflix-1.0 wind-down: R37 MERGED 2dc3da2 (gates green 5356/5355/1/0) — hold released per ledger fbc859c"
-    },
-    {
-      "ts": "2026-09-28T23:4xZ",
-      "kind": "success",
-      "text": "webflix-1.0 wind-down: R38-B MERGED 03a0dd9 (merge-head battery 5418/5417/1/0, J44/J45/J46 PASS); R38-A dead unlanded (honest record); repo closed at 3707c05"
-    },
-    {
-      "ts": "2026-09-28T23:50Z",
-      "kind": "info",
-      "text": "MISSION MIGRATED (this console, lead-ALI10) — Mission Control now tracks WebFlix 2.0; webflix2_watch armed; Wave 2 claim ready on bible+boot landing per the ledger law"
-    }
-  ],
-  "production": {
-    "url": "https://d1ezj447xe91-deploy.space-z.ai/",
-    "deployedAt": "2026-09-28T21:54Z",
-    "status": "reference interface (ZTube) — no 2.0 deployment yet; first deploy follows the Wave 1 boot merge (webflix-1.0's vercel deployment is historical)"
-  },
+ "updatedAt": "2026-09-28T23:50:00.000Z",
+ "mission": {
+  "title": "WebFlix 2.0 \u2014 Complete YouTube Clone",
+  "subtitle": "ZTube interface contract (d1ezj447xe91-deploy.space-z.ai), feature-for-feature youtube.com functionality, complete backend per feature \u2014 operator directive 21:54Z; repo payswapdotorg/webflix-2.0",
   "baseline": {
-    "main": "6b992aa5359c699b8132de4035b6eab8dcdfa29e",
-    "tests": 0,
-    "roadmap": "docs/plans/2026-09-28-webflix2-roadmap.md (repo: payswapdotorg/webflix-2.0)"
+   "main": "6b992aa5359c699b8132de4035b6eab8dcdfa29e",
+   "tests": 0,
+   "roadmap": "docs/plans/2026-09-28-webflix2-roadmap.md + docs/plans/wave-claims.md (repo: payswapdotorg/webflix-2.0)"
+  },
+  "cadence": "resident lead (this console = lead-ALI10) \u2014 monitor Wave 1 (lead-STEEL) \u2192 re-verify others' merges on own gates \u2192 claim + dispatch per the 2.0 ledger law (claim-before-dispatch, push-order precedence, 4h binding)"
+ },
+ "lanes": [
+  {
+   "id": "w1-boot",
+   "name": "Wave 1 \u2014 Boot Shell",
+   "scope": "Scaffold + full Prisma schema + ZTube app shell + home feed + seed + gates (branch wfx2/boot-shell)",
+   "status": "DISPATCHED \u2014 claimed by lead-STEEL 22:25Z (4h-binding to ~02:25Z); not yet merged at this console's last check 23:48Z (repo holds only the seed commit)",
+   "items": [
+    "wfx2-b"
+   ]
+  },
+  {
+   "id": "w1-bible",
+   "name": "Wave 1 \u2014 YouTube Bible",
+   "scope": "docs/specs/*.md \u2014 per-feature complete YouTube functionality bible: behavior + data model + API + acceptance (branch wfx2/youtube-bible)",
+   "status": "DISPATCHED \u2014 claimed by lead-STEEL 22:25Z; THE functionality contract all later lanes implement to",
+   "items": [
+    "wfx2-s"
+   ]
+  },
+  {
+   "id": "w1-watch",
+   "name": "Wave 1 \u2014 Watch Vertical",
+   "scope": "Complete watch experience: player, engagement, comments, related \u2014 full backend (branch wfx2/watch-vertical)",
+   "status": "DISPATCHED \u2014 claimed by lead-STEEL 22:25Z (4h-binding to ~02:25Z)",
+   "items": [
+    "wfx2-w"
+   ]
+  },
+  {
+   "id": "wave2",
+   "name": "Wave 2 \u2014 Account + Creator",
+   "scope": "WFX2-A account (History, Playlists CRUD, Liked, Watch later, notifications bell menu w/ real events + read states + per-channel prefs) + WFX2-U upload + studio (upload flow + AI helpers, Studio Dashboard/Content/Analytics/Revenue/Comments/Moderation/Experiments)",
+   "status": "QUEUED \u2014 dependency-gated on WFX2-S (bible) + WFX2-B (boot scaffold); this console claims per ledger law when the gates land",
+   "items": [
+    "wfx2-a",
+    "wfx2-u"
+   ]
+  },
+  {
+   "id": "wave3",
+   "name": "Wave 3 \u2014 Discovery + Social",
+   "scope": "WFX2-D discovery (Shorts vertical feed, Trending + tabs, Search + filters/sort, Explore categories, Subscriptions feed) + WFX2-C channels (tabs, customize dialog, memberships tiers + member-only enforcement, community posts)",
+   "status": "QUEUED \u2014 unclaimed; follows Wave 2",
+   "items": [
+    "wfx2-d",
+    "wfx2-c"
+   ]
+  },
+  {
+   "id": "wave4",
+   "name": "Wave 4 \u2014 Live + Polish",
+   "scope": "WFX2-L live (live browse, live chat socket.io mini-service, premieres) + WFX2-P polish (settings, premium page, help/feedback, report history, voice search, PWA, parity audit vs the bible)",
+   "status": "QUEUED \u2014 unclaimed; final wave",
+   "items": [
+    "wfx2-l",
+    "wfx2-p"
+   ]
   }
+ ],
+ "items": [
+  {
+   "id": "wfx2-b",
+   "title": "Boot shell \u2014 scaffold, full Prisma schema, ZTube app shell, home feed, seed, gates",
+   "lane": "Wave 1 \u2014 Boot Shell",
+   "status": "dispatched",
+   "branch": "wfx2/boot-shell",
+   "notes": "lead-STEEL's worker (dispatched 22:25Z). This console monitors the repo; on merge it re-verifies on its own gates per the 2.0 ledger law.",
+   "worker": "lead-STEEL's worker (agents tab)"
+  },
+  {
+   "id": "wfx2-s",
+   "title": "YouTube bible \u2014 docs/specs/*.md per-feature functionality contract",
+   "lane": "Wave 1 \u2014 YouTube Bible",
+   "status": "dispatched",
+   "branch": "wfx2/youtube-bible",
+   "notes": "lead-STEEL's worker (dispatched 22:25Z). The contract every later lane implements to; gaps found in the field become addenda.",
+   "worker": "lead-STEEL's worker (agents tab)"
+  },
+  {
+   "id": "wfx2-w",
+   "title": "Watch vertical \u2014 player, engagement, comments, related (full backend)",
+   "lane": "Wave 1 \u2014 Watch Vertical",
+   "status": "dispatched",
+   "branch": "wfx2/watch-vertical",
+   "notes": "lead-STEEL's worker (dispatched 22:25Z).",
+   "worker": "lead-STEEL's worker (agents tab)"
+  },
+  {
+   "id": "wfx2-a",
+   "title": "Account surfaces \u2014 History / Playlists CRUD / Liked / Watch later / notifications",
+   "lane": "Wave 2 \u2014 Account + Creator",
+   "status": "pending",
+   "branch": null,
+   "notes": "UNCLAIMED \u2014 dependency-gated on the bible (WFX2-S) + boot (WFX2-B). Claimable by this console per the ledger law (claim-before-dispatch) once the gates land; full lane scope in the lane record above.",
+   "worker": null
+  },
+  {
+   "id": "wfx2-u",
+   "title": "Upload + Creator Studio \u2014 upload flow (+ AI helpers) + full studio surfaces",
+   "lane": "Wave 2 \u2014 Account + Creator",
+   "status": "pending",
+   "branch": null,
+   "notes": "UNCLAIMED \u2014 dependency-gated on the bible + boot (Wave 2).",
+   "worker": null
+  },
+  {
+   "id": "wfx2-d",
+   "title": "Discovery \u2014 Shorts, Trending, Search, Explore, Subscriptions feed",
+   "lane": "Wave 3 \u2014 Discovery + Social",
+   "status": "pending",
+   "branch": null,
+   "notes": "UNCLAIMED \u2014 Wave 3; follows Wave 2.",
+   "worker": null
+  },
+  {
+   "id": "wfx2-c",
+   "title": "Channels \u2014 tabs, customize, memberships, community posts",
+   "lane": "Wave 3 \u2014 Discovery + Social",
+   "status": "pending",
+   "branch": null,
+   "notes": "UNCLAIMED \u2014 Wave 3; follows Wave 2.",
+   "worker": null
+  },
+  {
+   "id": "wfx2-l",
+   "title": "Live \u2014 browse, live chat (socket.io mini-service), premieres",
+   "lane": "Wave 4 \u2014 Live + Polish",
+   "status": "pending",
+   "branch": null,
+   "notes": "UNCLAIMED \u2014 final wave; the closing parity audit vs the bible.",
+   "worker": null
+  },
+  {
+   "id": "wfx2-p",
+   "title": "Polish \u2014 settings, premium, help/feedback, report history, voice search, PWA, parity audit",
+   "lane": "Wave 4 \u2014 Live + Polish",
+   "status": "pending",
+   "branch": null,
+   "notes": "UNCLAIMED \u2014 final wave; the closing parity audit vs the bible.",
+   "worker": null
+  }
+ ],
+ "infra": [
+  {
+   "id": "replay-stack",
+   "label": "Replay stack",
+   "status": "ok",
+   "detail": "Canonical payswapdotorg/replay2 @ c845c31 \u2014 Chrome CDP :9222 (Chrome 153, TurboVPN tunnel egress 198.244.234.214), replayd :3100, console :3000 (two-view UI), supervisor+watcher ring + resident_wave_loop up since 18:03Z"
+  },
+  {
+   "id": "operator-login",
+   "label": "Operator login",
+   "status": "ok",
+   "detail": "ali10 logged-in (bridge status 23:48Z; /api/v1/auths/ ground-truth verified at cutover) \u2014 dispatch-capable for this console's claims"
+  },
+  {
+   "id": "webflix2-watch",
+   "label": "WebFlix 2.0 repo watch",
+   "status": "ok",
+   "detail": "webflix2_watch.py @ supervisor ring (immortal via ensure_webflix2_watch, dfork-launched \u2014 the 23:50 reaper lesson) \u2014 polls payswapdotorg/webflix-2.0 (+ webflix-1.0 wind-down tail) every 60s; monitor-only (claims are operator decisions per the ledger law); events \u2192 data/webflix2-events.json"
+  },
+  {
+   "id": "webflix-1.0",
+   "label": "WebFlix 1.0 (superseded \u2014 archived)",
+   "status": "ok",
+   "detail": "CLOSED at main 3707c05 + ledger fbbef9b \u2014 R35b/R36/R37/R38-B merged (battery 5418/5417/1/0 at head), R38-A dead unlanded, r39/r40 superseded; two deferred merge-time composes recorded in DIVERGENCES rows 1-2 for any future polish pass"
+  }
+ ],
+ "timeline": [
+  {
+   "ts": "2026-09-28T21:54Z",
+   "kind": "info",
+   "text": "OPERATOR DIRECTIVE \u2014 webflix-1.0 superseded; new attempt: payswapdotorg/webflix-2.0 (clone the ZTube interface, every feature its complete youtube.com functionality + backend)"
+  },
+  {
+   "ts": "2026-09-28T22:25Z",
+   "kind": "success",
+   "text": "webflix-2.0 seeded (6b992aa: README interface contract + stack laws + roadmap + wave-claims ledger); lead-STEEL claims + dispatches Wave 1 (WFX2-B boot / WFX2-S bible / WFX2-W watch), 4h-binding to ~02:25Z"
+  },
+  {
+   "ts": "2026-09-28T23:2xZ",
+   "kind": "success",
+   "text": "webflix-1.0 wind-down: R37 MERGED 2dc3da2 (gates green 5356/5355/1/0) \u2014 hold released per ledger fbc859c"
+  },
+  {
+   "ts": "2026-09-28T23:4xZ",
+   "kind": "success",
+   "text": "webflix-1.0 wind-down: R38-B MERGED 03a0dd9 (merge-head battery 5418/5417/1/0, J44/J45/J46 PASS); R38-A dead unlanded (honest record); repo closed at 3707c05"
+  },
+  {
+   "ts": "2026-09-28T23:50Z",
+   "kind": "info",
+   "text": "MISSION MIGRATED (this console, lead-ALI10) \u2014 Mission Control now tracks WebFlix 2.0; webflix2_watch armed; Wave 2 claim ready on bible+boot landing per the ledger law"
+  }
+ ],
+ "production": {
+  "url": "https://d1ezj447xe91-deploy.space-z.ai/",
+  "deployedAt": "2026-09-28T21:54Z",
+  "status": "reference interface (ZTube) \u2014 no 2.0 deployment yet; first deploy follows the Wave 1 boot merge (webflix-1.0's vercel deployment is historical)"
+ },
+ "baseline": {
+  "main": "6b992aa5359c699b8132de4035b6eab8dcdfa29e",
+  "tests": 0,
+  "roadmap": "docs/plans/2026-09-28-webflix2-roadmap.md (repo: payswapdotorg/webflix-2.0)"
+ }
 }

@@ -655,6 +655,30 @@ def ensure_wave_loop():
         start_new_session=True)
 
 
+def ensure_webflix2_watch():
+    """Keep the WebFlix 2.0 repo watch alive (2026-09-28 23:50 lesson: a
+    setsid/nohup launch from a Bash tool call is reaped at the call
+    boundary — only dfork'd grandchildren re-parented to init survive;
+    ring membership makes the monitor immortal). The watch is
+    MONITOR-ONLY: polls payswapdotorg/webflix-2.0 + webflix-1.0 for
+    origin movement; it NEVER dispatches, NEVER claims — claims are
+    operator decisions per the 2.0 ledger law. Identity =
+    'webflix2_watch.py' at the END of the cmdline (the queue_watch
+    lesson: never a bare pid)."""
+    r = subprocess.run(["pgrep", "-f", "webflix2_watch.py$"],
+                       capture_output=True, text=True)
+    if r.returncode == 0 and (r.stdout or "").strip():
+        return
+    log("webflix2_watch DEAD — restarting (monitor-only repo watch, "
+        "operator standing order)")
+    subprocess.Popen(
+        [PY, os.path.join(BASE, "dfork_launch.py"),
+         os.path.join(LOGDIR, "webflix2_watch.log"),
+         PY, os.path.join(BASE, "webflix2_watch.py")],
+        stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL,
+        start_new_session=True)
+
+
 _lane_specs_seen = set()
 
 
@@ -840,6 +864,7 @@ def main():
             ensure_tab_gc()
             ensure_queue_watch()
             ensure_wave_loop()
+            ensure_webflix2_watch()
             ensure_stall_recovery()
             # ensure_freeze_probe_watch() — DISABLED 2026-09-25: operator doctrine
             # override ("it is not capacity blocked; disregard rate-limit
