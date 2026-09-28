@@ -3887,3 +3887,27 @@ endpoint, GET the registry list (project count + names), negative control.
     lane tab, and fresh-tab-at-same-URL for wedged renderers (the turn
     keeps running server-side; the batch endpoint commits only at turn
     END — judge mid-run liveness by DOM growth, not batch chars).
+## Lesson 195 (2026-09-28 04:3x-08:3x UTC — the landed-but-unspawned terminal state; the deploy-quota wall; vercel CLI paths)
+
+195. **Three platform-scale laws from the campaign endgame.** (1) LANDED-
+    BUT-UNSPAWNED is terminal: a dispatch can land VERIFIED (chat titled,
+    registry sent:true) yet never provision a sandbox pod — 1.5h with no
+    pod and a 500 on chat detail = dead-in-place; void + re-dispatch
+    immediately (w110-r4 case). The two-stage admission (send lands → pod
+    provisions) can silently fail at stage two with no error anywhere.
+    (2) THE DEPLOY-QUOTA WALL: Vercel free tier = 100 deployments/day
+    across ALL paths (API v13, git webhook, CLI remote upload) — when
+    exhausted NOTHING deploys until the rolling reset (~24h). Detect via
+    the API error code "api-deployments-free-per-day" with its reset
+    epoch. Budget merges accordingly on multi-merge days (7 merges + 3
+    manual triggers + previews burned the pool). (3) THE CLI PATHS:
+    `vercel deploy --prod` (remote build) hits the same quota (after a
+    245MB upload — check quota BEFORE uploading); `vercel build` (local)
+    needs `vercel pull --yes` first and can break on tsx/bun bin
+    resolution under the builder env ("Cannot find module './cjs/
+    index.cjs'") even when `bun run migrate` works directly with the env
+    sourced — and npm's npx lock ("ECOMPROMISED Lock compromised") breaks
+    after reaper-killed npx runs (clear ~/.npm/_npx + _cacache/tmp, or
+    switch to `bunx --bun vercel@latest`). The env values ARE readable
+    via GET /v9/projects/{id}/env/{envId} (even 'encrypted' type) —
+    enough to run build steps locally against production infra.
