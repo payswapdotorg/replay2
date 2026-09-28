@@ -65,7 +65,8 @@ NO_TURN_MIN = 30 * 60     # workspace provisioned but assistant turn never
                          # fresh-chat cure, never fight the zombie)
 FREEZE_MIN = 25 * 60      # seconds of frozen mid-thread chars => turn-death
 PROBE_MIN = 30 * 60       # seconds between parallel probes
-LANE_ORDER = ["flauz-F1-tl2", "flauz-F2-tl2", "flauz-F3-tl2", "flauz-F4-tl2"]
+LANE_ORDER = ["flauz-F1-tl2", "flauz-F2-tl2", "flauz-F3-tl2",
+               "flauz-F4-tl2", "flauz-F2B-tl2"]
 
 
 def log(line):
