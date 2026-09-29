@@ -921,12 +921,35 @@ def _select_insert_send(c, tab, prompt, name, prompt_file):
     return ok, url, pct, c
 
 
+def _subst_pat(text):
+    """Send-time PAT substitution (2026-09-29 lead fix): worker prompts are
+    staged with the literal [REDACTED:github_token] placeholder so the token
+    never sits on disk (and never enters any committed file). The real token
+    is injected here ONLY into the in-memory text that goes to the composer —
+    never logged, never written back, never echoed."""
+    pat = ""
+    for k in ("GITHUB_OPERATOR_PAT", "OPERATOR_PAT", "GITHUB_TOKEN", "PAYSWAP_PAT"):
+        v = os.environ.get(k, "")
+        if v.startswith(("ghp_", "github_pat_")):
+            pat = v
+            break
+    if "[REDACTED:github_token]" in text:
+        if pat:
+            n = text.count("[REDACTED:github_token]")
+            print(f"[pat] send-time substitution: {n} placeholder(s) -> live token "
+                  "(in-memory only; token never logged)")
+            return text.replace("[REDACTED:github_token]", pat)
+        print("[pat] WARNING: placeholder present but no operator PAT in env — "
+              "the worker would receive the LITERAL placeholder")
+    return text
+
+
 def create(name, prompt_file):
     # absolute from the start: the capacity-recovery flag + registry records
     # are consumed by processes with a DIFFERENT cwd (supervisor/relaunchers) —
     # a relative path broke recovery with FileNotFoundError (2026-09-10)
     prompt_file = os.path.abspath(prompt_file)
-    prompt = open(prompt_file, encoding="utf-8").read()
+    prompt = _subst_pat(open(prompt_file, encoding="utf-8").read())
     if _find(name):
         print(f"session {name} already exists")
         return 1
@@ -1833,7 +1856,7 @@ def main():
         arg = sys.argv[3]
         import os.path as _p
         if arg.startswith("@") and _p.isfile(arg[1:]):
-            msg = open(arg[1:], encoding="utf-8").read()
+            msg = _subst_pat(open(arg[1:], encoding="utf-8").read())
         else:
             msg = arg
         return send(sys.argv[2], msg)
