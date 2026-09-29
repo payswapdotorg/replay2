@@ -250,8 +250,11 @@ export async function GET() {
     // r03 (single-wave era), r24w1 (wave era), r35a/r34b2 (suffixed era:
     // round + lane letter + optional attempt digit). The regex must accept
     // every naming generation or the panel silently goes empty. flauz-*-tl2
-    // (the TL2 Agent OS surge era) joins the accepted generations.
-    if (!/^(?:r\d+[a-z0-9]*|flauz-[a-z0-9]+-tl2)$/.test(name)) continue;
+    // (the TL2 Agent OS surge era) joins the accepted generations — as does
+    // the ACTUAL TL2 naming form flauz-tl2-* (flauz-tl2-h1, flauz-tl2-acc1):
+    // the 2026-09-29 forensics showed the suffix-only pattern hid every TL2
+    // session from the live strip (latent since the surge began).
+    if (!/^(?:r\d+[a-z0-9]*|flauz-[a-z0-9]+-tl2|flauz-tl2-[a-z0-9]+)$/.test(name)) continue;
     if (r.action === "void") {
       // a void is bookkeeping, not a dispatch
       continue;
