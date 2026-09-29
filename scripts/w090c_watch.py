@@ -137,6 +137,7 @@ def main():
     os.makedirs(FLAGS, exist_ok=True)
     log("w090c watch armed (corrected classifier: real-report regex)")
     prev_len = -1
+    prev_hash = None
     static_rounds = 0
     continuations = 0
     pushed_seen = os.path.exists(PUSHED_FLAG)
@@ -179,10 +180,15 @@ def main():
         else:
             gone_rounds = 0
 
+        import hashlib
+        body_hash = hashlib.sha256(txt.encode(errors="replace")).hexdigest()[:16]
+        # the chat UI caps/virtualizes the rendered body: length alone stalls
+        # while the worker is mid-run. Content-hash is the true change signal.
+        changed = body_hash != prev_hash if prev_hash else True
         grew = len(txt) > prev_len + 40 if prev_len >= 0 else True
-        if (st or {}).get("generating") or grew:
+        if (st or {}).get("generating") or changed or grew:
             static_rounds = 0
-            log("GENERATING (len=%s gen=%s)" % (len(txt), (st or {}).get("generating")))
+            log("ACTIVE (len=%s hash=%s gen=%s)" % (len(txt), body_hash[:8], (st or {}).get("generating")))
         else:
             static_rounds += 1
             log("static round %d (len=%s)" % (static_rounds, len(txt)))
@@ -194,6 +200,7 @@ def main():
                     outbox("W090C stalled — continuation sent (%d/%d)."
                            % (continuations, MAX_CONTINUATIONS))
         prev_len = len(txt)
+        prev_hash = body_hash
         time.sleep(CLASSIFY_S)
 
 
