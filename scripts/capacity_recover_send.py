@@ -46,6 +46,28 @@ def click_cancel(cdp):
 
 
 def submit(cdp):
+    # 2026-09-29 lesson: the site IGNORES untrusted form.requestSubmit() —
+    # the composer draft never leaves. A REAL Input.dispatchMouseEvent on
+    # button.sendMessageButton is the only reliable submit. Keep the legacy
+    # JS submit as the fallback rung.
+    import json as _json
+    try:
+        pos = cdp.eval(r"""(() => {
+          const b = document.querySelector('button.sendMessageButton');
+          if (!b || b.disabled) return '';
+          const r = b.getBoundingClientRect();
+          return JSON.stringify({x: Math.round(r.x + r.width/2), y: Math.round(r.y + r.height/2)});
+        })()""")
+        if pos:
+            p = _json.loads(pos)
+            if p.get("x", 0) > 0:
+                cdp.call("Input.dispatchMouseEvent", {"type": "mousePressed", "x": p["x"],
+                                                      "y": p["y"], "button": "left", "clickCount": 1})
+                cdp.call("Input.dispatchMouseEvent", {"type": "mouseReleased", "x": p["x"],
+                                                      "y": p["y"], "button": "left", "clickCount": 1})
+                return "real-mouse-send"
+    except Exception:
+        pass
     return cdp.eval(channel.SUBMIT_JS)
 
 

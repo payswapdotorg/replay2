@@ -864,6 +864,23 @@ def _select_insert_send(c, tab, prompt, name, prompt_file):
         _eval(c, JS_CLICK_SEND_BUTTON, timeout=10)
     except Exception:
         pass
+    time.sleep(1)
+    # 2026-09-29 lesson: the site now IGNORES untrusted DOM clicks on the
+    # send button (composer stays filled, no navigation). A REAL
+    # Input.dispatchMouseEvent at the button's live coordinates produces a
+    # trusted gesture and reliably sends. Keep DOM click + Enter as the
+    # earlier rungs of the ladder.
+    try:
+        sb = _eval(c, JS_SEND_BUTTON, timeout=10)
+        if sb:
+            spt = json.loads(sb)
+            if not spt.get("disabled") and spt.get("x", 0) > 0:
+                c.call("Input.dispatchMouseEvent", {"type": "mousePressed", "x": spt["x"],
+                                                    "y": spt["y"], "button": "left", "clickCount": 1})
+                c.call("Input.dispatchMouseEvent", {"type": "mouseReleased", "x": spt["x"],
+                                                    "y": spt["y"], "button": "left", "clickCount": 1})
+    except Exception:
+        pass
     time.sleep(2)
     for typ in ("keyDown", "keyUp"):
         c.call("Input.dispatchKeyEvent", {
