@@ -16,7 +16,24 @@ const execFileAsync = promisify(execFile);
  * The python interpreter is resolved by deploy.sh (it needs the `websocket`
  * module) and recorded in scripts/python_bin.txt; we read it lazily.
  */
-const ROOT = process.env.REPLAY_ROOT || "/home/z/replay2";
+// Resolve the deployed replay2 repo root, resurrection-proof under any
+// spawner (supervisor/watcher/custodian relaunch without custom env):
+// 1. REPLAY_ROOT env (explicit override)
+// 2. process.cwd() when the console dev server runs from the repo itself
+// 3. known deployment locations (probed for scripts/bridge.py)
+const ROOT_CANDIDATES = [
+  process.env.REPLAY_ROOT,
+  process.cwd(),
+  "/home/z/my-project/replay2",
+  "/home/z/replay2",
+].filter((x): x is string => Boolean(x));
+const ROOT = ROOT_CANDIDATES.find((c) => {
+  try {
+    return existsSync(join(c, "scripts", "bridge.py"));
+  } catch {
+    return false;
+  }
+}) || "/home/z/replay2";
 export const SCRIPTS = join(ROOT, "scripts");
 export const FLAGS = join(SCRIPTS, "flags");
 export const BRIDGE = join(SCRIPTS, "bridge.py");
