@@ -92,12 +92,20 @@ def console_body_ok(port=None, timeout=4):
     would happily babysit the WRONG app while the operator stares at a page
     that can never show the replay/login. This check reads the body and
     demands the console identity marker.
+
+    2026-09-29 hardening (Task-135 reset recovery): the marker is the
+    console's <title> tag. The bare string "Replay Console" also appears in
+    my-project's retirement notice (which mentions this repo by name), so the
+    loose containment check produced a false positive and the whole stack
+    cheerfully babysat the retirement page. The metadata title is rendered
+    only by the console itself and sits inside <head>, well within the first
+    8 KiB of the streamed HTML.
     """
     try:
         body = urllib.request.urlopen(
             f"http://127.0.0.1:{port}/", timeout=timeout
         ).read(8192).decode("utf-8", "ignore")
-        return "Replay Console" in body
+        return "<title>Replay Console</title>" in body
     except Exception:
         return False
 

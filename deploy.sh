@@ -30,9 +30,15 @@ http_ok() { curl -sf -o /dev/null --max-time 4 "$1" && return 0 || return 1; }
 # `bun run dev` on :3000; accepting it blindly hands the operator a page that
 # can never show the replay or the login flow (root cause of the "can't login"
 # report, 2026-09-16).
+# 2026-09-29 hardening: the check now matches the console's <title> tag. The
+# bare string "Replay Console" also appears in my-project's retirement notice
+# (which mentions this repo by name), so the loose grep produced a false
+# positive and deploy.sh left the retirement page on :PORT (caught live during
+# the Task-135 reset recovery). The metadata title is rendered only by the
+# console itself.
 console_ok() {
   curl -sf --max-time 5 "http://127.0.0.1:${1:-3000}/" 2>/dev/null \
-    | grep -q "Replay Console"
+    | grep -q "<title>Replay Console</title>"
 }
 
 # Evict non-console listeners on :PORT (keep anything running from replay2).
