@@ -32,3 +32,8 @@ scripts/prompts/
 # regenerable staging clones (Flauz mirror / lab remotes) — never commit
 scripts/harvests/flauz-land/
 scripts/harvests/lab-clone/
+
+# per-deployment local project scripts (§0: project content never committed;
+# supervisor's generic ensure_local_services() keeps these alive per
+# flags/local_services.json)
+scripts/local/

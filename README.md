@@ -63,6 +63,16 @@ After deploy:
 Optional: `cp scripts/env.sh.example scripts/env.sh` and set `REPO=owner/name`
 to get a branch/PR summary card in the console.
 
+### Per-deployment local daemons (§0-compliant)
+
+A deployment can keep its own long-running helpers (repo watches, pollers)
+alive through the generic supervisor mechanism: list them in
+`scripts/flags/local_services.json` (gitignored runtime state —
+`{"services": [{"name", "cmd": [argv…], "log"}]}`) and put the scripts
+under `scripts/local/` (gitignored). The supervisor's
+`ensure_local_services()` dfork-restarts anything that dies; the committed
+repo stays project-agnostic (see AGENT_BOOT_PROMPT.md §0).
+
 ### Environment variables
 
 | var | default | effect |

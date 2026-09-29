@@ -595,6 +595,57 @@ def _mtime(path):
         return 0.0
 
 
+def ensure_local_services():
+    """Keep per-deployment LOCAL daemons alive — a GENERIC mechanism (§0).
+
+    The deployment's own daemons (whatever THIS sandbox is resident on —
+    repo watches, pollers, any long-running local helper) are described in
+    flags/local_services.json (gitignored per-sandbox runtime state):
+
+        {"services": [
+            {"name": "<label>", "cmd": ["<argv0>", "<argv1>", ...],
+             "log": "<logfile path>"}
+        ]}
+
+    This function only keeps those processes ALIVE via dfork (the 2026-09-28
+    reaper lesson: only dfork'd grandchildren survive Bash-call boundaries).
+    It knows nothing about WHAT they do and references no project — all
+    project-specific content stays in the local JSON + local script files
+    (scripts/local/ is gitignored for exactly this). Identity = the LAST
+    argv element (script path at cmdline end — the queue_watch lesson:
+    never a bare pid).
+    """
+    spec = os.path.join(FLAGS, "local_services.json")
+    try:
+        with open(spec, encoding="utf-8") as f:
+            services = json.load(f).get("services", [])
+    except FileNotFoundError:
+        return
+    except Exception as exc:
+        log(f"local_services spec unreadable ({exc!r}) — skipping")
+        return
+    for svc in services:
+        name = str(svc.get("name") or "")
+        cmd = svc.get("cmd")
+        logf = str(svc.get("log") or "/tmp/local_service.log")
+        if not name or not isinstance(cmd, list) or not cmd:
+            continue
+        identity = str(cmd[-1])
+        r = subprocess.run(["pgrep", "-f", identity + "$"],
+                           capture_output=True, text=True)
+        if r.returncode == 0 and (r.stdout or "").strip():
+            continue
+        log(f"local service '{name}' DEAD — dfork-restarting "
+            f"(per flags/local_services.json)")
+        try:
+            subprocess.Popen(
+                [PY, os.path.join(BASE, "dfork_launch.py"), logf, *cmd],
+                stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL,
+                start_new_session=True)
+        except Exception as exc:
+            log(f"local service '{name}' restart failed: {exc!r}")
+
+
 def main():
     # single-instance guard
     lock_fh = open(LOCK, "w")
@@ -614,6 +665,7 @@ def main():
             ensure_capacity_recovery()
             ensure_tab_gc()
             ensure_queue_watch()
+            ensure_local_services()
             ensure_stall_recovery()
             ensure_frame_guard()
             if cycle % 3 == 0:          # browser check every ~30s
