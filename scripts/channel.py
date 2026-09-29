@@ -119,11 +119,19 @@ def find_tab(pattern=None):
 
 
 class CDP:
-    """Minimal request/response CDP client (skips event frames)."""
+    """Minimal request/response CDP client.
+
+    2026-09-29 (Task 142): event frames are no longer discarded — they are
+    buffered (bounded) on self.events so callers can capture Network.*
+    evidence during a send (which requests fired, what the server answered).
+    """
+
+    MAX_EVENTS = 300
 
     def __init__(self, ws_url, timeout=30):
         self.ws = websocket.create_connection(ws_url, timeout=timeout)
         self._id = 0
+        self.events = []
 
     def call(self, method, params=None, timeout=30):
         self._id += 1
@@ -132,6 +140,11 @@ class CDP:
         while True:
             raw = self.ws.recv()
             d = json.loads(raw)
+            if "method" in d and not d.get("id"):
+                self.events.append(d)
+                if len(self.events) > self.MAX_EVENTS:
+                    del self.events[:len(self.events) - self.MAX_EVENTS]
+                continue
             if d.get("id") == self._id:
                 if "error" in d:
                     raise RuntimeError(f"cdp error: {d['error']}")

@@ -835,6 +835,14 @@ def _select_insert_send(c, tab, prompt, name, prompt_file):
 
     # 7. send
     print("[7/7] sending ...")
+    # 2026-09-29 (Task 142) send-evidence capture: enable the Network domain
+    # so every request the send rungs fire is buffered on c.events; the trace
+    # is dumped after verification — distinguishes "the click never reached
+    # the site" (no request) from "the site refused it" (request + status).
+    try:
+        c.call("Network.enable", {})
+    except Exception:
+        pass
     body_before = int(_eval(c, "(document.body.innerText||'').length", timeout=15) or 0)
     # FOCUS-BEFORE-ENTER (23:40 forensics): after an 80K-char insert the
     # textarea grew (rect moved) and focus may sit elsewhere — an Enter to
@@ -887,7 +895,11 @@ def _select_insert_send(c, tab, prompt, name, prompt_file):
             "type": typ, "key": "Enter", "code": "Enter",
             "windowsVirtualKeyCode": 13, "nativeVirtualKeyCode": 13})
     time.sleep(3)
-    # the send may navigate to the session URL — verify on a FRESH connection
+    # the send may navigate to the session URL — verify on a FRESH connection.
+    # (Task 142) snapshot the first connection's network events first: the
+    # send rungs (Escape/DOM-click/real-click/Enter) all fired on THIS
+    # connection — its buffer holds the evidence.
+    _net_first = list(getattr(c, "events", []))
     c.close()
     c = _reconnect(tab["id"])
     cleared = _eval(c, r"""(() => {
@@ -952,6 +964,27 @@ def _select_insert_send(c, tab, prompt, name, prompt_file):
     body_proof = snippet[:40] in body and len(body) > body_before
     url = _eval(c, "location.href", timeout=20)
     ok = sent and (body_proof or url != CHAT_URL)
+    # (Task 142) dump the send-evidence trace: which requests fired, what
+    # the server answered. Never silent again — a swallowed send must say
+    # whether it ever left the browser.
+    try:
+        merged = _net_first + list(getattr(c, "events", []))
+        trace = []
+        for e in merged:
+            m = e.get("method", "")
+            p = e.get("params", {}) or {}
+            if m == "Network.requestWillBeSent":
+                r = p.get("request", {}) or {}
+                trace.append(("req", str(r.get("method", "")), str(r.get("url", ""))[:120]))
+            elif m == "Network.responseReceived":
+                r = p.get("response", {}) or {}
+                trace.append(("rsp", str(r.get("status", "")), str(r.get("url", ""))[:120]))
+        api = [t for t in trace if any(k in t[2] for k in ("/api/", "chat", "task", "completions", "agent"))]
+        print(f"[net] {len(trace)} network events during send; api-related {len(api)}")
+        for t in api[:24]:
+            print("      [net]", t)
+    except Exception as _e:
+        print("[net] trace unavailable:", _e)
     return ok, url, pct, c
 
 
