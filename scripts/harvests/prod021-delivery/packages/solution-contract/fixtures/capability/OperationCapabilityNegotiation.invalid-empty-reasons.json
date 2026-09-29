@@ -1,8 +1,0 @@
-{
-  "contractVersion": "1.0.0",
-  "intentRef": "intent-demo-0002",
-  "missingParameters": [],
-  "outcome": "executable",
-  "profileRef": "profile-building-ops-reference",
-  "reasons": []
-}
