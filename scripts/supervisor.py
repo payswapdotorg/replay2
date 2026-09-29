@@ -679,6 +679,44 @@ def ensure_webflix2_watch():
         start_new_session=True)
 
 
+def ensure_wfx2_transition():
+    """Keep the WebFlix 2.0 resident TRANSITION monitor alive (the operator
+    standing order 2026-09-29 02:34Z: continuous resident watch — monitor →
+    harvest → review → approve/require-changes → dispatch next, no early
+    returns). wfx2_transition.py fires wfx2_dispatch_child.py (dfork) on
+    the gates-landed and escalation transitions; all state is in files
+    (stateless restarts). Hung detection: heartbeat stale >900s → SIGKILL
+    + relaunch. Identity = 'wfx2_transition.py' at cmdline end."""
+    r = subprocess.run(["pgrep", "-f", "wfx2_transition.py$"],
+                       capture_output=True, text=True)
+    pids = [p for p in (r.stdout or "").split("\n") if p.strip()]
+    if pids:
+        try:
+            hb = os.path.join(FLAGS, "wfx2_transition.heartbeat")
+            age = time.time() - os.path.getmtime(hb)
+            if age > 900:
+                log(f"wfx2_transition HUNG (pid {pids[0]}, heartbeat "
+                    f"{int(age)}s stale) — SIGKILL + restart")
+                subprocess.run(["kill", "-9", pids[0]], capture_output=True)
+                time.sleep(1)
+            else:
+                return
+        except FileNotFoundError:
+            return
+    r = subprocess.run(["pgrep", "-f", "wfx2_transition.py$"],
+                       capture_output=True, text=True)
+    if r.returncode == 0 and r.stdout.strip():
+        return
+    log("wfx2_transition DEAD — restarting (operator standing order: "
+        "continuous resident watch, no early returns)")
+    subprocess.Popen(
+        [PY, os.path.join(BASE, "dfork_launch.py"),
+         os.path.join(LOGDIR, "wfx2_transition.log"),
+         PY, os.path.join(BASE, "wfx2_transition.py")],
+        stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL,
+        start_new_session=True)
+
+
 _lane_specs_seen = set()
 
 
@@ -865,6 +903,7 @@ def main():
             ensure_queue_watch()
             ensure_wave_loop()
             ensure_webflix2_watch()
+            ensure_wfx2_transition()
             ensure_stall_recovery()
             # ensure_freeze_probe_watch() — DISABLED 2026-09-25: operator doctrine
             # override ("it is not capacity blocked; disregard rate-limit

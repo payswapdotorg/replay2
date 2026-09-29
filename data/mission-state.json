@@ -1,5 +1,5 @@
 {
- "updatedAt": "2026-09-28T23:50:00.000Z",
+ "updatedAt": "2026-09-29T02:44:09Z",
  "mission": {
   "title": "WebFlix 2.0 \u2014 Complete YouTube Clone",
   "subtitle": "ZTube interface contract (d1ezj447xe91-deploy.space-z.ai), feature-for-feature youtube.com functionality, complete backend per feature \u2014 operator directive 21:54Z; repo payswapdotorg/webflix-2.0",
@@ -8,7 +8,7 @@
    "tests": 0,
    "roadmap": "docs/plans/2026-09-28-webflix2-roadmap.md + docs/plans/wave-claims.md (repo: payswapdotorg/webflix-2.0)"
   },
-  "cadence": "resident lead (this console = lead-ALI10) \u2014 monitor Wave 1 (lead-STEEL) \u2192 re-verify others' merges on own gates \u2192 claim + dispatch per the 2.0 ledger law (claim-before-dispatch, push-order precedence, 4h binding)"
+  "cadence": "OPERATOR STANDING ORDER 02:34Z (verbatim): 'continuous resident watch from here on: monitor \u2192 harvest \u2192 review \u2192 approve/require-changes \u2192 dispatch next, until the roadmap is complete. No early returns. Use the github repo as guide for roadmap.' \u2014 executed by the resident lead (this console) + the ring daemons (webflix2_watch, wfx2_transition) + per-lane queue_watch"
  },
  "lanes": [
   {
@@ -166,6 +166,12 @@
    "detail": "ali10 logged-in (bridge status 23:48Z; /api/v1/auths/ ground-truth verified at cutover) \u2014 dispatch-capable for this console's claims"
   },
   {
+   "id": "wfx2-transition",
+   "label": "WebFlix 2.0 transition engine",
+   "status": "ok",
+   "detail": "wfx2_transition.py @ supervisor ring (immortal, 60s cycles, heartbeated) \u2014 fires wfx2_dispatch_child.py on GATES LANDED (bible+boot on main \u2192 claim+dispatch Wave 2 WFX2-A/WFX2-U, the 02:45Z stakes) or on ESCALATION (04:15Z: gates absent + lead-STEEL inactive 25min rolling grace \u2192 takeover of the lapsed WFX2-B/WFX2-S critical-path lanes). Packets pre-verified; ledger claims line-based; queue_watch armed per lane."
+  },
+  {
    "id": "webflix2-watch",
    "label": "WebFlix 2.0 repo watch",
    "status": "ok",
@@ -203,6 +209,11 @@
    "ts": "2026-09-28T23:50Z",
    "kind": "info",
    "text": "MISSION MIGRATED (this console, lead-ALI10) \u2014 Mission Control now tracks WebFlix 2.0; webflix2_watch armed; Wave 2 claim ready on bible+boot landing per the ledger law"
+  },
+  {
+   "ts": "2026-09-29T02:44:09Z",
+   "kind": "info",
+   "text": "OPERATOR STANDING ORDER \u2014 'continuous resident watch... until the roadmap is complete. No early returns.' Ledger 44df01c: Wave 2 claims staked (activate on gates); escalation clause 04:15Z for the lapsed Wave 1 critical-path lanes (lead-STEEL's claims lapsed ~02:25Z, nothing landed; their status-branch push 02:09Z shows activity \u2014 the 25min rolling grace respects an active lead). wfx2_transition engine armed."
   }
  ],
  "production": {
