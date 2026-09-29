@@ -50,7 +50,7 @@ export default function Home() {
             </button>
           </div>
           <p className="hidden text-[11px] text-neutral-500 sm:block">
-            WebFlix remediation · workers are dispatched inside the replay
+            Project-agnostic console · workers are dispatched inside the replay
           </p>
         </div>
       </div>

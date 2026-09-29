@@ -511,43 +511,13 @@ def ensure_stall_recovery():
     log("stall_recovery restarted")
 
 
-def ensure_freeze_probe_watch():
-    """freeze_probe_watch.py — the §16 hourly platform probe (generation
-    wedge 2026-09-23..). NOT heartbeat-gated: the loop legally sleeps up to
-    900s inside wait_until/spacers, so a stale heartbeat would false-kill
-    it. pidfile first, pgrep fallback; restart honors the script's own
-    restart-safe spacing (flags/freeze_probe_last.txt). Added 2026-09-24
-    after reset #3: a reboot must never silently kill the probe loop."""
-    pidfile = os.path.join(BASE, "freeze_probe_watch.pid")
-    pid = read_pid(pidfile)
-    if pid_alive(pid, "freeze_probe_watch.py"):
-        return
-    r = subprocess.run(["pgrep", "-f", "scripts/freeze_probe_watch.py"],
-                       capture_output=True, text=True)
-    pid = r.stdout.strip().split("\n")[0] if r.stdout.strip() else ""
-    if pid:
-        try:
-            open(pidfile, "w").write(pid)
-        except Exception:
-            pass
-        return
-    log("freeze_probe_watch DEAD — restarting (§16 probe loop)")
-    subprocess.Popen(
-        [PY, os.path.join(BASE, "freeze_probe_watch.py")],
-        stdout=open(os.path.join(LOGDIR, "freeze_probe_watch.out"), "a"),
-        stderr=subprocess.STDOUT, start_new_session=True)
-    log("freeze_probe_watch restarted")
-
-
-
 def ensure_frame_guard():
     """frame_guard.py — console frame freshness watch (2026-09-24 stale-frame
     postmortem: replayd can serve 500s for hours while healthz stays green).
     Standalone by design upstream, but a dead guard silently re-opens the
-    4.5h-frozen-preview gap, so the supervisor owns its resurrection the
-    same way as freeze_probe_watch (pidfile first, pgrep fallback; the guard
-    itself only does local HTTP/CDP reads — restart is always safe).
-    Recreated after sandbox-reset #4 (2026-09-25)."""
+    4.5h-frozen-preview gap, so the supervisor owns its resurrection
+    (pidfile first, pgrep fallback; the guard itself only does local
+    HTTP/CDP reads — restart is always safe)."""
     pidfile = os.path.join(BASE, "frame_guard.pid")
     pid = read_pid(pidfile)
     if pid_alive(pid, "frame_guard.py"):
@@ -617,269 +587,12 @@ def ensure_queue_watch():
         log(f"queue_watch[{name}] restarted: tab={spec.get('tab_prefix')}")
 
 
-def ensure_wave_loop():
-    """Resurrect the resident wave loop (the operator's continuous-watch
-    order). Parent identity = 'resident_wave_loop.py' on the cmdline WITHOUT
-    a --baseline/--review child flag. Hung detection: flags/wave_loop.
-    heartbeat stale >900s (its cycle is 60s + probe work) -> SIGKILL +
-    restart. Children (--baseline/--review) are NEVER touched here — they
-    are one-shot dfork orphans by design."""
-    import glob as _glob
-    r = subprocess.run(["pgrep", "-f", "resident_wave_loop.py$"],
-                       capture_output=True, text=True)
-    pids = [p for p in (r.stdout or "").split("\n") if p.strip()]
-    if pids:
-        try:
-            hb = os.path.join(FLAGS, "wave_loop.heartbeat")
-            age = time.time() - os.path.getmtime(hb)
-            if age > 900:
-                log(f"wave_loop HUNG (pid {pids[0]}, heartbeat "
-                    f"{int(age)}s stale) — SIGKILL + restart")
-                subprocess.run(["kill", "-9", pids[0]], capture_output=True)
-                time.sleep(1)
-            else:
-                return
-        except FileNotFoundError:
-            return
-    # dead (or killed hung) — check again post-kill
-    r = subprocess.run(["pgrep", "-f", "resident_wave_loop.py$"],
-                       capture_output=True, text=True)
-    if r.returncode == 0 and r.stdout.strip():
-        return
-    log("wave_loop DEAD — restarting (operator standing order: "
-        "continuous resident watch, no early returns)")
-    subprocess.Popen(
-        [PY, os.path.join(BASE, "dfork_launch.py"), "/tmp/wave_loop.log",
-         PY, os.path.join(BASE, "resident_wave_loop.py")],
-        stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL,
-        start_new_session=True)
-
-
-def ensure_webflix2_watch():
-    """Keep the WebFlix 2.0 repo watch alive (2026-09-28 23:50 lesson: a
-    setsid/nohup launch from a Bash tool call is reaped at the call
-    boundary — only dfork'd grandchildren re-parented to init survive;
-    ring membership makes the monitor immortal). The watch is
-    MONITOR-ONLY: polls payswapdotorg/webflix-2.0 + webflix-1.0 for
-    origin movement; it NEVER dispatches, NEVER claims — claims are
-    operator decisions per the 2.0 ledger law. Identity =
-    'webflix2_watch.py' at the END of the cmdline (the queue_watch
-    lesson: never a bare pid)."""
-    r = subprocess.run(["pgrep", "-f", "webflix2_watch.py$"],
-                       capture_output=True, text=True)
-    if r.returncode == 0 and (r.stdout or "").strip():
-        return
-    log("webflix2_watch DEAD — restarting (monitor-only repo watch, "
-        "operator standing order)")
-    subprocess.Popen(
-        [PY, os.path.join(BASE, "dfork_launch.py"),
-         os.path.join(LOGDIR, "webflix2_watch.log"),
-         PY, os.path.join(BASE, "webflix2_watch.py")],
-        stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL,
-        start_new_session=True)
-
-
-def ensure_wfx2_transition():
-    """Keep the WebFlix 2.0 resident TRANSITION monitor alive (the operator
-    standing order 2026-09-29 02:34Z: continuous resident watch — monitor →
-    harvest → review → approve/require-changes → dispatch next, no early
-    returns). wfx2_transition.py fires wfx2_dispatch_child.py (dfork) on
-    the gates-landed and escalation transitions; all state is in files
-    (stateless restarts). Hung detection: heartbeat stale >900s → SIGKILL
-    + relaunch. Identity = 'wfx2_transition.py' at cmdline end."""
-    r = subprocess.run(["pgrep", "-f", "wfx2_transition.py$"],
-                       capture_output=True, text=True)
-    pids = [p for p in (r.stdout or "").split("\n") if p.strip()]
-    if pids:
-        try:
-            hb = os.path.join(FLAGS, "wfx2_transition.heartbeat")
-            age = time.time() - os.path.getmtime(hb)
-            if age > 900:
-                log(f"wfx2_transition HUNG (pid {pids[0]}, heartbeat "
-                    f"{int(age)}s stale) — SIGKILL + restart")
-                subprocess.run(["kill", "-9", pids[0]], capture_output=True)
-                time.sleep(1)
-            else:
-                return
-        except FileNotFoundError:
-            return
-    r = subprocess.run(["pgrep", "-f", "wfx2_transition.py$"],
-                       capture_output=True, text=True)
-    if r.returncode == 0 and r.stdout.strip():
-        return
-    log("wfx2_transition DEAD — restarting (operator standing order: "
-        "continuous resident watch, no early returns)")
-    subprocess.Popen(
-        [PY, os.path.join(BASE, "dfork_launch.py"),
-         os.path.join(LOGDIR, "wfx2_transition.log"),
-         PY, os.path.join(BASE, "wfx2_transition.py")],
-        stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL,
-        start_new_session=True)
-
-
-_lane_specs_seen = set()
-
-
-def ensure_lane_keepalive():
-    """Keep per-lane keepalive + followup alive while a lane is un-landed.
-
-    2026-09-23 postmortem: the prod031 lane lost ALL THREE watchers (bare
-    sentinel, handoff, followup) in one silent burst ~01:08 — one of 40 OOM
-    kills on Sep 22-23 (chrome+next on 4GB) — and stopped restocking its
-    dispatch queue for 5+ hours with nobody noticing, while hfx302 survived
-    only because its watchers got lucky. Lanes now join the immortality
-    ring: while flags/lane_keepalive.spec.<name> exists and the lane's
-    dispatched marker does NOT, resurrect (a) wave_sentinel_keepalive
-    (itself relaunching the sentinel on crash) and (b) followup_arm_watch
-    (self-rearming on 48h burnout while un-landed). Identity = script +
-    '<name>:' needles on /proc cmdline — NEVER a bare pid (the handoff
-    pid-reuse blind spot, handoff_hfx302.log 02:51->06:02)."""
-    import glob as _glob
-    for spec_path in sorted(_glob.glob(os.path.join(FLAGS, "lane_keepalive.spec.*"))):
-        try:
-            spec = json.loads(open(spec_path).read().strip() or "{}")
-        except Exception:
-            continue
-        name = spec.get("name", "")
-        job = spec.get("job", "")
-        if not name or ":" not in job:
-            continue
-        if spec_path not in _lane_specs_seen:
-            _lane_specs_seen.add(spec_path)
-            log(f"lane guard armed: {name} (job={job})")
-        if os.path.exists(os.path.join(FLAGS, f"{name}-dispatched.marker")):
-            continue  # landed — completion machinery owns the lane now
-
-        def _alive(pid, *needles):
-            try:
-                cmd = open(f"/proc/{int(pid)}/cmdline", "rb").read().decode(
-                    errors="replace")
-                return all(n in cmd for n in needles)
-            except Exception:
-                return False
-
-        def _pgrep(pat):
-            r = subprocess.run(["pgrep", "-f", pat], capture_output=True, text=True)
-            return r.stdout.strip().split("\n")[0] if r.stdout.strip() else ""
-
-        # (a) keepalive
-        pidf = os.path.join(FLAGS, f"lane_keepalive.pid.{name}")
-        pid = read_pid(pidf)
-        if not _alive(pid, "wave_sentinel_keepalive.py", name + ":"):
-            pid = _pgrep(f"wave_sentinel_keepalive.py {name}:")
-            if pid:
-                try:
-                    open(pidf, "w").write(pid)
-                except Exception:
-                    pass
-            else:
-                args = [PY, os.path.join(BASE, "wave_sentinel_keepalive.py"), job]
-                for opt in ("every", "watch", "rounds"):
-                    if spec.get(opt):
-                        args += ["--" + opt, str(spec[opt])]
-                logp = os.path.join(
-                    LOGDIR, spec.get("sentinel_log", f"{name}_sentinel.log"))
-                out = open(logp, "a")
-                subprocess.Popen(args, stdout=out, stderr=subprocess.STDOUT,
-                                 stdin=subprocess.DEVNULL, start_new_session=True,
-                                 cwd=BASE)
-                out.close()
-                log(f"lane keepalive[{name}] DEAD — relaunched (immortality ring)")
-
-        # (b) followup (stays armed until the dispatched marker appears)
-        fpidf = os.path.join(FLAGS, f"lane_followup.pid.{name}")
-        fpid = read_pid(fpidf)
-        if not _alive(fpid, "followup_arm_watch.py", name):
-            fpid = _pgrep(f"followup_arm_watch.py {name}")
-            if fpid:
-                try:
-                    open(fpidf, "w").write(fpid)
-                except Exception:
-                    pass
-            else:
-                out = open(os.path.join(LOGDIR, f"followup_{name}.log"), "a")
-                subprocess.Popen(
-                    [PY, os.path.join(BASE, "followup_arm_watch.py"), name,
-                     "--every", str(spec.get("followup_every", 120)),
-                     "--max-hours", str(spec.get("followup_max_hours", 48))],
-                    stdout=out, stderr=subprocess.STDOUT,
-                    stdin=subprocess.DEVNULL, start_new_session=True, cwd=BASE)
-                out.close()
-                log(f"lane followup[{name}] DEAD — relaunched (immortality ring)")
-
-
-# 2026-09-23 endgame lanes (landed; chat ids from the session registry)
-ENDGAME_LANES = {}
-ENDGAME_LANES_ORDER = []
-
-def _load_endgame_lanes():
-    """Load lanes from flags/endgame_lanes.json (name -> chat-id-prefix)."""
-    global ENDGAME_LANES, ENDGAME_LANES_ORDER
-    try:
-        d = json.loads(open(os.path.join(FLAGS, "endgame_lanes.json")).read())
-        ENDGAME_LANES = dict(d)
-        ENDGAME_LANES_ORDER = list(d)
-    except Exception:
-        ENDGAME_LANES, ENDGAME_LANES_ORDER = {}, []
 
 def _mtime(path):
     try:
         return os.path.getmtime(path)
     except Exception:
         return 0.0
-
-
-def ensure_endgame_watch():
-    """2026-09-23 endgame guard: keep the LANDED-lane watches immortal.
-
-    The immortality ring (ensure_lane_keepalive) stops at the dispatched
-    marker — by design the completion machinery owns a landed lane. But
-    waveB_completion_watch + lane_watch_now are bare processes; an OOM
-    burst killing them would silently stop completion detection (the exact
-    prod031 postmortem shape). While flags/<name>-complete.marker is
-    ABSENT for a lane in ENDGAME_LANES, resurrect:
-      (a) waveB_completion_watch.py <name>:<cid>   (completion reports)
-      (b) lane_watch_now.py                        (queue-state + destroyed-tab)
-    Identity = cmdline needles, never bare pids (the doctrine).
-    """
-    for name, cid in ENDGAME_LANES.items():
-        if os.path.exists(os.path.join(FLAGS, f"{name}-complete.marker")):
-            continue  # landed + reported — nothing left to watch
-        if not os.path.exists(os.path.join(FLAGS, f"{name}-dispatched.marker")):
-            continue  # never dispatched — not an endgame lane yet
-        # (a) completion watch
-        alive = False
-        for pid in subprocess.run(["pgrep", "-f", "waveB_completion_watch.py"],
-                                  capture_output=True, text=True).stdout.split():
-            try:
-                cmd = open(f"/proc/{int(pid)}/cmdline", "rb").read().decode(errors="replace")
-            except Exception:
-                continue
-            if f"{name}:{cid}" in cmd:
-                alive = True
-                break
-        if not alive:
-            out = open(os.path.join(LOGDIR, f"{name}_completion_watch.log"), "a")
-            subprocess.Popen(
-                [PY, os.path.join(BASE, "waveB_completion_watch.py"), f"{name}:{cid}"],
-                stdout=out, stderr=subprocess.STDOUT,
-                stdin=subprocess.DEVNULL, start_new_session=True, cwd=BASE)
-            out.close()
-            log(f"endgame guard[{name}]: completion watch DEAD — relaunched")
-        # (b) lane state watch (one shared instance, first lane owns the check)
-        if name == ENDGAME_LANES_ORDER[0]:
-            hb = os.path.join(FLAGS, "lane_watch_now_heartbeat")
-            fresh = os.path.exists(hb) and (time.time() - _mtime(hb) <= 900)
-            alive2 = subprocess.run(["pgrep", "-f", "lane_watch_now.py"],
-                                    capture_output=True, text=True).stdout.strip()
-            if not fresh and not alive2:
-                out = open(os.path.join(LOGDIR, "lane_watch_now.log"), "a")
-                subprocess.Popen(
-                    [PY, os.path.join(BASE, "lane_watch_now.py")],
-                    stdout=out, stderr=subprocess.STDOUT,
-                    stdin=subprocess.DEVNULL, start_new_session=True, cwd=BASE)
-                out.close()
-                log("endgame guard: lane_watch_now DEAD — relaunched")
 
 
 def main():
@@ -901,18 +614,8 @@ def main():
             ensure_capacity_recovery()
             ensure_tab_gc()
             ensure_queue_watch()
-            ensure_wave_loop()
-            ensure_webflix2_watch()
-            ensure_wfx2_transition()
             ensure_stall_recovery()
-            # ensure_freeze_probe_watch() — DISABLED 2026-09-25: operator doctrine
-            # override ("it is not capacity blocked; disregard rate-limit
-            # notifications; never wait — dismiss popups and resend"). The
-            # §16 hourly-probe loop sent junk chats hourly on a false premise.
             ensure_frame_guard()
-            ensure_lane_keepalive()
-            _load_endgame_lanes()
-            ensure_endgame_watch()
             if cycle % 3 == 0:          # browser check every ~30s
                 ensure_browser()
                 ensure_dev()

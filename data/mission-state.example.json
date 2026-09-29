@@ -1,0 +1,52 @@
+{
+  "updatedAt": "1970-01-01T00:00:00.000Z",
+  "mission": {
+    "title": "<YOUR PROJECT> — <one-line goal>",
+    "subtitle": "Replace this LOCAL file with YOUR project's mission summary. This file is gitignored on purpose: project roadmaps never enter the replay2 repo (governance §0 in AGENT_BOOT_PROMPT.md).",
+    "baseline": {
+      "main": "<your repo's main SHA>",
+      "tests": 0,
+      "roadmap": "<path to your project's roadmap/plan docs — in YOUR project's repo>"
+    },
+    "cadence": "<how you (the resident lead) operate: monitor → harvest → review → merge → dispatch, or whatever your project's protocol is>"
+  },
+  "lanes": [
+    {
+      "id": "example-lane",
+      "name": "<Lane / track name>",
+      "scope": "<what this lane delivers>",
+      "items": ["example-item"]
+    }
+  ],
+  "items": [
+    {
+      "id": "example-item",
+      "title": "<Work item title>",
+      "lane": "example-lane",
+      "status": "pending",
+      "branch": null,
+      "notes": "status: pending | staged | dispatched | in-review | changes-requested | merged | merged-local | done | blocked",
+      "worker": null
+    }
+  ],
+  "infra": [
+    {
+      "id": "replay-stack",
+      "label": "Replay stack",
+      "status": "ok",
+      "detail": "status: ok | degraded | pending | down — describe your infrastructure state here"
+    }
+  ],
+  "timeline": [
+    {
+      "ts": "1970-01-01T00:00:00Z",
+      "kind": "info",
+      "text": "kind: info | warn | error | success — your event log"
+    }
+  ],
+  "production": {
+    "url": null,
+    "deployedAt": null,
+    "status": "<your production/deployment status>"
+  }
+}

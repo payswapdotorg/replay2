@@ -11,9 +11,12 @@ scripts/*.pid
 scripts/*.log
 scripts/watcher.out
 
-# program scratch (generated per-deployment by build_prompt/harvest)
-scripts/worker-prompts/*
-!scripts/worker-prompts/*.template.md
+# GOVERNANCE (2026-09-29): the console is PROJECT-AGNOSTIC. Mission state and
+# worker prompts are per-deployment LOCAL files — never committed (a committed
+# mission/roadmap misled a resident agent into another project's work once;
+# hard rule in AGENT_BOOT_PROMPT.md §0).
+data/mission-state.json
+scripts/worker-prompts/
 scripts/worker-reports/
 
 next-env.d.ts

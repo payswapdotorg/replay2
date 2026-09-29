@@ -152,13 +152,24 @@ capacity clears; the supervisor keeps this poller alive while
 - `python3 scripts/harvest_report.py <name>` — registry-aware report harvest
   (finds the session's tab even after tab-reopen events).
 
-**Prompt generation** (for work-order-driven programs):
-- `python3 scripts/build_prompt.py <WO-ID> <repo-path> <base-sha>` — builds a
-  self-contained worker prompt (contract + task packet + source bundle:
-  verbatim boundary files, signatures for the rest) into
-  `scripts/worker-prompts/`.
-- `python3 scripts/build_audit_prompts.py [repo-path]` — builds audit prompts
-  (verify a merged implementation against its work order).
+**Prompt files** (yours to write — the console ships none):
+- Write your worker prompt as a self-contained Markdown file (role, setup
+  steps, task packet, verification commands, exact report format) and keep
+  it under `scripts/worker-prompts/` (gitignored, per-deployment) — the
+  dispatcher takes any path, but that directory is the convention the
+  tooling uses for re-dispatch lookups.
 
-See `AGENT_BOOT_PROMPT.md` for the full operating protocol (failure ladder,
-resident duties, dispatch rules).
+See `AGENT_BOOT_PROMPT.md` for the full operating protocol (governance rule,
+failure ladder, resident duties, dispatch rules).
+
+## Governance — this repo is project-agnostic (HARD RULE)
+
+The replay console is GENERIC infrastructure. Never commit project-specific
+content here: no work orders, roadmaps, wave/lane tables, mission states,
+worker prompts, campaign scripts or repo watches. Your project's plans live
+in YOUR project's repository; per-deployment state goes in the gitignored
+`data/mission-state.json` (template: `data/mission-state.example.json`) and
+`scripts/worker-prompts/`. A resident agent was once misled into implementing
+another project's work orders because project content had leaked into this
+repo — that content was removed 2026-09-29 and this rule is binding. Full
+text: `AGENT_BOOT_PROMPT.md` §0.

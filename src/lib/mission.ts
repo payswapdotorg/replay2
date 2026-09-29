@@ -71,14 +71,18 @@ export async function readMissionState(): Promise<MissionState> {
     const raw = await readFile(STATE_PATH, "utf8");
     return JSON.parse(raw) as MissionState;
   } catch {
-    // Never render a broken console — fall back to a minimal valid state.
+    // Never render a broken console — fall back to a NEUTRAL no-mission
+    // state. The console is project-agnostic by governance: mission state
+    // is a per-deployment LOCAL file (data/mission-state.json, gitignored).
+    // Never hardcode a project here — see AGENT_BOOT_PROMPT.md §0.
     return {
       updatedAt: new Date().toISOString(),
       mission: {
-        title: "WebFlix Productionization",
-        subtitle: "Mission state file unavailable",
+        title: "No mission loaded",
+        subtitle:
+          "This console is project-agnostic. To track YOUR project here, write data/mission-state.json locally (copy data/mission-state.example.json). Never commit it — project roadmaps must not enter this repo (governance §0).",
         baseline: { main: "unknown", tests: 0, roadmap: "unknown" },
-        cadence: "resident lead",
+        cadence: "n/a",
       },
       lanes: [],
       items: [],
@@ -86,8 +90,8 @@ export async function readMissionState(): Promise<MissionState> {
       timeline: [
         {
           ts: new Date().toISOString(),
-          kind: "error",
-          text: "data/mission-state.json could not be read",
+          kind: "info",
+          text: "data/mission-state.json not found — no mission loaded (neutral state)",
         },
       ],
       production: { url: null, deployedAt: null, status: "unknown" },

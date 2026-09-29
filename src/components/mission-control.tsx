@@ -158,9 +158,18 @@ export function MissionControl() {
             <MonitorPlay className="h-7 w-7 text-rose-500 shrink-0" aria-hidden />
             <div className="min-w-0">
               <h1 className="text-lg font-bold tracking-tight">
-                <span className="text-rose-500 font-black">WEB</span>FLIX
-                <span className="text-zinc-500 font-normal mx-2">×</span>
-                <span className="text-zinc-200">Productionization Mission Control</span>
+                {(() => {
+                  const t = state.mission.title || "Mission Control";
+                  const sp = t.indexOf(" ");
+                  const head = sp > 0 ? t.slice(0, sp) : t;
+                  const tail = sp > 0 ? t.slice(sp) : "";
+                  return (
+                    <>
+                      <span className="text-rose-500 font-black">{head}</span>
+                      <span className="text-zinc-200">{tail}</span>
+                    </>
+                  );
+                })()}
               </h1>
               <p className="text-xs text-zinc-500 truncate">{state.mission.subtitle}</p>
             </div>
@@ -284,7 +293,7 @@ export function MissionControl() {
                         <Card className="border-zinc-800 bg-zinc-900/40 p-3.5 shadow-none hover:border-zinc-700 transition-colors">
                           <div className="flex items-start justify-between gap-2">
                             <span className="font-mono text-[11px] font-semibold text-rose-400/90">
-                              WFX-{item.id}
+                              {item.id}
                             </span>
                             <span
                               className={`inline-flex items-center gap-1.5 rounded-full border px-2 py-0.5 text-[10px] font-medium ${st.className}`}
