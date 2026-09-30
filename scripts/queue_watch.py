@@ -369,6 +369,18 @@ def state(tab_prefix):
         r"(?:===?|##+)?\s*(?:LEASE|TAKE|WEB|FV|TL1)-\d+\s*(?:COMPLETION\s*REPORT|完成报告)\s*(?:===?|#+)?"
         r"[\s\S]{0,600}?(?:Base\s*(?:branch\s*\+\s*)?SHA|基础\s*SHA)[^\n]{0,40}[:：][^\n]{0,15}?`?(?:main|主干)`?\s*@\s*`?[0-9a-f]{7,40}`?",
         body, re.IGNORECASE))
+    # 2026-09-30 (SOS W-series campaign): W13+ worker packets use
+    # "=== W13 COMPLETION REPORT ===" + "pushed: work/w13-... @ <hex>".
+    # Echo-proof rule: the packet template's pushed line carries the non-hex
+    # placeholder "<full 40-char SHA you pushed>", so prompt/plan echoes can
+    # never satisfy the gate; a genuine report always carries the pushed hex.
+    # The known base SHA on the separate base line is NOT matched (it appears
+    # verbatim in the packet, so matching it would false-positive on echoes).
+    # English or Chinese headline, ASCII or fullwidth colon.
+    filled = filled or bool(re.search(
+        r"(?:===?|##+)?\s*W\d+\s*(?:COMPLETION\s*REPORT|完成报告)\s*(?:===?|#+)?"
+        r"[\s\S]{0,600}?(?:pushed|推送)[^\n]{0,60}?[:：][^\n]{0,40}?@\s*`?[0-9a-f]{7,40}`?",
+        body, re.IGNORECASE))
 
     # 2026-09-27: an open Stop CONTROL (aria-label) outranks the innerText
     # heuristic — AGENTS-mode turns keep it present for the whole session

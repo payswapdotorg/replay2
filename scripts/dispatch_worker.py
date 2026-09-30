@@ -912,6 +912,40 @@ def _select_insert_send(c, tab, prompt, name, prompt_file):
                       return i ? String((i.value||'').length) : 'gone';
                     })()""", timeout=20)
     sent = cleared in ("0", "gone")
+    # 2026-09-30 lesson (W13 dispatch forensics): right after a large
+    # insertText the send button can be React-disabled for several seconds
+    # (state flush debounce) — the real-coord click rung is SKIPPED
+    # (disabled) and the Enter fallback is eaten by an overlay, so the send
+    # silently fails while a manual click ~60s later lands instantly. Wait
+    # out the debounce, RE-QUERY the button (now enabled) and real-click it
+    # a second time before declaring failure.
+    if not sent:
+        time.sleep(8)
+        try:
+            sb2 = _eval(c, JS_SEND_BUTTON, timeout=10)
+            if sb2:
+                spt2 = json.loads(sb2)
+                if not spt2.get("disabled") and spt2.get("x", 0) > 0:
+                    c.call("Input.dispatchMouseEvent", {"type": "mousePressed", "x": spt2["x"],
+                                                        "y": spt2["y"], "button": "left", "clickCount": 1})
+                    c.call("Input.dispatchMouseEvent", {"type": "mouseReleased", "x": spt2["x"],
+                                                        "y": spt2["y"], "button": "left", "clickCount": 1})
+                    time.sleep(4)
+                    try:
+                        c.close()
+                    except Exception:
+                        pass
+                    c = _reconnect(tab["id"])
+                    cleared = _eval(c, r"""(() => {
+                          const i = document.querySelector('#chat-input');
+                          return i ? String((i.value||'').length) : 'gone';
+                        })()""", timeout=20)
+                    sent = cleared in ("0", "gone")
+                    if sent:
+                        print("      [send] delayed second real-click landed the send "
+                              "(React debounce rung)")
+        except Exception:
+            pass
     # proof in the body: the prompt's first line should now appear in the transcript
     snippet = prompt.strip().split("\n")[0][:60]
     body = _eval(c, "document.body.innerText || ''", timeout=25) or ""
