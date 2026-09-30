@@ -158,8 +158,23 @@ function parseWatcherLog(name: string, origName?: string): {
 /** `# R10 — Native Media production path (Worker 3)` (single-wave era) or
  *  `# R24-W1 — Round title: lane detail (checkpoint chain)` (wave era) →
  *  title + lane. In the wave format the part after the colon is the
- *  distinguishing lane detail, and the -W<N> suffix names the wave. */
+ *  distinguishing lane detail, and the -W<N> suffix names the wave.
+ *  W-series (SOS frontier era, 2026-09-30): `# W13 — Title (frontier
+ *  Worker, lane A)` → title + lane extracted from the paren clause. */
 function parseHeader(head: string): { title: string; lane: string } {
+  const mw = head.match(/^#\s*W\d+\s*[—-]\s*(.+?)\s*\((.+)\)\s*$/);
+  if (mw) {
+    const laneM = mw[2].match(/(?:^|\s)lane\s+([A-Za-z0-9]+)/i);
+    const workerM = mw[2].match(/Worker\s*([A-Za-z0-9]+)/i);
+    return {
+      title: mw[1],
+      lane: laneM
+        ? `Lane ${laneM[1]}`
+        : workerM
+          ? `Worker ${workerM[1]}`
+          : mw[2],
+    };
+  }
   const m = head.match(/^#\s*R\d+\s*[—-]\s*(.+?)\s*\((Worker\s*\d+)\)\s*$/);
   if (m) return { title: m[1], lane: m[2] };
   const m2 = head.match(/^#\s*R\d+(?:-W\d+)?\s*[—-]\s*(.+)$/);
@@ -202,9 +217,10 @@ async function listStaged(dispatched: Set<string>): Promise<StagedInfo[]> {
   let files: string[] = [];
   try {
     // R03.md (single-wave era), R24-W1.md (wave era), r35a-readpath.md
-    // (suffixed era); *.template.md are the reusable skeletons, never staged
+    // (suffixed era), w13-worker-brief.md (SOS frontier era);
+    // *.template.md are the reusable skeletons, never staged
     files = (await fsp.readdir(PROMPTS)).filter(
-      (f) => /^[rR]\d+(?:-[A-Za-z0-9-]+)?\.md$/.test(f) && !/\.template\.md$/.test(f),
+      (f) => /^[rRwW]\d+(?:-[A-Za-z0-9-]+)?\.md$/.test(f) && !/\.template\.md$/.test(f),
     );
   } catch {
     return [];
@@ -254,7 +270,10 @@ export async function GET() {
     // the ACTUAL TL2 naming form flauz-tl2-* (flauz-tl2-h1, flauz-tl2-acc1):
     // the 2026-09-29 forensics showed the suffix-only pattern hid every TL2
     // session from the live strip (latent since the surge began).
-    if (!/^(?:r\d+[a-z0-9]*|flauz-[a-z0-9]+-tl2|flauz-tl2-[a-z0-9]+)$/.test(name)) continue;
+    // w13/w14/... (SOS frontier era, 2026-09-30): same acceptance rule —
+    // a naming generation invisible to the strip is a silent-empty bug.
+    if (!/^(?:r\d+[a-z0-9]*|flauz-[a-z0-9]+-tl2|flauz-tl2-[a-z0-9]+|w\d+[a-z0-9]*)$/.test(name))
+      continue;
     if (r.action === "void") {
       // a void is bookkeeping, not a dispatch
       continue;
