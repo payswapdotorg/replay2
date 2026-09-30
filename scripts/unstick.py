@@ -31,7 +31,7 @@ BASE = os.path.dirname(os.path.abspath(__file__))
 def prompt_file_for(name):
     """Registry-first prompt lookup with case-tolerant staged fallback.
 
-    2026-09-27 fix (TradRL T006): BASE was referenced here but never defined
+    2026-09-27 fix (T006 forensics): BASE was referenced here but never defined
     — the unstick crashed with NameError BEFORE the resend, leaving the
     modal dismissed but no new generation attempt. Also try the UPPERCASE
     staged variant (queue_watch lesson-58 lineage) before giving up.

@@ -72,7 +72,7 @@ def open_session() -> str:
         "jsonrpc": "2.0", "id": 0, "method": "initialize",
         "params": {
             "protocolVersion": "2025-03-26", "capabilities": {},
-            "clientInfo": {"name": "aise-lead", "version": "1.0"},
+            "clientInfo": {"name": "replay-lead", "version": "1.0"},
         },
     })
     if result is None:

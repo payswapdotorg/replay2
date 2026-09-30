@@ -58,6 +58,18 @@ CHAT_URL = "https://chat.z.ai/"
 WANT_MODEL = "GLM-5.3"
 WANT_SKILL = "Full-Stack"
 
+# Generic shared name tokens are never lane discriminators (the 2026-09-26
+# W4 modal-stall fix: a deployment's bare brand token appears in EVERY live
+# session name, so it matches ALL of that deployment's sandbox rows in the
+# concurrency modal and the automatic release refuses to free ANY stale
+# holder). Seeded with the platform default; add a deployment's brand tokens
+# via REPLAY_GENERIC_TOKENS (comma-separated).
+GENERIC_NAME_TOKENS = {"worker"} | {
+    t.strip().lower()
+    for t in os.environ.get("REPLAY_GENERIC_TOKENS", "").split(",")
+    if t.strip()
+}
+
 
 # ---------------------------------------------------------------- registry --
 
@@ -405,15 +417,15 @@ def _active_session_keywords(extra=None):
         #   (b) the prompt file's first-line work-item prefix ('# UI-009 —
         #       ...' -> 'ui-009') for rows titled from the prompt head
         # 2026-09-26 fix (W4 modal stall): the word-keyword derivation
-        # contributed the bare brand token 'flauz' for EVERY live session
-        # (all names are flauz-<lane>-wN) — one substring keyword that
-        # matches ALL Flauz sandbox rows in the concurrency modal, so the
-        # automatic release refused to free ANY stale holder (J/K sat
-        # blocked behind two done Wave-3 sandboxes for ~an hour until a
-        # manual override). Generic shared tokens are never lane
-        # discriminators: skip them.
+        # contributed a deployment's bare brand token for EVERY live session
+        # (all names are <brand>-<lane>-wN) — one substring keyword that
+        # matches ALL of that deployment's sandbox rows in the concurrency
+        # modal, so the automatic release refused to free ANY stale holder
+        # (J/K sat blocked behind two done Wave-3 sandboxes for ~an hour
+        # until a manual override). Generic shared tokens are never lane
+        # discriminators: skip them (GENERIC_NAME_TOKENS above).
         for w in re.split(r"[^A-Za-z0-9]+", n or ""):
-            if len(w) >= 5 and w.lower() not in ("flauz", "worker"):
+            if len(w) >= 5 and w.lower() not in GENERIC_NAME_TOKENS:
                 kws.append(w.lower())
         pf = s.get("prompt_file") or ""
         if pf and os.path.isfile(pf):

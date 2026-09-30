@@ -25,6 +25,23 @@ LOG = os.path.join(BASE, "watcher.log")
 FLAGS = os.path.join(BASE, "flags")
 os.makedirs(FLAGS, exist_ok=True)
 
+
+
+def watch_repo():
+    """The per-deployment repo this watcher monitors (§0: NEVER hardcoded —
+    a stale committed default once made the resident machinery watch a
+    PREVIOUS project's repo after the deployment changed). Sources, in
+    order: REPLAY_WATCH_REPO env var, then flags/watch_repo.txt (the
+    per-deployment local config, gitignored). Empty when unconfigured —
+    branch-watch then reports nothing (the neutral fallback is deliberate)."""
+    env = os.environ.get("REPLAY_WATCH_REPO", "").strip()
+    if env:
+        return env
+    try:
+        return open(os.path.join(FLAGS, "watch_repo.txt")).read().strip()
+    except Exception:
+        return ""
+
 STATE = {
     "login": "unknown",
     "branches": set(),
@@ -141,13 +158,17 @@ def check_login():
 
 
 def check_branches(pat):
-    """2026-09-15: watch payswapdotorg/sporta (the active program). With a PAT
-    use the API; WITHOUT one fall back to anonymous `git ls-remote` — the repo
-    is public, so branch watching survives credential loss (reset-2 lesson)."""
+    """Watch THIS deployment's repo (watch_repo() — env/flags config, never
+    hardcoded). With a PAT use the API; WITHOUT one fall back to anonymous
+    `git ls-remote` — public repos keep branch watching alive through
+    credential loss (reset-2 lesson). Unconfigured -> None (neutral)."""
+    repo = watch_repo()
+    if not repo:
+        return None
     if pat:
         r = subprocess.run(["curl", "-s", "--max-time", "15",
                             "-H", f"Authorization: token {pat}",
-                            "https://api.github.com/repos/payswapdotorg/sporta/branches?per_page=100"],
+                            f"https://api.github.com/repos/{repo}/branches?per_page=100"],
                            capture_output=True, text=True)
         try:
             bs = json.loads(r.stdout)
@@ -157,7 +178,7 @@ def check_branches(pat):
             pass
     try:
         r = subprocess.run(
-            ["git", "ls-remote", "--heads", "https://github.com/payswapdotorg/sporta"],
+            ["git", "ls-remote", "--heads", f"https://github.com/{repo}"],
             capture_output=True, text=True, timeout=30)
         out = {}
         for line in r.stdout.splitlines():
@@ -172,9 +193,12 @@ def check_branches(pat):
 def check_write(pat):
     if not pat:
         return STATE["write"]  # unknown without a PAT — never claim it
+    repo = watch_repo()
+    if not repo:
+        return STATE["write"]  # unconfigured — never claim it
     r = subprocess.run(["curl", "-s", "--max-time", "10",
                         "-H", f"Authorization: token {pat}",
-                        "https://api.github.com/repos/payswapdotorg/sporta"],
+                        f"https://api.github.com/repos/{repo}"],
                        capture_output=True, text=True)
     try:
         d = json.loads(r.stdout)

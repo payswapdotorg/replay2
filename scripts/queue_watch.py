@@ -60,6 +60,22 @@ RL_DEFER_AFTER = 240         # minimal churn guard ONLY — never a cooldown wai
 OUTAGE_HOLD_PATH = os.path.join(FLAGS, "outage_hold.txt")
 _HOLD_LOG = {}
 
+# Work-order report ID families recognized by the completion gates below.
+# The gates' MECHANISM — report headline + real-hex proof, placeholder-echo-
+# proof — is generic; the ID family is per-deployment DATA and lives in the
+# deployment's config, never in this repo (§0). Set REPLAY_REPORT_PREFIXES
+# (comma-separated, e.g. "ANCHOR,VOICE,GBIM") for this deployment's report
+# shapes; legacy deployment families are recoverable from git history.
+REPORT_ID_PREFIXES = [
+    p.strip().upper()
+    for p in os.environ.get("REPLAY_REPORT_PREFIXES", "").split(",")
+    if p.strip()]
+# unconfigured -> the generic ID-word pattern (ANY work-item family prefix
+# before the number, e.g. "ANCHOR-002" / "VOICE-003" / "TL1-003" — the
+# hex-proof mechanism stays the discriminator); configured -> exactly the
+# deployment's families (explicit list, no surprises).
+_IDP = "|".join(REPORT_ID_PREFIXES) if REPORT_ID_PREFIXES else r"[A-Z][A-Z0-9]*"
+
 def hold_active(name=""):
     if not os.path.exists(OUTAGE_HOLD_PATH):
         return False
@@ -334,14 +350,14 @@ def state(tab_prefix):
     # + nudge 1 = 2 -> false COMPLETE, watcher exits, spec deleted). The gate
     # is now the filled-regex ONLY (tolerant: case-insensitive, wider window,
     # flexible separator between the two field labels).
-    # 2026-09-12 (Zeck wave): the Zeck worker prompts use the VAL-NNN report
+    # 2026-09-12 (VAL-era wave): the VAL-NNN report
     # template ("=== VAL-016 COMPLETION REPORT ===" + "- Base: main @ <sha>")
-    # which the WO regex above never matches — a second alternative accepts
+    # never matched the WO regex — a second alternative accepts
     # it. The placeholder ("<exact SHA you based on>") is not hex, so prompt
     # echoes still never satisfy the gate.
     filled = bool(re.search(
-        r"===?\s*(?:VAL|VWO|RWO|WO)-\d+\s*(?:COMPLETION\s*REPORT|完成报告)\s*===?"
-        r"[\s\S]{0,900}?(?:base\s*branch|基础分支)[^\n]{0,60}?(?:base\s*SHA|基础\s*SHA)\s*[:：]\s*(?:main|主干)\s*@\s*[0-9a-f]{7,40}",
+        r"===?\s*(?:%s)-\d+\s*(?:COMPLETION\s*REPORT|完成报告)\s*===?"
+        r"[\s\S]{0,900}?(?:base\s*branch|基础分支)[^\n]{0,60}?(?:base\s*SHA|基础\s*SHA)\s*[:：]\s*(?:main|主干)\s*@\s*[0-9a-f]{7,40}" % _IDP,
         body, re.IGNORECASE)) or bool(re.search(
         r"===?\s*VAL-\d+\s*(?:COMPLETION\s*REPORT|完成报告)\s*===?"
         r"[\s\S]{0,500}?Base\s*[:：]\s*(?:main|主干)\s*@\s*[0-9a-f]{7,40}",
@@ -353,19 +369,19 @@ def state(tab_prefix):
     # form — the template's 'base branch + base SHA: main @ <hex>' stays
     # the canonical form; this only widens genuine-report detection.
     filled = filled or bool(re.search(
-        r"===?\s*(?:VAL|VWO|RWO|WO)-\d+\s*(?:COMPLETION\s*REPORT|完成报告)\s*===?"
-        r"[\s\S]{0,300}?(?:Base\s*SHA|基础\s*SHA)\s*[:：]\s*(?:main\s*@?\s*)?[0-9a-f]{40}",
+        r"===?\s*(?:%s)-\d+\s*(?:COMPLETION\s*REPORT|完成报告)\s*===?"
+        r"[\s\S]{0,300}?(?:Base\s*SHA|基础\s*SHA)\s*[:：]\s*(?:main\s*@?\s*)?[0-9a-f]{40}" % _IDP,
         body, re.IGNORECASE))
-    # 2026-09-15 (sporta campaign, lesson 121): sporta worker prompts use
-    # "SPORTA W305 COMPLETION REPORT" + "Branch: w305-… @ <final-sha>" —
+    # 2026-09-15 (lesson 121): the W-series worker prompts use
+    # "W305 COMPLETION REPORT" + "Branch: w305-… @ <final-sha>" —
     # the template placeholder <final-sha> is not hex, so prompt echoes
     # (and worker plan echoes of the template) never satisfy this gate;
     # a genuine report always carries the pushed commit sha.
     filled = filled or bool(re.search(
-        r"SPORTA\s+W\d+\s+COMPLETION\s+REPORT"
-        r"[\s\S]{0,300}?Branch\s*[:：]\s*[\w.-]+\s*@\s*[0-9a-f]{7,40}",
+        r"(?:%s)\s+W\d+\s+COMPLETION\s+REPORT"
+        r"[\s\S]{0,300}?Branch\s*[:：]\s*[\w.-]+\s*@\s*[0-9a-f]{7,40}" % _IDP,
         body, re.IGNORECASE))
-    # 2026-09-19 (WebFlix R20/R21 campaigns): the R2x-Wx worker packets use
+    # 2026-09-19 (R2x-Wx era): the wave-numbered worker packets use
     # "=== R20-W1 COMPLETION REPORT ===" + "Branch SHA pushed: <hex>". The
     # placeholder in the packet ("<the branch SHA you pushed>" / prose) is
     # never hex, so prompt echoes cannot satisfy this; a genuine report
@@ -380,7 +396,7 @@ def state(tab_prefix):
         r"===?\s*R\d+-W\d+\s*(?:COMPLETION\s*REPORT|完成报告)\s*===?"
         r"[\s\S]{0,600}?(?:cloned\s*HEAD\s*SHA|Base)\s*[:：@]\s*[0-9a-f]{7,40}",
         body, re.IGNORECASE))
-    # 2026-09-24 (Flauz Wave-5 campaign): the W5 worker packets use
+    # 2026-09-24 (Wave-5 era): the TAKE-NNN worker packets use
     # "=== TAKE-001 COMPLETION REPORT ===" (LEASE-001 same shape, LEASE
     # prefix) + "Base SHA / 基础 SHA: main @ <hex>". The packet template
     # carries a non-hex placeholder on that line, so prompt echoes (and
@@ -400,14 +416,14 @@ def state(tab_prefix):
     # original patch was working-copy-only at the old sandbox; 12-vector
     # suite: 4 genuine shapes pass, prompt/plan/unrelated echoes fail,
     # LEASE/TAKE/WEB regressions pass).
-    # 2026-09-27 (TL1 campaign, reset #5 re-apply): TL1- prefix added for the
-    # Flauz substrate program (TL1-001..005; same report shape "TL1-00X
+    # 2026-09-27 (TL1 era, reset #5 re-apply): TL1- prefix added for the
+    # substrate program (TL1-001..005; same report shape "TL1-00X
     # COMPLETION REPORT" + "Base SHA: main @ <hex>", same placeholder-proof
     # rule — the packet template's base-SHA line carries a non-hex
     # placeholder, so prompt/plan echoes can never satisfy the gate).
     filled = filled or bool(re.search(
-        r"(?:===?|##+)?\s*(?:LEASE|TAKE|WEB|FV|TL1)-\d+\s*(?:COMPLETION\s*REPORT|完成报告)\s*(?:===?|#+)?"
-        r"[\s\S]{0,600}?(?:Base\s*(?:branch\s*\+\s*)?SHA|基础\s*SHA)[^\n]{0,40}[:：][^\n]{0,15}?`?(?:main|主干)`?\s*@\s*`?[0-9a-f]{7,40}`?",
+        r"(?:===?|##+)?\s*(?:%s)-\d+\s*(?:COMPLETION\s*REPORT|完成报告)\s*(?:===?|#+)?"
+        r"[\s\S]{0,600}?(?:Base\s*(?:branch\s*\+\s*)?SHA|基础\s*SHA)[^\n]{0,40}[:：][^\n]{0,15}?`?(?:main|主干)`?\s*@\s*`?[0-9a-f]{7,40}`?" % _IDP,
         body, re.IGNORECASE))
     # 2026-09-30 (SOS W-series campaign): W13+ worker packets use
     # "=== W13 COMPLETION REPORT ===" + "pushed: work/w13-... @ <hex>".

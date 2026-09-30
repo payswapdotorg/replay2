@@ -4,7 +4,8 @@
 The workspaces files API `ls-tree` returns a FLAT array of file-path
 strings (not a nested tree — ls_tree.py's nested walker truncates and
 hides subtrees). This tool prints the flat list, optionally filtered
-by a path prefix (e.g. `sporta`), with counts and sporta-path totals.
+by a path prefix (e.g. a repo or directory name), with counts and
+prefix-filtered totals.
 
 Usage:  ls_flat.py <chat-id> <workspace-id> [prefix-filter]
 """

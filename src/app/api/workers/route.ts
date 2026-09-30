@@ -12,7 +12,7 @@ import { FLAGS, SCRIPTS } from "@/lib/replay";
  *  - flags/queue_watch.spec.<name> → the watched tab + completion marker
  *  - flags/queue_watch_heartbeat.<name> → watcher liveness (supervisor rule)
  *  - /tmp/queue_watch_<name>.log   → the watcher's per-round state lines
- *  - worker-prompts/R*.md          → staged (not-yet-dispatched) packets
+ *  - worker-prompts/*.md          → staged (not-yet-dispatched) packets
  *
  * States surfaced:
  *  generating       — Stop-button visible in the session DOM
@@ -115,7 +115,7 @@ function parseWatcherLog(name: string, origName?: string): {
       const m = l.match(
         /^\[(\S+)\]\s+\d{2}:\d{2}:\d{2}\s+(\S+)\s+chars=(\d+)\s+hits=\d+/,
       );
-      // log lines carry the ORIGINAL-case session name (flauz-A2-tl2)
+      // log lines carry the ORIGINAL-case session name (MySession-A2)
       if (!m || (m[1] !== name && m[1] !== (origName || name))) continue;
       rounds.push({ raw: l, state: m[2], chars: Number(m[3]), src: live.p });
     }
@@ -216,26 +216,36 @@ async function readRegistry(): Promise<Rec[]> {
 async function listStaged(dispatched: Set<string>): Promise<StagedInfo[]> {
   let files: string[] = [];
   try {
-    // R03.md (single-wave era), R24-W1.md (wave era), r35a-readpath.md
-    // (suffixed era), w13-worker-brief.md (SOS frontier era);
-    // *.template.md are the reusable skeletons, never staged
+    // any non-template markdown packet in the prompts dir is staged work
+    // (R03.md / R24-W1.md / r35a-readpath.md / w13-worker-brief.md — every
+    // naming era); *.template.md are the reusable skeletons, never staged
     files = (await fsp.readdir(PROMPTS)).filter(
-      (f) => /^[rRwW]\d+(?:-[A-Za-z0-9-]+)?\.md$/.test(f) && !/\.template\.md$/.test(f),
+      (f) => /^[^._][A-Za-z0-9._-]*\.md$/.test(f) && !/\.template\.md$/.test(f),
     );
   } catch {
     return [];
   }
   const staged: StagedInfo[] = [];
   for (const f of files) {
-    // normalize to the session-name form: R24-W1.md → r24w1 (legacy wave
-    // era joins the suffix); r35a-readpath.md → r35a (suffixed era: the part
-    // before the first dash IS the session name)
+    // normalize to the session-name form: the full lowercased stem (any
+    // naming generation), the pre-dash prefix (suffixed era: the part before
+    // the first dash IS the session name), or the legacy wave compaction
+    // (R24-W1.md → r24w1). A packet counts as dispatched when the registry
+    // knows ANY of its derivations — a naming generation must never make a
+    // dispatch invisible (the staged row would lie "not yet dispatched").
     const stem = f.replace(/\.md$/, "");
     const wave = stem.match(/^[rR]\d+-W\d+$/);
     const name = wave
       ? wave[0].replace("-", "").toLowerCase()
-      : stem.split("-")[0].toLowerCase();
-    if (dispatched.has(name)) continue;
+      : stem.toLowerCase();
+    const prefix = stem.split("-")[0].toLowerCase();
+    if (
+      dispatched.has(name) ||
+      dispatched.has(prefix) ||
+      dispatched.has(stem.toLowerCase())
+    ) {
+      continue;
+    }
     const p = join(PROMPTS, f);
     const head = readLines(p)[0] || f;
     const { title, lane } = parseHeader(head);
@@ -263,17 +273,15 @@ export async function GET() {
   const specName = new Map<string, string>(); // lowercase -> ORIGINAL-case name
   for (const r of recs) {
     const name = (r.name || "").toLowerCase();
-    // r03 (single-wave era), r24w1 (wave era), r35a/r34b2 (suffixed era:
-    // round + lane letter + optional attempt digit). The regex must accept
-    // every naming generation or the panel silently goes empty. flauz-*-tl2
-    // (the TL2 Agent OS surge era) joins the accepted generations — as does
-    // the ACTUAL TL2 naming form flauz-tl2-* (flauz-tl2-h1, flauz-tl2-acc1):
-    // the 2026-09-29 forensics showed the suffix-only pattern hid every TL2
-    // session from the live strip (latent since the surge began).
-    // w13/w14/... (SOS frontier era, 2026-09-30): same acceptance rule —
-    // a naming generation invisible to the strip is a silent-empty bug.
-    if (!/^(?:r\d+[a-z0-9]*|flauz-[a-z0-9]+-tl2|flauz-tl2-[a-z0-9]+|w\d+[a-z0-9]*)$/.test(name))
-      continue;
+    // NO naming-generation allowlist here (the 2026-09-29 forensics: a
+    // hardcoded name-shape regex silently hid every session whose name did
+    // not fit a known generation — the strip went empty for a whole surge;
+    // the 2026-09-30 W-series recurrence proved the class, not the instance:
+    // a naming generation invisible to the strip is a silent-empty bug).
+    // The authoritative filters are downstream and project-agnostic: the
+    // live strip requires a queue_watch spec file (the supervisor
+    // contract), and the capacity-fight tab requires a FRESH trail. Void
+    // records stay bookkeeping, not dispatches.
     if (r.action === "void") {
       // a void is bookkeeping, not a dispatch
       continue;
@@ -301,7 +309,7 @@ export async function GET() {
   // Control, not the live strip.
   const workers: WorkerInfo[] = [];
   for (const [name, { rec, dispatches }] of live) {
-    // spec files use the ORIGINAL-case name (flauz-A2-tl2, not the
+    // spec files use the ORIGINAL-case name (MySession-A2, not the
     // lowercased key) — check both spellings or the lane goes invisible.
     const origName = specName.get(name) || name;
     const specPath = existsSync(join(FLAGS, `queue_watch.spec.${origName}`))
