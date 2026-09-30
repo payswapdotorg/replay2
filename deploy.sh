@@ -136,7 +136,15 @@ else
     done
   fi
   say "starting console dev server :$PORT…"
-  (REPLAY_PORT="$PORT" "$PY_BIN" scripts/launch_console.py)  # console = platform app (my-project)
+  # CONSOLE_LAUNCHER: per-deployment console choice (shared-repo contract).
+  # Default scripts/launch_console.py = platform app (my-project) — correct
+  # wherever my-project has been built out as the console (2026-09-30
+  # architecture). Deployments where the platform app is the pristine
+  # scaffold (no console UI inside) set CONSOLE_LAUNCHER=scripts/launch_dev.py
+  # — the replay2 Next app that serves <title>Replay Console</title>. The
+  # ring's console_body_ok marker check is satisfied by either server, so
+  # the supervisor/watcher resurrection paths need no changes.
+  (REPLAY_PORT="$PORT" "$PY_BIN" "${CONSOLE_LAUNCHER:-scripts/launch_console.py}")
 fi
 CONSOLE_OK=0
 for i in $(seq 1 60); do
