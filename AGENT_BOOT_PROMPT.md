@@ -423,3 +423,49 @@ surface AND the Lead's chat sends gate. NEVER start a certified battery
 throttled (a 429 mid-run checkpoints poisoned FAILED outcomes); workers
 hold attended-only launch on a recovery marker probed gently (10-min
 cadence — a 30s cadence burns the fresh window).
+## 9. Sandbox-slot release precision + the workspace-rebind recovery (2026-09-30 afternoon shift)
+
+**9a. The stock live-guard over-scopes.** `dash_sandbox_release.py`'s
+RELEASE_JS scopes a row with `b.closest('tr, div')` — on the current DOM
+there is no `tr`, and the `div` climb lands on a CONTAINER that holds the
+sibling rows' "Live" text, so ALL rows (including the genuinely `Expired`
+one) are skipped: `GUARD: skipped 3 LIVE sandbox(es)`. Fix (proven):
+per-row scoping — walk Release buttons, climb only while the parent holds
+exactly ONE Release button (sibling-count boundary), then match
+`/\bExpired\b/` on the row's OWN text (note "Expires in 1h8m" does NOT
+match — word boundary). See `recovery/zeck-scripts/tmp-tools/release_expired_only.py`.
+
+**9b. INCIDENT — the confirm-click reaper.** After clicking the expired
+row's Release, a helper that "confirms" by matching ANY button whose text
+is `Release`/`Confirm` will — when NO dialog actually appears — click the
+NEXT row's inline Release button and reap a LIVE worker's workspace
+(observed: c54aa8b's Live pod released while confirming the 49e5a55 slot).
+RULE: confirm-button selectors must be scoped INSIDE a `[role=dialog]`
+that did not exist before the release click; if no dialog appears within
+~3s, there is nothing to confirm — STOP.
+
+**9c. A released workspace is not the end.** The chat's server-side
+narrative survives the pod. A LANDED nudge on a workspace-less chat can
+rebind a FRESH pod (when a slot is free) and the worker resumes from its
+chat history — prefer this over void+re-dispatch (which discards the
+narrative). Caveat: the pod FILESYSTEM is gone — all uncommitted artifacts
+with it. The resume directive must say so explicitly ("the pod filesystem
+is FRESH — rebuild from your own narrative above") and name the last
+known in-flight step (from the DOM bodyTail / batch narrative) so the
+worker does not re-plan from zero.
+
+**9d. probe_chat.py needs the FULL chat UUID.** An 8-char prefix goes
+straight into `/api/v1/chats/<id>` and returns http-500 (not 404!) —
+which the uncertainty doctrine then reads as ALIVE. Always pass the full
+uuid from the registry url.
+
+**9e. Peak-hours popup = MODEL_CONCURRENCY_LIMIT (hard wall).** The
+"Currently in peak hours / GLM-5.3 is intensifying the coordination of
+resources... [Cancel] [Switch to GLM-5.3-Flash]" modal is the UI face of
+a server-side model-capacity wall. NEVER click "Switch to GLM-5.3-Flash"
+(workers must stay on GLM-5.3). Cancel + Enter-resend loops sometimes
+break through at window edges (proved 09:36-13:10Z window); when the wall
+is fully up, the composer retains the text (the `gated(<len>)` keeper
+signal) — keep a 5-min keeper cadence (a faster cadence re-burns the
+window; see §8's probe-burn lesson) and land the directive in the first
+minute the window opens.
