@@ -374,7 +374,52 @@ Operational lessons (all platform-level, project-neutral):
   composer send blocked, draft persists across reloads) + ZERO transcript
   events for hours + pod Running + no delivery files = the stream died
   mid-tool-call and the server never closed the turn. The resume nudge
-  cannot be delivered. Correct action: void the session and re-dispatch
-  fresh; a fresh worker redoes the work faster than a zombie ever resolves.
+  cannot be delivered. ~~Correct action: void the session and re-dispatch
+  fresh~~ SUPERSEDED 2026-09-30: use the stop-API cure below (section 8)
+  BEFORE any void — it un-wedges the turn in place, preserving the worker's
+  full narrative, pod environment, and battery checkpoints. Void/re-dispatch
+  is the LAST resort only if the stop+continue+fresh-tab-send sequence fails.
   Distinguish from a LIVE long compile by checking whether the transcript
   shows ANY event growth over ~30-45 min.
+
+## 8. Stuck-generation recovery — the stop/continue API pair (PROVEN 2026-09-30)
+
+A quota-killed or otherwise wedged turn (the "Server is busy" state,
+composer Enter silently swallowed with ZERO outgoing API requests, send
+button disabled across reloads for 10+ hours) is curable IN PLACE — never
+void a session with live narrative/pod assets before trying this:
+
+1. **Confirm the wedge**: `POST /api/chat/continue` with body
+   `{"chat_id": "<uuid>"}` (WRONG body — deliberately) returns the generic
+   "Server is busy" SSE — this is only a quick symptom check. The REAL
+   protocol uses message_id (below).
+2. **Stop the stuck turn** with the platform's own stop API (extracted from
+   `stopResponse` → `whe()` in the app bundle):
+   `POST /api/tasks/stop/<MESSAGE_ID>` with headers
+   `{Authorization: Bearer <localStorage token>, Content-Type: application/json}`
+   and body `{"reason": "<why>"}` → expect `{"status": true}`. MESSAGE_ID =
+   the chat's `history.currentId` (the stuck turn's assistant message id,
+   from `GET /api/v1/chats/<uuid>`).
+3. **Verify closure**: `POST /api/chat/continue` with the CORRECT body
+   `{"message_id": "<MESSAGE_ID>"}` + header `X-FE-Version: prod-fe-1.1.98`
+   → expect HTTP 410 "Message already completed; resume not needed". (A
+   200-with-busy SSE means the slot is still held — wait 2-3 min and re-stop.)
+4. **Send immediately from a FRESH TAB** (the old tab's client state stays
+   wedged even after server-side closure — close old tabs on that chat
+   first, then `new_tab` the chat URL, wait ~14s, React-set the message,
+   one Enter). The send lands; the new turn opens within seconds.
+
+Evidence from the proving run (PPR-022, 2026-09-30): turn stuck 11.7h
+(quota death mid-tool-call "context canceled" at 22:25Z), stop accepted at
+10:34Z, fresh-tab send LANDED at 10:36Z, msgs 4→6, batch +378K/203 blocks
+within 3 min — the worker resumed and launched its attended battery with
+zero narrative loss.
+
+Related diagnosis (same incident): the account-level DAILY quota
+(`X-Ratelimit-User-Daily-Remaining: 0` on internal-api.z.ai) does NOT reset
+at UTC midnight; observed reset between 05:38Z and 09:36Z (fixed 08:00Z or
+rolling). While it is drained: worker pods' supply calls 429 on every
+surface AND the Lead's chat sends gate. NEVER start a certified battery
+throttled (a 429 mid-run checkpoints poisoned FAILED outcomes); workers
+hold attended-only launch on a recovery marker probed gently (10-min
+cadence — a 30s cadence burns the fresh window).
