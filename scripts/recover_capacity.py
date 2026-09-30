@@ -29,6 +29,19 @@ import sys
 import time
 import urllib.request
 
+# 2026-09-30 §8 quota-drain doctrine (AGENT_BOOT_PROMPT section 8): a
+# capacity PEAK clears in minutes (the morning W13 fight landed in 3
+# rounds); SUSTAINED failure — full 12-round ladders exhausting
+# back-to-back — is the account-quota-drain signature (daily quota resets
+# 05:38Z-09:36Z; while drained, sends gate on every surface and a 30-60s
+# cadence burns the fresh window the moment it opens, while flooding the
+# account with phantom chats). After GENTLE_AFTER consecutive exhausted
+# ladders the poller switches to gentle mode: single-send probes
+# (DW_ROUNDS=0) every GENTLE_SLEEP seconds, so the reset window opens onto
+# ONE clean send. Env-overridable.
+GENTLE_AFTER = int(os.environ.get("RC_GENTLE_AFTER", "2"))
+GENTLE_SLEEP = int(os.environ.get("RC_GENTLE_SLEEP", "600"))
+
 BASE = os.path.dirname(os.path.abspath(__file__))
 # argv[1] = flag path (supervisor passes the per-session flag); argv[1] may
 # also be a bare legacy uuid (old supervisor invocation) — detect by suffix.
@@ -192,9 +205,14 @@ def main():
         _clear_flag()
         return 4
     print(f"aggressive recovery: {name} <- {prompt_file} (never waits out capacity)", flush=True)
+    stage_failures = 0     # consecutive full-ladder exhaustions (rc==3)
+    gentle = False
     for attempt in range(240):  # up to ~8h of active assault; supervisor re-arms
+        _env = dict(os.environ) if gentle else None
+        if gentle:
+            _env["DW_ROUNDS"] = "0"   # single send attempt per probe
         rc = subprocess.call([sys.executable, os.path.join(BASE, "dispatch_worker.py"),
-                              "create", name, prompt_file])
+                              "create", name, prompt_file], env=_env)
         print(f"[{attempt}] create rc={rc}", flush=True)
         if rc == 0:
             # Lesson-98/106 hardening: a create can exit 0 on a PHANTOM send
@@ -278,7 +296,18 @@ def main():
         # rc==3: create ran its full in-process assault and re-staged the
         # flag; go again immediately (short gap). rc==2/other: give the page
         # a moment, then the next create closes stale tabs and retries.
-        time.sleep(20 if rc == 3 else 45)
+        if rc == 3:
+            stage_failures += 1
+            if not gentle and stage_failures >= GENTLE_AFTER:
+                gentle = True
+                print(f"[{attempt}] {stage_failures} full ladders exhausted back-to-back — "
+                      f"\u00a78 QUOTA-DRAIN signature: switching to gentle mode "
+                      f"(single-send probes every {GENTLE_SLEEP}s; the reset window "
+                      f"opens onto ONE clean send)", flush=True)
+        if gentle:
+            time.sleep(GENTLE_SLEEP)
+        else:
+            time.sleep(20 if rc == 3 else 45)
     return 3
 
 
