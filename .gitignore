@@ -51,3 +51,6 @@ scripts/r20*_gate_run.sh
 scripts/r31_station_gates.sh
 scripts/rebuild_parity_sysroot.sh
 scripts/parity_build_env.sh
+
+# TL2 product-phase campaign surface repo (per-sandbox shallow read repo)
+scripts/flauz-surface/
