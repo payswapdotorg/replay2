@@ -1,0 +1,471 @@
+#!/usr/bin/env python3
+"""watcher.py — the resident program watcher (post-reset rebuild).
+
+Monitors (gentle, low-frequency):
+  1. browser chat.z.ai login state  -> when login appears: sets login flag file
+  2. worker branches on GitHub      -> new branch push = worker completion event
+  3. operator PAT write access      -> when granted: write-access flag file
+
+Writes JSON lines to watcher.log; flags as files in scripts/flags/.
+Self-documenting: survives as long as the sandbox; the worklog + repo state
+carry across resets. Run via launch_watcher.py (start_new_session).
+"""
+import json
+import os
+import re
+import subprocess
+import sys
+import time
+
+sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+import channel
+
+BASE = os.path.dirname(os.path.abspath(__file__))
+LOG = os.path.join(BASE, "watcher.log")
+FLAGS = os.path.join(BASE, "flags")
+os.makedirs(FLAGS, exist_ok=True)
+
+
+
+def watch_repo():
+    """The per-deployment repo this watcher monitors (§0: NEVER hardcoded —
+    a stale committed default once made the resident machinery watch a
+    PREVIOUS project's repo after the deployment changed). Sources, in
+    order: REPLAY_WATCH_REPO env var, then flags/watch_repo.txt (the
+    per-deployment local config, gitignored). Empty when unconfigured —
+    branch-watch then reports nothing (the neutral fallback is deliberate)."""
+    env = os.environ.get("REPLAY_WATCH_REPO", "").strip()
+    if env:
+        return env
+    try:
+        return open(os.path.join(FLAGS, "watch_repo.txt")).read().strip()
+    except Exception:
+        return ""
+
+STATE = {
+    "login": "unknown",
+    "branches": set(),
+    "write": False,
+}
+
+
+def log(msg):
+    line = time.strftime("[%H:%M:%S] ") + msg
+    try:
+        # self-rotate so the log can never grow unbounded
+        if os.path.exists(LOG) and os.path.getsize(LOG) > 2 * 1024 * 1024:
+            with open(LOG, "rb") as f:
+                f.seek(-150 * 1024, 2)
+                tail = f.read()
+            with open(LOG, "wb") as f:
+                f.write(tail)
+        with open(LOG, "a", encoding="utf-8") as f:
+            f.write(line + "\n")
+    except Exception:
+        pass
+    try:
+        print(line, flush=True)
+    except Exception:
+        pass
+
+
+def get_pat():
+    # 2026-09-12: credentials live in ~/.secrets/env.sh (never committed);
+    # scripts/env.sh remains as a fallback for stack defaults.
+    # 2026-09-15: accept github_pat_ (fine-grained) tokens too.
+    for path in (os.path.expanduser("~/.secrets/env.sh"), os.path.join(BASE, "env.sh")):
+        try:
+            env = open(path).read()
+        except Exception:
+            continue
+        for var in ("PAYSWAP_PAT", "GITHUB_TOKEN", "OPERATOR_PAT"):
+            m = re.search(rf"{var}=(ghp_[A-Za-z0-9]+|github_pat_[A-Za-z0-9_]+)", env)
+            if m:
+                return m.group(1)
+    return ""
+
+
+def _jwt_email(tok):
+    """Decode any email-looking string from a JWT payload (guest discrimination).
+    A fresh browser profile auto-creates a GUEST session that ALSO has a
+    token — token presence alone is NOT an operator login (2026-09-15
+    reset-2 lesson: fresh profile classified logged-in on token length)."""
+    try:
+        import base64
+        parts = str(tok).split(".")
+        if len(parts) < 2:
+            return ""
+        seg = parts[1]
+        seg += "=" * (-len(seg) % 4)
+        payload = base64.urlsafe_b64decode(seg.encode()).decode("utf-8", "replace")
+        m = re.search(r"[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}", payload)
+        return m.group(0) if m else ""
+    except Exception:
+        return ""
+
+
+def check_login():
+    """Scan ALL chat.z.ai tabs (home tab first) — during capacity events the
+    first tab is a worker chat page whose body carries neither the username
+    marker nor 'Sign in', which used to produce false 'login LOST' alarms
+    (forensic case 2026-09-12 12:01: 'login LOST' outbox message while
+    dispatches were still succeeding as logged-in tepa)."""
+    try:
+        tabs = [t for t in channel.list_tabs() if "chat.z.ai" in (t.get("url") or "")]
+        if not tabs:
+            return STATE["login"]
+        tabs.sort(key=lambda t: 0 if (t.get("url") or "").rstrip("/").endswith("chat.z.ai") else 1)
+        saw_signin = False
+        for tab in tabs[:2]:
+            try:
+                cdp = channel.CDP(tab["webSocketDebuggerUrl"], timeout=12)
+                try:
+                    body = cdp.eval("document.body.innerText || ''", timeout=10) or ""
+                    tok = ""
+                    try:
+                        tok = cdp.eval(
+                            "(localStorage.getItem('token')||'').replace(/^\"|\"$/g,'')",
+                            timeout=8) or ""
+                    except Exception:
+                        tok = ""
+                    # 2026-09-14/15 fixes: the email decode MUST run INSIDE the
+                    # open CDP connection (decode-after-close made logged-in(token)
+                    # unreachable), and a token alone is NOT a login — a fresh
+                    # profile carries a GUEST token. Discriminate on the JWT email.
+                    email = _jwt_email(tok)
+                finally:
+                    cdp.close()
+                if "tepa" in body:
+                    return "logged-in(tepa)"
+                if email:
+                    if "guest" in email.lower():
+                        return "logged-out(guest)"
+                    return f"logged-in({email.split('@')[0]})"
+                # NOTE (2026-09-15): no decoded email => this tab contributes no
+                # positive login signal. Token LENGTH alone was retired — a guest
+                # session carries a >100-char token too. Keep probing other tabs.
+                if "Sign in" in body or "Log in" in body:
+                    saw_signin = True
+            except Exception:
+                continue
+        if saw_signin:
+            return "logged-out"
+        # no tab shows either marker (e.g. all worker chats mid-render):
+        # keep the previous state rather than flapping
+        return STATE["login"]
+    except Exception:
+        return STATE["login"]
+
+
+def check_branches(pat):
+    """Watch THIS deployment's repo (watch_repo() — env/flags config, never
+    hardcoded). With a PAT use the API; WITHOUT one fall back to anonymous
+    `git ls-remote` — public repos keep branch watching alive through
+    credential loss (reset-2 lesson). Unconfigured -> None (neutral)."""
+    repo = watch_repo()
+    if not repo:
+        return None
+    if pat:
+        r = subprocess.run(["curl", "-s", "--max-time", "15",
+                            "-H", f"Authorization: token {pat}",
+                            f"https://api.github.com/repos/{repo}/branches?per_page=100"],
+                           capture_output=True, text=True)
+        try:
+            bs = json.loads(r.stdout)
+            if isinstance(bs, list):
+                return {b["name"]: b["commit"]["sha"][:10] for b in bs if isinstance(b, dict)}
+        except Exception:
+            pass
+    try:
+        r = subprocess.run(
+            ["git", "ls-remote", "--heads", f"https://github.com/{repo}"],
+            capture_output=True, text=True, timeout=30)
+        out = {}
+        for line in r.stdout.splitlines():
+            if "\t" in line:
+                sha, ref = line.split("\t", 1)
+                out[ref.replace("refs/heads/", "")] = sha[:10]
+        return out or None
+    except Exception:
+        return None
+
+
+def check_write(pat):
+    if not pat:
+        return STATE["write"]  # unknown without a PAT — never claim it
+    repo = watch_repo()
+    if not repo:
+        return STATE["write"]  # unconfigured — never claim it
+    r = subprocess.run(["curl", "-s", "--max-time", "10",
+                        "-H", f"Authorization: token {pat}",
+                        f"https://api.github.com/repos/{repo}"],
+                       capture_output=True, text=True)
+    try:
+        d = json.loads(r.stdout)
+        return bool((d.get("permissions") or {}).get("push"))
+    except Exception:
+        return STATE["write"]
+
+
+def check_dialogs():
+    """Auto-accept 'Reload site?' / beforeunload dialogs on the active tab."""
+    try:
+        tabs = channel.list_tabs()
+        aid = ""
+        try:
+            aid = open(os.path.join(FLAGS, "active_tab.txt")).read().strip()
+        except Exception:
+            pass
+        tab = next((t for t in tabs if t.get("id") == aid), None) or \
+            next((t for t in tabs if "chat.z.ai" in (t.get("url") or "")), None)
+        if not tab:
+            return False
+        cdp = channel.CDP(tab["webSocketDebuggerUrl"], timeout=8)
+        try:
+            cdp.call("Page.enable", {}, timeout=8)
+            cdp.call("Page.handleJavaScriptDialog", {"accept": True}, timeout=8)
+            return True  # a dialog was actually accepted
+        except Exception:
+            return False  # no dialog open — normal case
+        finally:
+            cdp.close()
+    except Exception:
+        return False
+
+
+def check_inbox():
+    """Surface new operator messages into watcher.log so the agent notices them."""
+    path = os.path.join(FLAGS, "operator_inbox.jsonl")
+    try:
+        if not os.path.exists(path):
+            return
+        lines = [l for l in open(path, encoding="utf-8").read().split("\n") if l.strip()]
+        n = len(lines)
+        prev = STATE.get("inbox_lines", 0)
+        if n > prev:
+            for l in lines[prev:]:
+                try:
+                    d = json.loads(l)
+                    log(f"OPERATOR MESSAGE: {str(d.get('text'))[:200]}")
+                except Exception:
+                    pass
+        STATE["inbox_lines"] = n
+    except Exception:
+        pass
+
+
+def check_procs():
+    """Restart dead infrastructure (Xvfb / Chrome / dev server / supervisor /
+    custodian).
+    Ring of three (any two members heal the third):
+      - the supervisor restarts us (PID + heartbeat-hang detection, 10s)
+      - we restart the supervisor (PID + heartbeat-hang detection, ~2min)
+      - the custodian (small, OOM-safe) guards the pair against simultaneous
+        death; we resurrect the custodian if IT dies
+    """
+    base = os.path.dirname(os.path.abspath(__file__))
+    try:
+        # Chrome dead => CDP endpoint gone
+        import urllib.request
+        try:
+            urllib.request.urlopen("http://127.0.0.1:9222/json/version", timeout=3).read()
+        except Exception:
+            log("CDP dead — restarting Chrome + Xvfb")
+            subprocess.run(["/home/z/.venv/bin/python3", os.path.join(base, "launch_stack.py")], timeout=120)
+        # dev server dead => operator console unreachable
+        try:
+            urllib.request.urlopen(f"http://127.0.0.1:{int(os.environ.get('REPLAY_PORT', '3000'))}", timeout=4).read(64)
+        except Exception:
+            # liveness-guarded: a cold compile binds the port late; spawning
+            # extra dev servers during that window stampedes memory (OOM).
+            # The supervisor owns the patience/restart policy — we only spawn
+            # when no dev process exists at all.
+            r = subprocess.run(["pgrep", "-f", "next dev|bun run dev|next-server"],
+                               capture_output=True, text=True)
+            if not r.stdout.strip():
+                log("dev server (console port) dead — restarting")
+                # Console launcher = deployment choice: flags/console_launcher.txt
+                # (default launch_console.py = the platform app in my-project;
+                # pristine-scaffold deployments write "launch_dev.py" so the
+                # replay2-native console is resurrected instead of the scaffold).
+                launcher = os.path.join(base, "launch_console.py")
+                try:
+                    name = open(os.path.join(base, "flags", "console_launcher.txt")).read().strip()
+                    if name in ("launch_console.py", "launch_dev.py"):
+                        launcher = os.path.join(base, name)
+                except Exception:
+                    pass
+                subprocess.Popen(["/home/z/.venv/bin/python3", launcher],
+                                 stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+                time.sleep(5)
+        # replay daemon dead => console loses realtime frames + drags
+        try:
+            urllib.request.urlopen("http://127.0.0.1:3100/healthz", timeout=3).read(64)
+        except Exception:
+            log("replayd :3100 dead — restarting")
+            subprocess.Popen(["/home/z/.venv/bin/python3", os.path.join(base, "launch_replayd.py")],
+                             stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+            time.sleep(2)
+        # supervisor dead OR hung => resurrect it (it holds the flock, so a
+        # fresh launch simply adopts the role). Hung = alive-but-stuck:
+        # supervisor_heartbeat is written every 10s; stale beyond 180s with a
+        # process older than 180s (startup grace) means wedged — SIGKILL
+        # first so the restart always yields a fresh process.
+        sup_pid = ""
+        try:
+            sup_pid = open(os.path.join(base, "supervisor.pid")).read().strip()
+        except Exception:
+            pass
+        alive = False
+        if sup_pid:
+            try:
+                cmd = open(f"/proc/{sup_pid}/cmdline", "rb").read().decode(errors="replace")
+                alive = "supervisor.py" in cmd
+            except Exception:
+                alive = False
+        if alive:
+            try:
+                age = time.time() - os.path.getmtime(os.path.join(FLAGS, "supervisor_heartbeat"))
+                started = 0
+                try:
+                    with open(f"/proc/{sup_pid}/stat") as f:
+                        st = f.read()
+                    after = st[st.rindex(")") + 2:].split()
+                    ticks = int(after[19])
+                    btime = int(open("/proc/stat").read().split("btime")[1].split()[0])
+                    started = btime + ticks / (os.sysconf("SC_CLK_TCK") or 100)
+                except Exception:
+                    pass
+                if age > 180 and (time.time() - started) > 180:
+                    log(f"supervisor HUNG (hb {int(age)}s stale) — SIGKILL + resurrect")
+                    try:
+                        subprocess.run(["kill", "-9", sup_pid], capture_output=True)
+                    except Exception:
+                        pass
+                    time.sleep(1)
+                    alive = False
+            except Exception:
+                pass
+        if not alive:
+            log("supervisor dead — resurrecting")
+            subprocess.Popen(
+                ["/home/z/.venv/bin/python3", os.path.join(base, "supervisor.py")],
+                stdout=open(os.path.join(base, "logs", "supervisor.err"), "a"),
+                stderr=subprocess.STDOUT,
+                start_new_session=True)
+        # custodian (third ring member) dead => resurrect it. Tiny loop, no
+        # CDP; it guards the supervisor+watcher pair against simultaneous
+        # OOM death and SIGKILLs hung instances.
+        cus_pid = ""
+        try:
+            cus_pid = open(os.path.join(base, "custodian.pid")).read().strip()
+        except Exception:
+            pass
+        cus_alive = False
+        if cus_pid:
+            try:
+                cmd = open(f"/proc/{cus_pid}/cmdline", "rb").read().decode(errors="replace")
+                cus_alive = "custodian.py" in cmd
+            except Exception:
+                cus_alive = False
+        if not cus_alive:
+            log("custodian dead — resurrecting")
+            subprocess.Popen(
+                ["/home/z/.venv/bin/python3", os.path.join(base, "custodian.py")],
+                stdout=open(os.path.join(base, "logs", "custodian.log"), "a"),
+                stderr=subprocess.STDOUT,
+                start_new_session=True)
+    except Exception as e:
+        log(f"proc check error {e!r}")
+
+
+def main():
+    log("watcher online (login + branches + write-access + dialogs + operator-inbox)")
+    pat = get_pat()
+    if not pat:
+        log("NO PAT in env.sh — watcher runs in degraded mode "
+            "(branches still watched via anonymous git ls-remote)")
+    while True:
+        try:
+            # 2026-09-15: re-read the PAT every cycle — the operator may drop
+            # it into ~/.secrets/env.sh mid-flight (console-thread PAT relay);
+            # the watcher must not need a restart to notice.
+            pat_now = get_pat()
+            if pat_now and pat_now != pat:
+                pat = pat_now
+                log("PAT appeared in env — full mode (API branches + write check)")
+            # 1. login state
+            login = check_login()
+            if login != STATE["login"]:
+                log(f"login: {STATE['login']} -> {login}")
+                STATE["login"] = login
+                if login.startswith("logged-in"):
+                    open(os.path.join(FLAGS, "LOGIN_READY"), "w").write(time.strftime("%H:%M:%S"))
+                else:
+                    p = os.path.join(FLAGS, "LOGIN_READY")
+                    if os.path.exists(p):
+                        os.remove(p)
+
+            # 2. branches (new pushes)
+            if pat:
+                brs = check_branches(pat)
+                if brs is not None:
+                    names = set(brs.keys())
+                    if STATE["branches"] and names != STATE["branches"]:
+                        added = names - STATE["branches"]
+                        removed = STATE["branches"] - names
+                        if added:
+                            log(f"NEW BRANCH(ES): {sorted(added)} — worker completion event")
+                            for n in sorted(added):
+                                open(os.path.join(FLAGS, f"BRANCH_{n.replace('/', '__')}"), "w").write(brs[n])
+                        if removed:
+                            log(f"branch(es) gone: {sorted(removed)}")
+                    elif not STATE["branches"]:
+                        log(f"baseline branches: {sorted(names)}")
+                    STATE["branches"] = names
+
+                # 3. write access
+                w = check_write(pat)
+                if w != STATE["write"]:
+                    log(f"write access: {STATE['write']} -> {w}")
+                    STATE["write"] = w
+                    if w:
+                        open(os.path.join(FLAGS, "WRITE_ACCESS"), "w").write(time.strftime("%H:%M:%S"))
+        except Exception as e:
+            log(f"loop error {e!r}")
+
+        # 4. dialogs (fast sub-cycle) + operator inbox
+        for _ in range(12):
+            check_dialogs()
+            check_inbox()
+            try:
+                open(os.path.join(FLAGS, "watcher_heartbeat"), "w").write(
+                    time.strftime("%Y-%m-%d %H:%M:%S"))
+            except Exception:
+                pass
+            time.sleep(10)
+        check_procs()
+
+
+if __name__ == "__main__":
+    try:
+        open(os.path.join(BASE, "watcher.pid"), "w").write(str(os.getpid()))
+    except Exception:
+        pass
+    # IMMORTAL: even if main() somehow raises, restart after a short backoff.
+    # (the supervisor additionally relaunches the whole process if it dies.)
+    while True:
+        try:
+            main()
+        except Exception as e:
+            try:
+                log(f"FATAL in main: {e!r} — restarting in 15s")
+            except Exception:
+                pass
+            time.sleep(15)
+        else:
+            try:
+                log("main() returned unexpectedly — restarting in 15s")
+            except Exception:
+                pass
+            time.sleep(15)

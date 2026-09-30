@@ -1,0 +1,68 @@
+node_modules/
+.next/
+
+# runtime state (per-sandbox) — never commit
+scripts/browser-profile/
+scripts/flags/
+scripts/logs/
+scripts/env.sh
+scripts/python_bin.txt
+scripts/*.pid
+scripts/*.log
+scripts/watcher.out
+logs/
+
+# GOVERNANCE (2026-09-29): the console is PROJECT-AGNOSTIC. Mission state and
+# worker prompts are per-deployment LOCAL files — never committed (a committed
+# mission/roadmap misled a resident agent into another project's work once;
+# hard rule in AGENT_BOOT_PROMPT.md §0).
+data/mission-state.json
+scripts/worker-prompts/
+scripts/worker-reports/
+
+next-env.d.ts
+*.tsbuildinfo
+.DS_Store
+__pycache__/
+scripts/extensions/*.crx
+scripts/extensions/*.zip
+
+# live dispatch packets carry the push token — never commit
+scripts/prompts/
+
+# per-deployment local project scripts (§0: project content never committed;
+# supervisor's generic ensure_local_services() keeps these alive per
+# flags/local_services.json)
+scripts/local/
+
+# per-deployment campaign artifacts (§0: never track project content)
+scripts/harvests/
+scripts/evidence/
+scripts/drills/
+scripts/gates/
+scripts/wave6-staging/
+scripts/worker-reports/
+scripts/prompts-template/
+scripts/.replay-backup/
+scripts/r20*_gate_run.sh
+scripts/r31_station_gates.sh
+scripts/rebuild_parity_sysroot.sh
+scripts/parity_build_env.sh
+
+# TL2 product-phase campaign surface repo (per-sandbox shallow read repo)
+scripts/flauz-surface/
+
+# per-deployment project scripts, untracked 2026-09-30 §0 sweep (stay on disk;
+# project-agnostic equivalents live in tracked tooling or scripts/local/)
+scripts/finish-clone.sh
+scripts/integration_check.sh
+scripts/login_watch_dispatch.py
+scripts/tradrl_login_watch.py
+scripts/w090c_watch.py
+scripts/lead_merge.py
+scripts/launch_anchor_*.py
+
+# per-deployment campaign plane (§0: the TL2 station's durable-masters need
+# is real but lives in the DEPLOYMENT's own project repo / my-project
+# snapshot tree, never here; disk copies stay per-sandbox)
+scripts/replay-campaign/
