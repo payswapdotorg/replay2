@@ -50,12 +50,15 @@ evict_squatters() {
       local cwd="" cmd=""
       cwd=$(readlink "/proc/$tok/cwd" 2>/dev/null || true)
       cmd=$(tr '\0' ' ' < "/proc/$tok/cmdline" 2>/dev/null || true)
-      case "$cwd$cmd" in *replay2*|*my-project*) continue ;; esac
+      case "$cwd$cmd" in *replay2*) continue ;; esac
       kill "$tok" 2>/dev/null || true
       evicted="$evicted pid $tok (${cwd:-${cmd:0:70}})"
     done
   done < <(ss -tlnp 2>/dev/null)
-  [ -n "$evicted" ] && say "PORT GUARD: evicted non-console squatter(s) on :$port -$evicted"
+  if [ -n "$evicted" ]; then
+    say "PORT GUARD: evicted non-console squatter(s) on :$port -$evicted"
+  fi
+  return 0
 }
 
 # ---------------------------------------------------------------- 1. python
