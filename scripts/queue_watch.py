@@ -233,6 +233,13 @@ def server_alive(name):
 ZOMBIE_TURN_AFTER = int(os.environ.get("QW_ZOMBIE_TURN_AFTER", "7200"))
 _zombie_track = {}   # name -> {"chars": int|None, "since": epoch}
 
+# 2026-09-30 s8 CURE-FIRST doctrine (AGENT_BOOT_PROMPT section 8, PPR-022-
+# proven): a zombie turn gets the stop/continue in-place cure BEFORE any
+# void+re-dispatch (narrative + pod survive). Bounded attempts per watcher
+# lifetime; void is the last resort.
+CURE_MAX = int(os.environ.get("QW_CURE_MAX", "3"))
+_cure_attempts = {}
+
 
 def _zombie_verdict(name, bchars, has_report, stamp, st, thresh_note=""):
     """Track (name)'s batch-store char count across cycles.
@@ -577,7 +584,32 @@ def main():
                                   f"({note}, msgs={msgs}, bchars={bchars}) — lesson 185 index lag, "
                                   f"WAITING (no assault; zombie clock {_zage}s/{ZOMBIE_TURN_AFTER}s)", flush=True)
                             _skip_assault = True
-                        # _zv == 'zombie': dead turn — fall through, assault proceeds
+                        elif _zv == "zombie" and _cure_attempts.get(name, 0) < CURE_MAX:
+                            # s8 CURE-FIRST (2026-09-30): stop the dead turn +
+                            # continue in-place — narrative preserved.
+                            _cure_attempts[name] = _cure_attempts.get(name, 0) + 1
+                            print(f"[{name}] {stamp} zombie turn — s8 stop/continue cure "
+                                  f"(attempt {_cure_attempts[name]}/{CURE_MAX}, in-place)", flush=True)
+                            _rc = run_with_hb(name, [sys.executable, os.path.join(BASE, "stop_continue.py"),
+                                                     name, "queue_watch zombie-turn: batch static, no report"])
+                            if _rc == 0:
+                                print(f"[{name}] {stamp} s8 CURE LANDED — turn reopened in-place "
+                                      "(narrative preserved)", flush=True)
+                                _zombie_track.pop(name, None)
+                                rec2 = dw._find(name)
+                                if rec2 and (rec2.get("tab_id") or "")[:8] != tab_prefix:
+                                    tab_prefix = (rec2.get("tab_id") or "")[:8]
+                                    write_spec(name, tab_prefix, marker)
+                                    print(f"[{name}] {stamp} re-aimed at cured-session tab {tab_prefix}", flush=True)
+                                last_len = 0
+                                last_fp = ""
+                                rounds_since_progress = 0
+                                _skip_assault = True
+                            else:
+                                print(f"[{name}] {stamp} s8 cure failed rc={_rc} — "
+                                      "falling back to void+re-dispatch", flush=True)
+                        # else: zombie with cure budget exhausted — fall through,
+                        # the assault ladder voids + re-dispatches as designed
                     else:
                         print(f"[{name}] {stamp} tab {st} and server probe says DEAD ({note}) "
                               "— agent-lane death confirmed, assault may proceed", flush=True)
@@ -707,8 +739,34 @@ def main():
                                   f"({_note}, msgs={_msgs}, bchars={_bchars}) — lesson 185: queued send preserved, "
                                   f"extending patience (no void; zombie clock {_zage}s/{ZOMBIE_TURN_AFTER}s)", flush=True)
                             stuck_since = time.time()  # restart the clock; probe again next threshold
-                        # _zv == 'zombie': fall through — _agent_alive stays False,
-                        # the stuck-assault below voids + fresh-dispatches the dead turn
+                        elif _zv == "zombie" and _cure_attempts.get(name, 0) < CURE_MAX:
+                            # s8 CURE-FIRST (2026-09-30): un-wedge in-place
+                            # before any void — narrative + pod survive.
+                            _cure_attempts[name] = _cure_attempts.get(name, 0) + 1
+                            print(f"[{name}] {stamp} zombie turn (stuck in {st}) — s8 stop/continue cure "
+                                  f"(attempt {_cure_attempts[name]}/{CURE_MAX}, in-place)", flush=True)
+                            _rc = run_with_hb(name, [sys.executable, os.path.join(BASE, "stop_continue.py"),
+                                                     name, f"queue_watch zombie-turn stuck in {st}: batch static, no report"])
+                            if _rc == 0:
+                                print(f"[{name}] {stamp} s8 CURE LANDED — turn reopened in-place "
+                                      "(narrative preserved)", flush=True)
+                                _zombie_track.pop(name, None)
+                                _agent_alive = True   # cured — do NOT void
+                                stuck_since = 0
+                                last_len = 0
+                                last_fp = ""
+                                rounds_since_progress = 0
+                                rec2 = dw._find(name)
+                                if rec2 and (rec2.get("tab_id") or "")[:8] != tab_prefix:
+                                    tab_prefix = (rec2.get("tab_id") or "")[:8]
+                                    write_spec(name, tab_prefix, marker)
+                                    print(f"[{name}] {stamp} re-aimed at cured-session tab {tab_prefix}", flush=True)
+                            else:
+                                print(f"[{name}] {stamp} s8 cure failed rc={_rc} — "
+                                      "falling back to void+re-dispatch", flush=True)
+                        # else: zombie with cure budget exhausted — fall through,
+                        # _agent_alive stays False, the stuck-assault voids +
+                        # fresh-dispatches the dead turn
                 if not _agent_alive:
                     stuck_assaults += 1
                     stuck_since = 0
