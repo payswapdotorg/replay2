@@ -10,7 +10,7 @@ requires TWO consecutive positives (debounce), then:
   1. writes flags/login_confirmed.json
   2. extracts localStorage.token -> flags/chat_token (forensics rail, mode 600)
   3. sends an outbox note
-  4. dispatches the wave-22 frontier (T024, T030, T040) via dispatch_worker.py
+  4. dispatches the live frontier (T030, T031, T043) via dispatch_worker.py
      create, substituting __GITHUB_PAT__ with the real PAT from env at send
      time (never written to disk in cleartext, never committed)
   5. on success per task writes flags/<task>_autodispatched.json; exits 0 when
@@ -35,7 +35,7 @@ BASE = os.path.dirname(os.path.abspath(__file__))
 FLAGS = os.path.join(BASE, "flags")
 OUTBOX = os.path.join(FLAGS, "agent_outbox.jsonl")
 PROMPTS = os.path.join(BASE, "worker-prompts")
-FRONTIER = ["T024", "T030", "T040"]  # wave-22 (D-017/D-019/D-020 re-dispatch)
+FRONTIER = ["T030", "T031", "T043"]  # wave-26 recovery (D-022/D-023 era; re-entry T030/T043 + fresh T031)
 
 from dispatch_worker import JS_AGENT_PRESENT  # noqa: E402
 
@@ -153,7 +153,7 @@ def dispatch_task(task):
         if p.returncode == 0:
             with open(dispatched_flag(task), "w") as f:
                 json.dump({"task": task, "ts": time.time(), "rc": 0}, f)
-            outbox("wave-22 auto-dispatch: %s create OK" % task)
+            outbox("frontier auto-dispatch: %s create OK" % task)
             _arm_queue_watch(task)
             return "ok"
         return "rc=%s" % p.returncode
@@ -199,7 +199,7 @@ def main():
                 f.write(tok)
             os.chmod(tf, 0o600)
         outbox("operator login confirmed (watcher %s)" % time.strftime("%H:%M:%S"))
-        log("LOGIN CONFIRMED — dispatching wave-22 frontier: %s" % ",".join(todo))
+        log("LOGIN CONFIRMED — dispatching frontier: %s" % ",".join(todo))
         for task in todo:
             if attempts[task] >= MAX_ATTEMPTS:
                 log("%s: max attempts reached — leaving for the Lead" % task)
@@ -212,7 +212,7 @@ def main():
         # after a dispatch round, keep polling in case some tasks failed;
         # if everything succeeded the loop head exits.
         if all(os.path.exists(dispatched_flag(t)) for t in FRONTIER):
-            log("wave-22 fully dispatched — exiting 0")
+            log("frontier fully dispatched — exiting 0")
             return 0
         time.sleep(POLL_S)
 

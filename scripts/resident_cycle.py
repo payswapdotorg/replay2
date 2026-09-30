@@ -4,10 +4,10 @@ Exit codes: 0 = all quiet; 3 = completion marker present (action needed)."""
 import glob, json, os, re, subprocess, sys, time
 
 F = "/home/z/replay2/scripts/flags"
-LANES = ["T024", "T030", "T040"]
-LOGS = {"T024": "/tmp/queue_watch_T024.log",
-        "T030": "/tmp/queue_watch_T030.log",
-        "T040": "/tmp/queue_watch_T040.log"}
+LANES = ["T030", "T031", "T043"]
+LOGS = {"T030": "/tmp/queue_watch_T030.log",
+        "T031": "/tmp/queue_watch_T031.log",
+        "T043": "/tmp/queue_watch_T043.log"}
 
 action = False
 print("=== %s UTC ===" % time.strftime("%H:%M:%S"))
