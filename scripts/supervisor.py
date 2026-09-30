@@ -5,7 +5,10 @@ Single-instance daemon (flock-guarded). Every 10s it verifies and, when dead,
 automatically restarts:
   1. watcher.py        (login / branch / write-access / dialog / inbox monitor)
   2. Chrome CDP :9222  (+ Xvfb :99 via launch_stack.py)
-  3. dev server :$REPLAY_PORT  (operator console; default 3000)
+  3. dev server :$REPLAY_PORT  (operator console = the PLATFORM app in
+     /home/z/my-project; spawned via launch_console.py — since 2026-09-30
+     the console lives in the platform app itself, same server as the
+     sandbox preview panel)
   4. replayd    :3100  (persistent CDP daemon — realtime frames + drags)
 
 Also rotates logs so nothing grows unbounded, and touches
@@ -136,12 +139,15 @@ def _port_listeners(port=3000):
 
 
 def evict_port_squatters(port=3000):
-    """Kill non-console listeners on :port (e.g. my-project boot-hook dev
-    server). Returns human-readable list of evictions."""
+    """Kill non-console listeners on :port. The console family is now BOTH
+    the replay2 repo (legacy) AND the platform app (/home/z/my-project —
+    the console UI lives in its src/app since 2026-09-30), so both are kept.
+    Only a genuinely foreign squatter gets evicted."""
     evicted = []
     for pid, cwd, cmdline in _port_listeners(port):
-        if "replay2" in cwd or "replay2" in cmdline:
-            continue  # our own console — keep
+        if ("replay2" in cwd or "replay2" in cmdline
+                or "my-project" in cwd or "my-project" in cmdline):
+            continue  # console family — keep
         subprocess.run(["kill", pid], capture_output=True)
         evicted.append(f"pid {pid} ({cwd or cmdline[:70]})")
     return evicted
@@ -386,8 +392,11 @@ def _rm_devstate():
         pass
 
 def _console_pids():
-    """PIDs of THIS deployment's console: the tracked dev.pid (bun parent,
-    if alive) plus any replay2 next-server child. Never matches sibling apps."""
+    """PIDs of the console family. Since 2026-09-30 the console is the
+    PLATFORM app (/home/z/my-project): the tracked dev.pid (bun parent,
+    if alive), any :port listener whose cwd is the platform app or the
+    replay2 repo, and any dev-family process (next dev / next-server /
+    bun run dev) whose cwd is the platform app. Never matches sibling apps."""
     pids = []
     try:
         pid = open(os.path.join(FLAGS, "dev.pid")).read().strip()
@@ -395,18 +404,39 @@ def _console_pids():
             pids.append(pid)
     except Exception:
         pass
-    r = subprocess.run(["pgrep", "-f", "replay2/node_modules/.bin/next"],
-                       capture_output=True, text=True)
-    for p in (r.stdout.strip().split("\n") if r.stdout else []):
-        if p.strip() and p not in pids:
-            pids.append(p)
+    # listeners on the console port with a console-family cwd
+    for pid, cwd, cmdline in _port_listeners(CONSOLE_PORT):
+        if pid in pids:
+            continue
+        if ("replay2" in cwd or "my-project" in cwd
+                or "replay2" in cmdline or "my-project" in cmdline):
+            pids.append(pid)
+    # platform-app dev processes even while the port is still binding
+    try:
+        r = subprocess.run(["pgrep", "-f", "next dev|next-server|bun run dev"],
+                           capture_output=True, text=True)
+        for p in (r.stdout.strip().split("\n") if r.stdout else []):
+            p = p.strip()
+            if not p or p in pids:
+                continue
+            try:
+                cwd = os.path.realpath(f"/proc/{p}/cwd")
+            except Exception:
+                continue
+            if "/my-project" in cwd and "/replay2" not in cwd:
+                pids.append(p)
+    except Exception:
+        pass
     return pids
 
 
 def _spawn_dev():
+    """Spawn the console = the PLATFORM app's dev server (my-project).
+    launch_console.py runs `bun run dev` in /home/z/my-project — same effect
+    as the platform boot hook, so there is exactly one console family."""
     env = dict(os.environ)
     env["REPLAY_PORT"] = str(CONSOLE_PORT)
-    subprocess.Popen([PY, os.path.join(BASE, "launch_dev.py")],
+    subprocess.Popen([PY, os.path.join(BASE, "launch_console.py")],
                      stdout=open(os.path.join(LOGDIR, "dev_launch.log"), "a"),
                      stderr=subprocess.STDOUT, env=env)
 
@@ -452,9 +482,7 @@ def ensure_dev():
             for p in pids:
                 subprocess.run(["kill", p], capture_output=True)
             _rm_devstate()
-            subprocess.Popen([PY, os.path.join(BASE, "launch_dev.py")],
-                             stdout=open(os.path.join(LOGDIR, "dev_launch.log"), "a"),
-                             stderr=subprocess.STDOUT)
+            _spawn_dev()
             return True
         return False  # still starting — be patient, do NOT stampede
     log(f"dev server :{CONSOLE_PORT} DEAD — restarting")

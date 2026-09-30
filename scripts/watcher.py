@@ -260,7 +260,11 @@ def check_procs():
                                capture_output=True, text=True)
             if not r.stdout.strip():
                 log("dev server (console port) dead — restarting")
-                subprocess.Popen(["/home/z/.venv/bin/python3", os.path.join(base, "launch_dev.py")],
+                # 2026-09-30: the console IS the platform app (my-project)
+                # now — launch_console.py runs `bun run dev` there, same as
+                # the sandbox boot hook. launch_dev.py (replay2's own Next
+                # server) is retired for this deployment.
+                subprocess.Popen(["/home/z/.venv/bin/python3", os.path.join(base, "launch_console.py")],
                                  stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
                 time.sleep(5)
         # replay daemon dead => console loses realtime frames + drags

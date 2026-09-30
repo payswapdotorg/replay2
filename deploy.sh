@@ -50,7 +50,7 @@ evict_squatters() {
       local cwd="" cmd=""
       cwd=$(readlink "/proc/$tok/cwd" 2>/dev/null || true)
       cmd=$(tr '\0' ' ' < "/proc/$tok/cmdline" 2>/dev/null || true)
-      case "$cwd$cmd" in *replay2*) continue ;; esac
+      case "$cwd$cmd" in *replay2*|*my-project*) continue ;; esac
       kill "$tok" 2>/dev/null || true
       evicted="$evicted pid $tok (${cwd:-${cmd:0:70}})"
     done
@@ -133,7 +133,7 @@ else
     done
   fi
   say "starting console dev server :$PORT…"
-  (cd "$ROOT" && REPLAY_PORT="$PORT" "$PY_BIN" scripts/launch_dev.py)
+  (REPLAY_PORT="$PORT" "$PY_BIN" scripts/launch_console.py)  # console = platform app (my-project)
 fi
 CONSOLE_OK=0
 for i in $(seq 1 60); do
