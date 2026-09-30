@@ -161,9 +161,18 @@ def agent_lane(name):
 
 def server_alive(name):
     """Probe the session's conversation server-side (probe_chat.py).
-    Returns (alive, msgs, note). Lesson 185 corollary: the chat index lags
-    after capacity events — DOM tab state (home/bounce) is NOT death; the
-    server message store is the truth gate.
+    Returns (alive, msgs, note, bchars, has_report). Lesson 185 corollary:
+    the chat index lags after capacity events — DOM tab state
+    (home/bounce) is NOT death; the server message store is the truth gate.
+    2026-09-30 ZOMBIE-TURN doctrine (w13 forensics): a session can be
+    alive-as-RECORD while its generation is dead — observed w13 attempt #3:
+    turn opened 09:45:05, streamed ~30 min, froze mid-read; the probe read
+    SERVER-SIDE ALIVE msgs=2 forever and queue_watch WAITED 2h52m on
+    lesson-185 patience, never assaulting. The probe now also carries
+    turn-liveness evidence — (bchars, has_report) from the batch store —
+    and CALLERS track bchars across cycles: a STATIC batch with no report
+    past ZOMBIE_TURN_AFTER is a dead turn (assault as designed), while a
+    growing batch is live generation (patience stands).
     2026-09-27 (wave-3 crunch forensics): an http-500 on the chat read is
     UNCERTAINTY, not death — a continuation send landing during a capacity
     crunch wedges the chat RECORD (every read 500s) while the message store
@@ -177,7 +186,7 @@ def server_alive(name):
         rec = dw._find(name)
         cid = ((rec or {}).get("url") or "").split("/c/")[-1].split("/")[0].split("?")[0]
         if len(cid) < 30:
-            return False, 0, "no-cid"
+            return False, 0, "no-cid", None, False
         pr = subprocess.run(
             [sys.executable, os.path.join(BASE, "probe_chat.py"), cid, "Base SHA"],
             cwd=BASE, capture_output=True, text=True, timeout=60)
@@ -192,12 +201,43 @@ def server_alive(name):
             #    platform can unwedge it when the window drains
             e = str(d.get("err"))
             if "http-404" in e or "http-403" in e:
-                return False, 0, f"probe-dead:{e}"
-            return True, 0, f"probe-uncertain:{e}"
-        return bool(d.get("alive")), int(d.get("msgs") or 0), f"title={d.get('title','')[:30]}"
+                return False, 0, f"probe-dead:{e}", None, False
+            return True, 0, f"probe-uncertain:{e}", None, False
+        _b = d.get("batch") or {}
+        return (bool(d.get("alive")), int(d.get("msgs") or 0),
+                f"title={d.get('title','')[:30]}",
+                _b.get("chars"), bool(d.get("reportInAssistant")))
     except Exception as e:
         # probe machinery failure is also uncertainty — never a death verdict
-        return True, 0, f"probe-exc:{type(e).__name__}"
+        return True, 0, f"probe-exc:{type(e).__name__}", None, False
+
+
+# zombie-turn doctrine (2026-09-30): patience ceiling for a server-alive
+# session whose batch store is STATIC with no report. Env-overridable.
+ZOMBIE_TURN_AFTER = int(os.environ.get("QW_ZOMBIE_TURN_AFTER", "7200"))
+_zombie_track = {}   # name -> {"chars": int|None, "since": epoch}
+
+
+def _zombie_verdict(name, bchars, has_report, stamp, st, thresh_note=""):
+    """Track (name)'s batch-store char count across cycles.
+    Returns 'wait' | 'zombie' | 'complete'.'wait' = alive-and-(growing-or-young);
+    'zombie' = static past ZOMBIE_TURN_AFTER with no report; 'complete' =
+    report confirmed server-side. Uncertain probes (bchars None) reset the
+    clock — uncertainty never escalates to assault."""
+    if has_report:
+        return "complete"
+    z = _zombie_track.setdefault(name, {})
+    now = time.time()
+    if bchars is None or bchars != z.get("chars"):
+        z["chars"] = bchars
+        z["since"] = now
+    age = now - z.get("since", now)
+    if bchars is not None and age > ZOMBIE_TURN_AFTER:
+        print(f"[{name}] {stamp} tab {st} server-alive but ZOMBIE TURN — batch static "
+              f"{int(age)}s (chars={bchars}), no report{thresh_note} — dead-turn verdict", flush=True)
+        _zombie_track.pop(name, None)
+        return "zombie"
+    return "wait"
 
 
 def state(tab_prefix):
@@ -498,11 +538,30 @@ def main():
                 # events and /c/ URLs bounce while the conversation is alive
                 # server-side. Gate the assault on the server truth probe.
                 if agent_lane(name):
-                    alive, msgs, note = server_alive(name)
+                    alive, msgs, note, bchars, has_report = server_alive(name)
+                    if alive and has_report:
+                        # 2026-09-30: the tab died AFTER the report landed —
+                        # server-confirmed completion, retire cleanly instead
+                        # of waiting forever on lesson-185 patience.
+                        open(mk, "w").write(f"{time.time()} {url}\n")
+                        print(f"[{name}] {stamp} tab {st} but SERVER-SIDE REPORT CONFIRMED — "
+                              "COMPLETE (marker written)", flush=True)
+                        try:
+                            os.remove(SPEC_PATH.format(name=name))
+                            os.remove(HB_PATH.format(name=name))
+                        except Exception:
+                            pass
+                        return 0
                     if alive:
-                        print(f"[{name}] {stamp} tab {st} but SERVER-SIDE ALIVE "
-                              f"({note}, msgs={msgs}) — lesson 185 index lag, WAITING (no assault)", flush=True)
-                        _skip_assault = True
+                        _zv = _zombie_verdict(name, bchars, False, stamp, st)
+                        if _zv == "wait":
+                            z = _zombie_track.get(name) or {}
+                            _zage = int(time.time() - z.get("since", time.time()))
+                            print(f"[{name}] {stamp} tab {st} but SERVER-SIDE ALIVE "
+                                  f"({note}, msgs={msgs}, bchars={bchars}) — lesson 185 index lag, "
+                                  f"WAITING (no assault; zombie clock {_zage}s/{ZOMBIE_TURN_AFTER}s)", flush=True)
+                            _skip_assault = True
+                        # _zv == 'zombie': dead turn — fall through, assault proceeds
                     else:
                         print(f"[{name}] {stamp} tab {st} and server probe says DEAD ({note}) "
                               "— agent-lane death confirmed, assault may proceed", flush=True)
@@ -608,13 +667,32 @@ def main():
                     and stuck_assaults < STUCK_ASSAULT_MAX and not hold_active(name)):
                 _agent_alive = False
                 if agent_lane(name):
-                    _alive, _msgs, _note = server_alive(name)
+                    _alive, _msgs, _note, _bchars, _has_report = server_alive(name)
+                    if _alive and _has_report:
+                        # 2026-09-30 zombie-turn doctrine: the report landed
+                        # server-side but the DOM never rendered it — retire.
+                        open(mk, "w").write(f"{time.time()} {url}\n")
+                        print(f"[{name}] {stamp} STUCK in {st} but SERVER-SIDE REPORT CONFIRMED — "
+                              "COMPLETE (marker written)", flush=True)
+                        try:
+                            os.remove(SPEC_PATH.format(name=name))
+                            os.remove(HB_PATH.format(name=name))
+                        except Exception:
+                            pass
+                        return 0
                     if _alive:
-                        _agent_alive = True
-                        print(f"[{name}] {stamp} STUCK {_thresh}s in {st} but SERVER-SIDE ALIVE "
-                              f"({_note}, msgs={_msgs}) — lesson 185: queued send preserved, "
-                              f"extending patience (no void)", flush=True)
-                        stuck_since = time.time()  # restart the clock; probe again next threshold
+                        _zv = _zombie_verdict(name, _bchars, False, stamp, st,
+                                              thresh_note=f", stuck {int(time.time() - stuck_since)}s")
+                        if _zv == "wait":
+                            _agent_alive = True
+                            z = _zombie_track.get(name) or {}
+                            _zage = int(time.time() - z.get("since", time.time()))
+                            print(f"[{name}] {stamp} STUCK {_thresh}s in {st} but SERVER-SIDE ALIVE "
+                                  f"({_note}, msgs={_msgs}, bchars={_bchars}) — lesson 185: queued send preserved, "
+                                  f"extending patience (no void; zombie clock {_zage}s/{ZOMBIE_TURN_AFTER}s)", flush=True)
+                            stuck_since = time.time()  # restart the clock; probe again next threshold
+                        # _zv == 'zombie': fall through — _agent_alive stays False,
+                        # the stuck-assault below voids + fresh-dispatches the dead turn
                 if not _agent_alive:
                     stuck_assaults += 1
                     stuck_since = 0
