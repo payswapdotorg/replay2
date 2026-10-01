@@ -190,35 +190,53 @@ def main():
             "background_tasks": {"title_generation": False, "tags_generation": False},
             "captcha_verify_param": cap_tok,
         }
+        # 2026-10-01 §11b-supplement laws: derive RUNTIME IDENTITY (device-id
+        # from localStorage._arms_uid — a foreign/hardcoded id draws a gateway
+        # 405 Aliyun page) and HOLD THE STREAM (reader.cancel() can kill resumed
+        # turns; drain continuously to natural done, hard-limit 600s).
         js = """(async () => {
           const body = %s;
           const t = (localStorage.getItem('token') || '').replace(/^"|"$/g, '');
+          const dev = localStorage.getItem('_arms_uid') || '';
           const r = await fetch('/api/v2/chat/completions?timestamp=' + Date.now() + '&requestId=' + crypto.randomUUID() + '&user_id=%s', {
             method: 'POST', credentials: 'include',
             headers: {'Content-Type': 'application/json', 'Authorization': 'Bearer ' + t,
-                      'x-fe-version': 'prod-fe-1.1.98', 'x-device-id': 'uid_cskp8qf2wyg1nehz'},
+                      'x-fe-version': 'prod-fe-1.1.98', 'x-device-id': dev},
             body: JSON.stringify(body)
           });
           const ct = r.headers.get('content-type') || '';
           let out = '';
           if (ct.includes('event-stream')) {
             const reader = r.body.getReader(); const dec = new TextDecoder(); const t0 = Date.now();
-            while (Date.now() - t0 < 20000) {
+            window.__kickChars = 0;
+            while (Date.now() - t0 < 600000) {
               const {done, value} = await reader.read().catch(() => ({done: true}));
-              if (value) out += dec.decode(value);
-              if (done || out.length > 900) break;
+              if (value) { const s = dec.decode(value); out = (out + s).slice(-4000); window.__kickChars += s.length; }
+              if (done) break;
             }
-            try { reader.cancel(); } catch (e) {}
-          } else { out = (await r.text()).slice(0, 600); }
-          return JSON.stringify({status: r.status, out: out.slice(0, 850)});
+            window.__kickDone = true;
+          } else { out = (await r.text()).slice(0, 600); window.__kickDone = true; }
+          return JSON.stringify({status: r.status, chars: window.__kickChars || out.length, out: out.slice(0, 850)});
         })()""" % (json.dumps(body), uid)
-        r = ws.eval(js, await_promise=True, timeout=70)
-        print("SEND:", (r or "")[:850])
-        try:
-            v = json.loads(r)
-            return 0 if v.get("status") == 200 else 1
-        except Exception:
-            return 1
+        # fire detached; poll the held stream (stream-hold law: no early cancel)
+        ws.eval("window.__kickChars = 0; window.__kickDone = false; window.__kickErr = null; window.__kickHead = ''; "
+                "window.__kickP = " + js + ".then(v => { window.__kickHead = v; window.__kickDone = true; })"
+                ".catch(e => { window.__kickErr = String(e); window.__kickDone = true; }); 'fired'", timeout=15)
+        for _ in range(60):
+            time.sleep(10)
+            done = ws.eval("window.__kickDone ? 1 : 0", timeout=8)
+            chars = ws.eval("window.__kickChars || 0", timeout=8)
+            err = ws.eval("window.__kickErr || null", timeout=8)
+            if err:
+                print(f"  kick error: {err}")
+                return 1
+            if done == 1:
+                r = ws.eval("window.__kickHead || JSON.stringify({chars: window.__kickChars || 0})", timeout=8)
+                print("SEND:", (r or "")[:850])
+                return 0
+            print(f"  stream: {chars} chars...")
+        print("SEND: stream still live at 600s (generation continues server-side)")
+        return 0
     finally:
         ws.close()
 
