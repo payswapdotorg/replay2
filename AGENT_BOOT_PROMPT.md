@@ -665,6 +665,27 @@ verification runs can WEDGE the browser's chat tab under memory pressure
 close the wedged tab (/json/close/<id>) + channel.new_tab('https://chat.z.ai/')
 — a no-browser reading is a tab artifact until the tab set is checked.
 
+## 11c-supplement. The 2026-10-01 night shift — the tool-attach + paint laws (proven live)
+
+1. **TOOL-ATTACH LAW**: raw-completions turns (api_resume / kick_queued)
+   are TOOL-LESS on this platform tonight — the model writes command text
+   with no agent runtime. Only COMPOSER-spawned turns attach the tools
+   (proof: 106/63/50/202-block turns all real tool_calls; every raw spawn
+   = 1-2 text-only blocks). api_resume is a last-resort spawn, never the
+   workhorse.
+2. **NULL-COMMIT-SPAWN LAW**: a composer send that reports "NOT VERIFIED
+   (server-null-commit len=6 role=user)" can STILL spawn a full tool-ed
+   turn — the verdict text is not the truth; batch growth is. Poll ALL
+   assistant batches before concluding a send failed.
+3. **PAINT-ECONOMY LAW**: a work-rich chat tab needs 10-30 min of paint
+   before its composer is drivable, and the time GROWS with the chat.
+   Never close a responsive chat tab — reuse it (close only wedged ones).
+   A dead-on-arrival turn (0 blocks) still counts: the next send on the
+   same painted tab is cheap.
+4. **LONG-TOOL LIVENESS**: battery-era turns run 10-min tool calls with
+   ZERO block growth meanwhile — a static detector must wait >= 10 min
+   before declaring death, or it kills live battery invocations.
+
 ## 11b-supplement. The 2026-10-01 evening shift — four api_resume laws (proven live)
 
 1. **JUNK-CHAT LIVENSS**: the harvest junk chat can be DELETED server-side

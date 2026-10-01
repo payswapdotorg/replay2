@@ -24,7 +24,12 @@ import base64
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 import channel
 
-JUNK_CHAT = "fd55dfb5-2919-4745-b2d8-20f8b16a589d"
+# JUNK_CHAT: the small probe chat used for captcha-token harvest.
+# 2026-10-01: fd55dfb5 was DELETED server-side (tab landed on a dead URL —
+# harvest silently failed twice). New default: b75f9742 ("OK", 2 msgs).
+# Override with env API_RESUME_JUNK_CHAT.
+JUNK_CHAT = os.environ.get("API_RESUME_JUNK_CHAT",
+    "b75f9742-0fc9-4322-a09c-386852d8f77d")
 
 
 def _jwt_user_id():
@@ -149,6 +154,9 @@ def main():
         js = """(async () => {
           const body = %s;
           const tok = (localStorage.getItem('token') || '').replace(/^"|"$/g, '');
+          // MERGED 2026-10-01: account id via Python-side _jwt_user_id()
+          // (upstream 9dc7f51); device-id derived in-JS from localStorage.
+          const device = localStorage.getItem('_arms_uid') || 'uid_unknown';
           const r = await window.__origFetch('/api/v2/chat/completions?timestamp=' + Date.now() + '&requestId=' + crypto.randomUUID() + '&user_id=%s', {
             method: 'POST',
             credentials: 'include',
@@ -156,28 +164,34 @@ def main():
               'Content-Type': 'application/json',
               'Authorization': 'Bearer ' + tok,
               'x-fe-version': 'prod-fe-1.1.98',
-              'x-device-id': 'uid_cskp8qf2wyg1nehz'
+              'x-device-id': device
             },
             body: JSON.stringify(body)
           });
           const ct = r.headers.get('content-type') || '';
           let out = '';
           if (ct.includes('event-stream')) {
+            // 2026-10-01 lesson: the platform now ties generation lifetime to
+            // the initiating client stream — an early reader.cancel() KILLS
+            // the turn (proven twice: both resumed turns died at ~500 chars).
+            // HOLD the stream for the whole generation: drain continuously,
+            // stop accumulating at 20K (display cap), only cancel on natural
+            // done or the hard time limit.
             const reader = r.body.getReader();
             const dec = new TextDecoder();
             const t0 = Date.now();
-            while (Date.now() - t0 < 15000) {
+            while (Date.now() - t0 < READ_WINDOW_MS) {
               const {done, value} = await reader.read().catch(() => ({done: true}));
-              if (value) out += dec.decode(value);
-              if (done || out.length > 500) break;
+              if (value && out.length < 20000) out += dec.decode(value);
+              if (done) break;
             }
             try { reader.cancel(); } catch (e) {}
           } else {
             out = (await r.text()).slice(0, 500);
           }
           return JSON.stringify({status: r.status, out: out.slice(0, 450)});
-        })()""" % (json.dumps(body), _jwt_user_id())
-        r = ws.eval(js, await_promise=True, timeout=60)
+        })()""".replace("READ_WINDOW_MS", str(int(os.environ.get("API_RESUME_READ_S", "600")) * 1000))
+        r = ws.eval(js % (json.dumps(body), _jwt_user_id()), await_promise=True, timeout=int(os.environ.get("API_RESUME_READ_S", "600")) + 60)
         print("SEND:", r)
         return 0
     finally:
