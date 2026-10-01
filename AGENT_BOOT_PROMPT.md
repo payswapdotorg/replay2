@@ -558,3 +558,21 @@ narrative survives; the armed keeper's next nudge lands the resume the
 minute allocation returns (both prior windows ended: 05:38-09:36Z quota
 reset; 14:09Z supply window). Use the quiet window for AGENT_BOOT_PROMPT
 and worklog writes.
+
+**10j. Tab loss ≠ narrative death — deep-probe before re-dispatch
+(2026-10-01 morning shift, PPR-020 round-2 forensics).** When a worker tab
+is lost (tablost), the POD KEEPS GENERATING server-side; the session can
+still complete its battery and write its full COMPLETION REPORT with
+nobody watching. Proven: PPR-020 r2 (chat ebc76682) lost its tab 17:22Z;
+two platform stream-failure nudges landed afterwards, the worker resumed
+IN THE SAME POD and delivered server-side before pod expiry (~19:00Z) —
+full report, certified numbers, checkpoint chain b29ab88, all intact in
+the batch store (found by msg-level deep probe; the delivered PR #162
+record is corroborated by it). The tablost handler re-dispatched round 3
+WITHOUT checking, burning a redundant slot and risking divergence.
+THEREFORE: on tablost, BEFORE voiding/re-dispatching, (1) run a
+server-side batch-store probe for the report marker (10e verdict shape —
+LAST text block of the newest LARGE assistant message), (2) run a
+10-minute growth differential on batchChars/nBlocks; only re-dispatch on
+STALE + no-report. The queue_watch "END REPORT" tab-marker can NEVER fire
+on a lost tab — the server-side narrative is the only truth channel.
