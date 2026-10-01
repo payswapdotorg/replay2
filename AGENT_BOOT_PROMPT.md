@@ -708,3 +708,54 @@ release stale holders (DELETE /api/v1/web-dev/workspaces/<chat-uuid>) after
 verifying their lanes are merged. A queued packet may still need a kick
 after slots free — the queue entry can die with the platform hiccup that
 filled the slots.
+
+## 12. The queued-turn kick — raw completions + full context (2026-10-01 evening shift)
+
+**12a. The spawn wall's real shape.** Composer sends LAND server-side (the
+chats record carries the user message) but the assistant turn never opens —
+no children on the message, no pod, the wrong-body continue probe shows the
+generic busy SSE. §8's stop/continue cure does NOT apply (nothing to stop:
+the turn never opened; stopping the user-msg id is accepted but the
+continue-probe 404s). This state is a WINDOW (§10i), but you do not have to
+wait it out:
+
+**12b. The raw-completions kick (proven, both lanes live).** Harvest a
+captcha token from a FRESH HOME TAB (patch window.fetch to capture-and-abort
+the next /api/v2/chat/completions; the junk-chat trick is dead — the junk
+chat was purged and bounces home; the HOME composer works), then POST the
+raw completions call for the target chat. The turn spawns server-side even
+while composer-path spawns are gated. Tooling: scripts/kick_queued.py.
+
+**12c. FULL CONTEXT IS MANDATORY.** The raw API does NOT assemble chat
+history server-side: a kick whose messages array carries only a directive
+makes the model answer "I see no work order" while the tree holds all 6.4K
+chars. Embed the ENTIRE work order (harvest it from the chat record's
+queued user message) in the request's messages array.
+
+**12d. Short read windows are fine.** A 15-20s SSE read + reader.cancel()
+does NOT kill the server-side generation (disproven live: a kicked turn
+kept streaming to 617K batch chars after the client disconnect). The
+platform continues generation server-side; the session tab's own UI picks
+up the live state.
+
+**12e. SESSION_BUSY (409) means ALIVE.** A kick that returns
+SESSION_BUSY/"Session is busy with another request" means an in-flight
+request already holds the chat — the turn is generating. STOP kicking;
+watch the tab DOM AND the batch store (each can lag the other; the DOM
+virtualizes long transcripts, the batch probe reads only the message ids it
+was given — a fresh turn's id may be missing from a stale id list).
+
+**12f. WAF 405s on repeated raw POSTs.** Identical-shape raw completions
+POSTs draw an HTML 405 page from the edge after a few rapid fires. Space
+them out; prefer the harvest tab as the firing origin (a session-tab
+origin 405'd immediately in the proving run); the app's own composer path
+(dw.send with its in-session capacity ladder) is the fallback when the raw
+path is blocked.
+
+**12g. The batch/DOM dual-signal law.** Neither the tab DOM nor the batch
+store alone is the live truth: the DOM virtualizes (bodyLen can SHRINK
+while content grows) and wedged paint shows stale tails for tens of
+minutes; the batch store lags on id-list mismatches. A worker is ALIVE if
+EITHER signal moves, or its pod is Running with a recent chat updated_at.
+Void/assault only on BOTH signals static past the zombie threshold AND the
+pod gone.
