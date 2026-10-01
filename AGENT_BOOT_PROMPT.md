@@ -665,6 +665,36 @@ verification runs can WEDGE the browser's chat tab under memory pressure
 close the wedged tab (/json/close/<id>) + channel.new_tab('https://chat.z.ai/')
 — a no-browser reading is a tab artifact until the tab set is checked.
 
+## 11b-supplement. The 2026-10-01 evening shift — four api_resume laws (proven live)
+
+1. **JUNK-CHAT LIVENSS**: the harvest junk chat can be DELETED server-side
+   (fd55dfb5 died exactly this way) — the harvest tab then lands on a dead
+   URL and silently captures no token. Probe the junk chat's existence
+   (chats list) before harvesting; keep a live small probe chat as the
+   default (current: b75f9742 "OK").
+2. **RUNTIME IDENTITY**: never hardcode user_id/device-id in the raw
+   completions POST — a foreign account's id gets a gateway 405 (Aliyun
+   error page). Derive at runtime: account from the JWT payload (atob of
+   the token's second segment, .id/.user_id/.sub), device from
+   localStorage._arms_uid.
+3. **STREAM-HOLD LAW**: the platform ties generation lifetime to the
+   initiating client stream. A reader.cancel() at ~500 chars KILLS the
+   turn (proven twice — both resumed turns died at the display-window
+   edge). HOLD the SSE reader for the whole generation: drain
+   continuously, cap only the ACCUMULATED display text, cancel only on
+   natural done or a long hard limit (default 600s).
+4. **BATCH-MASK LAW**: the batch endpoint probe that picks the LARGEST
+   assistant batch hides newer smaller ones — a dead 363K turn-1 batch
+   masked a live 78K/63-block resumed turn doing the real work. Probe ALL
+   assistant messages' batches (id, serialized len, nBlocks) every poll;
+   the newest turn's growth is the liveness signal, not the max.
+
+Turn-death regime management: fire api_resume nudges on turn death
+(attended-lead loop), worker resumes from narrative + pod filesystem
+(CHECKPOINT LAW makes this lossless across deaths). A SESSION_BUSY (409)
+on the resume = a zombie request holds the chat — §8 stop-cure on the
+tree leaf, 410-probe, then re-fire.
+
 ## 11. Work-rich chats wedge renderers — the API-resume path (2026-10-01 shift)
 
 **11a. The tablost-misfire cascade.** A worker chat whose transcript grows
