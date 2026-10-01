@@ -295,7 +295,27 @@ JS_CLICK_CANCEL = r"""(() => {
 })()"""
 
 JS_SEND_BUTTON = r"""(() => {
-  const b = document.querySelector('button.sendMessageButton');
+  // fast path: the historical class
+  let b = document.querySelector('button.sendMessageButton');
+  // fallback (2026-10-01): the class left the DOM — the send control is the
+  // LAST icon-only button (svg, no aria-label, no text) in the composer's
+  // ancestor chain; clicking it lands the staged prompt (verified live).
+  if (!b) {
+    const tas = document.querySelector('#chat-input, textarea');
+    if (tas) {
+      let root = tas.closest('div[class*="composer"], form') || tas.parentElement.parentElement.parentElement;
+      const cands = [];
+      for (let i = 0; i < 5 && root; i++) {
+        for (const btn of root.querySelectorAll('button')) {
+          const svg = btn.querySelector('svg');
+          const aria = btn.getAttribute('aria-label') || '';
+          if (svg && !aria && !btn.innerText.trim()) cands.push(btn);
+        }
+        root = root.parentElement;
+      }
+      if (cands.length) b = cands[cands.length - 1];
+    }
+  }
   if (!b) return '';
   const r = b.getBoundingClientRect();
   return JSON.stringify({x: Math.round(r.x + r.width/2), y: Math.round(r.y + r.height/2), disabled: b.disabled});
