@@ -597,3 +597,31 @@ failure naming spec/post-release-state/* is a stale-ref artifact until
 proven otherwise — fetch, re-run, never report as pre-existing; (3) the
 Lead's gate-parity run (current refs) is the ground truth that displaces
 the worker's reported gate numbers.
+
+**10l. WIP-recovery-branch gate claims must be re-verified at the exact
+pushed SHA (2026-10-01 reset8 shift, PPR-022 WIP forensics).** The §10h WIP
+commit message claimed "typecheck 0 errors; compat/hermes-agent 71 passed |
+3 failed | 7 skipped — nothing else drifted". Independent verification at
+the pushed SHA (d81abf3) found the RUNTIME contract exact (71/3/7, the 3
+failures = the itemized revision-regex + missing-binary gaps) but the
+TYPECHECK claim FALSE: tsc --noEmit fails with ~20 errors, ALL concentrated
+in the gap-3 files (the six unreplayed MultiEdits) — "Expected 6 arguments,
+but got 5" in run-battery/surfaces/smoke/repro-task; `.response` on the
+ModelCallOutcome union in rail-protocol.test.ts; string|undefined assigns
+in adapter/server.ts; missing home/stdout/stderr/exitCode in
+diag-compaction.ts. The rebuild's WORKING TREE had drifted from its own
+COMMIT (the claim was made against uncommitted state). LESSONS: (1) a WIP
+recovery branch's self-reported gate numbers are claims, not facts — re-run
+every gate at the exact pushed SHA before building on it; (2) the gap-3
+consequence set is PREDICTABLE (unreplayed MultiEdits surface as type
+errors in exactly those files) — map discovered type errors against the
+itemized gap list before diagnosing anything new; (3) on a 4GB box an
+uncapped `tsc --noEmit` gets OOM-SIGKILLed — run typecheck with
+NODE_OPTIONS=--max-old-space-size=2048; (4) compat/<app>/tests are NOT
+covered by the default vitest include (tests/**) — run a compat tree's
+suite with `bunx vitest run --dir compat/<app>` (main suites
+test:unit/architecture/integration never see them); (5) heavy local
+verification runs can WEDGE the browser's chat tab under memory pressure
+(WebSocketTimeout on eval) — /api/status then flaps to "no-browser"; cure =
+close the wedged tab (/json/close/<id>) + channel.new_tab('https://chat.z.ai/')
+— a no-browser reading is a tab artifact until the tab set is checked.
