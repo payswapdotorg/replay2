@@ -576,3 +576,24 @@ LAST text block of the newest LARGE assistant message), (2) run a
 10-minute growth differential on batchChars/nBlocks; only re-dispatch on
 STALE + no-report. The queue_watch "END REPORT" tab-marker can NEVER fire
 on a lost tab — the server-side narrative is the only truth channel.
+
+**10k. The C9 dynamic merge-base vs stale worker main refs (2026-10-01
+morning shift, PPR-022 review forensics).** The e11-* architecture C9
+checks ("build-on, never-fork") diff `merge-base(HEAD, main)..HEAD` over
+the foundation planes AND `spec/`, with main resolved AT RUNTIME from the
+LOCAL refs. A worker pod that clones at main=X and never re-fetches main
+(its recovery/delivery branch was fetched alone) keeps main=X while the
+Lead merges records commits advancing real main to X+n — the merge-base
+then pins at X and the diff names main's OWN records commits
+(frontier-state.json et al) as "this branch's changes" -> FALSE C9
+failures. Proven on PPR-022: worker reported "2 pre-existing
+architecture failures on clean 0d2c9dc, worktree-verified" — the Lead's
+integration-station run of the same commit was 139 files / 2230 tests /
+ZERO failures, and the worker's worktree "proof" was worthless because
+A WORKTREE SHARES THE MAIN REPO'S REFS (same stale main). CURE +
+PREVENTION: (1) every worker prompt carries a PRE-GATE REF SYNC step —
+`git fetch origin main:main` before the final gates; (2) any architecture
+failure naming spec/post-release-state/* is a stale-ref artifact until
+proven otherwise — fetch, re-run, never report as pre-existing; (3) the
+Lead's gate-parity run (current refs) is the ground truth that displaces
+the worker's reported gate numbers.
