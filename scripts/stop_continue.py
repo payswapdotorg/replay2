@@ -48,13 +48,24 @@ DIRECTIVE = (
 
 
 def _api_eval(js, timeout=45):
-    """Run a fetch-based API call from any chat.z.ai tab; returns parsed JSON."""
+    """Run a fetch-based API call from any chat.z.ai tab; returns parsed JSON.
+
+    2026-10-01 fix (re-land of the YOU-5f local fix, lost to a sandbox reset
+    because it was never committed): channel.CDP.eval runs with
+    returnByValue=True, so object-typed JS results arrive as ALREADY-PARSED
+    dicts — json.loads on them raises TypeError and killed the cure mid-run.
+    Accept both shapes (dict/list pass through; JSON strings still parse)."""
     tab = channel.find_tab("chat.z.ai")
     if tab is None:
         raise RuntimeError("no chat.z.ai tab for API eval")
     ws = channel.CDP(tab["webSocketDebuggerUrl"])
     try:
-        return json.loads(ws.eval(js, await_promise=True, timeout=timeout))
+        v = ws.eval(js, await_promise=True, timeout=timeout)
+        if isinstance(v, (dict, list)):
+            return v
+        if isinstance(v, str) and v[:1] in ("{", "["):
+            return json.loads(v)
+        return v
     finally:
         ws.close()
 

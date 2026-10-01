@@ -19,11 +19,29 @@ import os
 import sys
 import time
 import uuid as uuidlib
+import base64
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 import channel
 
 JUNK_CHAT = "fd55dfb5-2919-4745-b2d8-20f8b16a589d"
+
+
+def _jwt_user_id():
+    """2026-10-01 fix: the raw user_id query param was HARDCODED to a stale
+    account (28503021-…) — a 401/403 trap on any other login. Derive it from
+    the logged-in JWT (payload.id) instead."""
+    try:
+        tok = open(os.path.join(os.path.dirname(os.path.abspath(__file__)),
+                                "flags", "chat_token")).read().strip()
+        payload = tok.split(".")[1]
+        payload += "=" * (-len(payload) % 4)
+        uid = json.loads(base64.urlsafe_b64decode(payload)).get("id")
+        if uid:
+            return uid
+    except Exception:
+        pass
+    return "28503021-6c77-45d5-9f8d-254b6c2cd5df"  # legacy fallback
 
 PATCH_JS = """(() => {
   window.__tok = null;
@@ -118,7 +136,7 @@ def main():
                 "{{CURRENT_DATETIME}}": time.strftime("%Y-%m-%d %H:%M:%S", time.gmtime()),
                 "{{CURRENT_DATE}}": time.strftime("%Y-%m-%d", time.gmtime()),
                 "{{CURRENT_TIME}}": time.strftime("%H:%M:%S", time.gmtime()),
-                "{{CURRENT_WEEKDAY}}": "Thursday", "{{CURRENT_TIMEZONE}}": "UTC",
+                "{{CURRENT_WEEKDAY}}": time.strftime("%A", time.gmtime()), "{{CURRENT_TIMEZONE}}": "UTC",
                 "{{USER_LANGUAGE}}": "en-US"
             },
             "chat_id": chat_id,
@@ -131,7 +149,7 @@ def main():
         js = """(async () => {
           const body = %s;
           const tok = (localStorage.getItem('token') || '').replace(/^"|"$/g, '');
-          const r = await window.__origFetch('/api/v2/chat/completions?timestamp=' + Date.now() + '&requestId=' + crypto.randomUUID() + '&user_id=28503021-6c77-45d5-9f8d-254b6c2cd5df', {
+          const r = await window.__origFetch('/api/v2/chat/completions?timestamp=' + Date.now() + '&requestId=' + crypto.randomUUID() + '&user_id=%s', {
             method: 'POST',
             credentials: 'include',
             headers: {
@@ -158,7 +176,7 @@ def main():
             out = (await r.text()).slice(0, 500);
           }
           return JSON.stringify({status: r.status, out: out.slice(0, 450)});
-        })()""" % json.dumps(body)
+        })()""" % (json.dumps(body), _jwt_user_id())
         r = ws.eval(js, await_promise=True, timeout=60)
         print("SEND:", r)
         return 0
