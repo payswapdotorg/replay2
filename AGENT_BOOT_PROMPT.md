@@ -40,8 +40,19 @@ infrastructure. It must NEVER carry content of any specific project.
 
 ## 1. Deploy / recover the replay
 
+**OPERATOR DIRECTIVE (2026-10-01 16:45Z, binding): the replay deployed in
+this sandbox is the replay2 REPO'S OWN APP (launch_dev.py) — NOT a port
+into the platform scaffold. reset-restore.sh's port-into-my-project path
+is DEPRECATED for this program: the operator rejected it live ("you have
+the wrong replay in the sandbox — remove it and deploy a brand new one
+from payswapdotorg/replay2"). The reset path is: clone with embedded PAT,
+restore zeck-scripts from recovery/, write flags/console_launcher.txt =
+launch_dev.py BEFORE killing any squatter on :3000 (else the ring
+resurrects the platform app via the default launcher), then
+scripts/launch_dev.py. Proven reset9 16:45Z: title verified, ring stable.**
+
 **RESET RECOVERY (machine reboot / sandbox recycle) — the canonical path
-(proven reset8 2026-10-01 11:10Z manual, reset9 13:35Z one-command):**
+(reset9 16:45Z, per the operator directive above):**
 
 ```bash
 # 0. clones (PRIVATE repo — PAT must be embedded or the clone fails silently):
