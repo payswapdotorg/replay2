@@ -469,3 +469,92 @@ is fully up, the composer retains the text (the `gated(<len>)` keeper
 signal) — keep a 5-min keeper cadence (a faster cadence re-burns the
 window; see §8's probe-burn lesson) and land the directive in the first
 minute the window opens.
+
+## 10. Pod-recycle narrative harvest — the full PPR-021 recovery (2026-10-01 night shift)
+
+**10a. The pod WILL be recycled mid-delivery.** The 2026-09-30/10-01 shift
+lost BOTH worker pods to platform sandbox sweeps (PPR-021's at 21:34:30Z —
+after the worker's final commit 3a9496f and tarball, BEFORE any push).
+Workers hold no GitHub credentials by design; push is the Lead's merge-time
+act. THEREFORE: treat the session narrative (the server-side batch store)
+as the PRIMARY delivery artifact from the moment the battery completes —
+the tarball is only insurance while the pod lives.
+
+**10b. The narrative carries the entire file surface.** Every Write/Edit/
+MultiEdit tool call is recorded verbatim in `content_blocks` (type
+`tool_calls`, array items `{function:{name, arguments}}` with
+`arguments.filepath` + `arguments.content`). Harvest protocol (proven on
+PPR-021, byte-verified):
+  1. Dump ALL tool_calls in TIME order — sort by (block.started_at,
+     message.timestamp, block index, call index). NEVER trust Object.keys
+     order of the batch `data` map (it is insertion-random).
+  2. Replay Write (full content) then Edit/MultiEdit (string replace) with
+     MULTI-EDIT ATOMICITY: if any edit's old_str is missing, the whole call
+     skips — but FIRST check the call's own `results[].content`: the worker
+     side may have failed it too ("No replacement was performed") — skip
+     exactly those and log the rest as state divergence.
+  3. CROSS-VERIFY against independent sources in the same narrative: the
+     patch parts the worker emitted on request (diff-transport), and Read
+     tool `results[].content` snapshots (strip the `^\s*\d+→` line-number
+     prefix). On PPR-021 five files agreed to the byte (± trailing newline)
+     across two independent sources — that is the acceptance bar.
+  4. Binary assets NEVER survive narrative transport (PPR-022's
+     known-phrase.wav) — itemize them for the worker to regenerate.
+
+**10c. Per-edge Zeck execution ids live in the tool RESULTS.** The
+battery/rail Bash outputs in `results[].content` carry the deterministic
+execution UUIDs — harvest by scanning result windows around each edgeId
+mention. 28/28 recovered for PPR-021 this way after the evidence record's
+pod-local copy was destroyed.
+
+**10d. Narrative-transport patch protocol (when needed pre-harvest).**
+Asking the worker to emit `git diff base..HEAD` marked BEGIN/END works but
+is freeze-fragile: the worker re-plans part counts mid-stream (6 parts → 8
+parts), writes plans in reasoning that trip naive detectors, and each
+freeze costs a stop_cure+nudge cycle. Per-file full-content emission
+(`===FILE: path===` ... `===END FILE===`) is the resilient shape — one
+file per message, resume = "the file after your last END marker". But
+PREFER 10b (tool-call replay) — it needs ZERO worker turns.
+
+**10e. Completion-report false positives freeze keepers.** A keeper that
+declares victory on ANY "COMPLETION REPORT" + hex-sha co-occurrence will
+fire on the worker's reasoning quoting the work order. TRUE verdict: the
+LAST text block of the newest LARGE assistant message must START with the
+phrase (regex-escape `\\d` in Python triple-quoted JS strings — a raw
+`[\s\n\r]` in the Python source becomes a literal newline inside the JS
+regex and throws "Uncaught SyntaxError" at probe time; the fix is
+`[\\\\s\\\\n\\\\r]` in the Python source).
+
+**10f. Evidence record rebuild for the file-source demo registry.** The
+demo-record-source validates strictly (applicationId mandatory; every
+`delegated` disposition needs >=1 zeckExecutionIds entry). Build the
+record from the exported graph constants (`bun run` a dump script — tsc
+typecheck stays green) + the harvested dispositions/ids; the admission
+machine then derives the SAME status the worker reported (PPR-021:
+PARTIAL, machine twins 12/12 agree).
+
+**10g. Gate-parity acceptance.** The Lead-assembled tree must reproduce
+the worker's certified gate numbers EXACTLY before PR (PPR-021: typecheck
+0, unit 6572, architecture 2230, integration 334, compat 27/27, demo
+12/12 — identical to the report). If any number drifts, the rebuild is
+wrong — find the divergence, never rationalize it.
+
+**10h. WIP recovery branches for incomplete workers.** PPR-022's battery
+was mid-flight at pod loss. Push the narrative-rebuilt surface as a WIP
+branch with the recovery gaps ITEMIZED in the commit message (the 39-hex
+upstream sha the worker recorded, the binary asset, the six
+post-Bash-mutation MultiEdits only the worker's narrative can re-apply,
+the absent evidence record), then re-dispatch the worker ON THAT BRANCH —
+it closes its own worker-owned facts, re-runs the battery, and reports;
+the Lead harvests per 10b. Typecheck+suite numbers on the WIP (71 pass /
+3 fail mapping exactly to the itemized gaps) go in the commit message as
+the drift contract.
+
+**10i. Platform overnight degradation is a WINDOW, not a wall.**
+Overnight (observed ~01:30-03:30Z+) pods stop allocating entirely (0 Live;
+turns land as stubs, no generation; stop_cure still works and flushes
+buffered bytes). Do not void/re-dispatch in this window — the chat
+narrative survives; the armed keeper's next nudge lands the resume the
+minute allocation returns (both prior windows ended: 05:38-09:36Z quota
+reset; 14:09Z supply window). Use the quiet window for AGENT_BOOT_PROMPT
+and worklog writes.
