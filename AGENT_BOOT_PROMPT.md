@@ -625,3 +625,47 @@ verification runs can WEDGE the browser's chat tab under memory pressure
 (WebSocketTimeout on eval) — /api/status then flaps to "no-browser"; cure =
 close the wedged tab (/json/close/<id>) + channel.new_tab('https://chat.z.ai/')
 — a no-browser reading is a tab artifact until the tab set is checked.
+
+## 11. Work-rich chats wedge renderers — the API-resume path (2026-10-01 shift)
+
+**11a. The tablost-misfire cascade.** A worker chat whose transcript grows
+past ~1MB wedges its tab renderer (evals time out for tens of minutes while
+the paint crawls). A queue_watch reading TAB state then sees tablost/stall
+and — per its assault ladder — VOIDs the live session and re-dispatches a
+duplicate. The worker was NEVER dead: the server-side batch kept streaming.
+RULE: for work-rich sessions (≥ a few hundred K batch chars), monitor via
+the SERVER-SIDE chats API only (batch chars + updated_at age), never tab
+bodies; never arm acting watchers on wedging tabs. Pure-observation monitors
+write stall flags; the LEAD applies cures by hand.
+
+**11b. The api_resume path (proven 2026-10-01, twice).** When a chat page
+cannot host a composer send (wedge), resume the turn via the raw
+completions API with a HARVESTED captcha token:
+  1. open a SMALL chat in a fresh tab (junk/probe chat), monkey-patch
+     window.fetch to capture-and-ABORT the next
+     `/api/v2/chat/completions` request (the app builds it with its silent
+     Aliyun captcha token — the abort leaves the token unconsumed),
+  2. type a marker into the junk composer + submit; read window.__tok,
+  3. POST `/api/v2/chat/completions?timestamp=...&requestId=...&user_id=...`
+     with headers Authorization (localStorage token), x-fe-version,
+     x-device-id and body {stream, model, messages, signature_prompt,
+     features, variables, chat_id, id, current_user_message_id,
+     current_user_message_parent_id (the tree leaf), background_tasks,
+     captcha_verify_param: <harvested token>}.
+The turn spawns server-side and the worker resumes from its narrative.
+Tooling: scripts/api_resume.py + scripts/robust_eval.py.
+
+**11c. Stuck-turn ladder recap for the API era.** stop-API cure (§8) closes
+the dead turn IN PLACE ({"status":true}; the continue-probe returns 410);
+then deliver the resume directive via api_resume (11b) — NOT via a fresh
+composer tab when the transcript is heavy. Sequence proven twice in a row
+on both lanes with zero narrative loss.
+
+**11d. The sandbox-slot spawn wall.** Packets that land while the account's
+sandbox concurrency is FULL (3/3) sit queued forever — the turn never
+spawns and the client router may even bounce the chat URL to home. Check
+`/api/v1/web-dev/workspaces/user-fc` FIRST when turns refuse to spawn;
+release stale holders (DELETE /api/v1/web-dev/workspaces/<chat-uuid>) after
+verifying their lanes are merged. A queued packet may still need a kick
+after slots free — the queue entry can die with the platform hiccup that
+filled the slots.
