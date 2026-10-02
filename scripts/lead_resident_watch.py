@@ -207,7 +207,9 @@ def main():
                     outbox("%s stalled; TL nudge %d sent" % (n, s["nudges"]))
             elif idle > STALL_S and s["nudges"] >= MAX_NUDGES:
                 log("%s STALLED with nudge budget exhausted — TL intervention needed" % n)
-                outbox("%s stalled; nudge budget exhausted — TL must intervene" % n)
+                if not s.get("exhausted_outboxed"):
+                    s["exhausted_outboxed"] = True
+                    outbox("%s stalled; nudge budget exhausted — TL must intervene" % n)
         time.sleep(CYCLE_S)
 
 
