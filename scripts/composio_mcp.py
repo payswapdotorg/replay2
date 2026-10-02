@@ -79,9 +79,8 @@ def open_session() -> str:
         raise SystemExit("initialize failed (no data)")
     post({"jsonrpc": "2.0", "method": "notifications/initialized"},
          session_id=os.environ.get("_MCP_SESSION_ID"))
-    # 2026-10-02: stateless deployments (connect.composio.dev) return no
-    # Mcp-Session-Id header — every POST is self-contained under the Bearer
-    # key. Tolerate the absent session ("" is falsy -> header omitted).
+    # 2026-10-02: connect.composio.dev/mcp is STATELESS — the initialize
+    # response carries NO Mcp-Session-Id header. Session header optional.
     return os.environ.get("_MCP_SESSION_ID", "")
 
 
@@ -90,7 +89,7 @@ def main() -> None:
     if not args:
         print(__doc__)
         return
-    sid = open_session()
+    sid = open_session() or None
     if args[0] == "list-tools":
         out = post({"jsonrpc": "2.0", "id": 1, "method": "tools/list"}, session_id=sid)
         for t in out.get("result", {}).get("tools", []):
