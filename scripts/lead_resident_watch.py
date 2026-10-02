@@ -33,9 +33,10 @@ FLAGS = os.path.join(BASE, "flags")
 REG = os.path.join(FLAGS, "session_registry.jsonl")
 OUTBOX = os.path.join(FLAGS, "agent_outbox.jsonl")
 # §0: replay2 is project-agnostic — the deployment injects the local clone
-# path of the OPERATOR-DESIGNATED source-of-truth repo (currently
-# payswapdotorg/payswap-5.0; see AGENT_BOOT_PROMPT.md §0). No project repo
-# is ever hardcoded here. Empty/missing clone = push-truth checks disabled.
+# path of the OPERATOR-DESIGNATED source-of-truth repo (payswapdotorg/
+# payswap.org per the 2026-10-02 directive; see AGENT_BOOT_PROMPT.md §0).
+# No project repo is ever hardcoded here. Empty/missing clone = push-truth
+# checks disabled.
 PROJECT_REPO = os.environ.get("PROJECT_REPO_PATH", "")
 
 CYCLE_S = 120
