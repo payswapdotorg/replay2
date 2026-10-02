@@ -65,30 +65,46 @@ def outbox(text):
 
 
 def active_lanes():
-    """Registry entries not done/void; done flags short-circuit."""
-    lanes = []
+    """Registry entries not done/void; done flags short-circuit.
+
+    Two-pass: first collect the LATEST record per name (registry order),
+    then keep only lanes whose latest state is dispatched-and-live. A lane
+    closed by a LATER done/void record must stay closed even though its
+    EARLIER sent=True records still pass the naive per-record filter (the
+    2026-10-02 restart incident: the watch picked up 5 dead lanes and
+    burned nudges on their dead chats)."""
+    latest = {}  # name -> latest record (any action)
+    order = []
     try:
         for line in open(REG, encoding="utf-8"):
             try:
                 r = json.loads(line)
             except Exception:
                 continue
-            if r.get("sent") is not True:
-                continue
             name = r.get("name", "")
             if not name:
                 continue
-            if os.path.exists(os.path.join(FLAGS, "%s_done.json" % name)):
-                continue  # already flagged done; watcher stays quiet
-            if r.get("done") or r.get("void"):
-                continue
-            url = r.get("url", "")
-            m = re.search(r"/c/([0-9a-f-]{36})", url)
-            if not m:
-                continue
-            lanes.append({"name": name, "chat_id": m.group(1), "url": url})
+            if name not in latest:
+                order.append(name)
+            latest[name] = r
     except FileNotFoundError:
         pass
+    lanes = []
+    for name in order:
+        r = latest[name]
+        if r.get("action") in ("done", "void"):
+            continue  # the LATEST record closed the lane
+        if r.get("sent") is not True:
+            continue
+        if os.path.exists(os.path.join(FLAGS, "%s_done.json" % name)):
+            continue  # already flagged done; watcher stays quiet
+        if r.get("done") or r.get("void"):
+            continue
+        url = r.get("url", "")
+        m = re.search(r"/c/([0-9a-f-]{36})", url)
+        if not m:
+            continue
+        lanes.append({"name": name, "chat_id": m.group(1), "url": url})
     return lanes
 
 
