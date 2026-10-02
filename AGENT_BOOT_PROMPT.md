@@ -535,6 +535,26 @@ signal) — keep a 5-min keeper cadence (a faster cadence re-burns the
 window; see §8's probe-burn lesson) and land the directive in the first
 minute the window opens.
 
+**9f. The SILENT SUBMIT DROP (2026-10-02 dawn shift, proven live).** With
+the capacity wall up, the composer can ACCEPT a submit — Enter clears the
+input, NO modal appears — while the server NEVER receives the message:
+the chat record's `updated_at` stays frozen and no new user message
+appears in the tree. Composer-clearing is NOT proof of landing; a
+"message sent / body 4353->5184" verdict from a UI-path send can be pure
+composer insertion. VERIFY EVERY SEND SERVER-SIDE (chat record
+`updated_at` advanced + a new user message id in the tree) before
+counting it. A landed-but-unspawned nudge shows as a childless user
+message plus a tiny 0-block assistant placeholder batch — that is the
+§11d spawn wall; the stop-cure + fresh-tab + re-send loop is the retry
+(1-in-5 spawn odds are normal — keep cycling, never wait passively).
+Corollary for daemonized senders: `dispatch_worker.send` resolves the
+session tab from the REGISTRY — after opening/reusing a tab, append a
+`{"action":"tab-reopen","name":<session>,"tab_id":<id>,"url":<url>}`
+record (§3.8) or every send reports "session tab LOST" while a perfectly
+good painted tab sits idle. And NEVER stop-cure without a live-check
+first (110s batch-growth window): POST /api/tasks/stop on a producing
+turn kills real work.
+
 ## 10. Pod-recycle narrative harvest — the full PPR-021 recovery (2026-10-01 night shift)
 
 **10a. The pod WILL be recycled mid-delivery.** The 2026-09-30/10-01 shift
