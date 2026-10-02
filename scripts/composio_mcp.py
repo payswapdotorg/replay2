@@ -79,7 +79,10 @@ def open_session() -> str:
         raise SystemExit("initialize failed (no data)")
     post({"jsonrpc": "2.0", "method": "notifications/initialized"},
          session_id=os.environ.get("_MCP_SESSION_ID"))
-    return os.environ["_MCP_SESSION_ID"]
+    # 2026-10-02: stateless deployments (connect.composio.dev) return no
+    # Mcp-Session-Id header — every POST is self-contained under the Bearer
+    # key. Tolerate the absent session ("" is falsy -> header omitted).
+    return os.environ.get("_MCP_SESSION_ID", "")
 
 
 def main() -> None:
