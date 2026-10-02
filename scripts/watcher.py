@@ -444,6 +444,9 @@ def main():
             except Exception:
                 pass
             time.sleep(10)
+            if i == 5:  # heartbeat line ~every 60s: keeps the console's
+                # watcher-alive badge (watcher.log mtime) truthful
+                log(f"hb login={STATE['login']}")
         check_procs()
 
 
