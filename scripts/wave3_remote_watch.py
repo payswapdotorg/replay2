@@ -1,10 +1,18 @@
 #!/usr/bin/env python3
 """wave3_remote_watch.py — detached remote watch for the payswap.org roadmap frontier.
 
+Roadmap-complete mode (9205e35, hardened 2026-10-02 evening):
 Polls the remote (ls-remote + the phase-2-state.json blob) every POLL_S:
-  - main moving (the parallel TL line's landings)
-  - work/P2-W1-003 branch appearing/growing
-  - phase-2-state.json: P2-W1-003 completion => the P2-W2-003 frontier OPENS
+  - main moving (any new operator-recorded work landing on main)
+  - ROADMAP COMPLETE notice: the phase_complete closure block (the
+    do_not_redispatch marker) OR all-frontier-COMPLETE with nothing active.
+    NOTE completed_work_orders alone is NOT exhaustive — the closure record
+    lives in frontier status COMPLETE + the phase_complete block (the first
+    run of this script caught that: P2-W2-003/P2-W3-003 never appeared in
+    completed_work_orders, so the old detection could never fire).
+  - ROADMAP REOPENED: the closure marker disappearing or active work
+    appearing after completion (new operator-recorded phase/work).
+  - active work orders appearing / READY frontier entries appearing.
 Alerts land in agent_outbox.jsonl + a compact state file. Never exits.
 """
 import json
@@ -50,36 +58,72 @@ def snapshot():
         parsed = {
             "active": [w.get("id") for w in d.get("active_work_orders", [])],
             "completed": [w.get("id") for w in d.get("completed_work_orders", [])],
+            "frontier": [(f.get("id"), f.get("status")) for f in d.get("frontier", [])],
             "frontier_ready": [f.get("id") for f in d.get("frontier", []) if f.get("status") == "READY"],
+            "phase": d.get("phase"),
+            "phase_complete": bool(d.get("phase_complete", {}).get("do_not_redispatch")),
         }
     except Exception:
         pass
     return {"main": main[:12], "w1_003": (w1 or "")[:12], "state": parsed}
 
 
+def roadmap_complete(st):
+    """The closure record: the phase_complete block's do_not_redispatch marker,
+    or (fallback) every frontier item COMPLETE with nothing active."""
+    if not st:
+        return False
+    if st.get("phase_complete"):
+        return True
+    frontier = st.get("frontier") or []
+    return bool(frontier) and all(s == "COMPLETE" for _, s in frontier) and not st.get("active")
+
+
 def main():
     prev = None
-    alerted_w2_open = False
-    log("wave3 remote watch started")
+    alerted_complete = False
+    log("wave3 remote watch started (roadmap-complete mode, hardened)")
     while True:
         snap = snapshot()
+        st = snap["state"]
         if prev is None:
-            log("baseline main=%s w1_003=%s active=%s" % (snap["main"], snap["w1_003"] or "-", snap["state"].get("active")))
+            log("baseline main=%s w1_003=%s active=%s phase=%s" % (
+                snap["main"], snap["w1_003"] or "-", st.get("active"), st.get("phase")))
         else:
             if snap["main"] != prev["main"]:
-                log("MAIN MOVED %s -> %s (active=%s completed=%s)" % (prev["main"], snap["main"], snap["state"].get("active"), snap["state"].get("completed")))
-                outbox("wave3 watch: payswap.org main moved %s -> %s; active=%s completed=%s" % (prev["main"], snap["main"], snap["state"].get("active"), snap["state"].get("completed")))
+                log("MAIN MOVED %s -> %s (active=%s completed=%s)" % (prev["main"], snap["main"], st.get("active"), st.get("completed")))
+                outbox("wave3 watch: payswap.org main moved %s -> %s; active=%s completed=%s" % (prev["main"], snap["main"], st.get("active"), st.get("completed")))
             if snap["w1_003"] != prev["w1_003"] and snap["w1_003"]:
                 log("P2-W1-003 BRANCH at %s" % snap["w1_003"])
-        # frontier open detection: P2-W1-003 completed AND P2-W2-003 not active
-        st = snap["state"]
-        if (not alerted_w2_open and st and "P2-W3-003" in st.get("completed", [])
-                and st.get("frontier_ready") is not None):
-            log("ROADMAP COMPLETE detected (completed=%s)" % st.get("completed"))
-            outbox("ROADMAP COMPLETE: payswap.org Phase 2 all orders done (watcher-confirmed). Monitoring continues for NEW operator-recorded work (commits/branches/state changes).")
-            alerted_w2_open = True
+            # NEW operator-recorded work: active work orders appearing
+            prev_active = set(prev["state"].get("active") or [])
+            new_active = [a for a in (st.get("active") or []) if a not in prev_active]
+            if new_active:
+                log("ACTIVE WORK APPEARED %s" % new_active)
+                outbox("wave3 watch: NEW ACTIVE WORK on payswap.org: %s (main=%s) — operator-recorded dispatch" % (new_active, snap["main"]))
+            # NEW operator-recorded work: READY frontier entries appearing
+            prev_ready = set(prev["state"].get("frontier_ready") or [])
+            new_ready = [r for r in (st.get("frontier_ready") or []) if r not in prev_ready]
+            if new_ready:
+                log("FRONTIER READY APPEARED %s" % new_ready)
+                outbox("wave3 watch: FRONTIER READY on payswap.org: %s (main=%s)" % (new_ready, snap["main"]))
+        # roadmap-complete detection: the phase_complete closure block, or
+        # all-frontier-COMPLETE with nothing active (completed_work_orders is
+        # NOT exhaustive — P2-W2-003/P2-W3-003 close via frontier + block)
+        complete = roadmap_complete(st)
+        if not alerted_complete and complete:
+            log("ROADMAP COMPLETE detected (phase=%s frontier=%s)" % (st.get("phase"), st.get("frontier")))
+            outbox("ROADMAP COMPLETE: payswap.org Phase 2 all orders done (watcher-confirmed at main %s). Monitoring continues for NEW operator-recorded work (commits/branches/state changes)." % snap["main"])
+            alerted_complete = True
+        elif alerted_complete and st and st.get("phase") and not complete:
+            # the closure marker vanished or active work appeared: reopened.
+            # (st["phase"] present guards against a degenerate/truncated state
+            # blob parsing as an empty-ish dict — that is transient, not a reopen)
+            log("ROADMAP REOPENED (active=%s frontier=%s)" % (st.get("active"), st.get("frontier")))
+            outbox("wave3 watch: payswap.org ROADMAP REOPENED at main %s — active=%s frontier=%s" % (snap["main"], st.get("active"), st.get("frontier")))
+            alerted_complete = False
         try:
-            json.dump({"ts": int(time.time()), "snap": snap, "alerted_w2_open": alerted_w2_open}, open(STATE_F, "w"))
+            json.dump({"ts": int(time.time()), "snap": snap, "alerted_complete": alerted_complete}, open(STATE_F, "w"))
         except Exception:
             pass
         prev = snap
