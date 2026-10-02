@@ -37,7 +37,7 @@ const FRAME_FAST_MS = 220; // while dragging / right after an event
 const FRAME_IDLE_MS = 1300; // steady state
 const FRAME_FAIL_MS = 700; // first retry while frames are failing
 const FRAME_FAIL_MAX_MS = 6000; // backoff ceiling under sustained capture pressure
-const MOVE_MIN_INTERVAL_MS = 45; // dragmove throttle
+const MOVE_MIN_INTERVAL_MS = 25; // dragmove throttle — dense enough for captcha trajectory analysis
 const DRAG_START_THRESHOLD = 0.004; // fraction of viewport before dragstart fires
 
 function ago(ms: number): string {
