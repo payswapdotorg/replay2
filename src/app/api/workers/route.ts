@@ -286,6 +286,11 @@ export async function GET() {
       // a void is bookkeeping, not a dispatch
       continue;
     }
+    if (r.action === "done" || existsSync(join(FLAGS, `${name}_done.json`))) {
+      // a done lane is history (the lead watch's completion flag is the
+      // authoritative short-circuit) — never a live fight-trail candidate
+      continue;
+    }
     dispatched.add(name);
     specName.set(name, r.name || name); // spec files use the ORIGINAL case
     const cur = live.get(name);
