@@ -642,6 +642,55 @@ def ensure_queue_watch():
 
 
 
+def ensure_parked_watch():
+    """Resurrect parked_watch.py for every flags/parked_watch.spec.<name>.
+
+    Mirror of the queue_watch contract: parked_watch (server-side watch of a
+    landed-but-unspawned agents chat — the SPA bounce law means no tab can
+    exist for the parked phase) writes its own spec; it removes the spec on
+    spawn-handoff/complete/retire. Also SIGKILLs a HUNG instance (heartbeat
+    stale beyond 600s — its loop is ~120s sleep + <=~90s of probe).
+    """
+    import glob as _glob
+    for spec_path in sorted(_glob.glob(os.path.join(FLAGS, "parked_watch.spec.*"))):
+        try:
+            spec = json.loads(open(spec_path).read().strip() or "{}")
+        except Exception:
+            continue
+        name = spec.get("name", "")
+        pid = spec.get("pid")
+        if pid and pid_alive(pid, "parked_watch"):
+            age = hb_age(os.path.join(FLAGS, f"parked_watch_heartbeat.{name}"))
+            if age > 600 and (time.time() - proc_start_epoch(pid)) > 600:
+                log(f"parked_watch[{name}] HUNG (pid {pid}, heartbeat {int(age)}s stale) — SIGKILL + restart")
+                try:
+                    subprocess.run(["kill", "-9", str(pid)], capture_output=True)
+                except Exception:
+                    pass
+                time.sleep(1)
+            else:
+                continue
+        # alive under a different pid for THIS session? (match by name arg)
+        r = subprocess.run(["pgrep", "-f", f"scripts/parked_watch.py {name} "],
+                           capture_output=True, text=True)
+        if r.returncode == 0 and r.stdout.strip():
+            p = r.stdout.strip().split("\n")[0]
+            try:
+                spec["pid"] = p
+                open(spec_path, "w").write(json.dumps(spec) + "\n")
+            except Exception:
+                pass
+            continue
+        log(f"parked_watch[{name}] DEAD — restarting (spec present)")
+        args = [PY, os.path.join(BASE, "parked_watch.py"),
+                name, spec.get("chat_id", ""), spec.get("marker", "")]
+        if spec.get("prompt_file"):
+            args.append(spec["prompt_file"])
+        subprocess.Popen(args, stdout=open(os.path.join(LOGDIR, "parked-watch.log"), "a"),
+                         stderr=subprocess.STDOUT)
+        log(f"parked_watch[{name}] restarted: chat={str(spec.get('chat_id'))[:12]}")
+
+
 def _mtime(path):
     try:
         return os.path.getmtime(path)
@@ -719,6 +768,7 @@ def main():
             ensure_capacity_recovery()
             ensure_tab_gc()
             ensure_queue_watch()
+            ensure_parked_watch()
             ensure_local_services()
             ensure_stall_recovery()
             ensure_frame_guard()
