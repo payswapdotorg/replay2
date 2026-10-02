@@ -877,12 +877,21 @@ export default function Console() {
             <h2 className="text-sm font-semibold text-amber-900 mb-2">Operator notes</h2>
             <ol className="list-decimal ml-4 text-xs text-amber-900 space-y-1.5">
               <li>
-                <b>Site login (drags stream LIVE):</b> click &quot;Sign in&quot; in the
-                replay → <b>Continue with Email</b> → click the email field → type in
-                the box below the replay (it auto-focuses the first input) → Continue →
-                password the same way. Slider/captcha: <b>press on the slider handle
-                and drag slowly</b> — the replay follows your drag in real time; release
-                when aligned. If a click ever lands wrong, toggle <b>DOM click</b> mode.
+                <b>Site login (drags stream LIVE):</b> the auth form is already open —
+                your email + password are already typed in. Just click{" "}
+                <b>&quot;Click to start verification&quot;</b> on the image →{" "}
+                <b>press the slider handle and drag slowly</b> — the replay follows
+                your drag in real time; release when the puzzle piece aligns → click{" "}
+                <b>&quot;Sign in&quot;</b>. To retype credentials, click a field on the
+                image, clear it, and type in the box below the replay. If a click ever
+                lands wrong, toggle <b>DOM click</b> mode.
+              </li>
+              <li>
+                <b>Captcha popup says &quot;Timed out. Close and retry.&quot;?</b> It
+                blocks the form until dismissed — click the <b>X at the top-right of
+                the popup</b> (or the &quot;Timed out…&quot; bar itself) to close it,
+                then click <b>&quot;Click to start verification&quot;</b> again and
+                finish the drag promptly. The verification window is ~1 minute.
               </li>
               <li>
                 <b>Message the resident agent</b> through the textbox above — it reads
