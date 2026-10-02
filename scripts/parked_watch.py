@@ -265,6 +265,15 @@ def main():
                 and morning_actions < MORNING_MAX and prompt_file):
             parked_h = (time.time() - parked_since) / 3600.0
             if parked_h >= 6:   # only for chats that sat queued a long stretch
+                # race guard: re-probe immediately before voiding — a chat
+                # that spawned seconds after the cycle probe must never be
+                # killed by the morning action
+                p2 = probe(chat_id, marker)
+                if p2 and not p2.get("err") and (
+                        int(p2.get("msgs") or 0) > 1
+                        or int((p2.get("batch") or {}).get("assistantish") or 0) > 0):
+                    log(name, "MORNING aborted — chat spawned between probes")
+                    continue
                 last_morning_day = today
                 morning_actions += 1
                 log(name, f"MORNING: parked {parked_h:.1f}h through window open — void + fresh landing ({morning_actions}/{MORNING_MAX})")
