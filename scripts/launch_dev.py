@@ -21,7 +21,10 @@ if not PORT:
         PORT = "3000"
 
 env = dict(os.environ)
-env["NODE_OPTIONS"] = "--max-old-space-size=1024"  # FORCE: setdefault silently drops the cap if NODE_OPTIONS is preset
+# 1024MB V8 old-space (agent-chat load measured ~1.3-1.4GB RSS worst case on
+# the 4GB box). FORCE-set: setdefault silently drops the cap if NODE_OPTIONS
+# is preset (wave-3 lesson).
+env["NODE_OPTIONS"] = "--max-old-space-size=1024"
 p = subprocess.Popen(["bun", "run", "dev", "--", "-p", PORT],
     stdout=open(os.path.join(BASE, "dev.log"), "w"), stderr=subprocess.STDOUT,
     start_new_session=True, cwd=ROOT, env=env)
