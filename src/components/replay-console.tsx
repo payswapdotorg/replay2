@@ -502,113 +502,23 @@ export default function Console() {
           </div>
         </div>
       </header>
-
-      {/* Live orchestration strip — the worker sessions dispatched inside
-          this replay, read from the dispatch machinery's own ground truth
-          (registry + watchers). "Watch" points the mirror at that session. */}
-      <section
-        className="border-b border-neutral-200 bg-white px-4 py-2.5"
-        aria-label="live orchestration status"
-      >
-        <div className="max-w-7xl mx-auto flex flex-col gap-2">
-          <div className="flex items-center gap-2 flex-wrap">
-            <h2 className="text-xs font-semibold uppercase tracking-wide text-neutral-500">
-              Live orchestration
-            </h2>
-            <span className="text-[11px] text-neutral-400">
-              workers run inside this replay — click Watch to mirror their session
+      {/* Login CTA banner — the sole blocker surfaced above everything;
+          collapses once the operator is logged in. */}
+      {!status?.browser_login?.startsWith("logged-in") && (
+        <div className="border-b border-amber-300 bg-amber-100 px-4 py-2.5">
+          <div className="max-w-7xl mx-auto flex items-baseline gap-3 flex-wrap">
+            <span className="text-sm font-bold text-amber-900">
+              ⚠ Operator login needed — wave-3 dispatch is armed and waiting
+            </span>
+            <span className="text-xs text-amber-900">
+              the login form is already open in the mirror below: click the email field ON the
+              image → type in the keyboard box → Send → password the same way → Sign in → drag
+              the slider captcha slowly ON the image
             </span>
           </div>
-          <div className="flex gap-2 flex-wrap items-stretch">
-            {workers.workers.length === 0 && (
-              <p className="text-xs text-neutral-400 py-2">
-                no live worker sessions — the lead dispatches from this stack
-              </p>
-            )}
-            {workers.workers.map((w) => {
-              const fullTab = w.tabId
-                ? tabs.tabs.find((t) => t.id.startsWith(w.tabId))
-                : undefined;
-              const isMirrored = fullTab ? fullTab.id === tabs.active : false;
-              const live =
-                w.state === "generating" || w.state === "working" || w.state === "complete";
-              const stateStyle = live
-                ? "border-emerald-300 bg-emerald-50"
-                : w.state === "rate-limited"
-                  ? "border-red-300 bg-red-50"
-                  : w.state === "re-dispatching"
-                    ? "border-orange-300 bg-orange-50"
-                    : "border-amber-200 bg-amber-50";
-              return (
-                <div
-                  key={w.name}
-                  className={`flex items-center gap-3 rounded-lg border px-3 py-2 min-w-[260px] ${stateStyle}`}
-                >
-                  <span
-                    className={`h-2 w-2 shrink-0 rounded-full ${
-                      live ? "bg-emerald-500 animate-pulse" : "bg-amber-500"
-                    }`}
-                    aria-hidden="true"
-                  />
-                  <div className="min-w-0 flex-1">
-                    <div className="flex items-baseline gap-2">
-                      <span className="text-sm font-semibold uppercase">{w.name}</span>
-                      <span className="text-xs text-neutral-700 truncate" title={w.title}>
-                        {w.title}
-                      </span>
-                    </div>
-                    <div className="text-[11px] text-neutral-500 flex gap-x-2 flex-wrap">
-                      <span title={w.lane}>{w.lane}</span>
-                      <span aria-hidden="true">·</span>
-                      <span>{w.state}</span>
-                      <span aria-hidden="true">·</span>
-                      <span title="session DOM size — grows while the sandbox works">
-                        {(w.chars / 1000).toFixed(1)}k chars
-                      </span>
-                      <span aria-hidden="true">·</span>
-                      <span title="dispatch attempts this item">
-                        #{w.dispatches} dispatch
-                      </span>
-                      <span aria-hidden="true">·</span>
-                      <span>round {ago(w.lastRoundMs)}</span>
-                    </div>
-                  </div>
-                  <button
-                    className={`shrink-0 px-2.5 py-1 text-xs rounded border transition-colors ${
-                      isMirrored
-                        ? "bg-neutral-900 text-white border-neutral-900"
-                        : "bg-white border-neutral-300 hover:bg-neutral-100 disabled:opacity-40 disabled:cursor-not-allowed"
-                    }`}
-                    disabled={!fullTab}
-                    onClick={() => fullTab && selectTab(fullTab.id)}
-                    title={w.chatUrl ?? undefined}
-                  >
-                    {isMirrored ? "mirrored ✓" : "Watch"}
-                  </button>
-                </div>
-              );
-            })}
-            {workers.staged.map((s) => (
-              <div
-                key={s.name}
-                className="flex items-center gap-3 rounded-lg border border-dashed border-neutral-300 bg-neutral-50 px-3 py-2 min-w-[220px]"
-                title={`${s.packetChars} chars · dispatches when a slot frees`}
-              >
-                <span className="h-2 w-2 shrink-0 rounded-full bg-neutral-300" aria-hidden="true" />
-                <div className="min-w-0">
-                  <div className="flex items-baseline gap-2">
-                    <span className="text-sm font-semibold uppercase text-neutral-500">{s.name}</span>
-                    <span className="text-xs text-neutral-500 truncate">{s.title}</span>
-                  </div>
-                  <div className="text-[11px] text-neutral-400">
-                    {s.lane} · packet staged — fires when a slot frees
-                  </div>
-                </div>
-              </div>
-            ))}
-          </div>
         </div>
-      </section>
+      )}
+
 
       <section className="flex-1 max-w-7xl w-full mx-auto px-4 py-4 grid gap-4 lg:grid-cols-[1fr_380px]">
         <div className="flex flex-col gap-3 min-w-0">
@@ -685,7 +595,7 @@ export default function Console() {
                   ref={imgRef}
                   src={frame}
                   alt="live browser view"
-                  className="max-w-full max-h-[62vh] cursor-pointer select-none touch-none"
+                  className="max-w-full max-h-[75vh] cursor-pointer select-none touch-none"
                   draggable={false}
                 />
               ) : (
@@ -902,6 +812,113 @@ export default function Console() {
                 top-left must match the expected console version.
               </li>
             </ol>
+          </div>
+        </div>
+      </section>
+
+      {/* Live orchestration strip — the worker sessions dispatched inside
+          this replay, read from the dispatch machinery's own ground truth
+          (registry + watchers). "Watch" points the mirror at that session. */}
+      <section
+        className="border-t border-neutral-200 bg-white px-4 py-2.5"
+        aria-label="live orchestration status"
+      >
+        <div className="max-w-7xl mx-auto flex flex-col gap-2">
+          <div className="flex items-center gap-2 flex-wrap">
+            <h2 className="text-xs font-semibold uppercase tracking-wide text-neutral-500">
+              Live orchestration
+            </h2>
+            <span className="text-[11px] text-neutral-400">
+              workers run inside this replay — click Watch to mirror their session
+            </span>
+          </div>
+          <div className="flex gap-2 flex-wrap items-stretch">
+            {workers.workers.length === 0 && (
+              <p className="text-xs text-neutral-400 py-2">
+                no live worker sessions — the lead dispatches from this stack
+              </p>
+            )}
+            {workers.workers.map((w) => {
+              const fullTab = w.tabId
+                ? tabs.tabs.find((t) => t.id.startsWith(w.tabId))
+                : undefined;
+              const isMirrored = fullTab ? fullTab.id === tabs.active : false;
+              const live =
+                w.state === "generating" || w.state === "working" || w.state === "complete";
+              const stateStyle = live
+                ? "border-emerald-300 bg-emerald-50"
+                : w.state === "rate-limited"
+                  ? "border-red-300 bg-red-50"
+                  : w.state === "re-dispatching"
+                    ? "border-orange-300 bg-orange-50"
+                    : "border-amber-200 bg-amber-50";
+              return (
+                <div
+                  key={w.name}
+                  className={`flex items-center gap-3 rounded-lg border px-3 py-2 min-w-[260px] ${stateStyle}`}
+                >
+                  <span
+                    className={`h-2 w-2 shrink-0 rounded-full ${
+                      live ? "bg-emerald-500 animate-pulse" : "bg-amber-500"
+                    }`}
+                    aria-hidden="true"
+                  />
+                  <div className="min-w-0 flex-1">
+                    <div className="flex items-baseline gap-2">
+                      <span className="text-sm font-semibold uppercase">{w.name}</span>
+                      <span className="text-xs text-neutral-700 truncate" title={w.title}>
+                        {w.title}
+                      </span>
+                    </div>
+                    <div className="text-[11px] text-neutral-500 flex gap-x-2 flex-wrap">
+                      <span title={w.lane}>{w.lane}</span>
+                      <span aria-hidden="true">·</span>
+                      <span>{w.state}</span>
+                      <span aria-hidden="true">·</span>
+                      <span title="session DOM size — grows while the sandbox works">
+                        {(w.chars / 1000).toFixed(1)}k chars
+                      </span>
+                      <span aria-hidden="true">·</span>
+                      <span title="dispatch attempts this item">
+                        #{w.dispatches} dispatch
+                      </span>
+                      <span aria-hidden="true">·</span>
+                      <span>round {ago(w.lastRoundMs)}</span>
+                    </div>
+                  </div>
+                  <button
+                    className={`shrink-0 px-2.5 py-1 text-xs rounded border transition-colors ${
+                      isMirrored
+                        ? "bg-neutral-900 text-white border-neutral-900"
+                        : "bg-white border-neutral-300 hover:bg-neutral-100 disabled:opacity-40 disabled:cursor-not-allowed"
+                    }`}
+                    disabled={!fullTab}
+                    onClick={() => fullTab && selectTab(fullTab.id)}
+                    title={w.chatUrl ?? undefined}
+                  >
+                    {isMirrored ? "mirrored ✓" : "Watch"}
+                  </button>
+                </div>
+              );
+            })}
+            {workers.staged.map((s) => (
+              <div
+                key={s.name}
+                className="flex items-center gap-3 rounded-lg border border-dashed border-neutral-300 bg-neutral-50 px-3 py-2 min-w-[220px]"
+                title={`${s.packetChars} chars · dispatches when a slot frees`}
+              >
+                <span className="h-2 w-2 shrink-0 rounded-full bg-neutral-300" aria-hidden="true" />
+                <div className="min-w-0">
+                  <div className="flex items-baseline gap-2">
+                    <span className="text-sm font-semibold uppercase text-neutral-500">{s.name}</span>
+                    <span className="text-xs text-neutral-500 truncate">{s.title}</span>
+                  </div>
+                  <div className="text-[11px] text-neutral-400">
+                    {s.lane} · packet staged — fires when a slot frees
+                  </div>
+                </div>
+              </div>
+            ))}
           </div>
         </div>
       </section>
