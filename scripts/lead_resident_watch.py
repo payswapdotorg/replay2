@@ -32,7 +32,11 @@ BASE = os.path.dirname(os.path.abspath(__file__))
 FLAGS = os.path.join(BASE, "flags")
 REG = os.path.join(FLAGS, "session_registry.jsonl")
 OUTBOX = os.path.join(FLAGS, "agent_outbox.jsonl")
-FLEETOS = "/home/z/fleetos"
+# §0: replay2 is project-agnostic — the deployment injects the local clone
+# path of the OPERATOR-DESIGNATED source-of-truth repo (currently
+# payswapdotorg/payswap-5.0; see AGENT_BOOT_PROMPT.md §0). No project repo
+# is ever hardcoded here. Empty/missing clone = push-truth checks disabled.
+PROJECT_REPO = os.environ.get("PROJECT_REPO_PATH", "")
 
 CYCLE_S = 120
 STALL_S = 30 * 60
@@ -136,9 +140,11 @@ def send_nudge(lane):
 
 
 def remote_sha(branch):
+    if not PROJECT_REPO or not os.path.isdir(PROJECT_REPO):
+        return None  # no source-of-truth clone deployed — push-truth off
     try:
         out = subprocess.run(["git", "ls-remote", "origin", "refs/heads/" + branch],
-                             cwd=FLEETOS, capture_output=True, text=True, timeout=30)
+                             cwd=PROJECT_REPO, capture_output=True, text=True, timeout=30)
         line = (out.stdout or "").strip().split("\t")[0]
         return line if re.fullmatch(r"[0-9a-f]{40}", line) else None
     except Exception:
