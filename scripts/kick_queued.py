@@ -23,6 +23,14 @@ Usage: kick_queued.py <chat-uuid> [message-file]
        message-file defaults to the queued user message harvested from the
        chat record itself (content > 500 chars), plus a system directive.
 Exit: 0 = turn spawned (2xx + delta frames); 1 = failure (see stderr).
+
+2026-10-03 HAZARD LAW (learned live, w141): a captcha-rejected kick
+(FRONTEND_CAPTCHA_REQUIRED / F019) can WEDGE the target chat record
+server-side - the record then 500s forever, vanishes from the chat list,
+and DELETE returns 404 (undeletable zombie). The cure that day was a full
+re-dispatch via dispatch_worker's aggressive loop (which beat the closed
+8-window anyway). PREFER re-dispatch over kick; if you must kick, guard
+the target and be ready to re-dispatch.
 """
 import base64
 import hashlib
@@ -280,7 +288,13 @@ def main():
     uid = _jwt_user_id(tok) or "unknown"
     attempts = 6
     for attempt in range(1, attempts + 1):
-        leaf = (((_chat(chat_id).get("chat") or {}).get("history")) or {}).get("currentId")
+        try:
+            leaf = (((_chat(chat_id).get("chat") or {}).get("history")) or {}).get("currentId")
+        except Exception as e:  # 2026-10-03: transient 500s crashed the retry loop
+            print("chat record fetch failed (%s) - retrying with backoff" % e,
+                  file=sys.stderr, flush=True)
+            time.sleep(45)
+            continue
         body = {
             "stream": True, "model": "glm-5.3",
             "messages": [{"role": "user", "content": msg}],

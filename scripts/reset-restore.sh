@@ -44,6 +44,17 @@ cp "$ROOT/src/components/replay-console.tsx"      "$MY/src/components/replay-con
 cp "$ROOT/src/components/mission-control.tsx"     "$MY/src/components/mission-control.tsx"
 cp "$ROOT/src/lib/replay.ts"                      "$MY/src/lib/replay.ts"
 cp "$ROOT/src/lib/mission.ts"                     "$MY/src/lib/mission.ts"
+# 2026-10-03: the AgentChat evolution (PR #1) — page.tsx imports these; a copy
+# list without them 500s the dev server on a fresh my-project (Task-65 lesson).
+if [ -f "$ROOT/src/components/AgentChat.tsx" ]; then
+  cp "$ROOT/src/components/AgentChat.tsx"         "$MY/src/components/AgentChat.tsx"
+  cp "$ROOT/src/components/Markdown.tsx"          "$MY/src/components/Markdown.tsx"
+  cp "$ROOT/src/lib/chatStore.ts"                 "$MY/src/lib/chatStore.ts"
+  for r in agent/chat agent/capabilities; do
+    mkdir -p "$MY/src/app/api/$r"
+    cp "$ROOT/src/app/api/$r/route.ts"            "$MY/src/app/api/$r/route.ts"
+  done
+fi
 for r in frame tabs mission inbox status workers event; do
   mkdir -p "$MY/src/app/api/$r"
   cp "$ROOT/src/app/api/$r/route.ts" "$MY/src/app/api/$r/route.ts"
