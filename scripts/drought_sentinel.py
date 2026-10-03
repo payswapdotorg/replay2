@@ -417,6 +417,15 @@ def main():
                 if cid:
                     st.setdefault("probes", {})[f"PROBE{st['next_probe'] - 1}"] = {
                         "cid": cid, "ts": now}
+                else:
+                    # 2026-10-03 (peak-flakiness fix): transient composer
+                    # failures (model menu race, missing skill chips, promo
+                    # modal timing) should not burn a full 20-min cadence —
+                    # retry after ~5 min. Bounded by MAX_LIVE_PROBES (only
+                    # SUCCESSFUL launches enter the probe set), and the
+                    # failure path is pre-send (no prompt spam server-side).
+                    st["last_launch"] = now - CANARY_EVERY + 300
+                    log(f"launch failed — fast retry in ~5min (peak-flakiness policy)")
         else:
             # post-recovery: relapse check (D-036). All lanes queued-alive
             # and POST_STALE past the newest dispatch ts => drought resumed.
