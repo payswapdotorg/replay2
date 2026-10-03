@@ -271,6 +271,16 @@ def main():
                 known.add(lane["name"])
                 log("lane picked up: %s (%s)" % (lane["name"],
                                                  lane["chat_id"][:8]))
+        # retire stale status files: a lane that left the live set (void/
+        # done) must not linger in the console's freshness window
+        live_names = {l["name"] for l in lanes}
+        try:
+            for fn in os.listdir(FLAGS):
+                m = re.match(r"lane_status\.(.+)\.json$", fn)
+                if m and m.group(1) not in live_names:
+                    os.remove(os.path.join(FLAGS, fn))
+        except Exception:
+            pass
         try:
             open(HB_PATH, "w").write(
                 time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime()))
