@@ -10,7 +10,8 @@
 #   2. sets the platform layout title to "Replay Console" (the identity the
 #      supervisor's console_body_ok() and deploy.sh's console_ok() check)
 #   3. teaches eslint to ignore the nested replay2/ repo
-#   4. runs deploy.sh — Xvfb + Chrome CDP :9222 + replayd :3100 + the ring;
+#   4. materializes the lead-watch daemon (tracked source → scripts/local/)
+#   5. runs deploy.sh — Xvfb + Chrome CDP :9222 + replayd :3100 + the ring;
 #      the console gate sees the platform app already serving the identity,
 #      so NO separate console dev server is ever spawned (port war dead)
 #
@@ -94,7 +95,23 @@ else:
     print("  eslint now ignores replay2/** (+ build artifacts)")
 PYEOF
 
-# ------------------------------------------------ 4. deploy the stack
+# ------------------------------------------------ 4. lead-watch daemon
+# The resident lane watch (mos_lead_watch) is deployment-local by governance
+# (scripts/local/ is gitignored), but its source is tracked here so a reset
+# never loses the daemon: materialize the local instance from the tracked
+# file. The 2026-10-03 fix (lanes reload EVERY cycle + per-lane status files
+# for the console workers strip) must survive resets.
+if [ -f "$ROOT/scripts/mos_lead_watch.py" ]; then
+    mkdir -p "$ROOT/scripts/local"
+    if [ ! -f "$ROOT/scripts/local/mos_lead_watch.py" ]; then
+        cp "$ROOT/scripts/mos_lead_watch.py" "$ROOT/scripts/local/mos_lead_watch.py"
+        say "lead-watch daemon materialized into scripts/local/ (tracked source)"
+    else
+        say "lead-watch daemon already present in scripts/local/"
+    fi
+fi
+
+# ------------------------------------------------ 5. deploy the stack
 # The platform dev server (boot hook) hot-reloads the ported files; by the
 # time deploy.sh checks, :3000 already serves <title>Replay Console</title>
 # so it skips spawning any separate console dev server.

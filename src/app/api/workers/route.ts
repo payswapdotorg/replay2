@@ -160,8 +160,17 @@ function parseWatcherLog(name: string, origName?: string): {
  *  title + lane. In the wave format the part after the colon is the
  *  distinguishing lane detail, and the -W<N> suffix names the wave.
  *  W-series (SOS frontier era, 2026-09-30): `# W13 — Title (frontier
- *  Worker, lane A)` → title + lane extracted from the paren clause. */
+ *  Worker, lane A)` → title + lane extracted from the paren clause.
+ *  MOS-era (2026-10): `# LAB-006 — User/Creator/Competition Dynamics
+ *  (dispatched by the Tech Lead)` → item + title; the lane comes from the
+ *  registry session name (workerA-lab006), not the paren clause. */
 function parseHeader(head: string): { title: string; lane: string } {
+  const mMos = head.match(
+    /^#\s*([A-Z]+-\d{3})\s*[—-]\s*(.+?)\s*(?:\([^)]*\))?\s*$/,
+  );
+  if (mMos) {
+    return { title: `${mMos[1]} — ${mMos[2]}`, lane: "" };
+  }
   const mw = head.match(/^#\s*W\d+\s*[—-]\s*(.+?)\s*\((.+)\)\s*$/);
   if (mw) {
     const laneM = mw[2].match(/(?:^|\s)lane\s+([A-Za-z0-9]+)/i);
@@ -226,6 +235,7 @@ async function listStaged(dispatched: Set<string>): Promise<StagedInfo[]> {
     return [];
   }
   const staged: StagedInfo[] = [];
+  const dispatchedNames = [...dispatched];
   for (const f of files) {
     // normalize to the session-name form: the full lowercased stem (any
     // naming generation), the pre-dash prefix (suffixed era: the part before
@@ -233,6 +243,14 @@ async function listStaged(dispatched: Set<string>): Promise<StagedInfo[]> {
     // (R24-W1.md → r24w1). A packet counts as dispatched when the registry
     // knows ANY of its derivations — a naming generation must never make a
     // dispatch invisible (the staged row would lie "not yet dispatched").
+    //
+    // MOS-era (2026-10) naming: briefs/nudges are <item>-<worker|kind>.md
+    // (studio007-workerC.md, lab006-nudge.md) while registry session names
+    // are <worker>-<item> (workerc-studio007) — none of the old derivations
+    // match, so every already-dispatched MOS packet showed as staged
+    // forever (30+ stale rows). Match by ITEM TOKEN: if any dispatched
+    // session name contains the stem's leading item id, the packet is
+    // dispatched history, not staged work.
     const stem = f.replace(/\.md$/, "");
     const wave = stem.match(/^[rR]\d+-W\d+$/);
     const name = wave
@@ -244,6 +262,10 @@ async function listStaged(dispatched: Set<string>): Promise<StagedInfo[]> {
       dispatched.has(prefix) ||
       dispatched.has(stem.toLowerCase())
     ) {
+      continue;
+    }
+    const itemTok = stem.match(/^[a-z]+\d+/i)?.[0]?.toLowerCase() ?? "";
+    if (itemTok && dispatchedNames.some((d) => d.includes(itemTok))) {
       continue;
     }
     const p = join(PROMPTS, f);
@@ -271,6 +293,14 @@ export async function GET() {
   const latestAny = new Map<string, { rec: Rec; creates: number }>();
   const dispatched = new Set<string>();
   const specName = new Map<string, string>(); // lowercase -> ORIGINAL-case name
+  // latest prompt_file per name — a continuation "send" record carries no
+  // prompt_file, but the worker row's title must survive it (the create
+  // record holds the brief path)
+  const promptFiles = new Map<string, string>();
+  // names whose LATEST registry record is a void — the session was retired
+  // by an explicit operator/TL decision (re-dispatch under a new name); the
+  // old create records must not resurrect it as a live row.
+  const voided = new Set<string>();
   for (const r of recs) {
     const name = (r.name || "").toLowerCase();
     // NO naming-generation allowlist here (the 2026-09-29 forensics: a
@@ -280,12 +310,16 @@ export async function GET() {
     // a naming generation invisible to the strip is a silent-empty bug).
     // The authoritative filters are downstream and project-agnostic: the
     // live strip requires a queue_watch spec file (the supervisor
-    // contract), and the capacity-fight tab requires a FRESH trail. Void
-    // records stay bookkeeping, not dispatches.
+    // contract) or a FRESH lead-watch lane_status file, and the
+    // capacity-fight tab requires a FRESH trail. Void records stay
+    // bookkeeping, not dispatches.
     if (r.action === "void") {
-      // a void is bookkeeping, not a dispatch
+      voided.add(name); // a void is bookkeeping, not a dispatch
       continue;
     }
+    // any later record under the same name (a re-create after a void)
+    // revives the session
+    voided.delete(name);
     if (r.action === "done" || existsSync(join(FLAGS, `${name}_done.json`))) {
       // a done lane is history (the lead watch's completion flag is the
       // authoritative short-circuit) — never a live fight-trail candidate
@@ -293,6 +327,9 @@ export async function GET() {
     }
     dispatched.add(name);
     specName.set(name, r.name || name); // spec files use the ORIGINAL case
+    if (r.prompt_file) {
+      promptFiles.set(name, r.prompt_file);
+    }
     const cur = live.get(name);
     if (r.sent && r.url) {
       live.set(name, { rec: r, dispatches: (cur?.dispatches ?? 0) + 1 });
@@ -312,15 +349,74 @@ export async function GET() {
   // present means a watcher owns the session RIGHT NOW; sessions without a
   // spec (r01/r02/r08 after their merges) are history, covered by Mission
   // Control, not the live strip.
+  //
+  // MOS-era (2026-10) dispatch flow: there IS no per-session queue watcher
+  // — the resident lead-watch daemon (scripts/local/mos_lead_watch.py)
+  // probes every registry lane server-side every 120s and writes
+  // flags/lane_status.<name>.json. A FRESH status file means the lane is
+  // watched live RIGHT NOW — surface it. Stale/absent = retired history.
+  const LANE_STATUS_FRESH_MS = 15 * 60_000;
   const workers: WorkerInfo[] = [];
   for (const [name, { rec, dispatches }] of live) {
+    if (voided.has(name)) continue; // retired by void — never a live row
+    const complete = existsSync(join(FLAGS, `${name}-complete.marker`));
     // spec files use the ORIGINAL-case name (MySession-A2, not the
     // lowercased key) — check both spellings or the lane goes invisible.
     const origName = specName.get(name) || name;
     const specPath = existsSync(join(FLAGS, `queue_watch.spec.${origName}`))
       ? join(FLAGS, `queue_watch.spec.${origName}`)
       : join(FLAGS, `queue_watch.spec.${name}`);
-    if (!existsSync(specPath)) continue; // retired — no live watcher
+    if (!existsSync(specPath)) {
+      // MOS-era lane — the lead-watch daemon is the watcher of record.
+      // The daemon writes ORIGINAL-case status files (lane_status.workerA-…)
+      // while this loop keys lowercased names — check BOTH spellings or the
+      // lane goes invisible (the same class as the spec-file case bug).
+      const stOrig = join(FLAGS, `lane_status.${origName}.json`);
+      const stLower = join(FLAGS, `lane_status.${name}.json`);
+      const stPath = existsSync(stOrig) ? stOrig : stLower;
+      const stMs = mtimeMs(stPath);
+      if (stMs === 0 || Date.now() - stMs > LANE_STATUS_FRESH_MS) {
+        continue; // retired — no live watcher
+      }
+      let st: Record<string, unknown> = {};
+      try {
+        st = JSON.parse(readFileSync(stPath, "utf-8")) as Record<string, unknown>;
+      } catch {
+        /* corrupt — the freshness gate above already filtered it */
+      }
+      const promptFile = rec.prompt_file || promptFiles.get(name) || "";
+      const head = promptFile ? readLines(promptFile)[0] || "" : "";
+      const parsed = parseHeader(head);
+      const workerM = name.match(/worker([a-z])/);
+      const laneFromName = workerM
+        ? `Worker ${workerM[1].toUpperCase()}`
+        : "Worker";
+      const stState = String(st.state || "queued");
+      const state: State =
+        complete || stState === "complete"
+          ? "complete"
+          : stState === "generating"
+            ? "generating"
+            : stState === "queued"
+              ? "queued"
+              : "working";
+      workers.push({
+        name,
+        title: parsed.title || name.toUpperCase(),
+        lane: parsed.lane || laneFromName,
+        state,
+        chars: Number(st.chars ?? 0),
+        chatUrl: String(st.url || "") || rec.url || null,
+        tabId: (rec.tab_id || "").slice(0, 8) || null,
+        dispatches,
+        lastRoundMs: stMs,
+        watcherAlive: true, // the lead-watch daemon heartbeat covers this lane
+        lastStateLine: `lead-watch: asst=${st.n_asst ?? 0} msgs=${st.n ?? 0} gen=${
+          st.generating ? 1 : 0
+        }`,
+      });
+      continue;
+    }
     let tabPrefix = (rec.tab_id || "").slice(0, 8);
     if (existsSync(specPath)) {
       try {
@@ -330,7 +426,7 @@ export async function GET() {
         /* keep registry prefix */
       }
     }
-    const complete = existsSync(join(FLAGS, `${name}-complete.marker`));
+    const completeMarker = existsSync(join(FLAGS, `${name}-complete.marker`));
     const log = parseWatcherLog(name, origName);
     const hbPath = existsSync(join(FLAGS, `queue_watch_heartbeat.${origName}`))
       ? join(FLAGS, `queue_watch_heartbeat.${origName}`)
@@ -343,12 +439,12 @@ export async function GET() {
       name,
       title: title || name.toUpperCase(),
       lane: lane || "Worker",
-      state: complete ? "complete" : log.state,
+      state: completeMarker ? "complete" : log.state,
       chars: log.chars,
       chatUrl: rec.url || null,
       tabId: tabPrefix || null,
       dispatches,
-      lastRoundMs: mtimeMs(live.p),
+      lastRoundMs: log.lastRoundMs,
       watcherAlive,
       lastStateLine: log.lastLine.slice(0, 200),
     });
@@ -369,6 +465,7 @@ export async function GET() {
   const INFLIGHT_FRESH_MS = 15 * 60_000;
   for (const [name, { rec: latest, creates }] of latestAny) {
     if (workers.some((w) => w.name === name)) continue;
+    if (voided.has(name)) continue; // retired by void — never a fight row
     if (existsSync(join(FLAGS, `${name}-complete.marker`))) continue;
     const tsMs = (latest.ts ?? 0) * 1000;
     if (!tsMs || Date.now() - tsMs > FIGHT_FRESH_MS) continue;

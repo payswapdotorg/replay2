@@ -839,8 +839,9 @@ export default function Console() {
               </p>
             )}
             {workers.workers.map((w) => {
-              const fullTab = w.tabId
-                ? tabs.tabs.find((t) => t.id.startsWith(w.tabId))
+              const tabId = w.tabId || "";
+              const fullTab = tabId
+                ? tabs.tabs.find((t) => t.id.startsWith(tabId))
                 : undefined;
               const isMirrored = fullTab ? fullTab.id === tabs.active : false;
               const live =
