@@ -182,6 +182,42 @@ JS_OPEN_MODEL_MENU = r"""(() => {
   return 'ok';
 })()"""
 
+# 2026-10-03 (new-frontend fix, prod-fe-1.1.98): the updated UI's bits-ui
+# handlers ignore synthetic element.click() on the model-selector button
+# (and menu rows) — only TRUSTED CDP input opens/activates them. Position
+# probes return the element center as {x,y} JSON for Input.dispatchMouseEvent.
+JS_MODEL_BTN_POS = r"""(() => {
+  const b = document.querySelector('button.modelSelectorButton');
+  if (!b) return null;
+  const r = b.getBoundingClientRect();
+  if (r.width < 2 || r.height < 2) return null;
+  return JSON.stringify({x: Math.round(r.x + r.width / 2), y: Math.round(r.y + r.height / 2)});
+})()"""
+
+JS_MODEL_MENU_OPEN = r"""(() => {
+  const b = document.querySelector('button.modelSelectorButton');
+  if (!b) return 'no-button';
+  return b.getAttribute('aria-expanded') === 'true' ? 'open' : 'closed';
+})()"""
+
+JS_MODEL_OPTION_POS = r"""(() => {
+  // GLM-5.3 row (exact name, NOT 'GLM-5.3-Flash') in the OPEN menu; center coords.
+  const cands = [];
+  const consider = (e) => {
+    const full = (e.innerText || '').trim();
+    const first = full.split('\n')[0].trim();
+    if (full === 'GLM-5.3' || first === 'GLM-5.3') cands.push(e);
+  };
+  document.querySelectorAll('[role=menuitem], [role=option], [cmdk-item], [class*=popover] *, [class*=menu] *, [class*=item] *').forEach(consider);
+  if (!cands.length) return null;
+  cands.sort((a, z) => (a.compareDocumentPosition(z) & 2) ? -1 : 1);
+  const el = cands[0];
+  const row = el.closest('[role=menuitem],[role=option],button,[cmdk-item],[class*=item]') || el;
+  const r = row.getBoundingClientRect();
+  if (r.width < 2 || r.height < 2) return null;
+  return JSON.stringify({x: Math.round(r.x + r.width / 2), y: Math.round(r.y + r.height / 2)});
+})()"""
+
 JS_CLICK_MODEL = r"""(() => {
   // robust 'GLM-5.3' row click (NOT 'GLM-5.3-Flash').
   // 2026-09-11: site DOM changed — menu items render name+description in one
@@ -639,6 +675,28 @@ def _wait(c, js, want, tries=20, sleep=1.0, desc=""):
     return False, last
 
 
+def _trusted_click(c, pos_js, timeout=15):
+    """2026-10-03 (new-frontend fix, prod-fe-1.1.98): bits-ui controls in
+    the updated UI (model-selector button, menu rows) ignore synthetic
+    element.click() — only TRUSTED input activates them. Evaluate pos_js
+    (must return {x,y} JSON for the target center, or null), then dispatch
+    a real CDP mouse press/release at those coordinates. Returns bool."""
+    try:
+        raw = _eval(c, pos_js, timeout=timeout)
+        if not raw:
+            return False
+        p = json.loads(raw)
+        if not isinstance(p, dict) or "x" not in p or "y" not in p:
+            return False
+        for typ in ("mousePressed", "mouseReleased"):
+            c.call("Input.dispatchMouseEvent", {
+                "type": typ, "x": int(p["x"]), "y": int(p["y"]),
+                "button": "left", "clickCount": 1}, timeout=10)
+        return True
+    except Exception:
+        return False
+
+
 # ----------------------------------------------------------------- create --
 
 CAPACITY_ROUNDS = int(__import__("os").environ.get("DW_ROUNDS", "12"))  # in-process assault rounds; then flag + exit 3 (the
@@ -728,17 +786,42 @@ def _select_insert_send(c, tab, prompt, name, prompt_file):
                     time.sleep(0.5)
                 except Exception:
                     pass
-            res = _eval(c, JS_OPEN_MODEL_MENU)
-            if res != "ok":
-                print(f"      [menu-cycle {menu_cycle}] menu open: {res}")
-                time.sleep(2.0)
-                continue
+            # 2026-10-03 (new-frontend fix): prod-fe-1.1.98 ignores synthetic
+            # .click() on the model-selector button — open with TRUSTED CDP
+            # input first, keep the legacy synthetic call as fallback.
+            opened = _trusted_click(c, JS_MODEL_BTN_POS)
+            if not opened:
+                res = _eval(c, JS_OPEN_MODEL_MENU)
+                if res != "ok":
+                    print(f"      [menu-cycle {menu_cycle}] menu open: {res}")
+                    time.sleep(2.0)
+                    continue
             time.sleep(1.5)
-            # 2026-09-20 fix (lead): cold fresh tabs need the SPA to hydrate +
-            # the model list to fetch before the menu renders; 15x2s=30s per
-            # cycle. Never settle for Flash.
-            ok, _ = _wait(c, JS_CLICK_MODEL, "ok", tries=15, sleep=2.0,
-                          desc=f"model-option(c{menu_cycle})")
+            # 2026-10-03 (new-frontend fix): the menu OPTION row also needs
+            # trusted input. Retry: trusted option click first, legacy
+            # synthetic JS_CLICK_MODEL fallback (old frontends), re-opening
+            # the menu when it closed; 15x~2s for SPA hydration + the
+            # model-list fetch. Never settle for Flash.
+            ok = False
+            for _opt_try in range(15):
+                if _trusted_click(c, JS_MODEL_OPTION_POS):
+                    ok = True
+                    break
+                try:
+                    if _eval(c, JS_CLICK_MODEL, timeout=15) == "ok":
+                        ok = True
+                        break
+                except Exception:
+                    pass
+                try:
+                    if _eval(c, JS_MODEL_MENU_OPEN, timeout=10) != "open":
+                        if not _trusted_click(c, JS_MODEL_BTN_POS):
+                            _eval(c, JS_OPEN_MODEL_MENU, timeout=10)
+                        time.sleep(1.2)
+                        continue
+                except Exception:
+                    pass
+                time.sleep(2.0)
             if ok:
                 break
         if not ok:

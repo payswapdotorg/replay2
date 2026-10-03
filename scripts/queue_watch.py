@@ -28,6 +28,34 @@ FLAGS = os.path.join(BASE, "flags")
 SPEC_PATH = os.path.join(FLAGS, "queue_watch.spec.{name}")
 HB_PATH = os.path.join(FLAGS, "queue_watch_heartbeat.{name}")
 
+
+# D-035 (2026-10-03): env self-load at import — a watcher launched from a
+# PAT-less shell (Lead manual launch, supervisor resurrect after reset) must
+# still dispatch with live credentials; without this, an env lacking
+# GITHUB_OPERATOR_PAT sends the literal [REDACTED:github_token] placeholder
+# (the T041 401-at-push incident pattern). Existing env entries WIN — never
+# override the parent environment.
+def load_env():
+    _p = os.path.join(BASE, "env.sh")
+    try:
+        with open(_p, encoding="utf-8") as f:
+            for _line in f:
+                _line = _line.strip()
+                if _line.startswith("export "):
+                    _line = _line[7:]
+                if not _line or _line.startswith("#") or "=" not in _line:
+                    continue
+                _k, _, _v = _line.partition("=")
+                _k = _k.strip()
+                _v = _v.strip().strip('"').strip("'")
+                if _k and _k not in os.environ:
+                    os.environ[_k] = _v
+    except OSError:
+        pass
+
+
+load_env()
+
 # OPERATOR DIRECTIVES (2026-09-12, binding — supersede the waiting doctrine):
 # - 'rate limit' / 'usage exceeds' / 'try again 1 hour later' / 'peak hours'
 #   notifications DO NOT APPLY. NEVER wait them out; retry and retry.
@@ -576,7 +604,24 @@ def main():
                             pass
                         return 0
                     if alive:
-                        _zv = _zombie_verdict(name, bchars, False, stamp, st)
+                        # 2026-10-03 (reset-4 doctrine fix): msgs<=1 means the
+                        # turn NEVER opened — the lane is QUEUED (prompt
+                        # server-side, no assistant record). The w13 zombie law
+                        # (turn OPENED then froze mid-stream) requires msgs>=2;
+                        # treating queued as zombie fired stop_continue into
+                        # drought-held lanes (the cure path is NOT outage-hold
+                        # gated). Under the admission drought queued-alive is
+                        # the EXPECTED state: wait unconditionally — the
+                        # drought sentinel owns void+re-dispatch on break.
+                        _zv = None
+                        if msgs <= 1:
+                            print(f"[{name}] {stamp} tab {st} but SERVER-SIDE ALIVE "
+                                  f"({note}, msgs={msgs}, bchars={bchars}) — QUEUED (turn "
+                                  f"never opened; drought admission pending) — WAITING "
+                                  f"(no zombie clock; sentinel owns recovery)", flush=True)
+                            _skip_assault = True
+                        else:
+                            _zv = _zombie_verdict(name, bchars, False, stamp, st)
                         if _zv == "wait":
                             z = _zombie_track.get(name) or {}
                             _zage = int(time.time() - z.get("since", time.time()))
