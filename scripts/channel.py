@@ -139,7 +139,20 @@ class CDP:
         self.ws.send(json.dumps({"id": self._id, "method": method, "params": params or {}}))
         while True:
             raw = self.ws.recv()
-            d = json.loads(raw)
+            # dead-socket guard (2026-10-03 replay-freeze postmortem): a
+            # wedged CDP socket surfaces as an EMPTY or non-JSON frame.
+            # Feeding that to json.loads masked the truth as JSONDecodeError
+            # while the caller kept using the corpse. Raise the closed-
+            # socket signal instead so every consumer (replayd conn drop,
+            # send_text, watchers, guards) drops and re-establishes.
+            if not raw:
+                raise websocket.WebSocketConnectionClosedException(
+                    "cdp socket closed (empty recv)")
+            try:
+                d = json.loads(raw)
+            except ValueError:
+                raise websocket.WebSocketConnectionClosedException(
+                    f"cdp socket closed (non-JSON frame: {raw[:60]!r})")
             if "method" in d and not d.get("id"):
                 self.events.append(d)
                 if len(self.events) > self.MAX_EVENTS:
