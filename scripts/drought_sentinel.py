@@ -237,6 +237,31 @@ def launch_canary(n):
     return None
 
 
+def _close_tabs_for_cid(cid):
+    """2026-10-03 (tab-hygiene fix): a retired/dead canary's parked /c/ tab
+    must not linger — 15+ orphan chat tabs accumulated over a day of rolling
+    probes (the supervisor's tab GC never closes /c/ tabs by design, for
+    lane sessions). Canary chats are disposable: close every tab whose URL
+    carries this chat id. Never raises."""
+    if not cid or len(cid) < 8:
+        return
+    try:
+        import urllib.request
+        tabs = json.load(urllib.request.urlopen(
+            "http://127.0.0.1:9222/json", timeout=8))
+        for t in tabs:
+            u = t.get("url") or ""
+            if u.startswith("https://chat.z.ai/c/") and cid[:13] in u:
+                try:
+                    urllib.request.urlopen(
+                        "http://127.0.0.1:9222/json/close/" + t["id"],
+                        timeout=5).read()
+                except Exception:
+                    pass
+    except Exception:
+        pass
+
+
 def recover(trigger, lanes, lane_now, probes_now):
     """D-028 auto-recovery. Lift hold -> 90s grace -> re-probe -> void +
     re-dispatch stale lanes from packets -> re-arm watchers -> retire
@@ -405,7 +430,9 @@ def main():
             for pname in list(st.get("probes", {})):
                 if now - st["probes"][pname].get("ts", 0) > CANARY_TTL:
                     log(f"{pname} retired (TTL {CANARY_TTL}s unadmitted)")
+                    _cid = st["probes"][pname].get("cid", "")
                     del st["probes"][pname]
+                    _close_tabs_for_cid(_cid)
             # rolling launches
             if (now - st.get("last_launch", 0) >= CANARY_EVERY
                     and len(st.get("probes", {})) < MAX_LIVE_PROBES):
