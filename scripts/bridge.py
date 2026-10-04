@@ -380,6 +380,26 @@ def _login_state(tab, connect_timeout=10, eval_timeout=8):
         cdp.close()
 
 
+def _branch_card(repo, pat, brs):
+    """Build the console's branch card + main_sha from a /branches page-1
+    fetch. 2026-10-04 (R4): the repo crossed 130 branches and 'main' fell
+    off page 1 (per_page=50) — cmd_status showed main_sha "?" while the card
+    otherwise worked. When page 1 lacks 'main' (and actually HAS branches),
+    fetch /branches/main directly and prepend it to the card. Empty/non-list
+    page 1 (API failure or empty repo) -> "?" without the extra call."""
+    blist = [{"name": b.get("name"), "sha": (b.get("commit", {}) or {}).get("sha", "")[:10]}
+             for b in (brs if isinstance(brs, list) else [])]
+    main = next((b["sha"] for b in blist if b["name"] == "main"), "")
+    if not main and blist:
+        br = gh(repo, "/branches/main", pat)
+        if isinstance(br, dict) and br.get("name") == "main":
+            sha = ((br.get("commit") or {}).get("sha") or "")[:10]
+            if sha:
+                blist = [{"name": "main", "sha": sha}] + [b for b in blist if b["name"] != "main"]
+                main = sha
+    return blist, (main or "?")
+
+
 def cmd_status():
     conf = _env_conf()
     out = {
@@ -431,13 +451,12 @@ def cmd_status():
     if conf["repo"]:
         try:
             brs = gh(conf["repo"], "/branches?per_page=50", conf["pat"])
-            blist = [{"name": b.get("name"), "sha": b.get("commit", {}).get("sha", "")[:10]}
-                     for b in (brs if isinstance(brs, list) else [])]
+            blist, main_sha = _branch_card(conf["repo"], conf["pat"], brs)
             pulls = gh(conf["repo"], "/pulls?state=all&per_page=20", conf["pat"])
             prs = [{"n": p.get("number"), "state": p.get("state"),
                     "title": (p.get("title") or "")[:60]}
                    for p in (pulls if isinstance(pulls, list) else [])]
-            out["main_sha"] = next((b["sha"] for b in blist if b["name"] == "main"), "?")
+            out["main_sha"] = main_sha
             out["branches"] = blist
             out["pulls"] = prs
         except Exception:
