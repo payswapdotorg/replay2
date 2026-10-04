@@ -31,6 +31,12 @@ target; a dead pointer is switched to a healthy tab immediately (home tab
 preferred — no /c/ path), before the BAD ladder runs. Also: the guard was
 found DEAD itself (empty pidfile, no process, silent since Sep 25) — the
 supervisor does not reliably ensure it; relaunch is manual/launch_detached.
+
+v5 (2026-10-04): MEM-FLOOR GUARD. Every ladder action spawns work (replayd
+restart / reload / switch subprocesses) exactly when the kernel is already
+OOM-reaping renderers — below 400MB MemAvailable the dead-pointer switch
+AND the whole BAD ladder defer, re-arming (bad = TRIGGER-1) the moment
+memory recovers. /proc/meminfo unreadable -> proceed (fail-open).
 """
 import json
 import os
@@ -77,6 +83,35 @@ def frame_ok():
         return head[:3] == b"\xff\xd8\xff"
     except Exception:
         return False
+
+
+# ---- mem-floor guard (2026-10-04 OOM postmortem, R3 class): every BAD-ladder
+#      action SPAWNS work (replayd restart, reload subprocess, switch
+#      subprocess) exactly when the kernel is already reaping renderers —
+#      below the floor the whole ladder defers and re-arms automatically
+#      once memory recovers. Fails OPEN on an unreadable /proc/meminfo.
+MEM_FLOOR_MB = 400
+_mem_warn_ts = 0.0
+
+
+def mem_floor_ok():
+    """True when MemAvailable is above the floor (fail-open on read error)."""
+    global _mem_warn_ts
+    try:
+        with open("/proc/meminfo") as f:
+            for line in f:
+                if line.startswith("MemAvailable:"):
+                    mb = float(line.split()[1]) / 1024.0
+                    if mb >= MEM_FLOOR_MB:
+                        return True
+                    if time.time() - _mem_warn_ts > 60:
+                        _mem_warn_ts = time.time()
+                        log(f"[mem_guard] low memory (<{MEM_FLOOR_MB}MB, "
+                            f"{int(mb)}MB available) — deferring action")
+                    return False
+    except Exception:
+        pass   # unreadable /proc/meminfo — proceed
+    return True
 
 
 def active_tab_alive():
@@ -209,24 +244,29 @@ def switch_healthy_tab():
 
 
 def main():
-    log(f"frame_guard v4 online — {INTERVAL}s cycle, trigger at {BAD_STREAK_TRIGGER} bad check(s), dead-pointer detection active")
+    log(f"frame_guard v5 online — {INTERVAL}s cycle, trigger at {BAD_STREAK_TRIGGER} bad check(s), dead-pointer detection + mem-floor guard active")
     bad = 0
     alerted = False
     while True:
         ok = frame_ok()
         if not active_tab_alive():
-            log("active-tab pointer DEAD (lesson-178 class; stale cache masks it) — switching")
-            if switch_healthy_tab():
-                time.sleep(10)
-                if frame_ok() and active_tab_alive():
-                    log("healthy-tab switch fixed the dead-pointer freeze")
-                    if alerted:
-                        outbox("[lead] Console mirror re-pointed to a live tab automatically (v4 guard).")
-                        alerted = False
-                    bad = 0
-                    time.sleep(INTERVAL)
-                    continue
-            log("dead-pointer switch did not fully recover — escalating to BAD ladder")
+            if mem_floor_ok():
+                log("active-tab pointer DEAD (lesson-178 class; stale cache masks it) — switching")
+                if switch_healthy_tab():
+                    time.sleep(10)
+                    if frame_ok() and active_tab_alive():
+                        log("healthy-tab switch fixed the dead-pointer freeze")
+                        if alerted:
+                            outbox("[lead] Console mirror re-pointed to a live tab automatically (v4 guard).")
+                            alerted = False
+                        bad = 0
+                        time.sleep(INTERVAL)
+                        continue
+                log("dead-pointer switch did not fully recover — escalating to BAD ladder")
+            else:
+                # mem floor tripped: the switch spawns a probe subprocess into
+                # the exact pressure we must not feed — defer, re-arm on recovery
+                log("[mem_guard] dead-pointer switch deferred (low memory) — re-arms on recovery")
             ok = False
         if ok:
             if bad:
@@ -239,29 +279,36 @@ def main():
             bad += 1
             log(f"frame check BAD ({bad}/{BAD_STREAK_TRIGGER})")
             if bad == BAD_STREAK_TRIGGER:
-                restart_replayd()
-                time.sleep(20)
-                if frame_ok():
-                    log("replayd restart fixed the frame stream")
-                    bad = 0
-                    continue
-                reload_active_tab()
-                time.sleep(15)
-                if frame_ok():
-                    log("active-tab reload fixed the frame stream")
-                    bad = 0
-                    continue
-                if switch_healthy_tab():
-                    time.sleep(10)
+                if not mem_floor_ok():
+                    # mem floor tripped: restart/reload/switch all spawn work
+                    # while the kernel is already reaping renderers — defer the
+                    # whole ladder; re-arm at TRIGGER-1 so it fires on the
+                    # FIRST bad check after memory recovers.
+                    bad = BAD_STREAK_TRIGGER - 1
+                else:
+                    restart_replayd()
+                    time.sleep(20)
                     if frame_ok():
-                        log("healthy-tab switch fixed the frame stream")
+                        log("replayd restart fixed the frame stream")
                         bad = 0
                         continue
-                if not alerted:
-                    outbox("[lead] Console frame stream is STUCK (replayd restart + tab reload did not "
-                           "fix it) — the operator's preview image is frozen. Needs Lead tab-swap/"
-                           "registry surgery. Watches and probes are unaffected.")
-                    alerted = True
+                    reload_active_tab()
+                    time.sleep(15)
+                    if frame_ok():
+                        log("active-tab reload fixed the frame stream")
+                        bad = 0
+                        continue
+                    if switch_healthy_tab():
+                        time.sleep(10)
+                        if frame_ok():
+                            log("healthy-tab switch fixed the frame stream")
+                            bad = 0
+                            continue
+                    if not alerted:
+                        outbox("[lead] Console frame stream is STUCK (replayd restart + tab reload did not "
+                               "fix it) — the operator's preview image is frozen. Needs Lead tab-swap/"
+                               "registry surgery. Watches and probes are unaffected.")
+                        alerted = True
         time.sleep(INTERVAL)
 
 

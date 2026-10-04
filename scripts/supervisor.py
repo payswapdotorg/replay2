@@ -182,6 +182,38 @@ def proc_start_epoch(pid):
         return 0
 
 
+# ---- mem-floor guard (2026-10-04 OOM-cascade postmortem: the kernel reaped
+#      22 Chrome renderers in two waves on a 4GB/no-swap box while the ring
+#      kept SPAWNING fresh Chrome/dev/renderers into the pressure — the
+#      rescuers were feeding the killer). Below the floor every ensure_*
+#      spawn defers for the cycle; tab-GC stays armed (it only CLOSES tabs —
+#      closing tabs FREES memory, the cure not the disease) and heartbeats
+#      keep flowing so the custodian never misjudges the ring as dead.
+MEM_FLOOR_MB = 400      # MemAvailable floor
+_mem_warn_ts = 0.0      # rate-limit the WARN to 1/60s
+
+
+def mem_floor_ok():
+    """True when MemAvailable is above the floor. Fails OPEN: an unreadable
+    /proc/meminfo must never wedge the resurrection ring."""
+    global _mem_warn_ts
+    try:
+        with open("/proc/meminfo") as f:
+            for line in f:
+                if line.startswith("MemAvailable:"):
+                    mb = float(line.split()[1]) / 1024.0
+                    if mb >= MEM_FLOOR_MB:
+                        return True
+                    if time.time() - _mem_warn_ts > 60:
+                        _mem_warn_ts = time.time()
+                        log(f"[mem_guard] low memory (<{MEM_FLOOR_MB}MB, "
+                            f"{int(mb)}MB available) — deferring action")
+                    return False
+    except Exception:
+        pass   # unreadable /proc/meminfo — proceed
+    return True
+
+
 def rotate_logs():
     for name in ("watcher.log", "channel.log"):
         p = os.path.join(BASE, name)
@@ -763,20 +795,29 @@ def main():
     cycle = 0
     while True:
         try:
-            ensure_watcher()
-            ensure_replayd()
-            ensure_capacity_recovery()
-            ensure_tab_gc()
-            ensure_queue_watch()
-            ensure_parked_watch()
-            ensure_local_services()
-            ensure_stall_recovery()
-            ensure_frame_guard()
-            if cycle % 3 == 0:          # browser check every ~30s
-                ensure_browser()
-                ensure_dev()
-                rotate_logs()
-            heartbeat()
+            if mem_floor_ok():
+                ensure_watcher()
+                ensure_replayd()
+                ensure_capacity_recovery()
+                ensure_tab_gc()
+                ensure_queue_watch()
+                ensure_parked_watch()
+                ensure_local_services()
+                ensure_stall_recovery()
+                ensure_frame_guard()
+                if cycle % 3 == 0:          # browser check every ~30s
+                    ensure_browser()
+                    ensure_dev()
+                    rotate_logs()
+            else:
+                # mem floor tripped: defer every ensure_* spawn this cycle.
+                # Tab-GC stays ARMED (it only CLOSES tabs — under memory
+                # pressure that is the cure, not new load), and the
+                # heartbeat below still flows so the custodian ring never
+                # misjudges a deferred supervisor as a dead one. The ladder
+                # re-arms by itself the moment memory recovers.
+                ensure_tab_gc()
+            heartbeat()                    # ALWAYS — deferral is not death
         except Exception as e:
             log(f"cycle error {e!r} — continuing")
         cycle += 1
