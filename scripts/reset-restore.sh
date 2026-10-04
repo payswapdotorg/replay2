@@ -60,6 +60,17 @@ for r in frame tabs mission inbox status workers event; do
   mkdir -p "$MY/src/app/api/$r"
   cp "$ROOT/src/app/api/$r/route.ts" "$MY/src/app/api/$r/route.ts"
 done
+# 2026-10-04: the Engineering-Lab console evolution (B1/B2/B3 waves, Tasks
+# 25-28) — page.tsx is a 3-view switcher (replay/mission/lab) importing the
+# lab tree; a copy list without it 500s the dev server on a fresh
+# my-project. Synced from the surviving my-project at the Phase C opening.
+if [ -d "$ROOT/src/lib/lab" ]; then
+  mkdir -p "$MY/src/lib/lab" "$MY/src/components/lab" "$MY/src/app/api/lab"
+  cp -r "$ROOT/src/lib/lab/." "$MY/src/lib/lab/"
+  cp -r "$ROOT/src/components/lab/." "$MY/src/components/lab/"
+  cp -r "$ROOT/src/app/api/lab/." "$MY/src/app/api/lab/"
+  say "lab console tree ported ($(find "$MY/src/lib/lab" "$MY/src/components/lab" -type f | wc -l) files)"
+fi
 mkdir -p "$MY/data"
 say "console files ported (mission state: $([ -f "$MY/data/mission-state.json" ] && echo kept || echo 'not present — neutral No-mission state') )"
 

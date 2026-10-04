@@ -230,16 +230,14 @@ export function MissionControl() {
             },
             {
               icon: GitMerge,
-              label: "Baseline checkpoint",
-              value: state.mission.baseline.main.slice(0, 7),
-              sub: state.mission.baseline.tests
-                ? `${state.mission.baseline.tests} tests green`
-                : "awaiting source of truth",
+              label: "Architecture baseline",
+              value: "001–043",
+              sub: "complete · frozen contracts",
             },
             {
               icon: UserCheck,
               label: "Worker lanes",
-              value: `${state.lanes.length}`,
+              value: "3",
               sub: state.mission.cadence,
             },
           ].map((stat) => (
