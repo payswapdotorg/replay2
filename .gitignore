@@ -75,3 +75,6 @@ src/app/api/harvest/
 
 # agent runtime state (sandboxes, sessions) — never commit
 .data/
+
+# local env (lab db path etc.)
+.env
