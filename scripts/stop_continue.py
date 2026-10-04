@@ -47,27 +47,49 @@ DIRECTIVE = (
 )
 
 
+_PREF = {"tab_id": ""}   # session's OWN chat tab (set by main from the registry)
+
+
 def _api_eval(js, timeout=45):
-    """Run a fetch-based API call from any chat.z.ai tab; returns parsed JSON.
+    """Run a fetch-based API call from a chat.z.ai tab; returns parsed JSON.
 
     2026-10-01 fix (re-land of the YOU-5f local fix, lost to a sandbox reset
     because it was never committed): channel.CDP.eval runs with
     returnByValue=True, so object-typed JS results arrive as ALREADY-PARSED
     dicts — json.loads on them raises TypeError and killed the cure mid-run.
-    Accept both shapes (dict/list pass through; JSON strings still parse)."""
-    tab = channel.find_tab("chat.z.ai")
-    if tab is None:
-        raise RuntimeError("no chat.z.ai tab for API eval")
-    ws = channel.CDP(tab["webSocketDebuggerUrl"])
-    try:
-        v = ws.eval(js, await_promise=True, timeout=timeout)
-        if isinstance(v, (dict, list)):
+    Accept both shapes (dict/list pass through; JSON strings still parse).
+
+    2026-10-04 hardening (round 2): find_tab's first pick can be a fresh
+    assault chat mid-load or a wedged renderer — the eval then died on ONE
+    bad tab and took the whole cure down with it. Now: prefer the session's
+    OWN chat tab (_PREF), liveness-ping each candidate (6s — a wedged tab
+    fails HERE, not inside the heavy eval), and WALK candidates instead of
+    dying on the first."""
+    tabs = [t for t in channel.list_tabs()
+            if "chat.z.ai" in (t.get("url") or "")]
+    pref = _PREF.get("tab_id") or ""
+    if pref:
+        tabs.sort(key=lambda t: 0 if t.get("id") == pref else 1)
+    last = "no chat.z.ai tab"
+    for tab in tabs:
+        try:
+            ws = channel.CDP(tab["webSocketDebuggerUrl"], timeout=10)
+        except Exception as e:
+            last = f"connect {tab.get('id', '')[:8]}: {e!r}"
+            continue
+        try:
+            ws.eval("1", timeout=6)   # liveness ping before the heavy eval
+            v = ws.eval(js, await_promise=True, timeout=timeout)
+            if isinstance(v, (dict, list)):
+                return v
+            if isinstance(v, str) and v[:1] in ("{", "["):
+                return json.loads(v)
             return v
-        if isinstance(v, str) and v[:1] in ("{", "["):
-            return json.loads(v)
-        return v
-    finally:
-        ws.close()
+        except Exception as e:
+            last = f"eval {tab.get('id', '')[:8]}: {e!r}"
+        finally:
+            ws.close()
+    raise RuntimeError(f"no live chat.z.ai tab for API eval ({last})")
 
 
 def _stop_turn(cid, reason):
@@ -180,6 +202,7 @@ def main():
         print(f"registry record for {name} has no /c/ chat id: {rec.get('url')}")
         return 2
     print(f"s8 cure for {name}: chat /c/{cid[:8]} (tab { (rec.get('tab_id') or '')[:8] })")
+    _PREF["tab_id"] = rec.get("tab_id") or ""   # _api_eval prefers the session's OWN tab
 
     before = _turn_count(cid)
     print(f"  [probe] before: {json.dumps(before)}")
@@ -196,6 +219,7 @@ def main():
     dw._save({"action": "tab-reopen", "name": name, "tab_id": tab["id"],
               "url": f"https://chat.z.ai/c/{cid}", "ts": int(time.time()),
               "note": "s8 stop/continue cure: fresh tab after turn closure"})
+    _PREF["tab_id"] = tab["id"]   # the fresh tab is the session's own tab now
 
     print("  [send] continuation directive via dispatch_worker.send ...")
     rc = dw.send(name, DIRECTIVE)
