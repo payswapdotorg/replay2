@@ -130,7 +130,7 @@ export function MissionControl() {
 
   if (!state) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-neutral-950 text-zinc-200">
+      <div className="flex flex-1 items-center justify-center bg-neutral-950 text-zinc-200">
         <div className="flex flex-col items-center gap-3">
           <Radar className="h-8 w-8 text-rose-500 animate-spin" aria-hidden />
           <p className="text-sm text-zinc-400">
@@ -150,7 +150,7 @@ export function MissionControl() {
   const lanesById = new Map(state.lanes.map((l) => [l.id, l]));
 
   return (
-    <div className="min-h-screen flex flex-col bg-neutral-950 text-zinc-100" data-tick={tick}>
+    <div className="flex flex-1 flex-col bg-neutral-950 text-zinc-100" data-tick={tick}>
       {/* Header */}
       <header className="border-b border-zinc-800/80 bg-neutral-950/95 backdrop-blur supports-[backdrop-filter]:bg-neutral-950/75">
         <div className="mx-auto max-w-7xl px-4 sm:px-6 py-4">

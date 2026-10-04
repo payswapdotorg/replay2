@@ -12,7 +12,7 @@ export default function Home() {
   const [view, setView] = useState<View>("replay");
 
   return (
-    <div className="min-h-screen bg-neutral-950 text-neutral-100">
+    <div className="min-h-screen flex flex-col bg-neutral-950 text-neutral-100">
       {/* View switcher — Replay Console is the live window into the sandbox
           browser (worker dispatch happens there); Mission Control is the
           roadmap / delivery dashboard. */}

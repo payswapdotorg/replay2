@@ -476,7 +476,7 @@ export default function Console() {
   const lastAgent = inbox.thread.filter((m) => m.from === "agent").slice(-1)[0];
 
   return (
-    <main className="min-h-screen flex flex-col bg-neutral-50 text-neutral-900">
+    <main className="flex flex-1 flex-col bg-neutral-50 text-neutral-900">
       <header className="border-b border-neutral-200 bg-white px-4 py-3">
         <div className="max-w-7xl mx-auto flex flex-wrap items-center gap-3">
           <h1 className="text-lg font-semibold tracking-tight">Replay Console</h1>
