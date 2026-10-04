@@ -495,31 +495,163 @@ def handle_event(payload):
 
 # ------------------------------------------------------------------- frames
 
+# ---- escalating frame-capture recovery ladder (2026-10-03/04 freeze
+#      postmortems). A wedged renderer fails every fresh conn identically
+#      (cdp -32603), so "drop conn + retry next request" alone never
+#      recovers — the freeze sat for 7 minutes before the ladder existed:
+#        streak 1  -> fresh conn + bringToFront + immediate retry
+#                     (most failures are a dropped socket on a LIVE page)
+#        streak 2+ -> Page.reload under a RELOAD BUDGET (max 2/episode,
+#                     >=15s apart; budget resets on success — the
+#                     reload-storm bug: uncapped streak-2 reloads re-fired
+#                     every 5s, pages never settled, streak wedge 15-22)
+#        streak >=4 -> _switch_active_healthy(): re-point active_tab.txt at
+#                     the first chat tab that captures cleanly (pick_tab
+#                     only self-heals when an id VANISHES from /json/list;
+#                     dead DevTools targets stay "listed")
+#      On every failure the stale-serving cache (lesson 102) keeps the
+#      operator's picture alive (bounded 30s) so the console overlay's age
+#      readout tells the truth instead of an error gap.
+_fail_streak = 0
+_fail_lock = threading.Lock()
+_reload_budget = {"used": 0, "last": 0.0}
+_switch_last = 0.0
+_switch_lock = threading.Lock()
+RELOAD_MAX = 2          # reloads per failure episode
+RELOAD_MIN_GAP = 15.0   # s between reloads (a reload needs time to settle)
+SWITCH_COOLDOWN = 30.0  # s between healthy-tab walks
+
+
+def _capture_jpeg(c):
+    r = c.capture("Page.captureScreenshot", {"format": "jpeg", "quality": 72}, timeout=20)
+    return base64.b64decode(r.get("data", "")) or None
+
+
+def _serve_good(data):
+    """Store the last-good frame and end the failure episode (streak AND
+    reload budget reset on success — the anti-reload-storm law)."""
+    global _last_good_frame, _last_good_ts, _fail_streak
+    with _last_good_lock:
+        _last_good_frame = data
+        _last_good_ts = time.time()
+    with _fail_lock:
+        if _fail_streak:
+            log(f"frame stream RECOVERED (streak {_fail_streak} ended)")  # snapshot under lock
+            _fail_streak = 0
+        _reload_budget["used"] = 0
+    return data
+
+
+def _reload_ok():
+    """True iff a Page.reload may fire now: < RELOAD_MAX this episode and
+    >= RELOAD_MIN_GAP since the last one. The budget is what turns the
+    reload rung from a storm into a scalpel."""
+    now = time.time()
+    with _fail_lock:
+        if _reload_budget["used"] >= RELOAD_MAX or now - _reload_budget["last"] < RELOAD_MIN_GAP:
+            return False
+        _reload_budget["used"] += 1
+        _reload_budget["last"] = now
+        return True
+
+
+def _switch_active_healthy():
+    """streak>=4 escalation: probe every chat tab with a REAL capture and
+    re-point active_tab.txt (full id) at the first that returns image data.
+    30s cooldown + non-blocking lock so concurrent /frame polls can never
+    stampede the walk."""
+    global _switch_last
+    if not _switch_lock.acquire(blocking=False):
+        return False   # another poller is already walking the tabs
+    try:
+        if time.time() - _switch_last < SWITCH_COOLDOWN:
+            return False
+        _switch_last = time.time()
+        for t in channel.list_tabs():
+            if "chat.z.ai" not in (t.get("url") or ""):
+                continue
+            c = None
+            try:
+                c = channel.CDP(t["webSocketDebuggerUrl"], timeout=6)
+                r = c.call("Page.captureScreenshot",
+                           {"format": "jpeg", "quality": 40}, timeout=6)
+                if base64.b64decode(r.get("data", "")):
+                    drop_conn(t["id"])   # never inherit a wedged conn entry
+                    open(os.path.join(FLAGS, "active_tab.txt"), "w").write(t["id"])
+                    log(f"ladder: active tab re-pointed to healthy {t['id'][:12]}…")
+                    return True
+            except Exception:
+                continue
+            finally:
+                if c is not None:
+                    c.close()
+        log("ladder: no chat tab captures cleanly (all wedged?)")
+        return False
+    finally:
+        _switch_lock.release()
+
+
+def _recover_capture(tab, err):
+    """Run the escalating ladder after a capture failure; returns a fresh
+    frame if any rung recovered it (else None -> caller serves stale)."""
+    with _fail_lock:
+        _fail_streak += 1
+        streak = _fail_streak           # race-free snapshot for the log line
+    log(f"frame capture failed (streak {streak}: {err!r}) — ladder engaged")
+    # rung 1: fresh conn + front + immediate retry (cheap, harmless at any
+    # streak — the conn was just dropped, so this is a genuinely new socket)
+    try:
+        c = conn_for(tab)
+        ensure_front(tab["id"], c, force=True)
+        data = _capture_jpeg(c)
+        if data:
+            return _serve_good(data)
+    except Exception as e:
+        log(f"ladder rung 1 (fresh conn + front) failed: {e!r}")
+    # rung 2: capped Page.reload, then retry on the settling page
+    if streak >= 2 and _reload_ok():
+        try:
+            c = conn_for(tab)
+            c.capture("Page.reload", {"ignoreCache": True}, timeout=15)
+            time.sleep(1.0)              # let the reload commit before capture
+            data = _capture_jpeg(c)
+            if data:
+                return _serve_good(data)
+        except Exception as e:
+            log(f"ladder rung 2 (capped reload) failed: {e!r}")
+    # rung 3: healthy-tab re-point, then retry THERE
+    if streak >= 4 and _switch_active_healthy():
+        try:
+            tab2 = pick_tab()
+            if tab2 is not None and tab2.get("id") != tab.get("id"):
+                data = _capture_jpeg(conn_for(tab2))
+                if data:
+                    return _serve_good(data)
+        except Exception as e:
+            log(f"ladder rung 3 (healthy-tab re-point) failed: {e!r}")
+    return None
+
+
 def handle_frame():
-    global _last_good_frame, _last_good_ts
     tab = pick_tab()
     if not tab:
         return _stale_frame()
-    c = conn_for(tab)
+    err = None
+    data = None
     try:
-        r = c.capture("Page.captureScreenshot", {"format": "jpeg", "quality": 72}, timeout=20)
-        data = base64.b64decode(r.get("data", ""))
-        if data:
-            with _last_good_lock:
-                _last_good_frame = data
-                _last_good_ts = time.time()
-            return data
-        return None
+        data = _capture_jpeg(conn_for(tab))
+        if not data:
+            err = RuntimeError("capture returned no image data")
     except Exception as e:
-        drop_conn(tab["id"])
-        # transient capture failure (tab mid-navigation during dispatch
-        # churn): serve the LAST GOOD frame, bounded to 30s staleness, so
-        # the operator's replay keeps a live view instead of an error gap.
-        # Beyond 30s stale (real outage) we return None -> 500 -> the
-        # console's fast-retry loop takes over honestly.
-        _stats["errors"] += 1
-        log(f"frame capture failed ({e!r}) — serving stale")
-        return _stale_frame()
+        err = e
+    if err is None:
+        return _serve_good(data)
+    drop_conn(tab["id"])
+    _stats["errors"] += 1
+    data = _recover_capture(tab, err)
+    if data:
+        return data
+    return _stale_frame()
 
 
 def _stale_frame():
