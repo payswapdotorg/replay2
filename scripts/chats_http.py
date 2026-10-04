@@ -24,6 +24,14 @@ FLAGS = os.path.join(os.path.dirname(os.path.abspath(__file__)), "flags")
 TOKEN_CACHE = os.path.join(FLAGS, "chat_token")
 BASE = "https://chat.z.ai"
 
+# Chrome-UA WAF cure (2026-10-03): the chat.z.ai WAF 500s API calls that
+# arrive with urllib's default "Python-urllib/3.x" User-Agent. Every HTTP
+# call to the site must carry a DESKTOP Chrome UA — this is the exact UA of
+# the running Chrome 153 (read from http://127.0.0.1:9222/json/version);
+# keep it in sync when the browser version moves.
+CHROME_UA = ("Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 "
+             "(KHTML, like Gecko) Chrome/153.0.0.0 Safari/537.36")
+
 
 def get_token() -> str:
     if os.path.isfile(TOKEN_CACHE):
@@ -55,7 +63,8 @@ def api(path: str) -> dict:
     req = urllib.request.Request(
         BASE + path,
         headers={"Authorization": f"Bearer {tok.strip('"')}",
-                 "Accept": "application/json"},
+                 "Accept": "application/json",
+                 "User-Agent": CHROME_UA},
     )
     with urllib.request.urlopen(req, timeout=20) as r:
         return json.loads(r.read().decode())
