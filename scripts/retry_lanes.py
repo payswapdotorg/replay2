@@ -30,7 +30,7 @@ LANES = ["unicom-w1-003", "unicom-w3-003"]
 REGISTRY = os.path.join(HERE, "flags", "session_registry.jsonl")
 LOG = os.path.join(HERE, "logs", "retry_lanes.log")
 ROUND_S = 240
-CREATE_TIMEOUT = 300
+CREATE_TIMEOUT = 700
 MAX_ROUNDS = 30
 
 
@@ -57,11 +57,17 @@ def _records():
 
 
 def newest_sent_url(name):
+    """(url, sent_ts) of the newest sent record NOT killed by a later void.
+    A void record clears the chain — the old c4bfc194 lesson: a page-live
+    but turn-dead chat must never count as a landing."""
     url = None
     for r in _records():
-        if r.get("name") == name and r.get("sent") and r.get("url") \
-                and r.get("action") != "void":
-            url = r["url"]  # file order: newest wins
+        if r.get("name") != name:
+            continue
+        if r.get("action") == "void":
+            url = None
+        elif r.get("sent") and r.get("url"):
+            url = (r["url"], r.get("ts", 0))
     return url
 
 
@@ -103,9 +109,35 @@ def chat_live_for_real(url):
         return False
 
 
+def _list_updated_at(cid):
+    """updated_at of the chat in the LIST api (epoch s), or 0."""
+    import chats_http
+    try:
+        d = chats_http.api("/api/v1/chats/list?limit=100")
+        items = d if isinstance(d, list) else d.get("data", d)
+        if isinstance(items, dict):
+            items = items.get("items", [])
+        for it in items:
+            if (it.get("id") or "").startswith(cid[:12]):
+                return int(it.get("updated_at") or 0)
+    except Exception:
+        pass
+    return 0
+
+
 def lane_done(name):
-    url = newest_sent_url(name)
-    return bool(url and chat_live_for_real(url))
+    rec = newest_sent_url(name)
+    if not rec:
+        return False
+    url, sent_ts = rec
+    cid = url.split("/c/")[-1].split("/")[0].split("?")[0]
+    upd = _list_updated_at(cid)
+    if upd and sent_ts and upd + 300 < sent_ts:
+        # server stopped touching this chat BEFORE our send landed -> the
+        # turn pipeline is dead (the c4bfc194 false-positive lesson)
+        log(f"{name}: chat {cid[:12]} page-live but STALE (upd {upd} < send {sent_ts}) — not a landing")
+        return False
+    return chat_live_for_real(url)
 
 
 def main():
