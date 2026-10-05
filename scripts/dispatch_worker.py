@@ -108,7 +108,14 @@ def _find(name):
                 found = dict(found)
                 if s.get("tab_id"):
                     found["tab_id"] = s["tab_id"]
-                if s.get("url"):
+                # URL INVARIANT (2026-10-05 R19 incident): the /c/<uuid> session
+                # URL on the resolved record is CANONICAL — a tab-reopen row whose
+                # url lost it (home tab, None) must never clobber it. Three such
+                # rows broke server_alive's chat-id resolution, the queue_watch
+                # assault read the live 10.5h-queued chat as DEAD, voided it and
+                # fired a re-dispatch. Only trust a tab-reopen url that still
+                # carries the /c/ path.
+                if s.get("url") and "/c/" in s.get("url", ""):
                     found["url"] = s["url"]
         else:
             found = dict(s)  # latest create/send record wins
