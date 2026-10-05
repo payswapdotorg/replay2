@@ -594,6 +594,8 @@ def _switch_active_healthy():
 def _recover_capture(tab, err):
     """Run the escalating ladder after a capture failure; returns a fresh
     frame if any rung recovered it (else None -> caller serves stale)."""
+    global _fail_streak  # fix: without this, += 1 on a local raises
+                         # UnboundLocalError and the ladder never runs
     with _fail_lock:
         _fail_streak += 1
         streak = _fail_streak           # race-free snapshot for the log line
