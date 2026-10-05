@@ -71,6 +71,37 @@ if [ -d "$ROOT/src/lib/lab" ]; then
   cp -r "$ROOT/src/app/api/lab/." "$MY/src/app/api/lab/"
   say "lab console tree ported ($(find "$MY/src/lib/lab" "$MY/src/components/lab" -type f | wc -l) files)"
 fi
+# 2026-10-05 (reset-3 lesson): the agent tree + prisma lab models + deps.
+# src/agent was tracked here but never ported (Task-17 manual gap); the lab
+# Prisma models lived only in the wiped my-project; ws/@e2b deps were never
+# synced. Port all three so a fresh my-project boots the full agent console.
+if [ -d "$ROOT/src/agent" ]; then
+    mkdir -p "$MY/src/agent"
+    cp -r "$ROOT/src/agent/." "$MY/src/agent/"
+    say "agent tree ported ($(find "$MY/src/agent" -type f | wc -l) files)"
+fi
+[ -f "$ROOT/src/lib/db.ts" ] && cp "$ROOT/src/lib/db.ts" "$MY/src/lib/db.ts"
+if [ -f "$ROOT/prisma/schema.prisma" ] && ! grep -q "model LabRun" "$MY/prisma/schema.prisma" 2>/dev/null; then
+    mkdir -p "$MY/prisma"
+    cp "$ROOT/prisma/schema.prisma" "$MY/prisma/schema.prisma"
+    (cd "$MY" && bun run db:push >/dev/null 2>&1) \
+        && say "prisma lab schema synced (db:push ok)" \
+        || say "WARN: db:push failed — run 'bun run db:push' manually"
+fi
+if [ -f "$MY/src/agent/e2b.ts" ] && ! grep -q '"@e2b/code-interpreter"' "$MY/package.json" 2>/dev/null; then
+    (cd "$MY" && bun add ws @e2b/code-interpreter @e2b/desktop >/dev/null 2>&1) \
+        && say "agent deps installed (ws, @e2b/code-interpreter, @e2b/desktop)" \
+        || say "WARN: bun add agent deps failed"
+fi
+# login-ambush materialization (same pattern as mos_lead_watch): arm_login
+# drives the form to the live slider; post_drag_keeper clicks Sign in after
+# the operator's drag; login_keeper (tracked above) snapshots the token.
+for daemon in arm_login post_drag_keeper; do
+    if [ -f "$ROOT/scripts/$daemon.py" ] && [ ! -f "$ROOT/scripts/local/$daemon.py" ]; then
+        cp "$ROOT/scripts/$daemon.py" "$ROOT/scripts/local/$daemon.py"
+        say "$daemon materialized into scripts/local/"
+    fi
+done
 mkdir -p "$MY/data"
 say "console files ported (mission state: $([ -f "$MY/data/mission-state.json" ] && echo kept || echo 'not present — neutral No-mission state') )"
 
