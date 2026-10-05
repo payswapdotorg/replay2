@@ -12,7 +12,7 @@ deliveries (work/* branches) and merges (main movement) without ever
 interfering: no re-dispatch of its lanes, no merges of its branches.
 
 PAT: --pat argument, or RW_PAT env, or /home/z/.payswap-env GITHUB_PAT.
-Repo: --repo argument (default payswapdotorg/Fleetos).
+Repo: --repo argument (REQUIRED — §0: no project repo is hardcoded here).
 """
 import json
 import os
@@ -65,9 +65,12 @@ def refs(repo, pat):
 
 
 def main():
-    repo = "payswapdotorg/Fleetos"
+    repo = ""
     if "--repo" in sys.argv:
         repo = sys.argv[sys.argv.index("--repo") + 1]
+    if not repo:
+        print("--repo owner/name is required (§0: no project repo is hardcoded here) — exiting", file=sys.stderr)
+        return 2
     pat = pat_from_env()
     if "--pat" in sys.argv:
         pat = sys.argv[sys.argv.index("--pat") + 1]
