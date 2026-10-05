@@ -88,6 +88,12 @@ p2 = subprocess.Popen([chrome,
     "--remote-allow-origins=*", f"--user-data-dir={PROFILE}",
     f"--window-size={SCREEN.replace('x', ',')}", "--window-position=0,0",
     "--no-first-run", "--no-default-browser-check",
+    # 2026-10-05 (Task-20 doctrine, re-applied after reset-5 ate the live
+    # tree before the commit landed): GPU compositing costs renderer memory
+    # this 2GB container cannot spare — the Stripe-dashboard OOM cascade
+    # (renderer SIGKILL code 9) stops with this flag. Nothing here needs
+    # actual GPU output (Xvfb has none anyway).
+    "--disable-gpu",
     "--disable-session-crashed-bubble", "--hide-crash-restore-bubble",
     "--disable-background-timer-throttling", "--disable-backgrounding-occluded-windows",
     "--disable-renderer-backgrounding", "--disable-dev-shm-usage", "--disable-features=Translate",

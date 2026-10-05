@@ -202,6 +202,24 @@ JS_MODEL_MENU_OPEN = r"""(() => {
 
 JS_MODEL_OPTION_POS = r"""(() => {
   // GLM-5.3 row (exact name, NOT 'GLM-5.3-Flash') in the OPEN menu; center coords.
+  // 2026-10-05 fix (Task-20 stale-selector class): the menu now renders as a
+  // body-level #bits-N portal whose rows are plain BUTTONs inside a
+  // role=menu container — no role=menuitem, no menu/popover/item classes on
+  // the wrappers. The legacy selector net below self-matches only the rows'
+  // INNER divs (their own classes contain 'items-center'), yielding a narrow
+  // left-edge target that sits ON a row boundary — the 'model still GLM-5.2'
+  // dispatch failures. The precise finder comes FIRST: full BUTTON rect,
+  // exact first-line name, unambiguous center. Legacy net stays as the
+  // fallback for older frontends.
+  for (const m of document.querySelectorAll('[role=menu]')) {
+    for (const b of m.querySelectorAll('button')) {
+      const first = (b.innerText || '').split('\n')[0].trim();
+      if (first === 'GLM-5.3') {
+        const r = b.getBoundingClientRect();
+        if (r.width > 2 && r.height > 2) return JSON.stringify({x: Math.round(r.x + r.width / 2), y: Math.round(r.y + r.height / 2)});
+      }
+    }
+  }
   const cands = [];
   const consider = (e) => {
     const full = (e.innerText || '').trim();
@@ -220,10 +238,20 @@ JS_MODEL_OPTION_POS = r"""(() => {
 
 JS_CLICK_MODEL = r"""(() => {
   // robust 'GLM-5.3' row click (NOT 'GLM-5.3-Flash').
-  // 2026-09-11: site DOM changed — menu items render name+description in one
-  // node and the menu can auto-close between the open-click and the scan, so
-  // this expression re-opens the menu itself on every evaluation and matches
-  // both exact-text and first-line-prefix forms.
+  // 2026-10-05 (Task-20 fix): precise path FIRST — role=menu container,
+  // BUTTON rows, exact first-line name (see JS_MODEL_OPTION_POS note: the
+  // menu is a #bits-N portal of plain buttons; the legacy net below only
+  // reaches their inner divs).
+  for (const m of document.querySelectorAll('[role=menu]')) {
+    for (const b of m.querySelectorAll('button')) {
+      const first = (b.innerText || '').split('\n')[0].trim();
+      if (first === 'GLM-5.3') {
+        const r = b.getBoundingClientRect();
+        if (r.width > 2 && r.height > 2) { b.click(); return 'ok'; }
+      }
+    }
+  }
+  // legacy fallback
   const b = document.querySelector('button.modelSelectorButton');
   if (!b) return 'no-button';
   if (b.getAttribute('aria-expanded') !== 'true') { b.click(); }
