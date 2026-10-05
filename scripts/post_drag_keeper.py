@@ -8,7 +8,22 @@ import channel
 
 BASE = os.path.dirname(os.path.abspath(__file__))
 LOG = "/home/z/replay2/scripts/logs/post_drag_keeper.log"
+FLAGS = os.path.join(BASE, "flags")  # scripts/flags — same dir every other
+                                # keeper uses (../flags was a phantom path:
+                                # the success write itself threw ENOENT and
+                                # the outer handler looped it forever, 2026-10-05)
 DEADLINE = time.time() + 24 * 3600
+
+def write_done_flag():
+    """Best-effort done flag — NEVER let the success path throw (the
+    FileNotFoundError loop bug: log said AUTHENTICATED while the process
+    spun every 5s for hours because open() on a missing dir raised)."""
+    try:
+        os.makedirs(FLAGS, exist_ok=True)
+        with open(os.path.join(FLAGS, "post_drag_done"), "w") as fh:
+            fh.write(str(int(time.time())))
+    except OSError as e:
+        log(f"done-flag write failed (ignored): {e!r}")
 
 def log(m):
     line = f"[post_drag {time.strftime('%H:%M:%S')}] {m}"
@@ -52,7 +67,7 @@ def main():
             s = json.loads(v) if v else {}
             if s.get("authed"):
                 log(f"AUTHENTICATED as {s.get('email')} — done (login_keeper snapshots)")
-                open(os.path.join(BASE, "../flags/post_drag_done"), "w").write(str(int(time.time())))
+                write_done_flag()
                 return 0
             if s.get("drag"):
                 if not armed:
@@ -67,7 +82,7 @@ def main():
                 s2 = json.loads(v2) if v2 else {}
                 if s2.get("authed"):
                     log(f"AUTHENTICATED as {s2.get('email')} — done")
-                    open(os.path.join(BASE, "../flags/post_drag_done"), "w").write(str(int(time.time())))
+                    write_done_flag()
                     return 0
                 if s2.get("drag"):
                     log("captcha re-armed by site — operator's next drag")

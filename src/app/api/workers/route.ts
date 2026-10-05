@@ -165,6 +165,23 @@ function parseWatcherLog(name: string, origName?: string): {
  *  (dispatched by the Tech Lead)` → item + title; the lane comes from the
  *  registry session name (workerA-lab006), not the paren clause. */
 function parseHeader(head: string): { title: string; lane: string } {
+  // UNiCOM era (2026-10-05): `# WORK ORDER — UNiCOM W1-002: Commerce
+  // Kernel Core Implementation` → item + title; lane derives from the W<N>
+  // prefix (the three-lane mission structure is fixed in mission-state).
+  const mUni = head.match(
+    /^#\s*WORK ORDER\s*[—-]\s*UNiCOM\s+(W\d-\d{3}):\s*(.+?)\s*$/,
+  );
+  if (mUni) {
+    const laneMap: Record<string, string> = {
+      W1: "W1 — Commerce Kernel",
+      W2: "W2 — Agent-Trust-Security",
+      W3: "W3 — UX/Connectors/Physical",
+    };
+    return {
+      title: `${mUni[1]} — ${mUni[2]}`,
+      lane: laneMap[mUni[1].slice(0, 2)] ?? "",
+    };
+  }
   const mMos = head.match(
     /^#\s*([A-Z]+-\d{3})\s*[—-]\s*(.+?)\s*(?:\([^)]*\))?\s*$/,
   );
@@ -392,6 +409,14 @@ export async function GET() {
         ? `Worker ${workerM[1].toUpperCase()}`
         : "Worker";
       const stState = String(st.state || "queued");
+      // updated-at age for the lastStateLine — agent-session workers
+      // deliver via git with sparse chat prose, so "how long since the
+      // chat last moved" is the operator's liveness judgment call
+      const upd = Number(st.updated_at ?? 0);
+      const updAge =
+        upd > 0
+          ? `${Math.max(0, Math.round((Date.now() / 1000 - upd) / 60))}`
+          : "?";
       const state: State =
         complete || stState === "complete"
           ? "complete"
@@ -399,7 +424,9 @@ export async function GET() {
             ? "generating"
             : stState === "queued"
               ? "queued"
-              : "working";
+              : stState === "probe-error"
+                ? "re-dispatching"
+                : "working";
       workers.push({
         name,
         title: parsed.title || name.toUpperCase(),
@@ -411,9 +438,12 @@ export async function GET() {
         dispatches,
         lastRoundMs: stMs,
         watcherAlive: true, // the lead-watch daemon heartbeat covers this lane
-        lastStateLine: `lead-watch: asst=${st.n_asst ?? 0} msgs=${st.n ?? 0} gen=${
-          st.generating ? 1 : 0
-        }`,
+        lastStateLine:
+          stState === "probe-error"
+            ? `lead-watch: PROBE-ERROR ${String(st.error ?? "").slice(0, 120)}`
+            : `lead-watch: asst=${st.n_asst ?? 0} msgs=${st.n ?? 0} gen=${
+                st.generating ? 1 : 0
+              } upd=${updAge}m ago`,
       });
       continue;
     }
