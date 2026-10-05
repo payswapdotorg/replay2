@@ -30,17 +30,26 @@ def main():
     # prefer a tab already ON this chat (its renderer has the freshest auth
     # context); fall back to any chat.z.ai tab
     tabs = [t for t in channel.list_tabs() if "chat.z.ai" in (t.get("url") or "")]
+    on_chat = [t for t in tabs if cid[:8] in (t.get("url") or "")]
+    others = [t for t in tabs if cid[:8] not in (t.get("url") or "")]
+    # WEDGE FALLBACK (2026-10-05 R19): a tab whose DevTools WS endpoint has
+    # wedged (handshake timeout — observed on fresh/canary tabs under load)
+    # must not kill the probe: the old tabs[-1] pick fed the completion gate
+    # {"err": "Connection timed out"} for hours while the browser network was
+    # perfectly healthy. Try candidates in order with a short handshake budget
+    # and fall through to the next on connection failure.
+    ws = None
     target = None
-    for t in tabs:
-        if cid[:8] in (t.get("url") or ""):
-            target = t
+    for cand in on_chat + others:
+        try:
+            ws = channel.CDP(cand["webSocketDebuggerUrl"], timeout=8)
+            target = cand
             break
-    if target is None:
-        target = tabs[-1] if tabs else None
-    if target is None:
-        print(json.dumps({"err": "no chat.z.ai tab"}))
+        except Exception:
+            continue
+    if ws is None:
+        print(json.dumps({"err": "no reachable chat.z.ai tab (all DevTools WS handshakes failed)"}))
         return 2
-    ws = channel.CDP(target["webSocketDebuggerUrl"])
     try:
         js = """(async () => {
           const tok = (localStorage.getItem('token') || '').replace(/^"|"$/g, '');
