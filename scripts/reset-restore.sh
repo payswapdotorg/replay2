@@ -1,10 +1,19 @@
 #!/usr/bin/env bash
 # reset-restore.sh — ONE-COMMAND recovery after a sandbox reset.
 #
-# The sandbox periodically wipes /home/z/my-project (the platform app) while
-# keeping /home/z/.venv, /home/z/.cache (Playwright Chromium), .bun and
-# .npm-global. Everything the replay console needs is either in THIS repo
-# (committed) or re-derivable. This script rebuilds the whole deployment:
+# Observed reset classes (2026-10-05, resets 15-18) remove: this checkout
+# (/home/z/replay2), foreign project clones, ~/.aise / ~/.secrets and other
+# home-dotfile additions (restored to the provision baseline), additions
+# inside provision dotdirs (~/.local/share/* etc.), and GITIGNORED paths
+# under /home/z/my-project (git clean -X class — local-vault files do not
+# survive). They KEEP: /home/z/my-project itself with its visible unignored
+# paths (the ported console src, worklog.md, tool-results/), the provision
+# tool caches (~/.venv, ~/.cache incl. Playwright Chromium, .bun,
+# .npm-global), and — since the 2026-10-05 durable-profile directive — the
+# browser profile at /home/z/my-project/browser-profile (scripts/profile.py
+# resolves it; logins survive resets). Everything the replay console needs
+# is either in THIS repo (committed) or re-derivable. This script rebuilds
+# the whole deployment:
 #
 #   1. ports the console UI + API routes into the platform app (/ route)
 #   2. sets the platform layout title to "Replay Console" (the identity the

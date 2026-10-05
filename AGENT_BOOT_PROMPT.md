@@ -61,6 +61,32 @@ infrastructure. It must NEVER carry content of any specific project.
   §0; (c) before acting on any work order, verify its repo of origin is
   the operator-designated project repo for THIS deployment; (d) when in
   doubt, report — never dispatch.
+- **ENFORCEMENT LAYER (operator directive 2026-10-05): the §0 pre-commit
+  guard.** `scripts/guards/pre_commit.py` is installed by deploy.sh into
+  `.git/hooks/pre-commit` (idempotent — every deploy/restore heals a fresh
+  clone's hooks). It BLOCKS commits carrying known contamination vectors
+  (scripts/prompts/, worker-prompts/, missions/, roadmaps/, local/,
+  harvests/, evidence/, data/ state, roadmap/work-order/mission-state/
+  durable-master/wave-packet filenames) and secret material (env.sh, .env,
+  credentials, PAT/token files, browser-profile content). It is a guard-
+  rail, not a suggestion: `git commit --no-verify` is for MAINTAINERS ONLY
+  after explicit operator authorization. If you are a future agent using
+  this replay to dispatch workers for YOUR OWN project: your project's
+  roadmap, work orders, packets and prompts live in YOUR project's repo or
+  in the per-deployment LOCAL paths (`data/`, `scripts/local/`,
+  `scripts/worker-prompts/` — gitignored on purpose) — NEVER here, not
+  even "temporarily", not even "as a durable master", not even with -f.
+- **DURABLE BROWSER PROFILE (operator directive 2026-10-05): logins must
+  survive sandbox resets.** The Chrome user-data-dir is resolved by
+  `scripts/profile.py`: default `/home/z/my-project/browser-profile`
+  (visible+unignored inside the platform app — the path class that
+  survived every observed reset: resets wipe this checkout, home
+  dotfiles/dotdir additions, and gitignored files under my-project, but
+  NOT visible unignored my-project paths); env `REPLAY_PROFILE_DIR`
+  overrides; legacy `scripts/browser-profile` AUTO-MIGRATES on first
+  launch. Never store the profile inside this repository, and never
+  "helpfully" delete or recreate the durable profile — an operator login
+  lives in it.
 - **The neutral fallback is deliberate.** If `data/mission-state.json` is
   missing, the console renders "No mission loaded" — that is correct
   behavior, not a bug to fix with a committed default.

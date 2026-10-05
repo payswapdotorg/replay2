@@ -99,6 +99,20 @@ echo "$PY_BIN" > "$SCRIPTS/python_bin.txt"
 mkdir -p "$SCRIPTS/flags" "$SCRIPTS/logs"
 say "python: $PY_BIN"
 
+# ------------------------------------------------ 1b. §0 pre-commit guard
+# Anti-contamination enforcement (operator directive 2026-10-05): install the
+# tracked guard as the git pre-commit hook. Idempotent (content-compare), so
+# every deploy/restore heals a fresh clone's missing hooks. .gitignore is NOT
+# enforcement (git add -f walks past it — 2026-10-02 incident); this is.
+if [ -d "$ROOT/.git" ] && [ -f "$SCRIPTS/guards/pre_commit.py" ]; then
+  if ! cmp -s "$SCRIPTS/guards/pre_commit.py" "$ROOT/.git/hooks/pre-commit" 2>/dev/null; then
+    mkdir -p "$ROOT/.git/hooks"
+    cp "$SCRIPTS/guards/pre_commit.py" "$ROOT/.git/hooks/pre-commit"
+    chmod +x "$ROOT/.git/hooks/pre-commit"
+    say "pre-commit guard installed (§0 anti-contamination enforcement)"
+  fi
+fi
+
 # ---------------------------------------------------------------- 2. console deps
 if [ ! -d "$ROOT/node_modules" ]; then
   say "installing console dependencies (bun install)…"
@@ -191,7 +205,9 @@ echo "  logs          $SCRIPTS/logs/, $SCRIPTS/*.log"
 echo "===================================================================="
 echo
 echo "NEXT: open the console (preview panel / port $PORT) and LOG IN to the"
-echo "target site through the replay image — the session persists in"
-echo "scripts/browser-profile across restarts of this sandbox."
+echo "target site through the replay image — the session persists in the"
+echo "DURABLE browser profile (default /home/z/my-project/browser-profile; env"
+echo "REPLAY_PROFILE_DIR overrides; legacy scripts/browser-profile auto-migrates)"
+echo "so logins now survive sandbox resets too."
 echo "Drag slider captchas directly on the replay image: press, drag slowly,"
 echo "release. If a click lands wrong, toggle 'DOM click' mode."

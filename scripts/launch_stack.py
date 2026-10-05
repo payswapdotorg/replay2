@@ -7,15 +7,20 @@ Relocatable + configurable via env:
   REPLAY_START_URL (default https://chat.z.ai/)
   CDP_PORT         (default 9222)
 
-The browser profile persists in scripts/browser-profile (gitignored) so
-logins survive restarts of this script (but NOT sandbox resets — logins are
-per-sandbox; operators log in through the console after a fresh deploy).
+The browser profile is resolved by profile.py (2026-10-05 operator
+directive: logins must survive sandbox resets). Default durable location:
+/home/z/my-project/browser-profile (visible+unignored inside the platform
+app — the path class that survives every observed reset); env override
+REPLAY_PROFILE_DIR; legacy scripts/browser-profile auto-migrated on first
+launch. Never store the profile inside this repository.
 """
 import glob
 import os
 import subprocess
 import time
 import urllib.request
+
+import profile as _profile_mod
 
 BASE = os.path.dirname(os.path.abspath(__file__))
 ROOT = os.path.dirname(BASE)
@@ -24,7 +29,7 @@ DISPLAY = os.environ.get("REPLAY_DISPLAY", ":99")
 SCREEN = os.environ.get("REPLAY_WxH", "1440x900")
 CDP_PORT = os.environ.get("CDP_PORT", "9222")
 START_URL = os.environ.get("REPLAY_START_URL", "https://chat.z.ai/")
-PROFILE = os.path.join(BASE, "browser-profile")
+PROFILE = _profile_mod.resolve()
 
 
 def find_chrome():
