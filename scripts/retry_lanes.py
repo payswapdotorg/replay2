@@ -26,7 +26,7 @@ HERE = os.path.dirname(os.path.abspath(__file__))
 sys.path.insert(0, HERE)
 import channel  # noqa: E402
 
-LANES = ["unicom-w1-003", "unicom-w3-003"]
+LANES = ["unicom-w1-003", "unicom-w2-003"]  # w3-003 MERGED+retired 2026-10-05; w2-003 turn queue-dropped (siege) → re-dispatch
 REGISTRY = os.path.join(HERE, "flags", "session_registry.jsonl")
 LOG = os.path.join(HERE, "logs", "retry_lanes.log")
 ROUND_S = 240
