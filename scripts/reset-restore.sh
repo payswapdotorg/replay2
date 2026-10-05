@@ -96,6 +96,7 @@ fi
 # login-ambush materialization (same pattern as mos_lead_watch): arm_login
 # drives the form to the live slider; post_drag_keeper clicks Sign in after
 # the operator's drag; login_keeper (tracked above) snapshots the token.
+mkdir -p "$ROOT/scripts/local"
 for daemon in arm_login post_drag_keeper; do
     if [ -f "$ROOT/scripts/$daemon.py" ] && [ ! -f "$ROOT/scripts/local/$daemon.py" ]; then
         cp "$ROOT/scripts/$daemon.py" "$ROOT/scripts/local/$daemon.py"
