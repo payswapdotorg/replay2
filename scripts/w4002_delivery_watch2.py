@@ -59,14 +59,23 @@ def branch_head():
 
 
 def dom_state():
-    """Live DOM of the worker chat tab (opens one if absent)."""
+    """Live DOM of the worker chat tab (self-healing).
+
+    2026-10-05 16:05Z incident: the worker VIEW tab's renderer crashed
+    mid-turn (watcher CDP timeout) and the tab reset to the chat.z.ai home
+    URL — find_tab's fall-through then matched a HOME tab and the watcher
+    would have monitored the wrong DOM (bodyLen ~2K static) into a false
+    STALLED2. Guard: the returned tab's URL must contain the chat id;
+    otherwise open a fresh tab at the chat URL (the worker executes
+    SERVER-SIDE — the tab is only a view, freely replaceable)."""
     try:
         tab = channel.find_tab(CHAT[:8])
-        if not tab:
+        if not tab or CHAT[:8] not in (tab.get("url") or ""):
+            log("view tab lost/reset — opening a fresh one")
             channel.new_tab(f"https://chat.z.ai/c/{CHAT}")
             time.sleep(12)
             tab = channel.find_tab(CHAT[:8])
-            if not tab:
+            if not tab or CHAT[:8] not in (tab.get("url") or ""):
                 return None
         ws = channel.CDP(tab["webSocketDebuggerUrl"], timeout=60)
         try:
