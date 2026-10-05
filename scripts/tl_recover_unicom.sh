@@ -15,7 +15,7 @@
 # Idempotent: safe to run repeatedly; healthy components are left alone.
 set -u
 
-DURABLE_DIR="/home/z/my-project/download/recovery"  # secrets/backups live ONLY here (never in git)
+DURABLE_DIR="/home/z/my-project/download/recovery"
 LOG="$DURABLE_DIR/recover.log"
 REPLAY2="/home/z/replay2"
 UNICOM="/home/z/UniCom"
@@ -33,10 +33,10 @@ stack_healthy() {
   return 0
 }
 
-keeper_running() { # <log-file> — a live keeper writes fresh lines
-  local lf="$1"; [[ -f "$lf" ]] || return 1
-  local age=$(( $(date +%s) - $(stat -c %Y "$lf") ))
-  (( age < 300 ))
+keeper_running() { # <script-basename> — pgrep the double-forked daemon
+  # (log-mtime is UNRELIABLE: keepers log only on events, so quiet logs go
+  # stale and caused duplicate launches in the 20:08Z test — recycle-#3 fix)
+  pgrep -f "$1\$" >/dev/null 2>&1
 }
 
 log "=== TL recover start ==="
@@ -74,9 +74,32 @@ if [[ -d "$DURABLE_DIR/worker-prompts" ]] && [[ -n "$(ls -A "$DURABLE_DIR/worker
   cp "$DURABLE_DIR"/worker-prompts/*.md "$REPLAY2/scripts/worker-prompts/" 2>/dev/null && log "worker packets restored"
 fi
 if [[ -f "$DURABLE_DIR/session_registry.seed.jsonl" ]]; then
-  mkdir -p "$REPLAY2/scripts/flags"
-  cat "$DURABLE_DIR/session_registry.seed.jsonl" >> "$REPLAY2/scripts/flags/session_registry.jsonl"
-  log "registry seeds appended"
+  # IDEMPOTENT seed append (the 20:08Z test appended duplicates — recycle-#3
+  # fix): only records whose (name,url,sent) tuple is not already present.
+  python3 - "$DURABLE_DIR/session_registry.seed.jsonl" "$REPLAY2/scripts/flags/session_registry.jsonl" << 'PYEOF'
+import json, sys, os
+seed_path, reg_path = sys.argv[1], sys.argv[2]
+try:
+    reg = [json.loads(l) for l in open(reg_path) if l.strip()]
+except FileNotFoundError:
+    reg = []
+have = {(r.get("name"), r.get("url"), bool(r.get("sent"))) for r in reg}
+added = 0
+with open(reg_path, "a") as fh:
+    for l in open(seed_path):
+        l = l.strip()
+        if not l:
+            continue
+        try:
+            r = json.loads(l)
+        except ValueError:
+            continue
+        if (r.get("name"), r.get("url"), bool(r.get("sent"))) not in have:
+            fh.write(json.dumps(r) + "\n")
+            added += 1
+print(f"registry seed: {added} new records appended")
+PYEOF
+  log "registry seeds merged (idempotent)"
 fi
 
 # 5. deploy (only if unhealthy — idempotent)
@@ -90,7 +113,7 @@ fi
 
 # 6. login keeper (auto-restores ali26 from the durable token — no operator
 #    login needed; snapshots the token every 20 min once logged in)
-if keeper_running "$REPLAY2/scripts/logs/login_keeper.log"; then
+if keeper_running login_keeper.py; then
   log "login_keeper already live"
 else
   (cd "$REPLAY2/scripts" && python3 dfork_launch.py logs/login_keeper.log python3 login_keeper.py)
@@ -98,7 +121,7 @@ else
 fi
 
 # 7. lane watcher (console strip: server-side lane probes every 120s)
-if keeper_running "$REPLAY2/scripts/logs/lane_watch_unicom.log"; then
+if keeper_running lane_watch_unicom.py; then
   log "lane_watch already live"
 else
   (cd "$REPLAY2/scripts" && python3 dfork_launch.py logs/lane_watch_unicom.log python3 lane_watch_unicom.py)
