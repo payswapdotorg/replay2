@@ -32,10 +32,14 @@ DUMP_JS = r"""
 """
 
 RELEASE_JS = r"""
-(() => {
+((force) => {
   // 2026-09-25 live-pod guard (lesson-153): only release rows whose text
   // does NOT carry a Live badge — clicking a Live row's Release button
   // reaps a running worker's sandbox (incident: the ANR-Discovery-Loop pod).
+  // --force (operator-directed full clears of COMPLETED workers) passes
+  // force=true and clicks Live rows too (2026-10-05 fix: the flag used to
+  // only fake the reported count while the JS still skipped every Live
+  // row — force mode never clicked anything).
   const el = Array.from(document.querySelectorAll('div,section,[role=dialog]'))
     .find(e => (e.innerText||'').includes('Sandbox'));
   const scope = el || document;
@@ -44,12 +48,12 @@ RELEASE_JS = r"""
     if (((b.innerText || '').trim()) !== 'Release') return;
     const row = b.closest('tr, div');
     const txt = (row ? row.innerText : '') || '';
-    if (/\bLive\b/.test(txt)) { live += 1; return; }
+    if (!force && /\bLive\b/.test(txt)) { live += 1; return; }
     b.click();
     clicked += 1;
   });
   return JSON.stringify({clicked: clicked, live_skipped: live});
-})()
+})(%s)
 """
 
 
@@ -80,9 +84,7 @@ def main():
     force = "--force" in sys.argv
     total = 0
     for _ in range(12):
-        r = json.loads(c.eval(RELEASE_JS, timeout=20))
-        if force and r.get("live_skipped"):
-            r = {"clicked": r.get("clicked", 0) + r["live_skipped"]}
+        r = json.loads(c.eval(RELEASE_JS % ("true" if force else "false"), timeout=20))
         if not r.get("clicked"):
             if r.get("live_skipped"):
                 print(f"GUARD: skipped {r['live_skipped']} LIVE sandbox(es) "
