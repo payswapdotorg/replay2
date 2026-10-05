@@ -3,6 +3,13 @@
 section rows, and release EVERY held sandbox (safe when no worker is
 generating; the operator console session is a chat tab, not a sandbox).
 
+
+HAZARD (2026-10-05 20:55Z incident): the dashboard DOM has NO per-row
+containers — b.closest('tr, div') climbs to the SECTION node, so every
+Release button's "row text" contains ALL titles. Any text-filtered
+targeted release matches EVERY button. Targeted releases MUST use
+tl_delete_ws.py (API-level, per-chat). This tool is BULK-only by design.
+
 Boot-prompt §16(a): completed sessions' sandboxes linger and hold the
 usage limit — release them so the window can clear.
 """
