@@ -317,18 +317,30 @@ def recover(trigger, lanes, lane_now, probes_now):
             log(f"{name} packet MISSING — skipping")
             continue
         # void (registry) even if the chat is dead/corrupted — packets rule
-        r1 = subprocess.run([PY, os.path.join(BASE, "dispatch_worker.py"),
-                             "void", name,
-                             "drought-break stale-queue re-dispatch per D-028 "
-                             "(queued 16h+, never admitted; fresh canary "
-                             "proves admission works again)"],
-                            capture_output=True, text=True, timeout=120,
-                            cwd=BASE)
-        log(f"{name} void rc={r1.returncode}")
-        r2 = subprocess.run([PY, os.path.join(BASE, "dispatch_worker.py"),
-                             "create", name, pkt],
-                            capture_output=True, text=True, timeout=420,
-                            cwd=BASE)
+        # 2026-10-05 R19 crash fix: an admission-surgery subprocess timeout
+        # must never kill the sentinel — the mkt073r5 create hit 420s during
+        # the first live admission window and the uncaught TimeoutExpired
+        # took the whole daemon down mid-pass (studio009 never refreshed,
+        # canary assault dead until manual restart). Per-lane guard + continue.
+        try:
+            r1 = subprocess.run([PY, os.path.join(BASE, "dispatch_worker.py"),
+                                 "void", name,
+                                 "drought-break stale-queue re-dispatch per D-028 "
+                                 "(queued 16h+, never admitted; fresh canary "
+                                 "proves admission works again)"],
+                                capture_output=True, text=True, timeout=120,
+                                cwd=BASE)
+            log(f"{name} void rc={r1.returncode}")
+            r2 = subprocess.run([PY, os.path.join(BASE, "dispatch_worker.py"),
+                                 "create", name, pkt],
+                                capture_output=True, text=True, timeout=420,
+                                cwd=BASE)
+        except subprocess.TimeoutExpired as te:
+            events.append(f"{name}: surgery TIMEOUT "
+                          f"({'create' if 'create' in str(te.cmd) else 'void'}) "
+                          "— landing unverified, next cycle re-checks")
+            log(f"{name} surgery TIMEOUT — continuing (create may have landed)")
+            continue
         sent_ok = "VERIFIED" in r2.stdout
         events.append(f"{name}: voided + re-dispatched "
                       f"(sent={'VERIFIED' if sent_ok else 'CHECK ' + r2.stdout[-150:]})")
@@ -344,7 +356,7 @@ def recover(trigger, lanes, lane_now, probes_now):
                 pass
             time.sleep(2)
             subprocess.Popen([PY, os.path.join(BASE, "launch_queue_watch.py"),
-                              name, "00000000", f"{name} COMPLETION REPORT"],
+                              name, "00000000", "COMPLETION REPORT"],
                              stdout=subprocess.DEVNULL,
                              stderr=subprocess.DEVNULL,
                              start_new_session=True, cwd=BASE)
