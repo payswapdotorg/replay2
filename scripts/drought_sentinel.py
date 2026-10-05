@@ -56,6 +56,10 @@ GRACE = 90            # s between break detection and lane surgery
 _LANE_FILE = os.path.join(FLAGS, "lane_list.txt")
 _FALLBACK_LANES = ["T035", "T042", "T048"]
 
+# Worker-era lane names (lab006, mkt073r5, studio009, unicom-w1-003 ...) sit
+# alongside legacy T### names; accept both wherever a lane name is parsed.
+LANE_RE = re.compile(r"T\d{3}|[a-z][a-z0-9-]{2,30}")
+
 REGISTRY = os.path.join(FLAGS, "session_registry.jsonl")
 HB = os.path.join(FLAGS, "drought_sentinel_hb.txt")
 VERDICT = os.path.join(FLAGS, "drought_sentinel_verdict.json")
@@ -102,7 +106,7 @@ def outbox(action, text):
 def lane_names():
     try:
         names = [l.strip() for l in open(_LANE_FILE)
-                 if re.fullmatch(r"T\d{3}", l.strip())]
+                 if LANE_RE.fullmatch(l.strip())]
         if names:
             return names
     except OSError:
@@ -121,7 +125,7 @@ def lane_sessions():
         return out
     for r in rows:
         name = r.get("name", "")
-        if name.startswith("T"):
+        if LANE_RE.fullmatch(name):
             if r.get("action") in ("void", "failed", "done"):
                 continue
             url = r.get("url") or ""
