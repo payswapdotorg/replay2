@@ -182,7 +182,13 @@ class Table {
     return this.store[this.table];
   }
 
-  async create(args: { data: Row }): Promise<Row> {
+  // Return types are `any` (not Row): call sites hold the typed view. A
+  // string-index signature (Row) cannot satisfy required named members of
+  // the route-level RowLike interfaces (TS property-existence semantics),
+  // so typing create/findMany as Row breaks every route that pipes rows
+  // into the typed summary helpers. Routes own their types (RunRowLike,
+  // BridgeEntryRowLike, …) per this file's stand-in contract.
+  async create(args: { data: Row }): Promise<any> {
     const now = new Date();
     const row: Row = {
       ...modelDefaults(this.table, now),
@@ -194,12 +200,12 @@ class Table {
     return revive(row);
   }
 
-  async findUnique(args: { where: Row }): Promise<Row | null> {
+  async findUnique(args: { where: Row }): Promise<any> {
     const found = this.rows().find((row) => matches(row, args.where));
     return found ? revive(found) : null;
   }
 
-  async findFirst(args: { where?: Row; orderBy?: Row } = {}): Promise<Row | null> {
+  async findFirst(args: { where?: Row; orderBy?: Row } = {}): Promise<any> {
     const filtered = this.rows().filter((row) => matches(row, args.where));
     const ordered = sortRows(filtered, args.orderBy);
     const found = ordered[0] ?? this.rows().find((row) => matches(row, args.where)) ?? null;
@@ -208,7 +214,7 @@ class Table {
 
   async findMany(
     args: { where?: Row; orderBy?: Row; take?: number; skip?: number } = {},
-  ): Promise<Row[]> {
+  ): Promise<any[]> {
     const filtered = this.rows().filter((row) => matches(row, args.where));
     const ordered = sortRows(filtered, args.orderBy);
     const start = typeof args.skip === "number" ? Math.max(0, args.skip) : 0;
@@ -217,7 +223,7 @@ class Table {
     return limited.map(revive);
   }
 
-  async update(args: { where: Row; data: Row }): Promise<Row> {
+  async update(args: { where: Row; data: Row }): Promise<any> {
     const index = this.rows().findIndex((row) => matches(row, args.where));
     if (index === -1) {
       throw new Error(

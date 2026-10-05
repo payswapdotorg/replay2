@@ -526,8 +526,11 @@ export default function Console() {
               </p>
             )}
             {workers.workers.map((w) => {
-              const fullTab = w.tabId
-                ? tabs.tabs.find((t) => t.id.startsWith(w.tabId))
+              // capture to const: w.tabId narrowing does not survive the
+              // find() callback boundary (mutable property on a param)
+              const tabKey = w.tabId;
+              const fullTab = tabKey
+                ? tabs.tabs.find((t) => t.id.startsWith(tabKey))
                 : undefined;
               const isMirrored = fullTab ? fullTab.id === tabs.active : false;
               const live =
