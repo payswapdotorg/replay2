@@ -26,7 +26,7 @@ HERE = os.path.dirname(os.path.abspath(__file__))
 sys.path.insert(0, HERE)
 import channel  # noqa: E402
 
-LANES = ["unicom-w1-004", "unicom-w2-004"]  # wave-4 retry (w3-004 landed first shot 22:23Z)
+LANES = ["unicom-w1-005", "unicom-w3-005"]  # wave-5 retry (w2-005 landed first shot 03:56Z)
 REGISTRY = os.path.join(HERE, "flags", "session_registry.jsonl")
 LOG = os.path.join(HERE, "logs", "retry_lanes.log")
 ROUND_S = 240
