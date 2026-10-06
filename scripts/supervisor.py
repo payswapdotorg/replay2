@@ -423,6 +423,28 @@ def _rm_devstate():
     except Exception:
         pass
 
+
+def _rm_next_cache():
+    """Clear the console host's Turbopack cache before a respawn.
+
+    2026-10-06 incident: an OOM-killed PostCSS worker corrupted the
+    platform app's .next cache ("Failed to write app endpoint /page"
+    panic on EVERY request — CSS pipe EOF mid-transform), and this
+    restart path respawned WITHOUT clearing it, so every restart hit
+    the same poisoned cache: an infinite kill/restart loop that held
+    the console on HTTP 500 for hours and read to the operator as a
+    dead deployment. A cleared cache costs one cold compile (~15s);
+    a poisoned one costs the console. Only the console-host cache
+    (my-project) is ever touched."""
+    import shutil
+    nxt = "/home/z/my-project/.next"
+    if os.path.isdir(nxt):
+        try:
+            shutil.rmtree(nxt, ignore_errors=True)
+            log(f"cleared dev cache {nxt} before respawn (panic-loop guard)")
+        except Exception:
+            pass
+
 def _console_pids():
     """PIDs of the console family. Since 2026-09-30 the console is the
     PLATFORM app (/home/z/my-project): the tracked dev.pid (bun parent,
@@ -531,11 +553,19 @@ def ensure_dev():
             log(f"dev server :{CONSOLE_PORT} not up for " + str(int(time.time() - first)) + "s with process alive — killing wedged dev, restarting")
             for p in pids:
                 subprocess.run(["kill", p], capture_output=True)
+            # let SIGTERM land, then hard-kill any survivor BEFORE removing
+            # the cache — a live next-server can re-poison .next mid-rmtree
+            time.sleep(3)
+            for p in pids:
+                if os.path.exists("/proc/" + p):
+                    subprocess.run(["kill", "-9", p], capture_output=True)
             _rm_devstate()
+            _rm_next_cache()
             _spawn_dev()
             return True
         return False  # still starting — be patient, do NOT stampede
     log(f"dev server :{CONSOLE_PORT} DEAD — restarting")
+    _rm_next_cache()
     _spawn_dev()
     return True
 
