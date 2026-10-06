@@ -55,6 +55,60 @@ if not chrome:
     raise SystemExit(1)
 print("chrome:", chrome)
 
+
+def clear_stale_singletons(profile_dir):
+    """Remove stale Chromium Singleton* locks after a hard sandbox reset.
+
+    Incident (reset-19, 2026-10-06): the durable profile's SingletonLock
+    symlink encodes the holding Chrome as `<host>-<pid>`; a machine reboot
+    kills that Chrome but the symlink survives INSIDE the durable profile,
+    so every subsequent Chromium launch aborts with "profile appears to be
+    in use by another Chromium process" and the supervisor crash-loops
+    Chrome until the locks are deleted by hand — defeating the whole
+    durable-profile directive. launch_stack is the single launcher (the
+    supervisor re-runs it only when CDP is dead), so a lock whose pid is
+    dead or non-Chrome is definitionally stale: clear it (plus the
+    Cookie/Socket symlinks). A pid that is ALIVE and IS chrome means real
+    contention — leave everything untouched. Login data (Cookies, Login
+    Data) lives in other files and is never touched.
+    """
+    import re
+    lock = os.path.join(profile_dir, "SingletonLock")
+    if not (os.path.islink(lock) or os.path.exists(lock)):
+        return []
+    holder_alive_chrome = False
+    try:
+        tgt = os.path.basename(os.readlink(lock)) if os.path.islink(lock) else ""
+        m = re.search(r"-(\d+)$", tgt)
+        if m:
+            pid = int(m.group(1))
+            try:
+                comm = open(f"/proc/{pid}/comm").read().strip()
+                holder_alive_chrome = comm.startswith("chrome")
+            except OSError:
+                holder_alive_chrome = False  # dead pid — stale
+    except OSError:
+        pass  # unreadable/dangling — stale
+    if holder_alive_chrome:
+        print("profile lock held by a LIVE chrome (pid in lock) — not touching")
+        return []
+    removed = []
+    for name in ("SingletonLock", "SingletonCookie", "SingletonSocket"):
+        p = os.path.join(profile_dir, name)
+        try:
+            if os.path.islink(p) or os.path.exists(p):
+                os.remove(p)
+                removed.append(name)
+        except OSError:
+            pass
+    if removed:
+        print("stale profile singleton lock cleared (holder dead/non-chrome):",
+              ",".join(removed))
+    return removed
+
+
+clear_stale_singletons(PROFILE)
+
 # 1. Xvfb (a duplicate display bind simply fails and exits — harmless)
 p1 = subprocess.Popen(["Xvfb", DISPLAY, "-screen", "0", f"{SCREEN}x24"],
     stdout=open(os.path.join(BASE, "xvfb.log"), "w"), stderr=subprocess.STDOUT,
