@@ -35,7 +35,8 @@ import sys
 import time
 import urllib.request
 
-WT = "/home/z/fleetos-w151"          # the worktree tracking main (push rights)
+WT = "/home/z/fleetos"              # main-tracking clone (push rights); self-heals on reset
+CLONE_URL = "https://x-access-token:{PAT}@github.com/payswapdotorg/Fleetos.git"
 FLAGS = "/home/z/replay2/scripts/flags"
 LOG = "/home/z/replay2/scripts/logs/deploy_watch.log"
 REPO = "payswapdotorg/Fleetos"
@@ -81,6 +82,21 @@ def vercel_status(sha):
     return None, None
 
 
+def ensure_wt():
+    """Self-heal: re-clone the main-tracking worktree if a sandbox reset wiped it.
+    (2026-10-06 08:1xZ lesson: the daemon died on the wiped /home/z/fleetos-w151
+    hardcode; the clone must never be a single point of failure again.)"""
+    if os.path.isdir(os.path.join(WT, ".git")):
+        return
+    log(f"worktree {WT} missing — re-cloning from origin (self-heal)")
+    url = CLONE_URL.replace("{PAT}", pat())
+    r = subprocess.run(["git", "clone", "--quiet", url, WT],
+                       capture_output=True, text=True, timeout=600)
+    if r.returncode != 0:
+        raise RuntimeError("self-heal clone failed: " + r.stderr.strip()[:300])
+    log(f"self-heal clone OK (main @ {tip()[:12]})")
+
+
 def git(*args):
     r = subprocess.run(["git", "-C", WT, *args], capture_output=True, text=True, timeout=120)
     if r.returncode != 0:
@@ -115,6 +131,7 @@ def prod_check():
 def main():
     os.makedirs(FLAGS, exist_ok=True)
     os.makedirs(os.path.dirname(LOG), exist_ok=True)
+    ensure_wt()
     # PROBE_START = 18:30Z Oct 6 2026 UTC
     import calendar
     probe_start = calendar.timegm(time.strptime("2026-10-06 18:30:00", "%Y-%m-%d %H:%M:%S"))
@@ -122,7 +139,17 @@ def main():
     last_probe = 0.0
     while True:
         now = time.time()
-        sha = tip()
+        try:
+            sha = tip()
+        except Exception as e:
+            log(f"tip() failed ({str(e)[:120]}) — attempting self-heal")
+            try:
+                ensure_wt()
+                sha = tip()
+            except Exception as e2:
+                log(f"self-heal failed: {str(e2)[:200]} — retry in 10 min")
+                time.sleep(600)
+                continue
         state, target = vercel_status(sha)
         if state == "success":
             code, marker = prod_check()
