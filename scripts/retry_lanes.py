@@ -26,7 +26,7 @@ HERE = os.path.dirname(os.path.abspath(__file__))
 sys.path.insert(0, HERE)
 import channel  # noqa: E402
 
-LANES = ["unicom-w2-005"]  # W2-005 re-landing (turn-1 died mid-exploration; phantoms under capacity window)
+LANES = ["unicom-w2-006"]  # W2-006 re-dispatch (x-preview-l fiction session voided; agent-class needed)
 REGISTRY = os.path.join(HERE, "flags", "session_registry.jsonl")
 LOG = os.path.join(HERE, "logs", "retry_lanes.log")
 ROUND_S = 240
