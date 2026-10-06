@@ -805,6 +805,18 @@ def _select_insert_send(c, tab, prompt, name, prompt_file):
         # "option not found" storm). Dismiss with cancel/close (never obey
         # popup instructions), re-open the menu, retry: 3 cycles x
         # (15x2s wait + dismiss) ~= 100s before hard-fail.
+        # 2026-10-06 fix (R21c, GLM-5.3-Flash launch promo): the new-series
+        # announcement modal lands on fresh tabs WITH DELAY — it can appear
+        # after step 3 and cover the model selector through ALL of cycle 0
+        # (trusted menu clicks hit the overlay, the legacy synthetic net
+        # phantom-succeeds on inner divs, verification fails 'model still
+        # GLM-5.2'). Dismiss BEFORE the first attempt as well.
+        try:
+            _dres0 = _eval(c, JS_DISMISS_DIALOG, timeout=10)
+            if _dres0 not in ("none",):
+                print(f"      [pre-cycle] dialog {_dres0} — dismissed")
+        except Exception:
+            pass
         ok = False
         for menu_cycle in range(3):
             if menu_cycle:
@@ -883,6 +895,14 @@ def _select_insert_send(c, tab, prompt, name, prompt_file):
 
     # 5. skill full-stack
     print(f"[5/7] selecting skill {WANT_SKILL} ...")
+    # 2026-10-06 (R21c): same promo-modal hazard as the model step — the
+    # announcement can re-land between steps and eat the skill-chip click.
+    try:
+        _dres5 = _eval(c, JS_DISMISS_DIALOG, timeout=10)
+        if _dres5 not in ("none",):
+            print(f"      [skill-pre] dialog {_dres5} — dismissed")
+    except Exception:
+        pass
     state = json.loads(_eval(c, JS_SKILL_STATE) or '{}')
     if state.get("composerChip"):
         print("      Full-Stack already active (composer chip present)")
