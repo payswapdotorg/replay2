@@ -10,7 +10,7 @@ import time
 HERE = os.path.dirname(os.path.abspath(__file__))
 LOG = os.path.join(HERE, "logs", "branch_watch.log")
 REPO = "/home/z/UniCom"
-WAVE = ["w1-005", "w2-005", "w3-005"]
+WAVE = ["w2-005", "w1-006", "w3-006"]
 ROUND_S = 120
 MAX_ROUNDS = 240  # 8h
 
