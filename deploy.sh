@@ -187,14 +187,18 @@ http_ok "http://127.0.0.1:$REPLAYD_PORT/healthz" || say "WARN: replayd not healt
 if console_ok "$PORT"; then
   say "console :$PORT already up (identity verified)"
 else
-  if http_ok "http://127.0.0.1:$PORT"; then
-    say ":$PORT is up but NOT the replay console — evicting squatter…"
-    evict_squatters "$PORT"
-    for i in $(seq 1 15); do
-      http_ok "http://127.0.0.1:$PORT" || break
-      sleep 1
-    done
-  fi
+  # 2026-10-07 (evening) hardening: evict UNCONDITIONALLY when the console
+  # identity check fails. A cold-compiling squatter (on-demand first compile
+  # of / exceeds http_ok's 4s budget under load) made http_ok return false,
+  # the eviction was skipped entirely, and the console died on EADDRINUSE
+  # with the squatter still holding the port. evict_squatters is a no-op
+  # when nothing holds the port, so this is always safe.
+  say ":$PORT is not the replay console — evicting any squatter…"
+  evict_squatters "$PORT"
+  for i in $(seq 1 15); do
+    http_ok "http://127.0.0.1:$PORT" || break
+    sleep 1
+  done
   say "starting console dev server :$PORT…"
   # CONSOLE_LAUNCHER: per-deployment console choice (shared-repo contract).
   # Default scripts/launch_console.py = platform app (my-project) — correct
