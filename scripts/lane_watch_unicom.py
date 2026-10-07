@@ -43,7 +43,7 @@ FLAGS = os.path.join(BASE, "flags")
 REGISTRY = os.path.join(FLAGS, "session_registry.jsonl")
 HEARTBEAT = os.path.join(FLAGS, "lane_watch_hb")
 ROUND_S = 120
-NAME_RE = re.compile(r"^unicom-", re.I)
+NAME_RE = re.compile(r"^(unicom|tradrl)-", re.I)
 URL_RE = re.compile(r"/c/([0-9a-f-]{36})")
 
 log = lambda m: print(f"[lane_watch {time.strftime('%H:%M:%S')}] {m}", flush=True)
