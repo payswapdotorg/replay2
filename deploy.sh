@@ -30,6 +30,22 @@ if [ -f "$SCRIPTS/env.sh" ]; then
   echo "[deploy] secrets: scripts/env.sh sourced"
 fi
 
+# Durable ops vault (2026-10-07): scripts/env.sh is deployment-local and
+# dies with this checkout on every sandbox reset. A vault kept beside the
+# DURABLE browser profile — the visible unignored path class that survives
+# resets, same convention as profile.py's default — is sourced on every
+# deploy so a fresh checkout re-inherits runtime secrets (worker-dispatch
+# PAT, deploy tokens) with zero operator friction. REPLAY_VAULT overrides
+# the file; REPLAY_VAULT=none disables. Vault lines are expected to
+# `export` their values.
+_profile_dir="${REPLAY_PROFILE_DIR:-/home/z/my-project/browser-profile}"
+_vault="${REPLAY_VAULT:-$_profile_dir/ops-vault.env}"
+if [ "$_vault" != "none" ] && [ -f "$_vault" ]; then
+  . "$_vault"
+  echo "[deploy] secrets: durable vault sourced: $_vault"
+fi
+unset _profile_dir _vault
+
 say() { echo "[deploy $(date +%H:%M:%S)] $*"; }
 
 http_ok() { curl -sf -o /dev/null --max-time 4 "$1" && return 0 || return 1; }
@@ -60,7 +76,28 @@ evict_squatters() {
       cwd=$(readlink "/proc/$tok/cwd" 2>/dev/null || true)
       cmd=$(tr '\0' ' ' < "/proc/$tok/cmdline" 2>/dev/null || true)
       case "$cwd$cmd" in *replay2*) continue ;; esac
+      # SIGTERM politely first; escalate if ignored. 2026-10-07 hardening:
+      # a live PORT GUARD run sent SIGTERM to a next-server v16 squatter,
+      # it survived, the console never bound :3000 and the deploy ended
+      # with the wrong app still on the port. Grace, then SIGKILL.
       kill "$tok" 2>/dev/null || true
+      sleep 0.4
+      if kill -0 "$tok" 2>/dev/null; then kill -9 "$tok" 2>/dev/null || true; fi
+      # Kill the non-replay2 PPID chain as well: dev-server supervisors
+      # (the `next dev` watcher et al.) respawn the listener when it dies
+      # alone, re-squatting the port seconds after the eviction.
+      local p="$tok" ppp pcwd pcmd
+      while [ -n "$p" ] && [ "$p" != "1" ] && [ "$p" != "0" ]; do
+        ppp=$(awk '{print $4}' "/proc/$p/stat" 2>/dev/null) || break
+        [ -n "$ppp" ] || break
+        [ "$ppp" = "1" ] && break
+        [ "$ppp" = "$tok" ] && break
+        pcwd=$(readlink "/proc/$ppp/cwd" 2>/dev/null || true)
+        pcmd=$(tr '\0' ' ' < "/proc/$ppp/cmdline" 2>/dev/null || true)
+        case "$pcwd$pcmd" in *replay2*) break ;; esac
+        kill -9 "$ppp" 2>/dev/null || true
+        p="$ppp"
+      done
       evicted="$evicted pid $tok (${cwd:-${cmd:0:70}})"
     done
   done < <(ss -tlnp 2>/dev/null)
