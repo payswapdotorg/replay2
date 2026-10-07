@@ -4,7 +4,7 @@
 # the gold standard), with workspace + chat freshness ticks for diagnosis.
 # Exits the moment the branch is on the remote (TL harvest can begin).
 cd /home/z/replay2/scripts
-CHAT=57530af9-0c99-40af-9a07-a4ef5adb2ff1
+CHAT=fd6ef309-6dc3-422b-9263-8f9a65a35261
 LOG=flags/w28_watch.log
 declare -A SEEN
 while true; do
