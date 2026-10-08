@@ -139,5 +139,20 @@ log "PAT remotes set (TradRL/UniCom/Fleetos)"
 command -v pnpm >/dev/null 2>&1 || corepack prepare pnpm@10.33.2 --activate >/dev/null 2>&1
 log "pnpm: $(pnpm --version 2>/dev/null || echo MISSING)"
 
+# 9. predev boot hook durability (2026-10-08 recycle lesson: download/recovery/
+#    is NOT fully durable — the hook died with it; the repo copy is the master).
+#    Reinstall the hook + keep the durable copy + the package.json wiring in sync.
+if [[ -f "$REPLAY2/scripts/predev_heal.sh" && ! -f "$DURABLE_DIR/predev-heal.sh" ]]; then
+  cp "$REPLAY2/scripts/predev_heal.sh" "$DURABLE_DIR/predev-heal.sh"
+  chmod +x "$DURABLE_DIR/predev-heal.sh"
+  log "predev-heal.sh reinstalled from repo master"
+fi
+if [[ -f "$DURABLE_DIR/credentials.env" && ! -f "/home/z/my-project/browser-profile/ops-vault.env" ]]; then
+  mkdir -p /home/z/my-project/browser-profile
+  cp "$DURABLE_DIR/credentials.env" /home/z/my-project/browser-profile/ops-vault.env
+  chmod 600 /home/z/my-project/browser-profile/ops-vault.env
+  log "ops-vault reseeded from durable credentials"
+fi
+
 log "=== TL recover done ==="
 exit 0
