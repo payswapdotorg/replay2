@@ -18,6 +18,14 @@ Duties (cycle every 60s):
     durable file, log the wait state (operator must log in through the
     console once; the keeper captures it the moment it lands).
 
+2026-10-08 walk law (the stop_continue fix-3 pattern applied here): a
+wedged tabs[0] renderer (SecurityError on localStorage — the cold-boot
+broken-tab class) made the keeper judge a LOGGED-IN browser as 'not
+authenticated' and hammer stale-token restores against a dead tab while
+4 healthy tabs carried the live session. login_state and restore_pass
+now WALK ALL chat.z.ai tabs: 6s liveness ping first, first healthy tab
+wins, all-dead is the only failure (naming the last error).
+
 Launch: dfork_launch.py /tmp/login_keeper.log <py> login_keeper.py
 """
 import json
@@ -71,15 +79,24 @@ def ensure_chat_tab():
         return False
 
 
+def _chat_tabs():
+    return [t for t in pages() if "chat.z.ai" in (t.get("url") or "")]
+
+
 def login_state():
     """(token, identity) via CDP; (None, reason) on failure (never raises —
-    D-034: a 2.5h keeper death came from one uncaught WS timeout)."""
-    try:
-        tab = chat_tab()
-        if tab is None:
-            return None, "no-tab"
-        c = channel.CDP(tab["webSocketDebuggerUrl"], timeout=20)
+    D-034: a 2.5h keeper death came from one uncaught WS timeout).
+    Walk law: tabs are tried in order; a wedged renderer (SecurityError)
+    is skipped, the first healthy tab's read wins."""
+    tabs = _chat_tabs()
+    if not tabs:
+        return None, "no-tab"
+    last_err = "no-tab"
+    for tab in tabs:
+        c = None
         try:
+            c = channel.CDP(tab["webSocketDebuggerUrl"], timeout=20)
+            c.eval("1", await_promise=False, timeout=6)  # liveness ping
             tok = c.eval(
                 "(localStorage.getItem('token')||'')"
                 ".replace(/^\"|\"$/g,'')",
@@ -92,10 +109,15 @@ def login_state():
                 "return p.email||p.sub||'?'}catch(e){return 'parse-fail'}})()",
                 await_promise=False, timeout=8)
             return (tok or None), (ident or "?")
+        except Exception as e:
+            last_err = f"{type(e).__name__} on {str(tab.get('id', '?'))[:8]}"
         finally:
-            c.close()
-    except Exception as e:
-        return None, f"cdp-error: {type(e).__name__}"
+            if c is not None:
+                try:
+                    c.close()
+                except Exception:
+                    pass
+    return None, f"all-tabs-dead ({last_err})"
 
 
 def save_snapshot(tok, ident):
@@ -114,9 +136,29 @@ def save_snapshot(tok, ident):
         return False
 
 
+def _live_chat_tab():
+    """(tab, open CDP) for the first chat.z.ai tab whose renderer answers a
+    liveness ping — the walk law; a wedged tabs[0] must not block injection.
+    Caller owns closing the returned connection."""
+    for tab in _chat_tabs():
+        c = None
+        try:
+            c = channel.CDP(tab["webSocketDebuggerUrl"], timeout=30)
+            c.eval("1", await_promise=False, timeout=6)
+            return tab, c
+        except Exception:
+            if c is not None:
+                try:
+                    c.close()
+                except Exception:
+                    pass
+    return None, None
+
+
 def restore_pass():
     """Inject the durable token into a logged-out browser (bare, never
-    JSON-quoted). Bounded retries; every step guarded (D-034)."""
+    JSON-quoted). Bounded retries; every step guarded (D-034). Injection
+    targets the first LIVE tab (the walk law)."""
     if not os.path.exists(DURABLE):
         return False
     try:
@@ -127,13 +169,15 @@ def restore_pass():
         return False
     for attempt in range(1, RESTORE_RETRY + 1):
         try:
-            tab = chat_tab()
+            tab, c = _live_chat_tab()
             if tab is None:
                 if not ensure_chat_tab():
                     time.sleep(10)
                     continue
-                tab = chat_tab()
-            c = channel.CDP(tab["webSocketDebuggerUrl"], timeout=30)
+                tab, c = _live_chat_tab()
+                if tab is None:
+                    time.sleep(10)
+                    continue
             try:
                 c.eval("localStorage.clear()", await_promise=False, timeout=8)
                 # THE LAW: bare, never JSON-quoted
