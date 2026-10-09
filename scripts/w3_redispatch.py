@@ -229,7 +229,15 @@ def main():
                     time.sleep(START_WAIT)
                     continue
                 if why in ("no-tab", "no-live-record"):
-                    create("w3a")
+                    # 13:0xZ wedge class: a live record whose tab vanished
+                    # ("no-tab") or a half-created record (sent=false) both
+                    # block create() with "already exists" — recycle first.
+                    if why == "no-tab":
+                        void("w3a", "canary tab lost — recycle for fresh dispatch")
+                        close_tabs_for("w3a")
+                    if not create("w3a"):
+                        void("w3a", "stale half-created record (never sent) — un-wedge")
+                        create("w3a")
                     save_state(st)
                     time.sleep(START_WAIT)
                     continue
@@ -262,7 +270,15 @@ def main():
                 alive, why = check_alive(name)
                 if why == "no-live-record":
                     log("monitor: %s lost its record — re-dispatching" % name)
-                    create(name)
+                    # 13:0xZ wedge fix: a create that fails mid-way (e.g. the
+                    # 13:01:43Z w3c model-selection flake) still writes its
+                    # record with sent=false — that record then blocks every
+                    # retry with "already exists". Void the stale record
+                    # (closes its leftover tab) and retry the create in-pass.
+                    if not create(name):
+                        log("monitor: %s create blocked — voiding stale record, retrying" % name)
+                        void(name, "stale half-created record (never sent) — un-wedge")
+                        create(name)
                 elif not alive and why in ("no-tab",):
                     log("monitor: %s tab lost — re-dispatching" % name)
                     void(name, "tab lost in monitor phase")

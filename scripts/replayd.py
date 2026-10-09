@@ -139,11 +139,27 @@ def pick_tab(tabs=None):
     # stored pointer is stale (tab closed / sandbox reset) — resolve fresh
     # and SELF-HEAL the pointer so frames, input and /healthz agree on one
     # tab instead of re-resolving (and re-writing) on every request.
+    # 2026-10-09 12:5xZ leak fix: never self-heal the mirror onto the
+    # probe's background ping tab (flags/probe_tab.txt). It is automation-
+    # owned and never a legitimate console target; landing there makes a
+    # relaunched probe falsely yield + orphan its own tab (~200MB/cycle
+    # under OOM pressure) and spams the operator's mirrored view with pings.
+    try:
+        probe_tid = open(os.path.join(FLAGS, "probe_tab.txt")).read().strip()
+    except Exception:
+        probe_tid = ""
     picked = None
     for t in tabs:
         if "chat.z.ai" in (t.get("url") or ""):
+            if probe_tid and t.get("id") == probe_tid:
+                continue
             picked = t
             break
+    if picked is None:
+        for t in tabs:
+            if not (probe_tid and t.get("id") == probe_tid):
+                picked = t
+                break
     if picked is None:
         picked = tabs[0]
     try:

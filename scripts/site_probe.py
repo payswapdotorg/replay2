@@ -34,6 +34,7 @@ import channel  # noqa: E402
 FLAGS = os.path.join(BASE, "flags")
 PROBE_TAB_PREFIX = "784E7732"
 PROBE_TAB_FILE = os.path.join(FLAGS, "probe_tab.txt")
+PROBE_TAB_URL_FILE = os.path.join(FLAGS, "probe_tab_url.txt")
 PROBE_MSG = "ping2"
 PROBE_INTERVAL = int(os.environ.get("PROBE_INTERVAL", "420"))
 MAX_CYCLES = int(os.environ.get("PROBE_CYCLES", "40"))
@@ -51,6 +52,22 @@ def _track_tab(tab_id):
         f.write(tab_id)
 
 
+def _remember_tab_url(url):
+    """Sidecar: the URL we last left our tracked tab on (leak fix 12:5xZ)."""
+    try:
+        with open(PROBE_TAB_URL_FILE, "w") as f:
+            f.write((url or "").strip())
+    except Exception:
+        pass
+
+
+def _last_known_tab_url():
+    try:
+        return open(PROBE_TAB_URL_FILE).read().strip()
+    except Exception:
+        return ""
+
+
 def fresh_probe_tab():
     """Open a NEW homepage tab and track it as probe-owned.
 
@@ -62,6 +79,7 @@ def fresh_probe_tab():
     have adopted the console's operator tab (collision with replayd)."""
     tab = channel.new_tab("https://chat.z.ai/")
     _track_tab(tab["id"])
+    _remember_tab_url(tab.get("url") or "https://chat.z.ai/")
     time.sleep(6)
     print("[probe] fresh probe tab %s opened" % tab["id"][:8], flush=True)
     return tab
@@ -180,10 +198,28 @@ def main():
         tab = find_probe_tab()
         if tab is None:
             tab = fresh_probe_tab()
+        else:
+            # per-cycle URL bookkeeping (leak fix 12:5xZ): remember where our
+            # tab currently sits so a later generation can tell "operator
+            # navigated it away" (URL changed) from "pointer artifact".
+            _remember_tab_url(tab.get("url") or "")
         # operator-collision guard: never ping the console's active tab
         active = _operator_active_tab()
         if active and tab["id"] == active:
-            print("[probe] tracked tab IS the operator's active console tab — yielding (fresh tab)", flush=True)
+            # 2026-10-09 12:5xZ leak fix: replayd's pick_tab() self-heal lands
+            # the active pointer on the FIRST chat.z.ai tab — after a canary
+            # void that is often OUR OWN ping tab. Yielding then orphans it
+            # (~200MB/cycle under OOM pressure). Discriminate: if the tab is
+            # still at the URL we left it at, no operator takeover happened —
+            # close it (reclaim) and open a fresh one. If the URL changed (or
+            # is unknown), treat it as a real operator asset: leave it open.
+            cur = (tab.get("url") or "").strip()
+            last = _last_known_tab_url()
+            if last and cur == last:
+                print("[probe] guard: active pointer is a self-heal artifact (URL unchanged) — reclaiming probe tab", flush=True)
+                _close_tab(tab)
+            else:
+                print("[probe] tracked tab taken over (URL %s vs known %s) — yielding (fresh tab)" % (cur[:48] or "?", last[:48] or "?"), flush=True)
             tab = fresh_probe_tab()
         try:
             ws = channel.CDP(tab["webSocketDebuggerUrl"], timeout=45)
