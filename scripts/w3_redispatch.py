@@ -250,6 +250,19 @@ def main():
                         log("canary w3a landed but lane already delivered — voiding duplicate turn")
                         void("w3a", "duplicate canary: w3a lane already delivered (branch moved)")
                     for lane in ("w3b", "w3c"):
+                        # 15:2xZ live-lane guard: a re-fan (after a canary
+                        # reset from monitor) must NEVER void a live WORKING
+                        # lane — create() would hit "already exists" and the
+                        # wedge-fix would void+re-create it, killing the turn.
+                        # But a stalled record (record live, turn dead) is NOT
+                        # protected — it is healed (void + fresh dispatch).
+                        if live_record(lane):
+                            a2, w2 = check_alive(lane)
+                            if a2:
+                                log("fan-out %s: live WORKING lane — skipping (protecting)" % lane)
+                                continue
+                            log("fan-out %s: stalled record (turn dead: %s) — recycling" % (lane, w2))
+                            void(lane, "fan-out heal: stalled turn on live record")
                         landed = False
                         for attempt in range(3):
                             create(lane)
@@ -263,9 +276,20 @@ def main():
                                 % (lane, why2, attempt + 1))
                             void(lane, "fan-out window closed before turn start")
                         if not landed:
-                            log("fan-out %s: exhausted 3 attempts — monitor/TL owns retries" % lane)
-                    st["phase"] = "monitor"
-                    st["dispatched"] = ["w3a", "w3b", "w3c"]
+                            log("fan-out %s: exhausted 3 attempts" % lane)
+                    # window-aware phase selection: if ANY lane is live the
+                    # monitor owns them (blind re-creates would burn prompts
+                    # into a possibly-closed window); if NO lane landed, the
+                    # flap closed mid-fan-out — re-arm the canary so the next
+                    # window re-fans with retries (live lanes are skipped by
+                    # the guard above).
+                    if any(live_record(l) for l in ("w3b", "w3c")):
+                        st["phase"] = "monitor"
+                        st["dispatched"] = ["w3a", "w3b", "w3c"]
+                    else:
+                        log("fan-out exhausted with no live lane — re-arming canary for the next window")
+                        st["phase"] = "canary"
+                        st["dispatched"] = []
                     save_state(st)
                     time.sleep(START_WAIT)
                     continue
@@ -310,20 +334,29 @@ def main():
             for name in pending:
                 alive, why = check_alive(name)
                 if why == "no-live-record":
-                    log("monitor: %s lost its record — re-dispatching" % name)
-                    # 13:0xZ wedge fix: a create that fails mid-way (e.g. the
-                    # 13:01:43Z w3c model-selection flake) still writes its
-                    # record with sent=false — that record then blocks every
-                    # retry with "already exists". Void the stale record
-                    # (closes its leftover tab) and retry the create in-pass.
-                    if not create(name):
-                        log("monitor: %s create blocked — voiding stale record, retrying" % name)
-                        void(name, "stale half-created record (never sent) — un-wedge")
-                        create(name)
+                    # 15:2xZ window-awareness: a lane WITHOUT a live record
+                    # needs a real (in-window) dispatch — the blind create
+                    # here would burn a full prompt into a possibly-closed
+                    # window and leave a stalled record the monitor can't
+                    # remedy. Re-arm the canary phase instead: it detects
+                    # the next window and re-fans with retries (live lanes
+                    # are skipped by the fan-out guard).
+                    log("monitor: %s lost its record — re-arming canary phase for window-aware re-dispatch" % name)
+                    st["phase"] = "canary"
+                    st["dispatched"] = []
+                    save_state(st)
+                    break
                 elif not alive and why in ("no-tab",):
-                    log("monitor: %s tab lost — re-dispatching" % name)
+                    # tab closed = the SPA stream died = the turn is dead
+                    # (2026-10-02 doctrine); the chat's server-side work
+                    # survives — if the worker pushed, delivered() still
+                    # sees the tip. Void + canary re-arm for the re-fan.
+                    log("monitor: %s tab lost — voiding + re-arming canary" % name)
                     void(name, "tab lost in monitor phase")
-                    create(name)
+                    st["phase"] = "canary"
+                    st["dispatched"] = []
+                    save_state(st)
+                    break
             save_state(st)
             time.sleep(BACKOFF)
             continue
