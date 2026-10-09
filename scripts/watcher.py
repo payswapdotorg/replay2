@@ -288,10 +288,16 @@ def check_procs():
                 # (default launch_console.py = the platform app in my-project;
                 # pristine-scaffold deployments write "launch_dev.py" so the
                 # replay2-native console is resurrected instead of the scaffold).
+                # 2026-10-10: + "launch_prod.py" — align with supervisor.py's
+                # _console_launcher() whitelist (the 2026-10-09 ad2976e
+                # prod-preference fix updated the supervisor but missed THIS
+                # copy; observed live 22:47:48Z during the reset recovery: the
+                # watcher read flag=launch_prod.py, rejected it, and fell back
+                # to launch_console.py while the prod bundle was fine).
                 launcher = os.path.join(base, "launch_console.py")
                 try:
                     name = open(os.path.join(base, "flags", "console_launcher.txt")).read().strip()
-                    if name in ("launch_console.py", "launch_dev.py"):
+                    if name in ("launch_console.py", "launch_dev.py", "launch_prod.py"):
                         launcher = os.path.join(base, name)
                 except Exception:
                     pass
