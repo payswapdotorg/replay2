@@ -293,7 +293,7 @@ def _env_conf():
         except Exception:
             continue
     if env:
-        m = re.search(r"^\s*(?:export\s+)?REPO=([\w./-]+)", env, re.M)
+        m = re.search(r"^\s*(?:export\s+)?REPO=[\"\x27]?([\w./-]+)", env, re.M)
         if m:
             conf["repo"] = m.group(1).strip().strip("\"'")
         # tolerate optional double/single quotes around the token (the
