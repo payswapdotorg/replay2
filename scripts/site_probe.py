@@ -156,6 +156,21 @@ def _operator_active_tab():
 
 
 def main():
+    # 2026-10-09 08:1xZ stale-marker law: a fresh probe generation clears any
+    # pre-existing marker at startup. The marker's lifetime is therefore
+    # bounded by one probe generation (recovery -> probe exit -> relaunch).
+    # Rationale: no live consumer deletes it (forensics 08:0xZ), so a marker
+    # could otherwise linger indefinitely and falsely arm a FUTURE
+    # wave-watcher generated from the reekick template (which polls for
+    # this file). Startup-clearing makes a visible marker always mean
+    # "recovered within the current probe generation" — combined with the
+    # watcher's 90s double-verify, the spurious-fire surface is ~zero.
+    try:
+        os.remove(os.path.join(FLAGS, "site-recovered.txt"))
+        print("[probe] stale marker cleared at startup", flush=True)
+    except FileNotFoundError:
+        pass
+
     # 2026-10-09 02:0xZ semantics fix: marker = RECOVERY (DOWN -> UP
     # transition) only. A deployment that starts while the site is already
     # up never writes a marker (the TL already handled that state; firing
