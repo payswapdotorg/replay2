@@ -144,24 +144,39 @@ def check_alive(name):
 
 
 def delivered(name):
-    """Report marker (>= 2 occurrences incl. prompt echo) or branch push."""
+    """Report marker (>= 2 occurrences incl. prompt echo) or branch push.
+
+    14:38Z duplicate-burn lesson: a single ls-remote hiccup (timeout /
+    moved-repo redirect) once read a DELIVERED lane as pending and the
+    monitor re-dispatched a voided duplicate 7s after TL containment.
+    Retry up to 3x; only a tip that is PRESENT and still at base means
+    not-delivered. Total check failure assumes DELIVERED (skipping a
+    re-kick for one pass is cheap; burning a duplicate dispatch is not).
+    """
     rec = live_record(name)
     if not rec:
         return False
-    chat = rec["url"].split("/")[-1]
-    # branch push check (the GOLD signal)
     branch = {"w3a": "you/w3a-core", "w3b": "you/w3b-studio",
               "w3c": "you/w3c-reconstruction"}[name]
-    try:
-        r = subprocess.run(["git", "ls-remote", "https://github.com/payswapdotorg/LikeWise.git",
-                            "refs/heads/" + branch], cwd=BASE, timeout=30,
-                           capture_output=True, text=True)
-        tip = (r.stdout or "").strip().split()[0] if (r.stdout or "").strip() else ""
-        if tip and not tip.startswith("cd69cf3"):
-            return True
-    except Exception:
-        pass
-    return False
+    tip = ""
+    for attempt in range(3):
+        try:
+            r = subprocess.run(
+                ["git", "ls-remote",
+                 "https://github.com/payswapdotorg/LikeWise.git",
+                 "refs/heads/" + branch],
+                cwd=BASE, timeout=30, capture_output=True, text=True)
+            out = (r.stdout or "").strip()
+            if out:
+                tip = out.split()[0]
+                break
+        except Exception:
+            pass
+        time.sleep(2)
+    if not tip:
+        log("delivered(%s): ls-remote failed 3x — assuming delivered (fail-safe)" % name)
+        return True
+    return not tip.startswith("cd69cf3")
 
 
 def close_tabs_for(name):
@@ -221,8 +236,34 @@ def main():
                 log("canary w3a: %s (%s)" % ("ALIVE" if alive else "dead", why))
                 if alive:
                     log("canary ALIVE — dispatching w3b + w3c")
-                    create("w3b")
-                    create("w3c")
+                    # 14:3xZ flap lesson: a landed canary does NOT guarantee the
+                    # window stays open — the 13:00Z and 14:35Z fan-outs both
+                    # VERIFIED submits whose turns never got generation slots.
+                    # (a) if the w3a lane is ALREADY delivered (branch moved),
+                    # the landed canary is a duplicate turn — void it now (frees
+                    # the slot for the real lanes; monitor never re-creates a
+                    # delivered lane since delivered() reads the branch tip).
+                    # (b) each fanned lane gets up to 3 create->verify cycles:
+                    # markers within START_WAIT = turn LIVE; otherwise the
+                    # window closed before the turn started — void + retry.
+                    if delivered("w3a"):
+                        log("canary w3a landed but lane already delivered — voiding duplicate turn")
+                        void("w3a", "duplicate canary: w3a lane already delivered (branch moved)")
+                    for lane in ("w3b", "w3c"):
+                        landed = False
+                        for attempt in range(3):
+                            create(lane)
+                            time.sleep(START_WAIT)
+                            ok2, why2 = check_alive(lane)
+                            if ok2:
+                                log("fan-out %s: turn LIVE (attempt %d)" % (lane, attempt + 1))
+                                landed = True
+                                break
+                            log("fan-out %s: turn not started (%s) — recycling (attempt %d)"
+                                % (lane, why2, attempt + 1))
+                            void(lane, "fan-out window closed before turn start")
+                        if not landed:
+                            log("fan-out %s: exhausted 3 attempts — monitor/TL owns retries" % lane)
                     st["phase"] = "monitor"
                     st["dispatched"] = ["w3a", "w3b", "w3c"]
                     save_state(st)
