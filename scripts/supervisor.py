@@ -491,11 +491,14 @@ def _console_launcher():
     Default: launch_console.py (the platform app in /home/z/my-project).
     Pristine-scaffold deployments — where my-project has no console UI after
     a sandbox recycle — write "launch_dev.py" so resurrection starts the
-    replay2-native console instead of the scaffold. The file must name a
-    script inside scripts/; anything else falls back to the default."""
+    replay2-native console instead of the scaffold. "launch_prod.py" = the
+    PRODUCTION console (preferred whenever .next-prod exists — the 2026-10-09
+    OOM fix; launch_prod.py itself delegates to launch_dev.py when the bundle
+    is missing, so resurrecting through it can never dead-end). The file must
+    name a script inside scripts/; anything else falls back to the default."""
     try:
         name = open(os.path.join(BASE, "flags", "console_launcher.txt")).read().strip()
-        if name == "launch_console.py" or name == "launch_dev.py":
+        if name in ("launch_console.py", "launch_dev.py", "launch_prod.py"):
             return os.path.join(BASE, name)
     except Exception:
         pass

@@ -26,6 +26,16 @@ if not PORT:
     except Exception:
         PORT = "3000"
 
+# 2026-10-09 guard: never leave the operator without a console. If the prod
+# bundle is missing (fresh clone / failed build), delegate to DEV mode —
+# leaky but functional (the supervisor's ensure_dev doctrine, extended to
+# the prod path so a resurrection can never dead-end).
+if not os.path.exists(os.path.join(ROOT, ".next-prod", "BUILD_ID")):
+    print("launch_prod: .next-prod/BUILD_ID missing — delegating to launch_dev.py")
+    import runpy
+    runpy.run_path(os.path.join(BASE, "launch_dev.py"), run_name="__main__")
+    raise SystemExit(0)
+
 env = dict(os.environ)
 # Env parity with the dev deployment: deploy.sh sources scripts/env.sh (+
 # ~/.secrets/env.sh) before launching the stack, so the dev server inherits

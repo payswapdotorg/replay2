@@ -57,8 +57,14 @@ fi
 _pat="${PAYSWAP_PAT:-${GITHUB_TOKEN:-${GH_TOKEN:-}}}"
 if [[ -n "$_pat" ]]; then
   mkdir -p "$HOME/.secrets"
-  printf '# PAT relay for replay watcher (auto-seeded by tl_recover.sh 2026-10-09)\nPAYSWAP_PAT=%s\nGITHUB_TOKEN=%s\n' "$_pat" "$_pat" \
-    > "$HOME/.secrets/env.sh"
+  {
+    printf '# PAT relay for replay watcher (auto-seeded by tl_recover.sh 2026-10-09)\n'
+    # REPO relay (generic, §0-clean): propagate the deployment-local repo
+    # designation from the sourced vault into the relay file so bridge.py's
+    # repo card + launch_prod.py env parity survive recycles.
+    [[ -n "${REPO:-}" ]] && printf 'REPO=%s\n' "$REPO"
+    printf 'PAYSWAP_PAT=%s\nGITHUB_TOKEN=%s\n' "$_pat" "$_pat"
+  } > "$HOME/.secrets/env.sh"
   chmod 600 "$HOME/.secrets/env.sh"
   log "watcher PAT relay seeded (~/.secrets/env.sh)"
 else
@@ -122,6 +128,42 @@ else
   (cd "$REPLAY2" && CONSOLE_LAUNCHER=scripts/launch_dev.py bash deploy.sh >> "$LOG" 2>&1)
   if stack_healthy; then log "deploy OK — stack healthy"; else log "WARN: stack health check failed post-deploy — check $LOG"; fi
 fi
+
+# 5b. prod console upgrade (2026-10-09 OOM fix completion, replay2 c20d995):
+#     dev-mode next-server RSS grows ~134MB/min under UI frame polling and
+#     OOM-kills the console (15:59Z + 17:07Z deaths). deploy.sh boots DEV
+#     (always works, deps installed there); upgrade to the PROD console here
+#     once the bundle can be built, and flip the resurrection flag so console
+#     deaths come back as PROD (supervisor whitelist accepts launch_prod.py).
+#     Fallback doctrine preserved end-to-end: launch_prod.py itself delegates
+#     to launch_dev.py when .next-prod is missing — the watchdog chain never
+#     leaves the operator without a console.
+if [[ -d "$REPLAY2/node_modules" ]]; then
+  if [[ ! -f "$REPLAY2/.next-prod/BUILD_ID" ]]; then
+    log "building prod console bundle (.next-prod, bounded 420s)…"
+    if (cd "$REPLAY2" && NEXT_DIST_DIR=.next-prod timeout 420 bun run build >>"$LOG" 2>&1); then
+      log "prod bundle built"
+    else
+      log "WARN: prod bundle build failed — console stays DEV (leaky but functional)"
+    fi
+  fi
+  if [[ -f "$REPLAY2/.next-prod/BUILD_ID" ]]; then
+    printf 'launch_prod.py' > "$REPLAY2/scripts/flags/console_launcher.txt"
+    if [[ -f "$REPLAY2/scripts/dev.pid" ]] && kill -0 "$(cat "$REPLAY2/scripts/dev.pid")" 2>/dev/null; then
+      _dpid="$(cat "$REPLAY2/scripts/dev.pid")"
+      log "switching console dev($_dpid) → prod…"
+      kill -TERM -- "-$_dpid" 2>/dev/null; kill -TERM "$_dpid" 2>/dev/null; sleep 4
+      kill -KILL -- "-$_dpid" 2>/dev/null; kill -KILL "$_dpid" 2>/dev/null
+      (cd "$REPLAY2/scripts" && python3 launch_prod.py >>"$LOG" 2>&1)
+      log "prod console launched"
+    else
+      log "console launcher flag → launch_prod.py (no live dev console to switch)"
+    fi
+  fi
+else
+  log "console stays DEV (no node_modules for a prod build this run)"
+fi
+unset _dpid 2>/dev/null || true
 
 # 6. login keeper (auto-restores the session from the durable token)
 if keeper_running login_keeper.py; then
