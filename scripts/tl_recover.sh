@@ -139,7 +139,17 @@ fi
 #     to launch_dev.py when .next-prod is missing — the watchdog chain never
 #     leaves the operator without a console.
 if [[ -d "$REPLAY2/node_modules" ]]; then
-  if [[ ! -f "$REPLAY2/.next-prod/BUILD_ID" ]]; then
+  # 2026-10-10 poison-bundle guard: Next 15 writes BUILD_ID BEFORE
+  # prerender-manifest.json. A build killed by the 420s bound (or an
+  # OOM/timeout mid-finalize — observed live 2026-10-09 22:41Z) leaves
+  # BUILD_ID present but the bundle incomplete; the next `next start`
+  # then ENOENT-crash-loops on the missing manifest. Completeness = BOTH
+  # files; a partial bundle MUST trigger a rebuild (next build rewrites
+  # the distDir, self-healing the poison state).
+  if [[ ! -f "$REPLAY2/.next-prod/BUILD_ID" || ! -f "$REPLAY2/.next-prod/prerender-manifest.json" ]]; then
+    if [[ -f "$REPLAY2/.next-prod/BUILD_ID" ]]; then
+      log "partial prod bundle detected (BUILD_ID without prerender-manifest) — rebuilding"
+    fi
     log "building prod console bundle (.next-prod, bounded 420s)…"
     if (cd "$REPLAY2" && NEXT_DIST_DIR=.next-prod timeout 420 bun run build >>"$LOG" 2>&1); then
       log "prod bundle built"
@@ -147,7 +157,7 @@ if [[ -d "$REPLAY2/node_modules" ]]; then
       log "WARN: prod bundle build failed — console stays DEV (leaky but functional)"
     fi
   fi
-  if [[ -f "$REPLAY2/.next-prod/BUILD_ID" ]]; then
+  if [[ -f "$REPLAY2/.next-prod/BUILD_ID" && -f "$REPLAY2/.next-prod/prerender-manifest.json" ]]; then
     printf 'launch_prod.py' > "$REPLAY2/scripts/flags/console_launcher.txt"
     if [[ -f "$REPLAY2/scripts/dev.pid" ]] && kill -0 "$(cat "$REPLAY2/scripts/dev.pid")" 2>/dev/null; then
       _dpid="$(cat "$REPLAY2/scripts/dev.pid")"

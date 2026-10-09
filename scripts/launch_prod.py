@@ -30,8 +30,14 @@ if not PORT:
 # bundle is missing (fresh clone / failed build), delegate to DEV mode —
 # leaky but functional (the supervisor's ensure_dev doctrine, extended to
 # the prod path so a resurrection can never dead-end).
-if not os.path.exists(os.path.join(ROOT, ".next-prod", "BUILD_ID")):
-    print("launch_prod: .next-prod/BUILD_ID missing — delegating to launch_dev.py")
+# 2026-10-10 poison-bundle hardening: BUILD_ID alone is NOT completeness —
+# Next 15 writes it before prerender-manifest.json, and a build killed
+# mid-finalize (timeout/OOM — observed 2026-10-09 22:41Z) ENOENT-crash-loops
+# `next start`. Require BOTH files; partial → DEV fallback (tl_recover.sh
+# rebuilds the bundle on its next pass).
+_PROD_REQUIRED = ("BUILD_ID", "prerender-manifest.json")
+if not all(os.path.exists(os.path.join(ROOT, ".next-prod", f)) for f in _PROD_REQUIRED):
+    print("launch_prod: .next-prod bundle incomplete (need BUILD_ID + prerender-manifest.json) — delegating to launch_dev.py")
     import runpy
     runpy.run_path(os.path.join(BASE, "launch_dev.py"), run_name="__main__")
     raise SystemExit(0)
