@@ -47,6 +47,25 @@ else
   log "WARN: no durable credentials.env — continuing without PAT"
 fi
 
+# 1b. watcher PAT relay (2026-10-09 fix, standing "always fix the replay"):
+# watcher.py get_pat() reads ONLY ~/.secrets/env.sh (or scripts/env.sh) — it
+# never inspects the process env, so sourcing the vault above does NOT reach
+# it. Observed 2026-10-09: watcher booted 08:55:55 in degraded mode because
+# the ops-vault reseed landed 08:56 — after the daemon started. Seed the
+# relay file here so every recycle boots the watcher in full mode on its
+# first cycle (it also re-reads this file every ~2min cycle mid-flight).
+_pat="${PAYSWAP_PAT:-${GITHUB_TOKEN:-${GH_TOKEN:-}}}"
+if [[ -n "$_pat" ]]; then
+  mkdir -p "$HOME/.secrets"
+  printf '# PAT relay for replay watcher (auto-seeded by tl_recover.sh 2026-10-09)\nPAYSWAP_PAT=%s\nGITHUB_TOKEN=%s\n' "$_pat" "$_pat" \
+    > "$HOME/.secrets/env.sh"
+  chmod 600 "$HOME/.secrets/env.sh"
+  log "watcher PAT relay seeded (~/.secrets/env.sh)"
+else
+  log "WARN: no PAT in credentials — watcher will run degraded (anonymous branch watch)"
+fi
+unset _pat
+
 # 2. replay2 clone (public repo, no PAT needed)
 if [[ ! -d "$REPLAY2/.git" ]]; then
   git clone --quiet https://github.com/payswapdotorg/replay2.git "$REPLAY2" \
