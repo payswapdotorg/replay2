@@ -117,9 +117,26 @@ def poll_lane(lane):
         ws.close()
 
 
+def dom_probe(lane):
+    """Body-length probe on the lane's own tab (live-turn signal)."""
+    try:
+        for t in channel.list_tabs():
+            if lane["chat_id"] in (t.get("url") or ""):
+                ws = channel.CDP(t["webSocketDebuggerUrl"], timeout=20)
+                try:
+                    raw = ws.eval("document.body.innerText.length", timeout=12)
+                    return int(raw)
+                finally:
+                    ws.close()
+    except Exception:
+        pass
+    return None
+
+
 def main():
     log("lane-watch online (poll=%ss stall=%ss)" % (POLL, STALL_SILENT))
     last_sig = {}
+    dom_len = {}
     while True:
         lanes = load_lanes()
         for lane in lanes:
@@ -133,10 +150,14 @@ def main():
                 log("%s poll api err: %s" % (name, d["err"]))
                 continue
             now = time.time()
-            sig = (d["n"], d["lastTs"], d["reportLen"])
+            dlen = dom_probe(lane)
+            grew = dlen is not None and dlen > dom_len.get(name, 0) + 200
+            if dlen is not None:
+                dom_len[name] = dlen
+            sig = (d["n"], d["lastTs"], d["reportLen"], dlen)
             if sig != last_sig.get(name):
-                log("%s n=%d lastTs=%s work=%d gen=%s reportLen=%d" % (
-                    name, d["n"], d["lastTs"], d["workHits"], d["gen"], d["reportLen"]))
+                log("%s n=%d lastTs=%s work=%d gen=%s reportLen=%d domLen=%s" % (
+                    name, d["n"], d["lastTs"], d["workHits"], d["gen"], d["reportLen"], dlen))
                 last_sig[name] = sig
             if d["reportLen"] and not lane.get("delivered"):
                 try:
@@ -158,7 +179,8 @@ def main():
                 if ts > 1e12: ts /= 1000.0
                 if ts < 1e9: ts = 0
                 silent = now - (ts if ts else lane.get("started", now))
-                if STALL_SILENT and silent > STALL_SILENT and d["n"] > 0 and d["workHits"] == 0:
+                if (STALL_SILENT and silent > STALL_SILENT and d["n"] > 0
+                        and d["workHits"] == 0 and not grew):
                     stall_flag = os.path.join(FLAGS, "%s-stalled" % name)
                     if not os.path.exists(stall_flag):
                         open(stall_flag, "w").write("silent=%.0fs\n" % silent)
