@@ -2075,7 +2075,12 @@ def main():
         if arg.startswith("@") and _p.isfile(arg[1:]):
             msg = _subst_pat(open(arg[1:], encoding="utf-8").read())
         else:
-            msg = arg
+            # 2026-10-10 fix: the literal-message branch skipped _subst_pat —
+            # a literal send carrying [REDACTED:github_token] reached the
+            # worker UN-substituted (live incident: the Wave-11 token
+            # correction had to be re-sent as an @file). Substituting both
+            # branches is safe: _subst_pat is a no-op when no placeholder.
+            msg = _subst_pat(arg)
         return send(sys.argv[2], msg)
     if cmd == "list":
         for s in _sessions():
