@@ -90,6 +90,10 @@ printf '3000'         > "$REPLAY2/scripts/flags/console_port.txt"
 
 # 4. restore deployment-local state (mission-state, packets, registry seeds)
 [[ -f "$DURABLE_DIR/mission-state.json" ]] && cp "$DURABLE_DIR/mission-state.json" "$REPLAY2/data/mission-state.json" && log "mission-state restored"
+[[ -f "$DURABLE_DIR/watch_repo.txt" ]] && cp "$DURABLE_DIR/watch_repo.txt" "$REPLAY2/scripts/flags/watch_repo.txt" \
+  && log "watcher repo designation restored"
+[[ -f "$DURABLE_DIR/local-services.json" ]] && cp "$DURABLE_DIR/local-services.json" "$REPLAY2/scripts/flags/local_services.json" \
+  && log "local services spec restored (supervisor re-arms the deployment daemons)"
 if [[ -d "$DURABLE_DIR/worker-prompts" ]] && [[ -n "$(ls -A "$DURABLE_DIR/worker-prompts" 2>/dev/null)" ]]; then
   cp "$DURABLE_DIR"/worker-prompts/*.md "$REPLAY2/scripts/worker-prompts/" 2>/dev/null && log "worker packets restored"
 fi
@@ -183,30 +187,48 @@ else
   log "login_keeper launched (dfork'd)"
 fi
 
-# 7. lane watcher (console strip: server-side lane probes every 120s)
-if keeper_running lane_watch_unicom.py; then
-  log "lane_watch already live"
+# 7. lane watcher — DEPLOYMENT-OPT-IN (era-neutral fix, 2026-10-10 pod-recycle #3:
+#    hardcoded lane_watch_unicom.py resurrected a DEAD ERA's watcher into the
+#    LikeWise deployment). Launch ONLY when the durable volume carries the
+#    opt-in marker lane-watch.enabled naming the watcher script.
+if [[ -f "$DURABLE_DIR/lane-watch.enabled" ]]; then
+  _lw="$(cat "$DURABLE_DIR/lane-watch.enabled" | head -1 | tr -d '[:space:]')"
+  [[ -z "$_lw" ]] && _lw="lane_watch_unicom.py"
+  if keeper_running "$_lw"; then
+    log "lane_watch ($_lw) already live"
+  else
+    (cd "$REPLAY2/scripts" && python3 dfork_launch.py "logs/lane_watch.log" python3 "$_lw")
+    log "lane_watch ($_lw) launched (dfork'd, durable opt-in)"
+  fi
 else
-  (cd "$REPLAY2/scripts" && python3 dfork_launch.py logs/lane_watch_unicom.log python3 lane_watch_unicom.py)
-  log "lane_watch launched (dfork'd)"
+  log "lane watch: not enabled for this deployment (no lane-watch.enabled) — skipped"
 fi
 
-# 8. project clones + PAT remotes (TradRL is the live mission; UniCom/Fleetos
-#    are closed-but-referenced)
-for repo in TradRL UniCom Fleetos; do
-  dir="/home/z/$repo"
-  if [[ ! -d "$dir/.git" ]]; then
-    git clone --quiet "https://github.com/payswapdotorg/$repo.git" "$dir" \
-      && log "$repo cloned @ $(cd "$dir" && git rev-parse --short HEAD)" \
-      || log "WARN: $repo clone failed"
-  else
-    (cd "$dir" && git fetch --quiet origin && log "$repo refreshed (main @ $(git rev-parse --short origin/main 2>/dev/null || echo '?'))")
-  fi
-  if [[ -n "${GITHUB_PAT:-}" ]] && [[ -d "$dir/.git" ]]; then
-    (cd "$dir" && git remote set-url origin "https://${GITHUB_PAT}@github.com/payswapdotorg/$repo.git" >/dev/null 2>&1)
-  fi
-done
-log "PAT remotes set (TradRL/UniCom/Fleetos)"
+# 8. project clones + PAT remotes — DEPLOYMENT-CONFIGURED (era-neutral fix,
+#    2026-10-10: the hardcoded TradRL/UniCom/Fleetos trio was era drift; §0:
+#    the project set belongs to the deployment, not this script). One
+#    owner/name per line in $DURABLE_DIR/repos.txt (# comments allowed);
+#    missing/empty file = clone nothing (neutral).
+if [[ -f "$DURABLE_DIR/repos.txt" ]]; then
+  while read -r repo; do
+    [[ -z "${repo// /}" ]] && continue
+    [[ "$repo" == \#* ]] && continue
+    dir="/home/z/${repo##*/}"
+    if [[ ! -d "$dir/.git" ]]; then
+      git clone --quiet "https://github.com/${repo}.git" "$dir" \
+        && log "$repo cloned @ $(cd "$dir" && git rev-parse --short HEAD)" \
+        || log "WARN: $repo clone failed"
+    else
+      (cd "$dir" && git fetch --quiet origin && log "$repo refreshed (main @ $(git rev-parse --short origin/main 2>/dev/null || echo '?'))")
+    fi
+    if [[ -n "${GITHUB_PAT:-}" ]] && [[ -d "$dir/.git" ]]; then
+      (cd "$dir" && git remote set-url origin "https://${GITHUB_PAT}@github.com/${repo}.git" >/dev/null 2>&1)
+    fi
+  done < "$DURABLE_DIR/repos.txt"
+  log "PAT remotes set ($(grep -vc '^#' "$DURABLE_DIR/repos.txt" 2>/dev/null || echo 0) repos from durable repos.txt)"
+else
+  log "no durable repos.txt — project clones skipped (deployment not yet configured)"
+fi
 command -v pnpm >/dev/null 2>&1 || corepack prepare pnpm@10.33.2 --activate >/dev/null 2>&1
 log "pnpm: $(pnpm --version 2>/dev/null || echo MISSING)"
 
