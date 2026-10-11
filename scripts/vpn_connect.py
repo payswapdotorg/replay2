@@ -37,7 +37,14 @@ def derive_ext_id(ext_dir: str) -> str:
 
 def _turbo_ext_dir() -> str:
     # launch_stack.py: EXT_ROOT = <scripts>/extensions — the extension lives
-    # NEXT TO this script (scripts/extensions/turbovpn), not at checkout root
+    # NEXT TO this script (scripts/extensions/turbovpn), not at checkout root.
+    # 2026-10-09 station lesson: this checkout's own extensions/ dir derives a
+    # DIFFERENT (stale, never-loaded) extension ID than the deployed copy the
+    # browser actually runs (path-derived IDs). Always prefer the DEPLOYED
+    # extension when present; only fall back to this checkout's copy.
+    deployed = "/home/z/my-project/replay2/scripts/extensions/turbovpn"
+    if os.path.isdir(deployed) and os.path.isfile(os.path.join(deployed, "manifest.json")):
+        return deployed
     return os.path.join(_HERE, "extensions", "turbovpn")
 
 
@@ -86,6 +93,11 @@ def click_power(cdp):
     The 'Tap to Connect' element ignores synthetic DOM .click() — the r30b
     field lesson (2026-09-16): only real mouse events at the button center
     trigger the extension's connect flow (the manual_send pattern).
+
+    2026-10-09 station fix: the popup tab must ALSO be foreground-activated
+    and a mouseMoved sent first — Chrome 153 drops press/release hit-testing
+    on background tabs, so clicks on a non-activated popup silently no-op
+    (observed: click_power "clicked" yet proxy stayed mode:direct).
     """
     rect = cdp.eval(r"""(() => {
       const p = document.querySelector('.mt-5.w-16.h-16.cursor-pointer');
@@ -96,11 +108,46 @@ def click_power(cdp):
     if not rect or rect == "null":
         return "no-power"
     d = json.loads(rect)
+    activate_tab()
+    cdp.call("Input.dispatchMouseEvent", {
+        "type": "mouseMoved", "x": d["x"] - 8, "y": d["y"] - 8,
+        "button": "none"})
+    time.sleep(0.3)
     for typ in ("mousePressed", "mouseReleased"):
         cdp.call("Input.dispatchMouseEvent", {
             "type": typ, "x": d["x"], "y": d["y"],
             "button": "left", "clickCount": 1})
     return "clicked"
+
+
+def activate_tab():
+    """Bring the browser's currently-tracked popup tab to the foreground.
+
+    Uses the browser-level Target.activateTarget — real mouse events need
+    the target focused; worker session tabs stay OPEN, just unfocused.
+    """
+    try:
+        import urllib.request
+        import websocket
+        ver = json.load(urllib.request.urlopen(
+            "http://127.0.0.1:9222/json/version", timeout=5))
+        ws = websocket.create_connection(ver["webSocketDebuggerUrl"], timeout=10)
+        try:
+            t = next((x for x in channel.list_tabs()
+                      if (x.get("url") or "").startswith(
+                          f"chrome-extension://{EXT_ID}/dist/popup/")), None)
+            if t:
+                ws.send(json.dumps({"id": 1, "method": "Target.activateTarget",
+                                    "params": {"targetId": t["id"]}}))
+                ws.settimeout(5)
+                try:
+                    ws.recv()
+                except Exception:
+                    pass
+        finally:
+            ws.close()
+    except Exception:
+        pass  # best-effort: older stacks dispatch without activation
 
 
 def egress(cdp, tries=3):

@@ -1670,6 +1670,23 @@ def send(name, message):
             staged = False
         if staged:
             print(f"      [staged] composer already holds the full message ({staged_len} chars) — send-only path")
+            # REACT RE-SYNC (2026-10-10 pl-020 forensics): the DOM value can
+            # hold the staged text while the app's React state is EMPTY (a
+            # re-render reset it) — Enter on an "empty" composer submits
+            # nothing and the ladder burns all 13 rounds. Re-assign the value
+            # through the native setter + input event so React's onChange
+            # fires and the app state re-syncs to the DOM.
+            _eval(c, r"""(() => {
+              const i = document.querySelector('#chat-input, textarea');
+              if (!i) return 'gone';
+              const proto = (i.tagName === 'TEXTAREA')
+                ? window.HTMLTextAreaElement.prototype
+                : window.HTMLInputElement.prototype;
+              const d = Object.getOwnPropertyDescriptor(proto, 'value');
+              if (d && d.set) { d.set.call(i, i.value || ''); }
+              i.dispatchEvent(new Event('input', {bubbles: true}));
+              return 'resynced';
+            })()""", timeout=15)
             pct = 100
         else:
             comp = _eval(c, JS_COMPOSER)
