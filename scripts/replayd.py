@@ -29,6 +29,7 @@ import os
 import sys
 import threading
 import time
+import urllib.request
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
@@ -439,8 +440,41 @@ def handle_event(payload):
         x, y = resolve_pt(payload, c, tid)
         send_input(tid, c, "Input.dispatchMouseEvent", {
             "type": "mouseWheel", "x": x, "y": y,
-            "deltaX": 0, "deltaY": float(payload.get("deltaY", 120))})
+            "deltaX": float(payload.get("deltaX", 0)),
+            "deltaY": float(payload.get("deltaY", 120))})
         return {"ok": True, "kind": "scroll"}
+
+    # 2026-10-12 recovery #8: raw key events for the console's keyboard
+    # capture (Backspace / arrows / Tab / modifiers...). The char-based
+    # "key" kind covers printable text; "enter" covers Enter; everything
+    # else flows through here as paired keyDown/keyUp with VK codes.
+    if kind == "rawkey":
+        ph = payload.get("phase", "down")
+        typ = "keyDown" if ph == "down" else "keyUp"
+        params = {"type": typ,
+                  "key": str(payload.get("key", "")),
+                  "code": str(payload.get("code", ""))}
+        try:
+            vk = int(payload.get("keyCode") or 0)
+        except (TypeError, ValueError):
+            vk = 0
+        if vk:
+            params["windowsVirtualKeyCode"] = vk
+            params["nativeVirtualKeyCode"] = vk
+        txt = payload.get("text")
+        if txt:
+            params["text"] = str(txt)
+        send_input(tid, c, "Input.dispatchKeyEvent", params)
+        return {"ok": True, "kind": "rawkey", "phase": ph}
+
+    # 2026-10-12 recovery #8: history back/forward for the console toolbar.
+    if kind == "history":
+        direction = "back" if payload.get("dir", "back") == "back" else "forward"
+        try:
+            c.eval(f"history.{direction}()", timeout=8)
+            return {"ok": True, "kind": "history", "dir": direction}
+        except Exception as e:
+            return {"ok": False, "kind": "history", "error": repr(e)[:200]}
 
     if kind == "drag":
         # legacy batch drag (kept for compatibility; FIXED fromFx/fromFy bug)
@@ -679,6 +713,121 @@ def _stale_frame():
     return None
 
 
+# --------------------------------------------------------------------------
+# /test/drag — in-process E2E self-test of the streamed drag pipeline
+# (2026-10-12 recovery #8: ported from scripts/test_drag.py so the console's
+# Lab view can run it via POST /test/drag through the gateway).
+# Opens a data:URL test page in a new tab, streams dragstart/move/end through
+# the same handle_event path the console uses, verifies the page received
+# trusted pointer events at the right coordinates, restores the previous
+# active tab and closes the test tab. Returns the DragTestResult contract:
+# {pass, passed, total, assertions: [{name, pass, detail}], error?}
+# --------------------------------------------------------------------------
+
+_DRAG_TEST_HTML = b"""<!doctype html><html><head><title>dragtest</title></head>
+<body style="margin:0">
+<div id="d" style="position:fixed;inset:0;background:#eef;font:13px monospace;white-space:pre"></div>
+<script>
+window.L=[];
+function rec(e){window.L.push(e.type+" "+Math.round(e.clientX)+","+Math.round(e.clientY)+" b="+e.buttons);}
+["pointerdown","pointermove","pointerup","mousedown","mousemove","mouseup"].forEach(function(t){addEventListener(t,rec,true);});
+addEventListener("pointermove",function(){document.getElementById("d").textContent=window.L.slice(-8).join("\\n");},true);
+</script></body></html>"""
+
+_DRAG_TEST_URL = "data:text/html;charset=utf-8;base64," + base64.b64encode(
+    _DRAG_TEST_HTML).decode()
+
+
+def run_drag_selftest():
+    prev_active = ""
+    try:
+        prev_active = open(os.path.join(FLAGS, "active_tab.txt")).read().strip()
+    except Exception:
+        pass
+    tab = None
+    try:
+        tab = channel.new_tab("about:blank")
+        if not tab:
+            return {"pass": False, "passed": 0, "total": 4, "assertions": [],
+                    "error": "cannot open test tab"}
+        tid = tab["id"]
+        cdp = channel.CDP(tab["webSocketDebuggerUrl"], timeout=15)
+        try:
+            cdp.call("Page.enable", {})
+            cdp.call("Page.navigate", {"url": _DRAG_TEST_URL})
+            time.sleep(1.2)
+            open(os.path.join(FLAGS, "active_tab.txt"), "w").write(tid)
+            time.sleep(0.3)
+
+            t0 = time.time()
+            r1 = handle_event({"type": "dragstart", "fx": 0.20, "fy": 0.50})
+            r2 = handle_event({"type": "dragmove", "fx": 0.35, "fy": 0.50})
+            r3 = handle_event({"type": "dragmove", "fx": 0.50, "fy": 0.51})
+            r4 = handle_event({"type": "dragend", "fx": 0.60, "fy": 0.50})
+            dt = (time.time() - t0) * 1000
+
+            time.sleep(0.5)
+            m = cdp.call("Page.getLayoutMetrics", {})
+            v = m.get("cssVisualViewport") or {}
+            w = float(v.get("clientWidth") or 1440)
+            h = float(v.get("clientHeight") or 756)
+            log_txt = cdp.eval("window.L.join(';')", timeout=8) or ""
+            entries = [e for e in log_txt.split(";") if e]
+            pdowns = [e for e in entries if e.startswith("pointerdown")]
+            pmoves = [e for e in entries
+                      if e.startswith("pointermove") and "b=1" in e]
+            pups = [e for e in entries if e.startswith("pointerup")]
+
+            def xof(e):
+                return float(e.split(" ")[1].split(",")[0])
+
+            ok_start = bool(pdowns) and abs(xof(pdowns[0]) - 0.20 * w) <= 4
+            ok_moves = len(pmoves) >= 2
+            ok_end = bool(pups) and abs(xof(pups[-1]) - 0.60 * w) <= 4
+            ok_mouse = "mousedown" in log_txt and "mouseup" in log_txt
+            assertions = [
+                {"name": "pointerdown at start (+-4px)", "pass": ok_start,
+                 "detail": (f"x={xof(pdowns[0]):.0f} target={0.20 * w:.0f}"
+                            if pdowns else "no pointerdown captured")},
+                {"name": ">=2 live moves with button held (b=1)", "pass": ok_moves,
+                 "detail": f"{len(pmoves)} held moves captured"},
+                {"name": "pointerup at end (+-4px)", "pass": ok_end,
+                 "detail": (f"x={xof(pups[-1]):.0f} target={0.60 * w:.0f}"
+                            if pups else "no pointerup captured")},
+                {"name": "mouse-event pipeline also fired", "pass": ok_mouse,
+                 "detail": ("mousedown+mouseup seen" if ok_mouse
+                            else "mouse events missing")},
+            ]
+            npass = sum(1 for a in assertions if a["pass"])
+            out = {"pass": npass == len(assertions), "passed": npass,
+                   "total": len(assertions), "assertions": assertions,
+                   "viewport": [round(w), round(h)],
+                   "captured": len(entries),
+                   "streamMs": round(dt),
+                   "responses": [r1, r2, r3, r4]}
+            if not out["pass"]:
+                out["error"] = "pipeline assertions failed"
+            return out
+        finally:
+            cdp.close()
+    except Exception as e:
+        return {"pass": False, "passed": 0, "total": 4, "assertions": [],
+                "error": f"selftest error: {e!r}"[:300]}
+    finally:
+        if prev_active:
+            try:
+                open(os.path.join(FLAGS, "active_tab.txt"), "w").write(prev_active)
+            except Exception:
+                pass
+        if tab:
+            try:
+                urllib.request.urlopen(
+                    f"http://127.0.0.1:9222/json/close/{tab['id']}",
+                    timeout=5).read()
+            except Exception:
+                pass
+
+
 def handle_tabs():
     tabs = channel.list_tabs()
     prune_conns(tabs)
@@ -809,6 +958,8 @@ class Handler(BaseHTTPRequestHandler):
                     self._json({"ok": True, "id": tid})
                 else:
                     self._json({"ok": False, "error": "bad id"}, 400)
+            elif path == "/test/drag":
+                self._json(run_drag_selftest())
             else:
                 self._json({"ok": False, "error": "not-found"}, 404)
         except (BrokenPipeError, ConnectionResetError):

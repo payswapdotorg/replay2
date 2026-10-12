@@ -175,17 +175,34 @@ else
 fi
 
 # ---------------------------------------------------------------- 4. replayd
-if http_ok "http://127.0.0.1:$REPLAYD_PORT/healthz"; then
-  say "replayd :$REPLAYD_PORT already up"
+# 2026-10-12 recovery #8 two-tier architecture:
+#   python CDP core :3110 (launch_replayd.py defaults there now) +
+#   bun gateway :3100 (socket.io live stream, /health, /test/drag, /home
+#   test page, legacy endpoint proxying — mini-services/replayd).
+REPLAYD_CORE_PORT="${REPLAYD_CORE_PORT:-3110}"
+if http_ok "http://127.0.0.1:$REPLAYD_CORE_PORT/healthz"; then
+  say "replayd core :$REPLAYD_CORE_PORT already up"
 else
-  say "starting replayd :$REPLAYD_PORT…"
-  (cd "$ROOT" && REPLAYD_PORT="$REPLAYD_PORT" "$PY_BIN" scripts/launch_replayd.py)
+  say "starting replayd core :$REPLAYD_CORE_PORT…"
+  (cd "$ROOT" && REPLAYD_PORT="$REPLAYD_CORE_PORT" "$PY_BIN" scripts/launch_replayd.py)
   for i in $(seq 1 20); do
+    http_ok "http://127.0.0.1:$REPLAYD_CORE_PORT/healthz" && break
+    sleep 1
+  done
+fi
+http_ok "http://127.0.0.1:$REPLAYD_CORE_PORT/healthz" || say "WARN: replayd core not healthy yet (watcher will keep trying)"
+
+if http_ok "http://127.0.0.1:$REPLAYD_PORT/healthz"; then
+  say "replayd gateway :$REPLAYD_PORT already up"
+else
+  say "starting replayd gateway :$REPLAYD_PORT…"
+  (cd "$ROOT" && "$PY_BIN" scripts/launch_gateway.py)
+  for i in $(seq 1 30); do
     http_ok "http://127.0.0.1:$REPLAYD_PORT/healthz" && break
     sleep 1
   done
 fi
-http_ok "http://127.0.0.1:$REPLAYD_PORT/healthz" || say "WARN: replayd not healthy yet (watcher will keep trying)"
+http_ok "http://127.0.0.1:$REPLAYD_PORT/healthz" || say "WARN: replayd gateway not healthy yet (watcher will keep trying)"
 
 # ---------------------------------------------------------------- 5. console
 if console_ok "$PORT"; then

@@ -305,11 +305,19 @@ def check_procs():
                                  stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
                 time.sleep(5)
         # replay daemon dead => console loses realtime frames + drags
+        # 2026-10-12 recovery #8 two-tier: python core :3110 + bun gateway :3100.
+        try:
+            urllib.request.urlopen("http://127.0.0.1:3110/healthz", timeout=3).read(64)
+        except Exception:
+            log("replayd core :3110 dead — restarting")
+            subprocess.Popen(["/home/z/.venv/bin/python3", os.path.join(base, "launch_replayd.py")],
+                             stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+            time.sleep(2)
         try:
             urllib.request.urlopen("http://127.0.0.1:3100/healthz", timeout=3).read(64)
         except Exception:
-            log("replayd :3100 dead — restarting")
-            subprocess.Popen(["/home/z/.venv/bin/python3", os.path.join(base, "launch_replayd.py")],
+            log("replayd gateway :3100 dead — restarting")
+            subprocess.Popen(["/home/z/.venv/bin/python3", os.path.join(base, "launch_gateway.py")],
                              stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
             time.sleep(2)
         # supervisor dead OR hung => resurrect it (it holds the flock, so a

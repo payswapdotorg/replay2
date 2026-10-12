@@ -581,13 +581,24 @@ def ensure_dev():
 
 
 def ensure_replayd():
-    if http_ok("http://127.0.0.1:3100/healthz"):
-        return False
-    log("replayd :3100 DEAD — restarting")
-    subprocess.Popen([PY, os.path.join(BASE, "launch_replayd.py")],
-                     stdout=open(os.path.join(LOGDIR, "replayd_launch.log"), "a"),
-                     stderr=subprocess.STDOUT)
-    return True
+    # 2026-10-12 recovery #8 two-tier replayd:
+    #   python CDP core on :3110 + bun gateway (socket.io, console contract)
+    #   on :3100. Both must be alive — the core alone can't serve the
+    #   Wave-13 console, the gateway alone has no CDP machinery.
+    acted = False
+    if not http_ok("http://127.0.0.1:3110/healthz"):
+        log("replayd core :3110 DEAD — restarting")
+        subprocess.Popen([PY, os.path.join(BASE, "launch_replayd.py")],
+                         stdout=open(os.path.join(LOGDIR, "replayd_launch.log"), "a"),
+                         stderr=subprocess.STDOUT)
+        acted = True
+    if not http_ok("http://127.0.0.1:3100/healthz"):
+        log("replayd gateway :3100 DEAD — restarting")
+        subprocess.Popen([PY, os.path.join(BASE, "launch_gateway.py")],
+                         stdout=open(os.path.join(LOGDIR, "gateway_launch.log"), "a"),
+                         stderr=subprocess.STDOUT)
+        acted = True
+    return acted
 
 
 def heartbeat():
