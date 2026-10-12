@@ -21,7 +21,9 @@ State mapping (what the console displays):
   working     — chars/message-count moved since the previous round
   queued      — no movement this round (turn closed, pod possibly gone;
                 the lastStateLine carries updated-at age for judgment)
-  complete    — TL wrote flags/<name>-complete.marker after merge
+  complete    — TL wrote flags/<name>-complete.marker after merge; the
+                marker SHORT-CIRCUITS the probe (a retired lane's chat may
+                be server-side gone — the truth is the merge, not the API)
   probe-error — API call failed twice (fresh mtime keeps the row
                 visible with a diagnostic; retried next round)
 
@@ -127,6 +129,23 @@ def main():
         for name, url in lanes.items():
             cid = URL_RE.search(url).group(1)
             done = os.path.exists(os.path.join(FLAGS, f"{name}-complete.marker"))
+            if done:
+                # A RETIRED lane's truth is the marker, not the chat API.
+                # The tradrl-w28f lesson (2026-10-12): the merged lane's
+                # conversation went server-side unavailable (persistent
+                # 500) and the probe-gate flapped the green lane red for
+                # 110 rounds while churning the token cache every 120s.
+                # Keep the row fresh + complete WITHOUT probing.
+                write_status(name, url, {
+                    "state": "complete",
+                    "retired": True,
+                    "n": 0, "n_asst": 0, "chars": 0,
+                    "generating": False,
+                    "updated_at": "",
+                    "title": "",
+                })
+                prev.pop(name, None)
+                continue
             try:
                 st = probe(cid)
             except Exception as first_err:
@@ -146,9 +165,7 @@ def main():
                     log(f"{name}: probe-error ({second_err!r} then {first_err!r})")
                     prev.pop(name, None)
                     continue
-            if done:
-                state = "complete"
-            elif st["generating"]:
+            if st["generating"]:
                 state = "generating"
             else:
                 moved = prev.get(name) not in (None, (st["chars"], st["n"]))
