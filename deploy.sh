@@ -62,8 +62,12 @@ http_ok() { curl -sf -o /dev/null --max-time 4 "$1" && return 0 || return 1; }
 # the Task-135 reset recovery). The metadata title is rendered only by the
 # console itself.
 console_ok() {
+  # 2026-10-12 recovery (#8): accept BOTH console identities — the legacy
+  # repo console ("Replay Console") and the Wave-13 platform console
+  # ("FleetOS — Resident Operations") — so deploy never evicts a healthy
+  # console over the rebrand.
   curl -sf --max-time 5 "http://127.0.0.1:${1:-3000}/" 2>/dev/null \
-    | grep -q "<title>Replay Console</title>"
+    | grep -qE "<title>(Replay Console|FleetOS — Resident Operations)</title>"
 }
 
 # Evict non-console listeners on :PORT (keep anything running from replay2).

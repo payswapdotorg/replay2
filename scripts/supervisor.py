@@ -108,7 +108,14 @@ def console_body_ok(port=None, timeout=4):
         body = urllib.request.urlopen(
             f"http://127.0.0.1:{port}/", timeout=timeout
         ).read(8192).decode("utf-8", "ignore")
-        return "<title>Replay Console</title>" in body
+        # 2026-10-12 recovery (#8): the Wave-13 platform console rebranded its
+        # title to "FleetOS — Resident Operations". Accept BOTH identities —
+        # the legacy repo console and the current platform console — so the
+        # ring never evicts a healthy console over a title change.
+        return (
+            "<title>Replay Console</title>" in body
+            or "<title>FleetOS — Resident Operations</title>" in body
+        )
     except Exception:
         return False
 
