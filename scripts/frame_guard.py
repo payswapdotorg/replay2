@@ -137,10 +137,18 @@ def active_tab_alive():
 
 
 def replayd_pid():
+    # 2026-10-12 recovery #8 two-tier: the wedge lives in the python CDP
+    # core (:3110), not the bun gateway that owns :3100. Kill the CORE —
+    # the supervisor's ensure_replayd resurrects both tiers as needed and
+    # the gateway's own watchdog handles its capture loop.
+    try:
+        return int(open(os.path.join(BASE, "replayd.pid")).read().strip())
+    except Exception:
+        pass
     try:
         out = subprocess.run(["ss", "-tlnp"], capture_output=True, text=True, timeout=10).stdout
         for line in out.splitlines():
-            if ":3100" in line:
+            if ":3110" in line:
                 for tok in line.split():
                     if tok.startswith("pid="):
                         return int(tok[4:].split(",")[0])
@@ -152,13 +160,13 @@ def replayd_pid():
 def restart_replayd():
     pid = replayd_pid()
     if pid:
-        log(f"restarting replayd (pid {pid})")
+        log(f"restarting replayd core (pid {pid})")
         try:
             os.kill(pid, 15)
         except Exception as e:
             log(f"kill err: {e}")
     else:
-        log("replayd pid not found on :3100 (supervisor will spawn)")
+        log("replayd core pid not found (supervisor will spawn)")
 
 
 def reload_active_tab():
