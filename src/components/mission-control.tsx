@@ -276,7 +276,7 @@ export function MissionControl() {
                   </div>
                 </div>
                 <div className="flex flex-col gap-2.5">
-                  {lane.items.map((itemId, itemIdx) => {
+                  {(lane.items ?? []).map((itemId, itemIdx) => {
                     const item = state.items.find((i) => i.id === itemId);
                     if (!item) return null;
                     const st = STATUS_STYLES[item.status] ?? STATUS_STYLES.pending;
