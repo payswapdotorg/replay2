@@ -336,7 +336,17 @@ def main():
                 continue
             else:
                 log("canary: no live %s record — fresh dispatch" % canary)
-                create(canary)
+                if not create(canary):
+                    # 16:0xZ wedge class (residents' 2026-10-12 lesson): a
+                    # create that fails AFTER writing a half-created record
+                    # (e.g. url=None send failure, "NOT VERIFIED") leaves
+                    # _find() matching it forever — every later create hits
+                    # "session already exists" rc=1 and this else-branch had
+                    # no void, so the machine wedged until manual TL surgery.
+                    # Un-wedge exactly like the no-tab path does.
+                    log("canary create failed — voiding stale half-created record (un-wedge)")
+                    void(canary, "canary else-branch un-wedge: create failed (half-created record)")
+                    create(canary)
                 save_state(st)
                 time.sleep(START_WAIT)
                 continue
