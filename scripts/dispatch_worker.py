@@ -1333,6 +1333,28 @@ def create(name, prompt_file):
                             except Exception:
                                 pass
                         elif _slen > 0:
+                            # 2026-10-12 fix (TL): a capacity-popup CANCEL can
+                            # silently roll the tab back from agent mode to a
+                            # PLAIN chat while the composer keeps our staged
+                            # prompt (React state survives) — the send then
+                            # lands a type=default chat (NULL AND VOID per the
+                            # operator directive). Verify agent mode is STILL
+                            # ON before Enter; otherwise clear + full re-pick.
+                            _agent_on = "true"
+                            try:
+                                _agent_on = str(_eval(c, JS_AGENT_MODE_ON, timeout=12))
+                            except Exception:
+                                _agent_on = "unverified"
+                            if _agent_on != "true":
+                                print(f"      [staged-resume] composer holds OWN prompt ({_slen} chars) "
+                                      f"but AGENT MODE LOST ({_agent_on}) — clearing, no send (plain-chat misfire guard)")
+                                try:
+                                    _eval(c, JS_FOCUS_COMPOSER, timeout=10)
+                                    _eval(c, JS_CLEAR_COMPOSER, timeout=10)
+                                except Exception:
+                                    pass
+                                time.sleep(5)
+                                continue
                             print(f"      [staged-resume] composer holds OWN prompt ({_slen} chars) — Enter")
                             _eval(c, JS_FOCUS_COMPOSER, timeout=15)
                             time.sleep(0.2)
@@ -1387,10 +1409,29 @@ def create(name, prompt_file):
                     # no capacity dialog: genuine insert/send failure — climb the
                     # failure ladder (check body tail, re-send, or re-create)
                     print(f"prompt sent: NOT VERIFIED — retry needed (url={url})")
+                    # 2026-10-12 fix (TL): a url=None send-failure record used to
+                    # be saved as a plain sent=False row — _find() then matched it
+                    # FOREVER and every later create exited "session already
+                    # exists" (the w8 wedge, cured only by manual voids). Record
+                    # it as capacity-staged instead: _find() skips those and the
+                    # aggressive re-dispatch owns the name.
                     _save({"name": name, "tab_id": tab["id"], "url": url, "ts": int(time.time()),
                            "prompt_file": prompt_file, "prompt_chars": len(prompt),
                            "mode": "agents-tab", "model": WANT_MODEL, "skill": WANT_SKILL,
-                           "insert_pct": pct, "sent": False})
+                           "insert_pct": pct, "sent": False, "stage": "capacity"})
+                    # 2026-10-12 fix (TL): this exit used to die SILENTLY (no
+                    # capacity flag) — under a sustained crunch the assault chain
+                    # then needed a manual re-arm every ladder. Write the flag so
+                    # the supervisor's recover_capacity ring keeps fighting per
+                    # the never-wait operator policy.
+                    try:
+                        _flag = os.path.join(BASE, "flags", f"capacity_recover.{name}.json")
+                        with open(_flag, "w") as _f:
+                            json.dump({"name": name, "prompt_file": prompt_file,
+                                       "uuid": "", "tab_id": tab["id"],
+                                       "ts": int(time.time())}, _f)
+                    except Exception:
+                        pass
                     return 2
                 if ok and "/c/" in (url or ""):
                     # SERVER-SIDE EXISTENCE CHECK (2026-09-12 lessons 63/65): the
@@ -1414,7 +1455,7 @@ def create(name, prompt_file):
                           const tok = (localStorage.getItem('token') || '').replace(/^"|"$/g, '');
                           const H = tok ? {Authorization: 'Bearer ' + tok} : {};
                           const sleep = (ms) => new Promise(r => setTimeout(r, ms));
-                          let inList = false, listHttp = 0;
+                          let inList = false, listHttp = 0, chatType = '';
                           for (let i = 0; i < 3 && !inList; i++) {
                             if (i) await sleep(2000);
                             try {
@@ -1423,6 +1464,16 @@ def create(name, prompt_file):
                               if (r.ok) {
                                 const s = await r.text();
                                 inList = s.includes(m[1]);
+                                // 2026-10-12 fix (TL): capture the chat TYPE —
+                                // a send that landed a type=default PLAIN chat
+                                // (capacity-cancel rolled the tab back) is NULL
+                                // AND VOID per the operator directive.
+                                try {
+                                  const j = JSON.parse(s);
+                                  const arr = Array.isArray(j) ? j : (j.data || j.items || []);
+                                  const hit = arr.find(x => x && x.id === m[1]);
+                                  if (hit) chatType = (hit.type || '');
+                                } catch (e) {}
                               }
                             } catch (e) {}
                           }
@@ -1445,12 +1496,16 @@ def create(name, prompt_file):
                               }
                             } catch (e) {}
                           }
-                          if (inList) return JSON.stringify({exists: true, userLen: userLen || 1000, listHttp: listHttp, detailHttp: detailHttp});
+                          if (inList) return JSON.stringify({exists: true, type: chatType, userLen: userLen || 1000, listHttp: listHttp, detailHttp: detailHttp});
                           return JSON.stringify({exists: false, listHttp: listHttp, detailHttp: detailHttp, err: 'absent-from-list'});
                         })()""", await_promise=True, timeout=60)
                         evd = json.loads(ev or "{}")
                         if evd.get("exists") and evd.get("userLen", 0) > 100:
-                            exists_server = True
+                            if evd.get("type") != "general_agent":
+                                print(f"      [server-verify] chat EXISTS but type={evd.get('type')!r} "
+                                      "(NOT general_agent) — PLAIN-CHAT MISFIRE; continuing assault")
+                            else:
+                                exists_server = True
                         else:
                             print(f"      [server-verify] chat NOT live server-side ({ev[:90]}) — "
                                   "phantom /c/ URL; continuing assault")
