@@ -9,18 +9,33 @@
 The gateway lives at /home/z/my-project/mini-services/replayd (platform
 mini-service doctrine: independent bun project, fixed port). This launcher
 is what the ring (supervisor/watcher) and deploy.sh call to resurrect it.
+
+2026-10-12 recovery #9 hardening: that platform path is UNTRACKED and was
+wiped by recycle #9 (the original gateway source was lost — rebuilt from the
+ef69b13 contract). The canonical source is now tracked HERE at
+scripts/gateway/ (package.json + index.js) and this launcher materializes
+the mini-service dir from it whenever missing, so a fresh clone self-heals.
 """
 import os
+import shutil
 import subprocess
 
 BASE = os.path.dirname(os.path.abspath(__file__))
 GATEWAY = "/home/z/my-project/mini-services/replayd"
+SOURCE = os.path.join(BASE, "gateway")  # tracked canonical source
 LOGS = os.path.join(BASE, "logs")
 os.makedirs(LOGS, exist_ok=True)
 
+# Recovery #9: materialize the untracked deployment dir from the tracked
+# source (idempotent — never overwrites a present deployment).
 if not os.path.isdir(GATEWAY):
-    print(f"gateway dir missing: {GATEWAY}")
-    raise SystemExit(1)
+    if os.path.isfile(os.path.join(SOURCE, "index.js")):
+        os.makedirs(os.path.dirname(GATEWAY), exist_ok=True)
+        shutil.copytree(SOURCE, GATEWAY)
+        print(f"gateway dir materialized from tracked source -> {GATEWAY}")
+    else:
+        print(f"gateway dir missing: {GATEWAY} (and no tracked source at {SOURCE})")
+        raise SystemExit(1)
 
 # One-time dependency install (no-op when node_modules is present).
 if not os.path.isdir(os.path.join(GATEWAY, "node_modules")):

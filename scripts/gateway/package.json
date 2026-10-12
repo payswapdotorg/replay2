@@ -1,0 +1,14 @@
+{
+  "name": "replayd-gateway",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Replayd bun gateway (:3100) — socket.io live stream + /health + /home test page + legacy endpoint proxying to the python CDP core (:3110). Rebuilt 2026-10-12 recovery #9 from the ef69b13 contract (source was untracked and lost to recycle #9).",
+  "type": "module",
+  "scripts": {
+    "start": "node index.js",
+    "dev": "node index.js"
+  },
+  "dependencies": {
+    "socket.io": "^4.8.1"
+  }
+}
