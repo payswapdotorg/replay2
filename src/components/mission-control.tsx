@@ -141,13 +141,18 @@ export function MissionControl() {
     );
   }
 
-  const doneCount = state.items.filter(
+  // Legacy-schema tolerance (6e6e244 class, extended to the header counters):
+  // an old-shape mission-state (items nested under mission, lanes a dict)
+  // crashed here at 144:33 — `?? []` keeps any legacy state renderable.
+  const items = state.items ?? [];
+  const lanes = Array.isArray(state.lanes) ? state.lanes : [];
+  const doneCount = items.filter(
     (i) => i.status === "done" || i.status === "merged"
   ).length;
-  const activeCount = state.items.filter(
+  const activeCount = items.filter(
     (i) => i.status === "dispatched" || i.status === "in-review"
   ).length;
-  const lanesById = new Map(state.lanes.map((l) => [l.id, l]));
+  const lanesById = new Map(lanes.map((l) => [l.id, l]));
 
   return (
     <div className="flex flex-1 flex-col bg-neutral-950 text-zinc-100" data-tick={tick}>
@@ -219,7 +224,7 @@ export function MissionControl() {
             {
               icon: Layers,
               label: "Track progress",
-              value: `${doneCount}/${state.items.length}`,
+              value: `${doneCount}/${items.length}`,
               sub: "work items merged or done",
             },
             {
@@ -262,7 +267,7 @@ export function MissionControl() {
         {/* Lane board */}
         <section aria-label="Worker lanes">
           <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-4">
-            {state.lanes.map((lane, laneIdx) => (
+            {lanes.map((lane, laneIdx) => (
               <div key={lane.id} className="flex flex-col gap-3">
                 <div className="flex items-center gap-2 px-1">
                   <span className="inline-flex h-6 w-6 items-center justify-center rounded bg-rose-950/60 text-[11px] font-bold text-rose-400 border border-rose-900/60">
@@ -277,7 +282,7 @@ export function MissionControl() {
                 </div>
                 <div className="flex flex-col gap-2.5">
                   {(lane.items ?? []).map((itemId, itemIdx) => {
-                    const item = state.items.find((i) => i.id === itemId);
+                    const item = items.find((i) => i.id === itemId);
                     if (!item) return null;
                     const st = STATUS_STYLES[item.status] ?? STATUS_STYLES.pending;
                     return (
