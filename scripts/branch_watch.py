@@ -10,7 +10,7 @@ import time
 HERE = os.path.dirname(os.path.abspath(__file__))
 LOG = os.path.join(HERE, "logs", "branch_watch.log")
 REPO = "/home/z/UniCom"
-WAVE = ["w1-019", "w2-020"]  # deployment-readiness (retarget each wave; this line is the wave dial)
+WAVE = ["w1-021", "w2-022"]  # deployment-integrity (retarget each wave; this line is the wave dial)
 ROUND_S = 120
 MAX_ROUNDS = 240  # 8h
 
