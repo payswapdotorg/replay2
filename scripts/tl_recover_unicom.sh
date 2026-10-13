@@ -61,6 +61,14 @@ else
   (cd "$REPLAY2" && git fetch --quiet origin && git reset --quiet --hard origin/main \
     && git clean -qfd scripts/flags data 2>/dev/null; log "replay2 refreshed @ $(git rev-parse --short HEAD)")
 fi
+# 2026-10-13 recovery #12: the clone is public (no PAT needed) but the remote
+# URL stays anonymous — post-recovery PUSHES fail until this is set (the
+# durability law's push step silently breaks otherwise). Same pattern as the
+# UniCom/TradRL/Fleetos PAT remotes below.
+if [[ -n "${GITHUB_PAT:-}" ]] && [[ -d "$REPLAY2/.git" ]]; then
+  (cd "$REPLAY2" && git remote set-url origin "https://${GITHUB_PAT}@github.com/payswapdotorg/replay2.git" >/dev/null 2>&1)
+  log "replay2 PAT remote set (push-ready)"
+fi
 
 # 3. FLAGS FIRST — before ANY :3000 eviction (binding operator directive
 #    2026-10-01 16:45Z: else the ring resurrects the platform scaffold app)
