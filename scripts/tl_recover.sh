@@ -183,8 +183,12 @@ unset _dpid 2>/dev/null || true
 if keeper_running login_keeper.py; then
   log "login_keeper already live"
 else
-  (cd "$REPLAY2/scripts" && python3 dfork_launch.py logs/login_keeper.log python3 login_keeper.py)
-  log "login_keeper launched (dfork'd)"
+  # 2026-10-13 recycle #11: system python3 on a fresh pod lacks websocket-client
+  # (ModuleNotFoundError crashed login_keeper 60s after launch). The venv python
+  # (/home/z/.venv, provisioned from /home/z/pyproject.toml) carries it — prefer it.
+  _KEEPER_PY="$( [[ -x /home/z/.venv/bin/python3 ]] && echo /home/z/.venv/bin/python3 || echo python3 )"
+  (cd "$REPLAY2/scripts" && "$_KEEPER_PY" dfork_launch.py logs/login_keeper.log "$_KEEPER_PY" login_keeper.py)
+  log "login_keeper launched (dfork'd, py=$_KEEPER_PY)"
 fi
 
 # 7. lane watcher — DEPLOYMENT-OPT-IN (era-neutral fix, 2026-10-10 pod-recycle #3:
@@ -230,6 +234,10 @@ else
   log "no durable repos.txt — project clones skipped (deployment not yet configured)"
 fi
 command -v pnpm >/dev/null 2>&1 || corepack prepare pnpm@10.33.2 --activate >/dev/null 2>&1
+# 2026-10-13 recycle #11: corepack's shims land outside PATH on fresh pods
+# (corepack enable needs a writable system bin). npm -g into ~/.npm-global
+# (already on PATH via the export above) is the reliable fallback.
+command -v pnpm >/dev/null 2>&1 || npm install -g pnpm@10.33.2 >/dev/null 2>&1
 log "pnpm: $(pnpm --version 2>/dev/null || echo MISSING)"
 
 # 9. predev boot hook durability (2026-10-08 recycle lesson: download/recovery/
