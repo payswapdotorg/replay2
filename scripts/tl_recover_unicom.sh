@@ -129,6 +129,39 @@ PROMPTEOF
   log "tradrl-w28f prompt stub materialized"
 fi
 
+# 4c. w2-027 lane-history materialization (recycle #12 lesson, 2026-10-13
+#     ~14:1xZ: the lane retired 09:59Z in Task 8-4 [merged d5d42aa, issue #20
+#     closed] but its trio was never added HERE — the recycle erased the
+#     zcode-chain lane from the workers strip. Doctrine: EVERY retired lane
+#     gets its trio in this script AT RETIREMENT TIME.)
+if ! grep -q '"name": "w2-027", "action": "done"' "$REPLAY2/scripts/flags/session_registry.jsonl" 2>/dev/null; then
+  cat >> "$REPLAY2/scripts/flags/session_registry.jsonl" << 'LANEEOF'
+{"name": "w2-027", "action": "create", "ts": 1791880460, "prompt_file": "/home/z/replay2/scripts/worker-prompts/w2-027.md", "tab_id": ""}
+{"name": "w2-027", "action": "send", "ts": 1791880590, "url": "https://chat.z.ai/c/46a38270-98f4-4885-b750-7e7424214677", "sent": true}
+{"name": "w2-027", "action": "done", "ts": 1791885586}
+LANEEOF
+  log "w2-027 lane history materialized"
+fi
+[[ -f "$REPLAY2/scripts/flags/w2-027-complete.marker" ]] || \
+  { touch "$REPLAY2/scripts/flags/w2-027-complete.marker"; log "w2-027 complete marker materialized"; }
+if [[ ! -s "$REPLAY2/scripts/worker-prompts/w2-027.md" ]]; then
+  cat > "$REPLAY2/scripts/worker-prompts/w2-027.md" << 'PROMPTEOF'
+# W2-027 — zcode-cli Subtree Chain Closure: the Fresh-Clone Clean Build Path
+
+> [recovery #12 provenance, 2026-10-13] The original dispatch prompt (the
+> 8,394-char work-order-verbatim + operational contract) was lost to the pod
+> recycle of 2026-10-13 ~14:1xZ (worker-prompts was wipe-vulnerable). This
+> stub preserves the H1 — the console's live-Workers title derivation reads
+> line 1. The work order itself survives verbatim in-repo:
+> payswapdotorg/UniCom docs/work-orders/W2-027.md (the completion report at
+> docs/work-orders/reports/W2-027-completion-report.md). The lane is RETIRED:
+> delivered + merged (d5d42aa, issue #20 closed 09:59:46Z; registry done @
+> 1791885586; complete marker present). Chat ground truth: title "W2-027
+> Subtree Chain Closure Build Path", created 08:33:03Z, last update 09:25:24Z.
+PROMPTEOF
+  log "w2-027 prompt stub materialized"
+fi
+
 # 5. deploy (only if unhealthy — idempotent)
 if stack_healthy; then
   log "replay stack already healthy — skipping deploy"
@@ -143,8 +176,12 @@ fi
 if keeper_running login_keeper.py; then
   log "login_keeper already live"
 else
-  (cd "$REPLAY2/scripts" && python3 dfork_launch.py logs/login_keeper.log python3 login_keeper.py)
-  log "login_keeper launched (dfork'd)"
+  # 2026-10-13 recycle #11 (parallel station's eb46e76): system python3 on a
+  # fresh pod lacks websocket-client (ModuleNotFoundError kills the keeper) —
+  # prefer the venv python (/home/z/.venv, provisioned from pyproject.toml).
+  _KEEPER_PY="$( [[ -x /home/z/.venv/bin/python3 ]] && echo /home/z/.venv/bin/python3 || echo python3 )"
+  (cd "$REPLAY2/scripts" && "$_KEEPER_PY" dfork_launch.py logs/login_keeper.log "$_KEEPER_PY" login_keeper.py)
+  log "login_keeper launched (dfork'd, py=$_KEEPER_PY)"
 fi
 
 # 7. lane watcher (console strip: server-side lane probes every 120s)
@@ -168,6 +205,9 @@ if [[ -n "${GITHUB_PAT:-}" ]] && [[ -d "$UNICOM/.git" ]]; then
   log "UniCom PAT remote set"
 fi
 command -v pnpm >/dev/null 2>&1 || corepack prepare pnpm@10.33.2 --activate >/dev/null 2>&1
+# 2026-10-13 recycle #11 (eb46e76): corepack shims land outside PATH on fresh
+# pods — npm -g is the reliable fallback (the recorded #9 doctrine).
+command -v pnpm >/dev/null 2>&1 || npm install -g pnpm@10.33.2 >/dev/null 2>&1
 log "pnpm: $(pnpm --version 2>/dev/null || echo MISSING)"
 
 log "=== TL recover done ==="
