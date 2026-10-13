@@ -102,6 +102,33 @@ PYEOF
   log "registry seeds merged (idempotent)"
 fi
 
+# 4b. lane-history materialization (recovery #10 lesson, 2026-10-12 ~22:4xZ
+#     recycle: the registry/seed + prompt + marker trio was WIPE-VULNERABLE —
+#     only the script itself survives every recycle via git clone, so the
+#     retired tradrl-w28f lane's render state reconstructs from HERE now)
+if ! grep -q '"name": "tradrl-w28f", "action": "done"' "$REPLAY2/scripts/flags/session_registry.jsonl" 2>/dev/null; then
+  cat >> "$REPLAY2/scripts/flags/session_registry.jsonl" << 'LANEEOF'
+{"name": "tradrl-w28f", "action": "create", "ts": 1791348407, "prompt_file": "/home/z/replay2/scripts/worker-prompts/tradrl-w28f.md", "tab_id": ""}
+{"name": "tradrl-w28f", "action": "send", "ts": 1791359787, "url": "https://chat.z.ai/c/542e25b0-cb3b-41dd-82c4-20f415143045", "sent": true}
+{"name": "tradrl-w28f", "action": "done", "ts": 1791377191}
+LANEEOF
+  log "tradrl-w28f lane history materialized"
+fi
+[[ -f "$REPLAY2/scripts/flags/tradrl-w28f-complete.marker" ]] || \
+  { touch "$REPLAY2/scripts/flags/tradrl-w28f-complete.marker"; log "tradrl-w28f complete marker materialized"; }
+if [[ ! -s "$REPLAY2/scripts/worker-prompts/tradrl-w28f.md" ]]; then
+  cat > "$REPLAY2/scripts/worker-prompts/tradrl-w28f.md" << 'PROMPTEOF'
+# WORK ORDER W-28 (lane B) — the Neon DDL runbook route (internal plane)
+
+> [recovery #10 provenance, 2026-10-13] The original work-order body was
+> lost to the pod recycle of 2026-10-12 ~22:4xZ (worker-prompts was
+> wipe-vulnerable). This stub preserves the H1 — the console's live-Workers
+> title derivation reads line 1. The lane is RETIRED: delivered + merged
+> (registry done @ 1791377191; complete marker present).
+PROMPTEOF
+  log "tradrl-w28f prompt stub materialized"
+fi
+
 # 5. deploy (only if unhealthy — idempotent)
 if stack_healthy; then
   log "replay stack already healthy — skipping deploy"
