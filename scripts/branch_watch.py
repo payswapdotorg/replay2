@@ -1,18 +1,27 @@
 #!/usr/bin/env python3
-"""branch_watch.py — poll UniCom remote for wave-5 branch deliveries.
-Writes a marker file the moment any work/wN-005 branch tip moves beyond
-the known-empty state, so the TL can battery+merge immediately.
-Double-fork safe (launched via dfork_launch.py)."""
+"""branch_watch.py — poll UniCom remote for work-branch deliveries.
+Writes a marker file the moment any watched work/wN-xxx branch tip moves
+beyond the known-empty state, so the TL can battery+merge immediately.
+Double-fork safe (launched via dfork_launch.py).
+
+2026-10-13 generalization (the W2-027 takeover): branches may be passed as
+CLI args (branch names WITHOUT the work/ prefix); argv-less runs keep the
+historic wave-5 default. Env: BRANCH_WATCH_ROUND_S, BRANCH_WATCH_MAX_ROUNDS
+(each round-series gets its own log suffix so concurrent watchers never
+interleave)."""
 import os
 import subprocess
+import sys
 import time
 
 HERE = os.path.dirname(os.path.abspath(__file__))
-LOG = os.path.join(HERE, "logs", "branch_watch.log")
+_ARGS = [a for a in sys.argv[1:] if not a.startswith("-")]
+WAVE = _ARGS or ["w2-022", "w3-023"]  # default: deployment-integrity wave 2
+_SUFFIX = ("-" + "_".join(WAVE)) if _ARGS else ""
+LOG = os.path.join(HERE, "logs", "branch_watch%s.log" % _SUFFIX)
 REPO = "/home/z/UniCom"
-WAVE = ["w2-022", "w3-023"]  # deployment-integrity wave 2 (w1-021 delivered+merged)
-ROUND_S = 120
-MAX_ROUNDS = 240  # 8h
+ROUND_S = int(os.environ.get("BRANCH_WATCH_ROUND_S", "120"))
+MAX_ROUNDS = int(os.environ.get("BRANCH_WATCH_MAX_ROUNDS", "240"))  # 8h default
 
 
 def log(msg):

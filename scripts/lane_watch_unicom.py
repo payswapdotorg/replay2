@@ -45,7 +45,11 @@ FLAGS = os.path.join(BASE, "flags")
 REGISTRY = os.path.join(FLAGS, "session_registry.jsonl")
 HEARTBEAT = os.path.join(FLAGS, "lane_watch_hb")
 ROUND_S = 120
-NAME_RE = re.compile(r"^(unicom|tradrl)-", re.I)
+# 2026-10-13 fix (the W2-027 takeover lesson): the W-series work-order lanes
+# (w2-027, w3-xxx, ...) are registry names dispatch_worker accepts — the
+# filter predates them and silently unwatched the whole class. Pattern now
+# admits the program's own lane-name families only (unicom-*/tradrl-*/wN-*).
+NAME_RE = re.compile(r"^(?:(?:unicom|tradrl)-|w\d+-)", re.I)
 URL_RE = re.compile(r"/c/([0-9a-f-]{36})")
 
 log = lambda m: print(f"[lane_watch {time.strftime('%H:%M:%S')}] {m}", flush=True)
