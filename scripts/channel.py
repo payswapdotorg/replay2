@@ -106,15 +106,65 @@ def new_tab(url="about:blank"):
     return tab
 
 
+def _tab_alive(tab, timeout=4):
+    """Responsiveness probe (replay-#12 law, from the replay-#11 discovery):
+    a FROZEN renderer (4GB/no-swap box post-OOM) accepts the websocket but
+    hangs forever on even location.href — first-match tab picks returned
+    corpses and every consumer stalled to WebSocketTimeoutException. A 4s
+    bounded ping separates alive from frozen. Probe failures count as
+    frozen (never operate on an unverifiable tab)."""
+    try:
+        c = CDP(tab["webSocketDebuggerUrl"], timeout=5)
+        try:
+            c.eval("location.href", timeout=timeout)
+            return True
+        finally:
+            c.close()
+    except Exception:
+        return False
+
+
 def find_tab(pattern=None):
+    """Tab picker with the frozen-renderer law (replay-#12, 2026-10-13).
+
+    Old behavior: first URL match — after an OOM episode 7 of 9 chat.z.ai
+    tabs had frozen renderers and first-match handed consumers a corpse.
+
+    New law, semantics-preserving split:
+    - GENERIC ask (pattern None / "chat.z.ai" — the caller accepts ANY
+      chat tab): return the first RESPONSIVE chat.z.ai tab; if every chat
+      tab is frozen, materialize a FRESH chat.z.ai tab (same origin =>
+      same cookies + localStorage token; the history fetches are
+      path-relative so any chat tab reads any chat — replay-#11 lesson).
+    - SPECIFIC ask (any other pattern — tab-id prefix, /c/<uuid> path):
+      return the first RESPONSIVE match; if all matches are frozen, return
+      the first match anyway (the caller asked for THAT tab — visibly
+      failing beats silently operating on the wrong target). Never
+      fabricate a fresh tab for a specific ask.
+    - Probe infrastructure itself failing (CDP hiccup): degrade to the
+      old first-match. A picker must never hard-fail a working caller.
+    """
     tabs = list_tabs()
-    if pattern:
-        for t in tabs:
-            if pattern in t.get("url", ""):
+    if pattern and pattern != "chat.z.ai":
+        matches = [t for t in tabs if pattern in t.get("url", "")]
+        if matches:
+            for t in matches:
+                if _tab_alive(t):
+                    return t
+            return matches[0]  # all frozen — old behavior for specific asks
+        # no URL match: old code fell through to the generic branch; keep that
+    generic = [t for t in tabs if (t.get("url") or "").startswith("https://chat.z.ai")]
+    if generic:
+        for t in generic:
+            if _tab_alive(t):
                 return t
-    for t in tabs:
-        if (t.get("url") or "").startswith("https://chat.z.ai"):
-            return t
+        # every chat tab frozen -> fresh chat.z.ai tab (same origin, same
+        # token; the sanctioned replay-#11 fallback). new_tab returns None
+        # only if creation itself failed, then degrade to old behavior.
+        fresh = new_tab("https://chat.z.ai/")
+        if fresh:
+            return fresh
+        return generic[0]
     return tabs[0] if tabs else None
 
 
