@@ -16,14 +16,54 @@ delivered PR #176). The marker is now a parameter:
 The tailText is now taken from the CHRONOLOGICALLY LAST assistant text
 block (Object.keys(data) iteration order is the batch-response order, not
 time order — the old tail could show a mid-conversation block).
+
+2026-10-13 FIX #2 (replay-#11, this session): ws.eval timeout raised 60 -> 240s.
+The PCR-001 chat (1.59M chars, 415 blocks) needs >60s for the two chained
+fetches (history + batch) on a busy tab — the earlier diagnostic died with
+WebSocketTimeoutException mid-fetch, losing the output a second time. Large
+legacy chats now always complete; small lanes are unaffected (they return
+in seconds).
+
+2026-10-13 FIX #3 (same session, frozen-renderer discovery): 7 of 9
+chat.z.ai tabs had FROZEN renderers (4GB box, no swap, post-OOM) — a
+simple location.href eval hangs forever on them, so find_tab()'s
+first-match picked a corpse and every diagnostic stalled. The tab choice
+is now responsiveness-probed: ping each chat.z.ai tab (4s), use the
+first ALIVE one; if none, materialize a fresh chat.z.ai tab (same origin
+=> same cookies + localStorage token; the fetch is path-relative so ANY
+chat.z.ai tab can read ANY chat's history).
 """
 import sys, json, time
 sys.path.insert(0, "/home/z/replay2/scripts")
 import channel
 
+
+def find_alive_tab():
+    """First RESPONSIVE chat.z.ai tab, or a fresh one if all are frozen."""
+    try:
+        tabs = channel.list_tabs()
+    except Exception:
+        tabs = []
+    cz = [t for t in tabs if "chat.z.ai" in (t.get("url") or "")]
+    for t in cz:
+        try:
+            c = channel.CDP(t["webSocketDebuggerUrl"], timeout=4)
+            try:
+                c.eval("location.href", timeout=4)
+                return t
+            finally:
+                c.close()
+        except Exception:
+            continue
+    t = channel.new_tab("https://chat.z.ai/")
+    if t:
+        return t
+    raise SystemExit("no responsive chat.z.ai tab and new_tab failed")
+
+
 cid = sys.argv[1]
 want = sys.argv[2].upper() if len(sys.argv) > 2 else None
-tab = channel.find_tab("chat.z.ai")
+tab = find_alive_tab()
 ws = channel.CDP(tab["webSocketDebuggerUrl"])
 js = """(async () => {
   const tok = (localStorage.getItem('token') || '').replace(/^"|"$/g, '');
@@ -74,7 +114,7 @@ js = """(async () => {
   out.batches.sort((a,b) => (a.ts||0)-(b.ts||0));
   return JSON.stringify(out);
 })()""" % (cid, cid)
-raw = ws.eval(js, await_promise=True, timeout=60)
+raw = ws.eval(js, await_promise=True, timeout=240)
 d = json.loads(raw)
 if "err" in d:
     print(json.dumps(d)); sys.exit(2)
