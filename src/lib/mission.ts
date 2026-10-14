@@ -66,35 +66,71 @@ export interface MissionState {
 
 const STATE_PATH = path.join(process.cwd(), "data", "mission-state.json");
 
+// The neutral no-mission state — also the FIELD-LEVEL fallback donor: a
+// mission-state whose shape has drifted (a missing field) must NEVER crash
+// the board. Live catch 2026-10-14 (recycle #14): a mission-state rewrite
+// dropped mission.baseline and Mission Control crashed at line 205
+// (`state.mission.baseline.main`). The file-level catch below is not
+// enough — normalize field-by-field over these defaults.
+function neutralMissionState(): MissionState {
+  return {
+    updatedAt: new Date().toISOString(),
+    mission: {
+      title: "No mission loaded",
+      subtitle:
+        "This console is project-agnostic. To track YOUR project here, write data/mission-state.json locally (copy data/mission-state.example.json). Never commit it — project roadmaps must not enter this repo (governance §0).",
+      baseline: { main: "unknown", tests: 0, roadmap: "unknown" },
+      cadence: "n/a",
+    },
+    lanes: [],
+    items: [],
+    infra: [],
+    timeline: [
+      {
+        ts: new Date().toISOString(),
+        kind: "info",
+        text: "data/mission-state.json not found — no mission loaded (neutral state)",
+      },
+    ],
+    production: { url: null, deployedAt: null, status: "unknown" },
+  };
+}
+
 export async function readMissionState(): Promise<MissionState> {
+  const neutral = neutralMissionState();
   try {
     const raw = await readFile(STATE_PATH, "utf8");
-    return JSON.parse(raw) as MissionState;
+    const parsed = JSON.parse(raw) as Partial<MissionState>;
+    // Field-level normalization over the neutral donor (the recycle-#14
+    // lesson): every access below is nullish-guarded, so shape drift in
+    // the local data file degrades to "unknown" badges, never a crash.
+    return {
+      updatedAt: typeof parsed.updatedAt === "string" ? parsed.updatedAt : neutral.updatedAt,
+      mission: {
+        title: parsed.mission?.title ?? neutral.mission.title,
+        subtitle: parsed.mission?.subtitle ?? neutral.mission.subtitle,
+        baseline: {
+          main: parsed.mission?.baseline?.main ?? neutral.mission.baseline.main,
+          tests: parsed.mission?.baseline?.tests ?? neutral.mission.baseline.tests,
+          roadmap: parsed.mission?.baseline?.roadmap ?? neutral.mission.baseline.roadmap,
+        },
+        cadence: parsed.mission?.cadence ?? neutral.mission.cadence,
+      },
+      lanes: Array.isArray(parsed.lanes) ? parsed.lanes : [],
+      items: Array.isArray(parsed.items) ? parsed.items : [],
+      infra: Array.isArray(parsed.infra) ? parsed.infra : [],
+      timeline: Array.isArray(parsed.timeline) && parsed.timeline.length > 0 ? parsed.timeline : neutral.timeline,
+      production: {
+        url: parsed.production?.url ?? null,
+        deployedAt: parsed.production?.deployedAt ?? null,
+        status: parsed.production?.status ?? "unknown",
+      },
+    };
   } catch {
     // Never render a broken console — fall back to a NEUTRAL no-mission
     // state. The console is project-agnostic by governance: mission state
     // is a per-deployment LOCAL file (data/mission-state.json, gitignored).
     // Never hardcode a project here — see AGENT_BOOT_PROMPT.md §0.
-    return {
-      updatedAt: new Date().toISOString(),
-      mission: {
-        title: "No mission loaded",
-        subtitle:
-          "This console is project-agnostic. To track YOUR project here, write data/mission-state.json locally (copy data/mission-state.example.json). Never commit it — project roadmaps must not enter this repo (governance §0).",
-        baseline: { main: "unknown", tests: 0, roadmap: "unknown" },
-        cadence: "n/a",
-      },
-      lanes: [],
-      items: [],
-      infra: [],
-      timeline: [
-        {
-          ts: new Date().toISOString(),
-          kind: "info",
-          text: "data/mission-state.json not found — no mission loaded (neutral state)",
-        },
-      ],
-      production: { url: null, deployedAt: null, status: "unknown" },
-    };
+    return neutral;
   }
 }
