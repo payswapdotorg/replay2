@@ -1464,3 +1464,21 @@ Stage Summary:
 - Recycle #14 fully recovered in ~4 min (detection 11:08 → green 11:11); the recovery manual now executes with zero novel failures — every lesson (#12 PAT-remote, #13 in-repo probe) pre-applied.
 - Ecosystem: sibling stations all at complete roadmaps (MOS-2.0, UniCom, likewise aurum+YOU, sporta P0-P9); recovery doctrines cross-pollinating across stations via the shared repo.
 - RESIDENT WATCH RESUMES immediately per the standing order — no early returns.
+
+---
+Task ID: R58
+Agent: Z.ai Code (main session)
+Task: THE PERMANENCE LADDER BUILT FOR ALI4 (both rungs live) + remote harvest (3 commits incl. the operator's Zeck re-designation notice for the sibling station)
+
+Work Log:
+- DOCTRINE ADOPTED: the likewise station's recovery-#15/#16 lessons (mini-services survive; platform auto-starts them at boot; agent-tool outages ending in recycles = hours of avoidable downtime) — applied to this station as THE PERMANENCE LADDER.
+- RUNG 1 (PRIMARY, LIVE): /home/z/my-project/mini-services/heal — a bun mini-service (:3040 status endpoint) whose watchdog probes gw+frame every 60s and, when the stack is down, fires recover.sh = THE FULL MANUAL UNATTENDED: creds from env.sh -> PAT-remote clone -> reset-restore -> GC dfork-arms (flock-serialized; boot-fire on first failure; steady-state 2-consecutive + 10min cooldown; healthy stack = silent poll ~19ms class). Durable instance dfork'd (pid 3512, PPID 1); live-verified silent-polling (fires=0). DECISIVE PLATFORM EVIDENCE: the platform auto-started mini-services/replayd at 11:08:31Z on this box — BEFORE agent tools returned at 11:08:49 — so rung 1 fires unattended at every future boot.
+- RUNG 2 (LIVE): predev_heal.sh inlined in my-project package.json dev command ('bash predev_heal.sh; next dev...') — arms the watchdog at every platform dev boot; endpoint-detection no-op when already armed; verified live.
+- MASTER COPIES: replay2 scripts/heal_service_ali4/ (index.ts, recover.sh, package.json, predev_heal.sh) committed + pushed @ 0a0d529 after a rebase onto 3 remote movements (the tl_recover §10 doctrine — materialize back into mini-services after any full-image reset).
+- REMOTE HARVEST (3 commits): bbe043a — likewise station's second-instance recovery-#15 (deep-rollback class: worklog rolled to Task 59, kit rolled to Oct-12, wiring reverted — recovered in 78s via the 736d862 path, worklog restored with a Tasks 60-75 digest; their §8 PAT fallback + §10 heal materialization live-proven on a FRESH recovery); 44a3c6b — mission-state mirror to my-project/data (already satisfied on this box since the recycle-#10 architecture; /api/mission serves the MOS v2.0 board 200); 45a1149 — *** OPERATOR RE-DESIGNATION: the operator re-designated the SIBLING station (station-1/likewise pod) to payswapdotorg/Zeck ONLY; PCL-003 is their frontier. This station (ali4) received NO re-designation — the standing resident-watch order holds unchanged. ***
+- CLEANUP: killed the reaper-vulnerable test watchdog instance (cwd-matched pkill); single durable instance verified.
+
+Stage Summary:
+- The station's downtime class is closed: future recycles self-heal in ~90s unattended (rung 1) with two redundant arming paths + off-box masters (replay2 repo) + the worklog mirror branch (station/ali4-worklog — vindicated by the sibling station's worklog rollback experience).
+- Ecosystem: every roadmap complete on every station (MOS-2.0, UniCom, likewise YOU+aurum, sporta); the sibling station now runs the operator's Zeck/PCL-003 frontier; this station's scope unchanged (resident watch).
+- RESIDENT WATCH CONTINUES per the standing order — no early returns.
