@@ -143,7 +143,9 @@ else
   log "WARN: no PAT found under GITHUB_PAT/PAYSWAP_PAT/GITHUB_TOKEN/GH_TOKEN — pushes will fail"
 fi
 
-# 2. replay2 clone (public repo — no PAT needed)
+# 2. replay2 clone (public repo — no PAT needed) + PAT remote post-clone
+#    (recycle-#14/#15 lesson: an anonymous clone's first push fails with
+#    'could not read Username' — set the PAT remote as soon as creds exist)
 if [[ ! -d "$REPLAY2/.git" ]]; then
   git clone --quiet https://github.com/payswapdotorg/replay2.git "$REPLAY2" \
     && log "replay2 cloned @ $(cd "$REPLAY2" && git rev-parse --short HEAD)" \
@@ -151,6 +153,9 @@ if [[ ! -d "$REPLAY2/.git" ]]; then
 else
   log "replay2 present @ $(cd "$REPLAY2" && git rev-parse --short HEAD)"
 fi
+[[ -n "${GITHUB_PAT:-}" ]] \
+  && git -C "$REPLAY2" remote set-url origin "https://${GITHUB_PAT}@github.com/payswapdotorg/replay2.git" >/dev/null 2>&1 \
+  && log "replay2 PAT remote set"
 
 # 3. FLAGS FIRST — before ANY :3000 eviction (else the ring resurrects the
 #    retired platform app; my-project dev script is retired, belt-and-braces)
