@@ -1498,3 +1498,19 @@ Stage Summary:
 - ~1.75h continuous green since the recycle-#14 manual recovery; the heal watchdog armed and silent through it all — the permanence ladder's first full watch window.
 - Ecosystem: the sibling station's W2-028 delivered+merged through their recycle (roadmaps stay complete); their Zeck/PCL-003 frontier proceeds on their box; this station's scope unchanged.
 - RESIDENT WATCH CONTINUES per the standing order — no early returns; cadence held, instant pipeline armed.
+
+---
+Task ID: R60
+Agent: Z.ai Code (main session)
+Task: RESIDENT WATCH — cycles 41-1..41-8 (13:00→14:03 UTC): one transport blip ridden out with heal-watchdog confirmation (120 cycles, fires=0); renderer_guard adopted via ring roll-forward
+
+Work Log:
+- TRANSPORT BLIP at cycle 41-4 (~13:27 UTC, ~8 min): same boot (uptime unchanged) — the station held green autonomously; the heal watchdog's status endpoint gave the cleanest possible confirmation (booted 11:27, 120 cycles, fires=0 — stack healthy the entire blip, no heal needed). THE WATCHDOG'S FIRST TRANSPORT-OUTAGE RIDE-OUT: clean.
+- WATCH CYCLES 41-1..41-8 (9 min cadence): every cycle green — gateway 200, core up, CDP up, frame 200/72KB (console content accumulating), ring detected, 5/5 heartbeats, session logged-in(ali4) throughout, GC daemons alive, heal fires=0, operator inbox 0, dev.log zero errors.
+- MOVEMENT CONSUMED (1 replay2 commit): c68a023 — renderer_guard.py + supervisor wiring (the likewise station's PCL-003 live finding 13:34Z: kernel OOM-killed the shared chat renderer wedges every same-renderer /c/ tab into unreadable busy; the guard probes registry-live tabs and Page.reload's dead ones IN PLACE — same tab id, fresh renderer, zero content loss; proven live: lane restored wedged->generating with conversation intact).
+- ADOPTED VIA RING ROLL-FORWARD: my box is the same 4GB class (4041MB total / ~1.1GB available — the OOM-risk class the guard cures). My supervisor predated c68a023, so I killed it and let the WATCHER's mutual-watchdog resurrect it — new supervisor pid 11154 immediately armed renderer_guard (pid 11157). THE RING NOW RUNS CURRENT CODE: prevention layer (both GC daemons) + cure layer (renderer_guard) + mutual resurrection, all dfork/reaper-proof.
+- RING ROLL-FORWARD VERIFIED: station probe green immediately after the roll (no downtime beyond the ~8s resurrection window).
+
+Stage Summary:
+- The station's resilience stack is now three-layered: GC daemons (prevention), renderer_guard (cure), heal watchdog (full-recovery) — plus the ring mutual watchdogs and the off-box mirror.
+- RESIDENT WATCH CONTINUES per the standing order — no early returns.
