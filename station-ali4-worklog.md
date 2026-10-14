@@ -1514,3 +1514,18 @@ Work Log:
 Stage Summary:
 - The station's resilience stack is now three-layered: GC daemons (prevention), renderer_guard (cure), heal watchdog (full-recovery) — plus the ring mutual watchdogs and the off-box mirror.
 - RESIDENT WATCH CONTINUES per the standing order — no early returns.
+
+---
+Task ID: R61
+Agent: Z.ai Code (main session)
+Task: RESIDENT WATCH — cycles 41-9..41-16 (14:13→15:17 UTC): renderer_guard v2 adopted; 2 movements consumed; every cycle green
+
+Work Log:
+- WATCH CYCLES 41-9..41-16 (9 min cadence): every cycle green — gateway 200, core up, CDP up, frame 200/63KB, ring detected, 6/5 heartbeats (the 6th = renderer_guard's), session logged-in(ali4) throughout, GC daemons alive, heal fires=0, operator inbox 0, dev.log zero errors; box memory steady ~1.07GB available.
+- MOVEMENTS CONSUMED (2 replay2 commits): (1) 4e2089d — the sibling station's operator-directive execution: brand-new replay deployment + visible roadmap + launch-gate sign-off surface staged (server :3030 + web :5173 + ReleaseStudioSurface wired; midnight-UTC operator sign-off deadline — the next ecosystem event to watch); (2) b49801b — renderer_guard v2: THE LIVE 14:53-55 LESSON — Page.reload tears down the page but Chrome NEVER returns renderer RSS to the OS (2.2Gi stayed 2.2Gi); only CLOSE+REOPEN exits the process and gives memory back (live proof 3.5Gi->1.6Gi). Triggers: heap>=900MB OR dom>=80000 nodes OR avail<=700MB; fix path: fresh tab FIRST + registry reopen record + close old SECOND. Supersedes reload for the memory class; reload stays for the dead-renderer class.
+- GUARD ROLLED FORWARD TWICE via the supervisor's ensure_renderer_guard() resurrection path (kill guard -> supervisor re-arms from current checkout): v1 at 14:04, v2 at 14:59 — both with zero station downtime beyond the arming gap. The ring roll-forward procedure is now proven for both supervisor and child-guard code updates.
+
+Stage Summary:
+- The station's resilience stack current with the ecosystem's latest live-proven doctrines: GC prevention + renderer_guard v2 cure (memory-class close+reopen) + heal watchdog + ring mutual resurrection.
+- The sibling station's operator sign-off surface is staged for the midnight-UTC deadline; this station watches (the sign-off is the operator's human step, not dispatchable).
+- RESIDENT WATCH CONTINUES per the standing order — no early returns.
