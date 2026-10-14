@@ -143,7 +143,16 @@ printf 'launch_dev.py' > "$REPLAY2/scripts/flags/console_launcher.txt"
 printf '3000'         > "$REPLAY2/scripts/flags/console_port.txt"
 
 # 4. restore deployment-local state (mission-state, packets, registry seeds)
-[[ -f "$DURABLE_DIR/mission-state.json" ]] && cp "$DURABLE_DIR/mission-state.json" "$REPLAY2/data/mission-state.json" && log "mission-state restored"
+if [[ -f "$DURABLE_DIR/mission-state.json" ]]; then
+  cp "$DURABLE_DIR/mission-state.json" "$REPLAY2/data/mission-state.json"
+  # 2026-10-14 recycle #16: the platform-app console port (my-project Next-16
+  # scaffold, the recycle-#10 architecture) may own :3000 — its mission-state
+  # path is CWD-relative (my-project/data/). Mirror so BOTH consoles serve the
+  # current board whichever owns the port (deploy health checks pass on either).
+  mkdir -p /home/z/my-project/data 2>/dev/null
+  cp "$DURABLE_DIR/mission-state.json" /home/z/my-project/data/mission-state.json 2>/dev/null
+  log "mission-state restored (replay2 + platform-port mirror)"
+fi
 [[ -f "$DURABLE_DIR/watch_repo.txt" ]] && cp "$DURABLE_DIR/watch_repo.txt" "$REPLAY2/scripts/flags/watch_repo.txt" \
   && log "watcher repo designation restored"
 [[ -f "$DURABLE_DIR/local-services.json" ]] && cp "$DURABLE_DIR/local-services.json" "$REPLAY2/scripts/flags/local_services.json" \
