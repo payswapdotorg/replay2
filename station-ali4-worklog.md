@@ -1558,3 +1558,18 @@ Stage Summary:
 - ~7.8h continuous green since the recycle-#14 manual recovery; the ecosystem's hardening cadence continues on the sibling station while this station holds the resident watch.
 - ECOSYSTEM EVENT WATCH: operator sign-off deadline at midnight UTC (~5h out) — the sibling station's surface is staged; this station monitors for the outcome.
 - RESIDENT WATCH CONTINUES per the standing order — no early returns; cadence held, instant pipeline armed.
+
+---
+Task ID: R64
+Agent: Z.ai Code (main session)
+Task: RESIDENT WATCH — cycles 43-1..43-10 (19:06→20:28 UTC): guard rolled forward to the phantom-sweep version; every cycle green
+
+Work Log:
+- WATCH CYCLES 43-1..43-10 (9 min cadence): every cycle green — gateway 200, core up, CDP up, frame 200/63KB, ring detected, 6/5 heartbeats, session logged-in(ali4) throughout, GC daemons alive, heal fires=0, operator inbox 0, dev.log zero errors.
+- MOVEMENT CONSUMED (1 replay2 commit): 113dfc6 — renderer_guard round-level phantom sweep (catches the site-opened phantom /c/ tab class the dispatch sweep misses; second-sighting rule >=2*POLL protects landing sessions; never touches registry chats/home tabs). GUARD ROLLED FORWARD via the proven supervisor-resurrection path (kill -> ensure_renderer_guard re-arms from the current checkout; new pid 25904, zero downtime).
+- REMOTE SWEEPS at cycles 43-2/43-4/43-6/43-8/43-10: replay2 frozen @ 113dfc6 across the window; MOS-2.0 + UniCom resting at their completion SHAs; zero new scope, zero directives.
+
+Stage Summary:
+- ~9.3h continuous green since the recycle-#14 manual recovery; the resilience stack kept current with the ecosystem's same-day hardening (guard now: memory-class close+reopen + round-level phantom sweep).
+- ECOSYSTEM EVENT WATCH: operator sign-off deadline at midnight UTC (~3.5h out).
+- RESIDENT WATCH CONTINUES per the standing order — no early returns.
