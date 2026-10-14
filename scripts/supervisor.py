@@ -674,6 +674,36 @@ def ensure_frame_guard():
     log("frame_guard restarted")
 
 
+def ensure_renderer_guard():
+    """renderer_guard.py — the OOM-class renderer-death auto-healer
+    (2026-10-14 PCL-003 live finding: a kernel OOM-kill wedges every
+    same-renderer /c/ tab into unreadable busy states that queue_watch
+    treats with infinite patience; the guard probes registry-live tabs
+    and Page.reload's dead ones in place — same tab id, zero content
+    loss, proven live). Standalone by design; the supervisor owns its
+    resurrection (pidfile first, pgrep fallback; the guard only does CDP
+    reads + the idempotent reload — restart is always safe)."""
+    pidfile = os.path.join(BASE, "renderer_guard.pid")
+    pid = read_pid(pidfile)
+    if pid_alive(pid, "renderer_guard.py"):
+        return
+    r = subprocess.run(["pgrep", "-f", "renderer_guard.py"],
+                       capture_output=True, text=True)
+    pid = r.stdout.strip().split("\n")[0] if r.stdout.strip() else ""
+    if pid:
+        try:
+            open(pidfile, "w").write(pid)
+        except Exception:
+            pass
+        return
+    log("renderer_guard DEAD — restarting (OOM-class renderer-death healer)")
+    subprocess.Popen(
+        [PY, os.path.join(BASE, "renderer_guard.py")],
+        stdout=open(os.path.join(LOGDIR, "renderer_guard.out"), "a"),
+        stderr=subprocess.STDOUT, start_new_session=True)
+    log("renderer_guard restarted")
+
+
 def ensure_queue_watch():
     """Resurrect queue_watch.py for every flags/queue_watch.spec.<name>.
 
@@ -854,6 +884,7 @@ def main():
                 ensure_local_services()
                 ensure_stall_recovery()
                 ensure_frame_guard()
+                ensure_renderer_guard()
                 if cycle % 3 == 0:          # browser check every ~30s
                     ensure_browser()
                     ensure_dev()
