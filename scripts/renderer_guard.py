@@ -34,6 +34,7 @@ Launch detached: dfork_launch.py logs/renderer_guard.log <py> renderer_guard.py
 import json
 import os
 import subprocess
+import sys
 import time
 import urllib.request
 
@@ -50,6 +51,24 @@ FAILS_NEEDED = 3          # consecutive failures before the death verdict
 FAIL_WINDOW = 150         # s the failures must span (rules out blips)
 RELOAD_COOLDOWN = 600     # s per tab between reload attempts
 EVAL_TIMEOUT = 8          # s for the trivial probe — healthy pages answer fast
+
+# --- the memory trigger (2026-10-14 second-OOM lesson) ---------------------
+# A streaming agents-tab page accumulates DOM/JS heap unboundedly (live
+# finding: the pcl-003 renderer reached 2.1Gi on a 3.9Gi/no-swap box and
+# the kernel OOM-killed first the renderer, then the console; the next
+# biggest victim class is the root platform process = session death). A
+# mid-generation tab reload is PROVEN SAFE (the conversation is
+# server-side; today's reloads and the s8 cure's tab-reopen both resumed
+# the lane with zero loss). So: when the page's JS heap crosses the line —
+# or the box's available memory is about to hit the floor — reload the
+# live tab to cap the biggest consumer. The cooldown bounds the churn.
+HEAP_RELOAD_MB = 900      # JS heap threshold per live tab (tertiary)
+DOM_RELOAD_NODES = 80000   # DOM node count — the real RSS driver (live
+                           # calibration: 54,663 nodes -> 2.2Gi renderer RSS
+                           # with only 417MB JS heap; the streaming page
+                           # accumulates DOM, not heap)
+AVAIL_FLOOR_MB = 700      # box-wide available floor (primary: fire the
+                           # reload with real margin — the kernel OOMs at 0)
 
 
 def log(msg):
@@ -71,7 +90,8 @@ def heartbeat():
 
 
 def live_tabs():
-    """{tab_id: url} for sessions in the registry that are not done/void."""
+    """{tab_id: (url, name)} for registry sessions not done/void
+    (latest record per tab id wins; the name feeds the tab-reopen record)."""
     out = {}
     try:
         with open(REG, encoding="utf-8") as f:
@@ -83,8 +103,9 @@ def live_tabs():
             continue
         tid = str(row.get("tab_id") or "")
         url = str(row.get("url") or "")
+        name = str(row.get("name") or "")
         if tid and url:
-            out[tid] = url
+            out[tid] = (url, name)
     return out
 
 
@@ -109,6 +130,91 @@ def probe(tab):
             ws.close()
     except Exception:
         return False
+
+
+def heap_mb(tab):
+    """(heap_MB, dom_nodes) for the page; (None, None) if unreadable."""
+    try:
+        ws = websocket.create_connection(tab["webSocketDebuggerUrl"],
+                                         timeout=EVAL_TIMEOUT)
+        try:
+            ws.send(json.dumps({"id": 1, "method": "Runtime.evaluate",
+                                "params": {"expression":
+                                    "JSON.stringify({h: performance.memory ? "
+                                    "Math.round(performance.memory."
+                                    "usedJSHeapSize/1048576) : -1, "
+                                    "d: document.getElementsByTagName('*')."
+                                    "length})",
+                                    "returnByValue": True}}))
+            r = json.loads(ws.recv())
+            v = r.get("result", {}).get("result", {}).get("value")
+            if isinstance(v, str):
+                d = json.loads(v)
+                return int(d.get("h", -1)), int(d.get("d", -1))
+            return None, None
+        finally:
+            ws.close()
+    except Exception:
+        return None, None
+
+
+def avail_mb():
+    """Box-wide available memory (MemAvailable) in MB."""
+    try:
+        with open("/proc/meminfo") as f:
+            for line in f:
+                if line.startswith("MemAvailable:"):
+                    return int(line.split()[1]) // 1024
+    except Exception:
+        pass
+    return None
+
+
+def close_target(ws, target_id):
+    ws.send(json.dumps({"id": 99, "method": "Target.closeTarget",
+                        "params": {"targetId": target_id}}))
+    deadline = time.time() + 8
+    while time.time() < deadline:
+        try:
+            r = json.loads(ws.recv())
+            if r.get("id") == 99:
+                return "error" not in r
+        except Exception:
+            break
+    return True
+
+
+def reopen_tab(target_id, url, name):
+    """The memory-reclaim fix: close + fresh tab (2026-10-14 live lesson:
+    Page.reload tears down the page but Chrome NEVER returns renderer RSS
+    to the OS — the 2.2Gi renderer stayed 2.2Gi with a 260MB heap inside;
+    only closing the tab exits the process and gives the memory back). The
+    fresh tab keeps the lane's live view; the registry tab-reopen record
+    re-aims queue_watch (proven: it follows registry records each poll).
+    Open FIRST, close SECOND — the lane never loses its tab."""
+    sys.path.insert(0, BASE)
+    import channel
+    import dispatch_worker as dw
+    tab = channel.new_tab(url)
+    if tab is None:
+        log(f"{name} reopen: fresh-tab open FAILED — old tab kept")
+        return False
+    dw._save({"action": "tab-reopen", "name": name, "tab_id": tab["id"],
+              "url": url, "ts": int(time.time()),
+              "note": "renderer_guard memory reclaim: fresh renderer "
+                      "(old renderer RSS only returns to the OS on exit)"})
+    time.sleep(3)
+    with urllib.request.urlopen("http://localhost:9222/json/version",
+                                timeout=10) as r:
+        ver = json.loads(r.read().decode())
+    ws = websocket.create_connection(ver["webSocketDebuggerUrl"], timeout=15)
+    try:
+        ok = close_target(ws, target_id)
+    finally:
+        ws.close()
+    log(f"{name} reopen: fresh tab {tab['id'][:8]}, old {target_id[:8]} "
+        f"closed={ok}")
+    return True
 
 
 def reload_tab(target_id):
@@ -173,13 +279,33 @@ def main():
             log(f"CDP /json unavailable ({e!r}) — round skipped")
             time.sleep(POLL)
             continue
-        for tid, url in live_tabs().items():
+        for tid, (url, sname) in live_tabs().items():
             tab = tabs.get(tid)
             if not tab:
                 fails.pop(tid, None)   # tab closed = not our problem
                 continue
             if probe(tab):
                 fails.pop(tid, None)   # healthy — reset the failure run
+                # --- the memory trigger (healthy but fat) ---------------
+                hm, dn = heap_mb(tab)
+                am = avail_mb()
+                if ((hm is not None and hm >= HEAP_RELOAD_MB) or
+                        (dn is not None and dn >= DOM_RELOAD_NODES) or
+                        (am is not None and am <= AVAIL_FLOOR_MB)):
+                    name = sname or (url.split("/c/")[-1][:8]
+                                     if "/c/" in url else url[:30])
+                    if time.time() - cooldown.get(tid, 0) < RELOAD_COOLDOWN:
+                        log(f"{name} memory trigger (heap={hm}MB dom={dn} "
+                            f"avail={am}MB) but cooldown active — waiting")
+                    else:
+                        cooldown[tid] = time.time()
+                        log(f"{name} MEMORY TRIGGER: heap={hm}MB dom={dn} "
+                            f"avail={am}MB — close+reopen (fresh renderer; "
+                            "conversation is server-side; proven safe "
+                            "2026-10-14)")
+                        ok = reopen_tab(tid, url, sname)
+                        log(f"{name} memory reopen "
+                            f"{'DONE' if ok else 'FAILED'}")
                 continue
             run = fails.setdefault(tid, [])
             run.append(time.time())
