@@ -47,6 +47,7 @@ import os
 import re
 import sys
 import time
+import urllib.request
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 import channel
@@ -1161,6 +1162,60 @@ def _subst_pat(text):
     return text
 
 
+def _sweep_phantom_tabs(keep_tab_id=None):
+    """Close /c/ tabs that belong to NO registry chat (the capacity-fight leak).
+
+    2026-10-14 live finding (the w3-024 three-lane dispatch, GLM-5.3 at
+    capacity): aborted sends leave behind 'phantom' /c/ tabs — server-verify
+    rejects the chat as absent-from-list, the assault continues, but the
+    /c/ tab STAYS OPEN, each holding 100-400MB of renderer RSS. Five
+    phantoms burned ~530MB on the 4GB/no-swap box and drove available
+    memory to 131MB (the PCL-003 OOM class). Sweep = list CDP pages over
+    HTTP, close every /c/<uuid> tab whose uuid matches NO registry chat
+    URL. Never touches: the caller's own fight tab (keep_tab_id), any
+    registry-live/retired session tab, bare home tabs (login/session),
+    or non-chat pages (VPN cover). Idempotent; CDP-session-free (pure
+    /json + /json/close — cannot interfere with the in-flight fight
+    connection)."""
+    try:
+        with urllib.request.urlopen("http://localhost:9222/json", timeout=10) as r:
+            pages = json.loads(r.read().decode())
+    except Exception:
+        return
+    known = set()
+    try:
+        with open(REG, encoding="utf-8") as fh:
+            for line in fh:
+                line = line.strip()
+                if not line:
+                    continue
+                try:
+                    u = json.loads(line).get("url") or ""
+                except ValueError:
+                    continue
+                m = re.search(r"/c/([0-9a-f-]{36})", u)
+                if m:
+                    known.add(m.group(1))
+    except FileNotFoundError:
+        pass
+    closed = 0
+    for p in pages:
+        if p.get("type") != "page" or p.get("id") == keep_tab_id:
+            continue
+        m = re.search(r"/c/([0-9a-f-]{36})", p.get("url") or "")
+        if not m or m.group(1) in known:
+            continue
+        try:
+            urllib.request.urlopen(
+                "http://localhost:9222/json/close/" + p["id"], timeout=10).read()
+            closed += 1
+        except Exception:
+            pass
+    if closed:
+        print(f"      [sweep] closed {closed} phantom /c/ tab(s) — "
+              "capacity-fight leak (2026-10-14 w3-024 finding)")
+
+
 def create(name, prompt_file):
     # absolute from the start: the capacity-recovery flag + registry records
     # are consumed by processes with a DIFFERENT cwd (supervisor/relaunchers) —
@@ -1513,6 +1568,10 @@ def create(name, prompt_file):
                         print(f"      [server-verify] check failed ({str(e)[:60]}) — continuing assault")
                     if not exists_server:
                         ok = False
+                        # the fight tab itself may sit at a phantom /c/ URL
+                        # (protected below); every OTHER leftover phantom
+                        # from earlier rounds/runs is pure RSS garbage.
+                        _sweep_phantom_tabs(keep_tab_id=tab["id"])
                     # TWO-STATE CAPACITY PROTOCOL (queue_watch.py; live evidence
                     # 2026-09-10): a send whose URL moved to /c/<uuid> (composer
                     # cleared + prompt in transcript) was ACCEPTED — the task is
@@ -1580,6 +1639,7 @@ def create(name, prompt_file):
                "insert_pct": pct, "sent": False, "stage": "capacity"})
         print("      assault rounds exhausted — flag written; recover_capacity.py (supervisor-")
         print("      guarded) re-runs the aggressive loop. session: dispatch_worker.py check " + name)
+        _sweep_phantom_tabs(keep_tab_id=tab["id"])
         return 3
     finally:
         try:
