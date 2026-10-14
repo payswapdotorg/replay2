@@ -27,6 +27,21 @@ def main():
         return 2
     cid = sys.argv[1]
     marker = sys.argv[2] if len(sys.argv) > 2 else "COMPLETION REPORT"
+    # WO-010 lesson, applied to the SERVER gate (2026-10-14, pcl-003
+    # forensics): GLM workers answer in Chinese ~half the time — a genuine
+    # report headline may be "=== <ID> 完成报告 ===". queue_watch.py's DOM
+    # gate already accepts the bilingual headline, but this probe's
+    # default English-only marker made a genuine Chinese report
+    # UNCONFIRMABLE (observed live: the full filled report sat in the
+    # batch store — 40-hex base SHA, branch, every gate number — while
+    # every probe returned reportInAssistant=false and the watcher held
+    # "DOM inoculation suspected; NOT complete" forever). Alias the
+    # Chinese form for the DEFAULT marker only; explicit custom markers
+    # (e.g. server_alive's "Base SHA") keep exact-match semantics.
+    markers = [marker]
+    if marker == "COMPLETION REPORT":
+        markers.append("完成报告")
+    mk_js = json.dumps(markers)
     # prefer a tab already ON this chat (its renderer has the freshest auth
     # context); fall back to any chat.z.ai tab
     tabs = [t for t in channel.list_tabs() if "chat.z.ai" in (t.get("url") or "")]
@@ -54,6 +69,7 @@ def main():
         js = """(async () => {
           const tok = (localStorage.getItem('token') || '').replace(/^"|"$/g, '');
           const hdr = tok ? {Authorization: 'Bearer ' + tok} : {};
+          const MK = %s;
           const r = await fetch('/api/v1/chats/%s', {credentials: 'include', cache: 'no-store', headers: hdr});
           if (!r.ok) return JSON.stringify({err: 'http-' + r.status});
           const j = await r.json();
@@ -64,7 +80,7 @@ def main():
             const c = Array.isArray(m.content) ? m.content : (m.content || '');
             const txt = JSON.stringify(c);
             last.push({role: m.role, len: txt.length, ts: m.timestamp,
-                       hasMarker: txt.indexOf(%s) >= 0});
+                       hasMarker: MK.some(m => txt.indexOf(m) >= 0)});
           }
           // Agents-tab chats keep the REAL content server-side in the
           // messages/batch store: the chats-history view holds only the
@@ -75,7 +91,7 @@ def main():
           for (const m of byTs) {
             if (m.role !== 'assistant') continue;
             const c = Array.isArray(m.content) ? m.content : (m.content || '');
-            if (JSON.stringify(c).indexOf(%s) >= 0) reportInAssistant = true;
+            if (MK.some(m => JSON.stringify(c).indexOf(m) >= 0)) reportInAssistant = true;
           }
           const ids = byTs.map(m => m.id).filter(Boolean);
           let batchMsgs = 0, batchAssistant = 0, batchChecked = false;
@@ -113,12 +129,14 @@ def main():
                   const whole = JSON.stringify(m);
                   if (whole.length > 400) batchAssistant++;
                   batchChars += whole.length;
-                  let mi = -1;
-                  while ((mi = whole.indexOf(%s, mi + 1)) >= 0) {
-                    const win = whole.slice(mi, mi + 450);
-                    const hasHex = /\\b[0-9a-f]{40}\\b/.test(win);
-                    const hasPlaceholder = /<[a-zA-Z][^>]{2,60}>/.test(win);
-                    if (hasHex && !hasPlaceholder) reportInAssistant = true;
+                  for (const mk of MK) {
+                    let mi = -1;
+                    while ((mi = whole.indexOf(mk, mi + 1)) >= 0) {
+                      const win = whole.slice(mi, mi + 450);
+                      const hasHex = /\\b[0-9a-f]{40}\\b/.test(win);
+                      const hasPlaceholder = /<[a-zA-Z][^>]{2,60}>/.test(win);
+                      if (hasHex && !hasPlaceholder) reportInAssistant = true;
+                    }
                   }
                 }
               }
@@ -128,7 +146,7 @@ def main():
             now: Math.floor(Date.now() / 1000), msgs: byTs.length,
             last, reportInAssistant,
             batch: {checked: batchChecked, msgs: batchMsgs, assistantish: batchAssistant, chars: batchChars}});
-        })()""" % (cid, json.dumps(marker), json.dumps(marker), cid, json.dumps(marker))
+        })()""" % (mk_js, cid, cid)
         raw = ws.eval(js, await_promise=True, timeout=30)
         d = json.loads(raw)
         print(json.dumps(d))
