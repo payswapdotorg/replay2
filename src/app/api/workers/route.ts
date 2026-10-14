@@ -182,6 +182,23 @@ function parseHeader(head: string): { title: string; lane: string } {
       lane: laneMap[mUni[1].slice(0, 2)] ?? "",
     };
   }
+  // UNiCOM recovery-stub H1s (2026-10-14 recycle-#14 live catch): the bare
+  // work-order form `# W2-028 — the Tier A Freshness Verification at 8aae797
+  // (the v2 RC inheritance currency)` — MUST be tried BEFORE the W-series
+  // frontier regex (mw): mw's `W\d+` matches "W2" and then eats the item
+  // number at the dash ("028 — …" with the paren clause as the lane).
+  const mUni2 = head.match(/^#\s*(W\d-\d{3})\s*[—-]\s*(.+?)\s*$/);
+  if (mUni2) {
+    const laneMap: Record<string, string> = {
+      W1: "W1 — Commerce Kernel",
+      W2: "W2 — Agent-Trust-Security",
+      W3: "W3 — UX/Connectors/Physical",
+    };
+    return {
+      title: `${mUni2[1]} — ${mUni2[2].replace(/\s*\([^)]*\)\s*$/, "")}`,
+      lane: laneMap[mUni2[1].slice(0, 2)] ?? "",
+    };
+  }
   const mMos = head.match(
     /^#\s*([A-Z]+-\d{3})\s*[—-]\s*(.+?)\s*(?:\([^)]*\))?\s*$/,
   );

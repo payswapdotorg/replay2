@@ -221,13 +221,15 @@ fi
 
 # 6. login keeper (auto-restores ali26 from the durable token — no operator
 #    login needed; snapshots the token every 20 min once logged in)
+# 2026-10-13 recycle #11 (parallel station's eb46e76): system python3 on a
+# fresh pod lacks websocket-client (ModuleNotFoundError kills the keepers) —
+# prefer the venv python (/home/z/.venv, provisioned from pyproject.toml).
+# 2026-10-14 recycle #14: the SAME class hit lane_watch_unicom (channel.py →
+# websocket) — hoisted here so BOTH keepers resolve it.
+_KEEPER_PY="$( [[ -x /home/z/.venv/bin/python3 ]] && echo /home/z/.venv/bin/python3 || echo python3 )"
 if keeper_running login_keeper.py; then
   log "login_keeper already live"
 else
-  # 2026-10-13 recycle #11 (parallel station's eb46e76): system python3 on a
-  # fresh pod lacks websocket-client (ModuleNotFoundError kills the keeper) —
-  # prefer the venv python (/home/z/.venv, provisioned from pyproject.toml).
-  _KEEPER_PY="$( [[ -x /home/z/.venv/bin/python3 ]] && echo /home/z/.venv/bin/python3 || echo python3 )"
   (cd "$REPLAY2/scripts" && "$_KEEPER_PY" dfork_launch.py logs/login_keeper.log "$_KEEPER_PY" login_keeper.py)
   log "login_keeper launched (dfork'd, py=$_KEEPER_PY)"
 fi
@@ -236,8 +238,8 @@ fi
 if keeper_running lane_watch_unicom.py; then
   log "lane_watch already live"
 else
-  (cd "$REPLAY2/scripts" && python3 dfork_launch.py logs/lane_watch_unicom.log python3 lane_watch_unicom.py)
-  log "lane_watch_unicom launched (dfork'd)"
+  (cd "$REPLAY2/scripts" && "$_KEEPER_PY" dfork_launch.py logs/lane_watch_unicom.log "$_KEEPER_PY" lane_watch_unicom.py)
+  log "lane_watch_unicom launched (dfork'd, py=$_KEEPER_PY)"
 fi
 
 # 8. UniCom clone + PAT remote + pnpm
