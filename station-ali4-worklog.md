@@ -1482,3 +1482,19 @@ Stage Summary:
 - The station's downtime class is closed: future recycles self-heal in ~90s unattended (rung 1) with two redundant arming paths + off-box masters (replay2 repo) + the worklog mirror branch (station/ali4-worklog — vindicated by the sibling station's worklog rollback experience).
 - Ecosystem: every roadmap complete on every station (MOS-2.0, UniCom, likewise YOU+aurum, sporta); the sibling station now runs the operator's Zeck/PCL-003 frontier; this station's scope unchanged (resident watch).
 - RESIDENT WATCH CONTINUES per the standing order — no early returns.
+
+---
+Task ID: R59
+Agent: Z.ai Code (main session)
+Task: RESIDENT WATCH — cycles 40-1..40-10 (11:22→12:51 UTC): post-recovery stabilization with the permanence ladder armed; 4 movements consumed; every cycle green
+
+Work Log:
+- WATCH CYCLES 40-1..40-10 (9 min cadence): every cycle green — gateway 200, core up, CDP up, frame 200/60KB, ring detected, 5/5 heartbeats, session logged-in(ali4) throughout, GC daemons alive, heal watchdog silent-polling (fires=0 every check), operator inbox 0, dev.log zero errors.
+- MOVEMENTS CONSUMED (4 replay2 commits): (1) 736d862 — likewise recovery-#15's mini-services heal hook (the doctrine I then adopted as R58); (2) d6de372 — w10 branch_watch armed (their wave machinery); (3) 5ba31b0 — THEIR recycle #14 (~11:51Z — the same platform recycle wave as MY #14 at ~11:07Z): the w2-028 lane-history wipe; the worker SURVIVED server-side and DELIVERED anyway (work/w2-028 @ 3c468ee, all-gates-re-run all-matched, merged 6c5114b, issue #21 closed 12:19:55Z); NEW DOCTRINE: dispatch = commit the registry records same-minute (retirement-time trio remains the backstop); (4) 9c0b029 + d19f8ed — mission-loader field-level fallbacks + lane_watch venv hoisting + parseHeader W-series regex fix (their live catches).
+- CROSS-STATION PATTERN: the platform recycle wave hit both boxes ~45 min apart; both recovered via their own manuals; the shared repo carried every lesson same-hour.
+- WORKLOG MIRROR refreshed @ d2e3d2a (R58).
+
+Stage Summary:
+- ~1.75h continuous green since the recycle-#14 manual recovery; the heal watchdog armed and silent through it all — the permanence ladder's first full watch window.
+- Ecosystem: the sibling station's W2-028 delivered+merged through their recycle (roadmaps stay complete); their Zeck/PCL-003 frontier proceeds on their box; this station's scope unchanged.
+- RESIDENT WATCH CONTINUES per the standing order — no early returns; cadence held, instant pipeline armed.
