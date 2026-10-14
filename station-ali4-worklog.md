@@ -1529,3 +1529,17 @@ Stage Summary:
 - The station's resilience stack current with the ecosystem's latest live-proven doctrines: GC prevention + renderer_guard v2 cure (memory-class close+reopen) + heal watchdog + ring mutual resurrection.
 - The sibling station's operator sign-off surface is staged for the midnight-UTC deadline; this station watches (the sign-off is the operator's human step, not dispatchable).
 - RESIDENT WATCH CONTINUES per the standing order — no early returns.
+
+---
+Task ID: R62
+Agent: Z.ai Code (main session)
+Task: RESIDENT WATCH — cycles 42-1..42-10 (15:27→16:49 UTC): 1.4h of stillness; every cycle green; memory steady
+
+Work Log:
+- WATCH CYCLES 42-1..42-10 (9 min cadence): every cycle green — gateway 200, core up, CDP up, frame 200/63KB, ring detected, 6/5 heartbeats (incl. renderer_guard v2), session logged-in(ali4) throughout, GC daemons alive, operator inbox 0, dev.log zero errors; box memory steady (1.03-1.07GB available — well above the 700MB trigger).
+- REMOTE SWEEPS at cycles 42-2/42-4/42-6/42-8/42-10: replay2 frozen @ b49801d... b49801b across the whole window; MOS-2.0 + UniCom resting at their completion SHAs; zero new scope, zero directives, zero movement.
+- ECOSYSTEM EVENT WATCH: the sibling station's operator sign-off surface staged for the midnight-UTC deadline (4e2089d) — nothing for this station to do (the sign-off is the operator's human step); monitoring for the outcome.
+
+Stage Summary:
+- ~5.7h continuous green since the recycle-#14 manual recovery; the three-layer resilience stack (GC + guard v2 + heal watchdog) holding silent through its first full shift.
+- RESIDENT WATCH CONTINUES per the standing order — no early returns; cadence held, instant pipeline armed.
