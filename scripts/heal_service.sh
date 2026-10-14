@@ -29,6 +29,16 @@ stack_healthy() {
   curl -sf --max-time 5 http://127.0.0.1:3000/api/status >/dev/null 2>&1 || return 1
   curl -sf --max-time 5 http://127.0.0.1:3000/ 2>/dev/null | grep -q "<title>Replay Console</title>" || return 1
   curl -sf --max-time 5 http://127.0.0.1:3100/healthz 2>/dev/null | grep -q '"ok": *true' || return 1
+  # 2026-10-14 recycle #18 lesson ('wrong replay' symptom): a healthy stack
+  # with a MISSING mission board is NOT healthy for a deployment that
+  # authored one — the operator sees "No mission loaded" and zero roadmap
+  # progress. Requirement is OPT-IN (§0): only when the browser-profile
+  # vault carries a mission-state.json (the deployment authored one at some
+  # point) must the live clone serve it. Mission-less deployments stay
+  # legitimately neutral.
+  if [[ -s "/home/z/my-project/browser-profile/mission-state.json" ]] && [[ ! -s "$REPLAY2/data/mission-state.json" ]]; then
+    return 1
+  fi
   return 0
 }
 
@@ -46,6 +56,18 @@ seed_kit() {
   [[ -s "$KIT/repos.txt" ]] && cp "$KIT/repos.txt" "$DURABLE/repos.txt"
   # 3. dfork + predev-heal masters (tl_recover §9 re-syncs the rest)
   [[ -s "$KIT/dfork_launch.py" ]] && cp "$KIT/dfork_launch.py" "$DURABLE/dfork_launch.py"
+  # 4. mission board + local-services spec (2026-10-14 recycle #18: the
+  #    deep-rollback class wipes my-project/data AND download/recovery —
+  #    but browser-profile/ has survived every recycle class so far; it is
+  #    the seed vault. Seeding here lets tl_recover step 4 pick both up).
+  if [[ ! -s "$DURABLE/mission-state.json" && -s "/home/z/my-project/browser-profile/mission-state.json" ]]; then
+    cp /home/z/my-project/browser-profile/mission-state.json "$DURABLE/mission-state.json"
+    log "mission-state seeded from browser-profile vault"
+  fi
+  if [[ ! -s "$DURABLE/local-services.json" && -s "/home/z/my-project/browser-profile/local-services.json" ]]; then
+    cp /home/z/my-project/browser-profile/local-services.json "$DURABLE/local-services.json"
+    log "local-services spec seeded from browser-profile vault"
+  fi
   return 0
 }
 

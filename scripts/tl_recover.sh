@@ -48,14 +48,29 @@ log "=== TL recover (TradRL era) start ==="
 #     env, ~/.secrets/env.sh, /home/z/.payswap-env — a fresh TL session seeds
 #     one of those from its conversation context, then this step pulls the
 #     whole kit. Never logs secret values.)
-if [[ ! -f "$DURABLE_DIR/credentials.env" ]]; then
+#     2026-10-14 recycle #18 lesson: the OLD all-or-nothing gate (pull only
+#     when credentials.env was absent) silently skipped the mirror whenever
+#     heal's seed_kit had re-created credentials.env from its embedded copy —
+#     so the mission-state entry was never fetched and the console booted
+#     with an empty board ("No mission loaded" — the 'wrong replay'
+#     symptom, live-caught after R18). Per-entry doctrine now: creds resolve
+#     whenever ANY kit entry is missing; each entry restores ONLY when its
+#     local file is absent/empty (seed wins, never clobbers a fresher local).
+_kit_gaps() {
+  [[ ! -s "$DURABLE_DIR/credentials.env" ]] && return 0
+  [[ ! -s "$DURABLE_DIR/repos.txt" ]] && return 0
+  [[ ! -s "$DURABLE_DIR/watch_repo.txt" ]] && return 0
+  [[ ! -s "$DURABLE_DIR/mission-state.json" ]] && return 0
+  return 1
+}
+if _kit_gaps; then
   for _src in "$HOME/.secrets/env.sh" "/home/z/.payswap-env"; do
     # shellcheck disable=SC1090
     [[ -f "$_src" ]] && . "$_src" && break
   done
   _ru="${UPSTASH_REDIS_REST_URL:-}"; _rt="${UPSTASH_REDIS_REST_TOKEN:-}"
   if [[ -n "$_ru" && -n "$_rt" ]]; then
-    log "no durable kit on disk — restoring from the Upstash Redis mirror"
+    log "durable kit incomplete — restoring missing entries from the Upstash Redis mirror"
     _redis_get() {
       curl -sf --max-time 20 "$_ru/get/payswap:recovery:$1" \
         -H "Authorization: Bearer $_rt" 2>/dev/null | python3 -c \
@@ -67,28 +82,38 @@ try:
 except Exception:
     pass' 2>/dev/null
     }
-    _v="$(_redis_get credentials-env)"
-    [[ -n "$_v" ]] && printf '%s\n' "$_v" > "$DURABLE_DIR/credentials.env" && chmod 600 "$DURABLE_DIR/credentials.env"
-    _v="$(_redis_get repos-txt)";       [[ -n "$_v" ]] && printf '%s\n' "$_v" > "$DURABLE_DIR/repos.txt"
-    _v="$(_redis_get watch-repo)";      [[ -n "$_v" ]] && printf '%s'   "$_v" > "$DURABLE_DIR/watch_repo.txt"
-    _v="$(_redis_get mission-state)";   [[ -n "$_v" ]] && printf '%s\n' "$_v" > "$DURABLE_DIR/mission-state.json"
-    _v="$(_redis_get outbox)"
-    # staged, NOT written to flags/ directly: step 2's `git clean -qfd
-    # scripts/flags` would remove an untracked outbox there; step 4 installs
-    # it after the clone refresh (seed wins only when the live outbox is
-    # absent/empty — never clobbers a fresher local thread).
-    [[ -n "$_v" ]] && printf '%s\n' "$_v" > "$DURABLE_DIR/agent_outbox.seed.jsonl"
-    if [[ -f "$DURABLE_DIR/credentials.env" ]]; then
-      log "kit restored from Redis ($(ls -A "$DURABLE_DIR" | wc -l) entries)"
-    else
-      log "WARN: Redis mirror reachable but empty/incomplete — kit stays missing"
+    if [[ ! -s "$DURABLE_DIR/credentials.env" ]]; then
+      _v="$(_redis_get credentials-env)"
+      [[ -n "$_v" ]] && printf '%s\n' "$_v" > "$DURABLE_DIR/credentials.env" && chmod 600 "$DURABLE_DIR/credentials.env"
     fi
+    if [[ ! -s "$DURABLE_DIR/repos.txt" ]]; then
+      _v="$(_redis_get repos-txt)"
+      [[ -n "$_v" ]] && printf '%s\n' "$_v" > "$DURABLE_DIR/repos.txt"
+    fi
+    if [[ ! -s "$DURABLE_DIR/watch_repo.txt" ]]; then
+      _v="$(_redis_get watch-repo)"
+      [[ -n "$_v" ]] && printf '%s'   "$_v" > "$DURABLE_DIR/watch_repo.txt"
+    fi
+    if [[ ! -s "$DURABLE_DIR/mission-state.json" ]]; then
+      _v="$(_redis_get mission-state)"
+      [[ -n "$_v" ]] && printf '%s\n' "$_v" > "$DURABLE_DIR/mission-state.json"
+    fi
+    if [[ ! -s "$DURABLE_DIR/agent_outbox.seed.jsonl" ]]; then
+      _v="$(_redis_get outbox)"
+      # staged, NOT written to flags/ directly: step 2's `git clean -qfd
+      # scripts/flags` would remove an untracked outbox there; step 4 installs
+      # it after the clone refresh (seed wins only when the live outbox is
+      # absent/empty — never clobbers a fresher local thread).
+      [[ -n "$_v" ]] && printf '%s\n' "$_v" > "$DURABLE_DIR/agent_outbox.seed.jsonl"
+    fi
+    log "Redis per-entry restore done ($(ls -A "$DURABLE_DIR" | wc -l) kit entries on disk)"
   else
-    log "WARN: no durable kit and no Upstash credentials in env — seed ~/.secrets/env.sh with UPSTASH_REDIS_REST_URL/TOKEN to restore from the mirror"
+    log "NOTE: durable kit has gaps and no Upstash credentials in env — seed ~/.secrets/env.sh with UPSTASH_REDIS_REST_URL/TOKEN to pull the mirror"
   fi
   unset _ru _rt _v _src
   unset -f _redis_get 2>/dev/null || true
 fi
+unset -f _kit_gaps 2>/dev/null || true
 
 # 1. secrets
 if [[ -f "$DURABLE_DIR/credentials.env" ]]; then
@@ -143,6 +168,18 @@ printf 'launch_dev.py' > "$REPLAY2/scripts/flags/console_launcher.txt"
 printf '3000'         > "$REPLAY2/scripts/flags/console_port.txt"
 
 # 4. restore deployment-local state (mission-state, packets, registry seeds)
+#    2026-10-14 recycle #18: the deep-rollback class wipes download/recovery
+#    AND my-project/data — but browser-profile/ has survived EVERY recycle
+#    class so far (ops-vault + login-cookie precedent). It is now the
+#    last-resort seed vault for the mission board + local-services spec.
+if [[ ! -s "$DURABLE_DIR/mission-state.json" && -s "/home/z/my-project/browser-profile/mission-state.json" ]]; then
+  cp "/home/z/my-project/browser-profile/mission-state.json" "$DURABLE_DIR/mission-state.json"
+  log "mission-state seeded from browser-profile vault"
+fi
+if [[ ! -s "$DURABLE_DIR/local-services.json" && -s "/home/z/my-project/browser-profile/local-services.json" ]]; then
+  cp "/home/z/my-project/browser-profile/local-services.json" "$DURABLE_DIR/local-services.json"
+  log "local-services spec seeded from browser-profile vault"
+fi
 if [[ -f "$DURABLE_DIR/mission-state.json" ]]; then
   cp "$DURABLE_DIR/mission-state.json" "$REPLAY2/data/mission-state.json"
   # 2026-10-14 recycle #16: the platform-app console port (my-project Next-16
