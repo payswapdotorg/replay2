@@ -10,6 +10,12 @@
 #   - The durable login token lives at
 #     my-project/download/zai_session_token.txt (login_keeper snapshots it
 #     every 20 min while logged in; restores the session automatically).
+#   - 2026-10-14 recycle #15: FULL image resets wipe download/recovery
+#     entirely (the sandbox resurrects from an old snapshot). GitHub stays
+#     the code authority; the DEPLOYMENT state (credentials/repos/mission
+#     cards) is mirrored to Upstash Redis under payswap:recovery:* — step 0b
+#     below rebuilds the kit from that mirror when only the Redis URL+token
+#     survive (any of: ambient env, ~/.secrets/env.sh, /home/z/.payswap-env).
 #
 # Idempotent: safe to run repeatedly; healthy components are left alone.
 set -u
@@ -35,6 +41,54 @@ stack_healthy() {
 keeper_running() { pgrep -f "$1\$" >/dev/null 2>&1; }
 
 log "=== TL recover (TradRL era) start ==="
+
+# 0b. Upstash Redis kit restore (recycle #15: full image reset wipes the
+#     durable kit; the mirror under payswap:recovery:* rebuilds it. Bootstrap
+#     chain: the Redis URL+token must be available from ANY of the ambient
+#     env, ~/.secrets/env.sh, /home/z/.payswap-env — a fresh TL session seeds
+#     one of those from its conversation context, then this step pulls the
+#     whole kit. Never logs secret values.)
+if [[ ! -f "$DURABLE_DIR/credentials.env" ]]; then
+  for _src in "$HOME/.secrets/env.sh" "/home/z/.payswap-env"; do
+    # shellcheck disable=SC1090
+    [[ -f "$_src" ]] && . "$_src" && break
+  done
+  _ru="${UPSTASH_REDIS_REST_URL:-}"; _rt="${UPSTASH_REDIS_REST_TOKEN:-}"
+  if [[ -n "$_ru" && -n "$_rt" ]]; then
+    log "no durable kit on disk — restoring from the Upstash Redis mirror"
+    _redis_get() {
+      curl -sf --max-time 20 "$_ru/get/payswap:recovery:$1" \
+        -H "Authorization: Bearer $_rt" 2>/dev/null | python3 -c \
+        'import json,sys
+try:
+    d = json.load(sys.stdin)
+    r = d.get("result", "")
+    print(r if isinstance(r, str) else "")
+except Exception:
+    pass' 2>/dev/null
+    }
+    _v="$(_redis_get credentials-env)"
+    [[ -n "$_v" ]] && printf '%s\n' "$_v" > "$DURABLE_DIR/credentials.env" && chmod 600 "$DURABLE_DIR/credentials.env"
+    _v="$(_redis_get repos-txt)";       [[ -n "$_v" ]] && printf '%s\n' "$_v" > "$DURABLE_DIR/repos.txt"
+    _v="$(_redis_get watch-repo)";      [[ -n "$_v" ]] && printf '%s'   "$_v" > "$DURABLE_DIR/watch_repo.txt"
+    _v="$(_redis_get mission-state)";   [[ -n "$_v" ]] && printf '%s\n' "$_v" > "$DURABLE_DIR/mission-state.json"
+    _v="$(_redis_get outbox)"
+    # staged, NOT written to flags/ directly: step 2's `git clean -qfd
+    # scripts/flags` would remove an untracked outbox there; step 4 installs
+    # it after the clone refresh (seed wins only when the live outbox is
+    # absent/empty — never clobbers a fresher local thread).
+    [[ -n "$_v" ]] && printf '%s\n' "$_v" > "$DURABLE_DIR/agent_outbox.seed.jsonl"
+    if [[ -f "$DURABLE_DIR/credentials.env" ]]; then
+      log "kit restored from Redis ($(ls -A "$DURABLE_DIR" | wc -l) entries)"
+    else
+      log "WARN: Redis mirror reachable but empty/incomplete — kit stays missing"
+    fi
+  else
+    log "WARN: no durable kit and no Upstash credentials in env — seed ~/.secrets/env.sh with UPSTASH_REDIS_REST_URL/TOKEN to restore from the mirror"
+  fi
+  unset _ru _rt _v _src
+  unset -f _redis_get 2>/dev/null || true
+fi
 
 # 1. secrets
 if [[ -f "$DURABLE_DIR/credentials.env" ]]; then
@@ -96,6 +150,17 @@ printf '3000'         > "$REPLAY2/scripts/flags/console_port.txt"
   && log "local services spec restored (supervisor re-arms the deployment daemons)"
 if [[ -d "$DURABLE_DIR/worker-prompts" ]] && [[ -n "$(ls -A "$DURABLE_DIR/worker-prompts" 2>/dev/null)" ]]; then
   cp "$DURABLE_DIR"/worker-prompts/*.md "$REPLAY2/scripts/worker-prompts/" 2>/dev/null && log "worker packets restored"
+fi
+# agent outbox seed (from the Redis mirror via step 0b): install only when
+# the live thread is absent/empty — a fresher local outbox always wins.
+if [[ -f "$DURABLE_DIR/agent_outbox.seed.jsonl" ]]; then
+  _live="$REPLAY2/scripts/flags/agent_outbox.jsonl"
+  if [[ ! -s "$_live" ]]; then
+    cp "$DURABLE_DIR/agent_outbox.seed.jsonl" "$_live" && log "agent outbox thread restored from seed ($(wc -l < "$_live") msgs)"
+  else
+    log "agent outbox seed skipped (live thread present: $(wc -l < "$_live") msgs)"
+  fi
+  unset _live
 fi
 if [[ -f "$DURABLE_DIR/session_registry.seed.jsonl" ]]; then
   python3 - "$DURABLE_DIR/session_registry.seed.jsonl" "$REPLAY2/scripts/flags/session_registry.jsonl" << 'PYEOF'
