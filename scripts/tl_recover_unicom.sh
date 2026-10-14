@@ -170,6 +170,46 @@ PROMPTEOF
   log "w2-027 prompt stub materialized"
 fi
 
+# 4d. w2-028 lane-history materialization (recycle #14 lesson, 2026-10-14
+#     ~11:51Z: the lane was dispatched 06:05Z in Task 8-8 but its registry
+#     records lived only in the then-live clone — never committed here — so
+#     the recycle erased the tier-a-freshness lane from the workers strip.
+#     The worker itself survived server-side and DELIVERED (work/w2-028 @
+#     3c468ee). Lane retired 2026-10-14 12:2xZ: TL-reviewed + merged 6c5114b
+#     + closeout 16bd468 + issue #21 closed 12:19:55Z. Doctrine: EVERY
+#     retired lane gets its trio in this script AT RETIREMENT TIME.)
+if ! grep -q '"name": "w2-028", "action": "done"' "$REPLAY2/scripts/flags/session_registry.jsonl" 2>/dev/null; then
+  cat >> "$REPLAY2/scripts/flags/session_registry.jsonl" << 'LANEEOF'
+{"name": "w2-028", "action": "create", "ts": 1791957900, "prompt_file": "/home/z/replay2/scripts/worker-prompts/w2-028.md", "tab_id": ""}
+{"name": "w2-028", "action": "send", "ts": 1791957960, "url": "https://chat.z.ai/c/b95096c1-aa8b-4325-bd34-345df5cf13bb", "sent": true}
+{"name": "w2-028", "action": "done", "ts": 1791980463}
+LANEEOF
+  log "w2-028 lane history materialized"
+fi
+[[ -f "$REPLAY2/scripts/flags/w2-028-complete.marker" ]] || \
+  { touch "$REPLAY2/scripts/flags/w2-028-complete.marker"; log "w2-028 complete marker materialized"; }
+if [[ ! -s "$REPLAY2/scripts/worker-prompts/w2-028.md" ]]; then
+  cat > "$REPLAY2/scripts/worker-prompts/w2-028.md" << 'PROMPTEOF'
+# W2-028 — the Tier A Freshness Verification at 8aae797 (the v2 RC inheritance currency)
+
+> [recovery #14 provenance, 2026-10-14] The original dispatch prompt (the
+> 9,229-char work-order-verbatim + operational contract, dispatched from
+> inside the replay 2026-10-14T06:05Z) was lost to the pod recycle of
+> 2026-10-14 ~11:51Z (worker-prompts is wipe-vulnerable). This stub
+> preserves the H1 — the console's live-Workers title derivation reads
+> line 1. The work order itself survives verbatim in-repo:
+> payswapdotorg/UniCom docs/work-orders/W2-028.md (the completion report at
+> docs/work-orders/reports/W2-028-completion-report.md). The lane is RETIRED:
+> delivered (branch work/w2-028 @ 3c468ee) + TL-reviewed (every gate
+> independently re-run — all matched) + merged 6c5114b (--no-ff, the TL
+> battery in the message) + closeout 16bd468; issue #21 closed 12:19:55Z.
+> Chat ground truth: b95096c1-aa8b-4325-bd34-345df5cf13bb, title "Tier A
+> Freshness Verification W2-028", dispatched 06:05Z; the worker sandbox
+> survived the pod recycle (server-side) and pushed the branch.
+PROMPTEOF
+  log "w2-028 prompt stub materialized"
+fi
+
 # 5. deploy (only if unhealthy — idempotent)
 if stack_healthy; then
   log "replay stack already healthy — skipping deploy"
