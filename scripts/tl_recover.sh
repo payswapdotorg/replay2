@@ -225,8 +225,15 @@ if [[ -f "$DURABLE_DIR/repos.txt" ]]; then
     else
       (cd "$dir" && git fetch --quiet origin && log "$repo refreshed (main @ $(git rev-parse --short origin/main 2>/dev/null || echo '?'))")
     fi
-    if [[ -n "${GITHUB_PAT:-}" ]] && [[ -d "$dir/.git" ]]; then
-      (cd "$dir" && git remote set-url origin "https://${GITHUB_PAT}@github.com/${repo}.git" >/dev/null 2>&1)
+    # 2026-10-14 recycle #14 fix (Task 62's documented trap, now permanent):
+    # credentials.env exports GITHUB_TOKEN/PAYSWAP_PAT — NOT GITHUB_PAT — so
+    # the old single-variable check always evaluated empty and every
+    # post-recovery push failed with "could not read Username". Same fallback
+    # chain as §1b, plus the x-access-token form GitHub documents for app/PAT
+    # auth over HTTPS.
+    _pat8="${GITHUB_PAT:-${PAYSWAP_PAT:-${GITHUB_TOKEN:-${GH_TOKEN:-}}}}"
+    if [[ -n "$_pat8" ]] && [[ -d "$dir/.git" ]]; then
+      (cd "$dir" && git remote set-url origin "https://x-access-token:${_pat8}@github.com/${repo}.git" >/dev/null 2>&1)
     fi
   done < "$DURABLE_DIR/repos.txt"
   log "PAT remotes set ($(grep -vc '^#' "$DURABLE_DIR/repos.txt" 2>/dev/null || echo 0) repos from durable repos.txt)"

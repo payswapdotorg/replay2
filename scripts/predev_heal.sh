@@ -1,6 +1,11 @@
 #!/usr/bin/env bash
-# predev-heal.sh — boot hook target (package.json "predev": this file).
-# Fires when the platform boots `bun run dev` after a sandbox recycle.
+# predev-heal.sh — boot hook target (my-project package.json "dev":
+#   "bash /home/z/my-project/download/recovery/predev-heal.sh; next dev …").
+# 2026-10-14 recycle #14 wiring note: bun's pre/post-script support is
+# version-dependent, so the heal is INLINED at the head of the dev command
+# itself (semicolon — never blocks, always exit 0) rather than relying on a
+# "predev" lifecycle hook. Fires when the platform boots `bun run dev` after
+# a sandbox recycle.
 # Runs the one-command recovery in the BACKGROUND so the dev command is
 # not blocked; the recovery's own PORT GUARD evicts this scaffold squatter
 # from :3000 once the Replay Console is ready (EADDRINUSE loser-dies is
