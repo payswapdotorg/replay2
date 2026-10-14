@@ -1543,3 +1543,18 @@ Work Log:
 Stage Summary:
 - ~5.7h continuous green since the recycle-#14 manual recovery; the three-layer resilience stack (GC + guard v2 + heal watchdog) holding silent through its first full shift.
 - RESIDENT WATCH CONTINUES per the standing order — no early returns; cadence held, instant pipeline armed.
+
+---
+Task ID: R63
+Agent: Z.ai Code (main session)
+Task: RESIDENT WATCH — cycles 42-11..42-24 (16:58→18:56 UTC): 4 movements consumed (all sibling-station hardening); every cycle green; memory steady
+
+Work Log:
+- WATCH CYCLES 42-11..42-24 (9 min cadence): every cycle green — gateway 200, core up, CDP up, frame 200/63KB, ring detected, 6/5 heartbeats, session logged-in(ali4) throughout, GC daemons alive, heal fires=0, operator inbox 0, dev.log zero errors; box memory steady ~1.03GB available (well above the 700MB guard trigger).
+- MOVEMENTS CONSUMED (4 replay2 commits, all the sibling station's hardening — reviewed, none requiring my-station action): (1) 1c64e41 console-heal identity header (their console architecture; mine is the platform console with port-guard eviction); (2) 60bacd5 probe_chat bilingual default marker (the server gate now confirms Chinese-form completion reports '=== <ID> 完成报告 ===' — WO-010 lesson; verified live flipping reportInAssistant false->true); (3) d1de9f0 dispatch_worker phantom-tab sweeper (their dispatch-time RSS cure; my phantom_tab_gc daemon covers the class continuously); (4) db50235 their R18 board-durability fix (gitignored mission-state + gated Redis mirror root-cause; signoff surface recycle-proof via durable wrappers — their architecture; my board source in my-project/data is recycle-proof by design, /api/mission verified 200).
+- Remote synced through db50235.
+
+Stage Summary:
+- ~7.8h continuous green since the recycle-#14 manual recovery; the ecosystem's hardening cadence continues on the sibling station while this station holds the resident watch.
+- ECOSYSTEM EVENT WATCH: operator sign-off deadline at midnight UTC (~5h out) — the sibling station's surface is staged; this station monitors for the outcome.
+- RESIDENT WATCH CONTINUES per the standing order — no early returns; cadence held, instant pipeline armed.
