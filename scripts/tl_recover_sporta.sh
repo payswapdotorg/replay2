@@ -73,6 +73,7 @@ if [[ ! -f "$DURABLE_DIR/credentials.env" ]]; then
   done
   if [[ -n "${UPSTASH_REDIS_REST_URL:-}" && -n "${UPSTASH_REDIS_REST_TOKEN:-}" ]]; then
     log "no durable kit on disk — restoring from the Upstash mirror (sporta:recovery:*)"
+    RECOVERY_EVENT=1
     _v="$(_redis_get credentials-env)"
     [[ -n "$_v" ]] && printf '%s\n' "$_v" > "$DURABLE_DIR/credentials.env" && chmod 600 "$DURABLE_DIR/credentials.env"
     _v="$(_redis_get mission-state)"
@@ -102,6 +103,7 @@ fi
 #     or /home/z/.payswap-env BEFORE this runs — see the header law.)
 if [[ ! -f "$DURABLE_DIR/credentials.env" ]]; then
   _bp="${GITHUB_PAT:-${PAYSWAP_PAT:-${GITHUB_TOKEN:-${GH_TOKEN:-}}}}"
+  RECOVERY_EVENT=1
   if [[ -n "$_bp" ]]; then
     log "kit still missing — rebuilding from the private GitHub mirror (payswapdotorg/sporta-recovery-kit)"
     rm -rf /tmp/kit-mirror-rebuild
@@ -174,10 +176,14 @@ mkdir -p /home/z/my-project/browser-profile
 cp "$DURABLE_DIR/credentials.env" /home/z/my-project/browser-profile/ops-vault.env 2>/dev/null
 chmod 600 /home/z/my-project/browser-profile/ops-vault.env 2>/dev/null
 
-# 5. deploy (only if unhealthy — idempotent)
+# 5. deploy (only if unhealthy — idempotent). A real deploy = a real
+#    recovery event (drives the step-8 stamp; a mere repo-HEAD move from a
+#    station commit must NOT re-stamp — the commit-churn lesson)
+DEPLOYED=0
 if stack_healthy; then
   log "replay stack already healthy — skipping deploy"
 else
+  DEPLOYED=1
   log "deploying replay stack (flags-first canonical path)…"
   (cd "$REPLAY2" && CONSOLE_LAUNCHER=scripts/launch_dev.py bash deploy.sh >> "$LOG" 2>&1)
   stack_healthy && log "deploy OK — stack healthy" || log "WARN: stack health check failed — check $LOG"
@@ -204,13 +210,17 @@ fi
 
 # 8. AUTO-STAMP the mission board (runs AFTER step 7 so BOTH SHAs are known —
 #    the reset-#14 'station @?' bug; kills the one-recycle-stale infra-detail
-#    class at the root: every recovery stamps current facts + a timeline
-#    entry, so the board is ALWAYS current). Idempotency guard: skip when the
-#    board detail already carries this exact replay SHA (healthy re-runs
-#    never double-stamp the timeline).
+#    class at the root: every REAL recovery stamps current facts + a timeline
+#    entry). Stamp ONLY on a real recovery event (a deploy happened this run,
+#    or the kit was rebuilt this run, or the board has never been stamped):
+#    a repo-HEAD move from a station commit is NOT a recovery — no churn.
 RSHA_NOW="$(git -C "$REPLAY2" rev-parse --short HEAD 2>/dev/null || echo '?')"
 BOARD_DETAIL="$(python3 -c "import json; d=json.load(open('$REPLAY2/data/mission-state.json')); print(next((b.get('detail','') for b in d.get('infra',[]) if b.get('id')=='replay-stack'),''))" 2>/dev/null || true)"
-if stack_healthy && [[ "$BOARD_DETAIL" != *"$RSHA_NOW"* ]]; then
+STAMP_NEEDED=0
+[[ "${DEPLOYED:-0}" == "1" ]] && STAMP_NEEDED=1
+[[ "${RECOVERY_EVENT:-0}" == "1" ]] && STAMP_NEEDED=1
+[[ "$BOARD_DETAIL" != *"payswapdotorg/replay2 @"* ]] && STAMP_NEEDED=1
+if [[ "$STAMP_NEEDED" == "1" ]]; then
   python3 - "$REPLAY2/data/mission-state.json" "$DURABLE_DIR/mission-state.json" "$REPLAY2" "$SPORTA" << 'PYEOF' 2>>"$LOG" || log "WARN: board auto-refresh failed"
 import json, sys, datetime, subprocess, os
 dep, dur, rep, spo = sys.argv[1:5]
