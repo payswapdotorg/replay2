@@ -63,12 +63,61 @@ _kit_gaps() {
   [[ ! -s "$DURABLE_DIR/mission-state.json" ]] && return 0
   return 1
 }
-if _kit_gaps; then
+# 2026-10-14 recycles #18-#20 lesson: the snapshot-pinned kit carries a
+# DELETED Upstash endpoint (meet-ewe-145933) — present-but-stale entries
+# pass _kit_gaps yet the mirror is unreachable. Liveness is a gap too: a
+# dead endpoint must trigger the mirror path (and when the mirror itself
+# is what died, vault_guard.py — supervised by supervisor.py — heals from
+# the private payswapdotorg/ops-vault repo instead).
+_kit_creds_dead() {
+  local _u _t
+  _u="$(sed -n 's/^export UPSTASH_REDIS_REST_URL="\?\([^"]*\)"\?$/\1/p' "$DURABLE_DIR/credentials.env" 2>/dev/null | head -1)"
+  _t="$(sed -n 's/^export UPSTASH_REDIS_REST_TOKEN="\?\([^"]*\)"\?$/\1/p' "$DURABLE_DIR/credentials.env" 2>/dev/null | head -1)"
+  [[ -z "$_u" || -z "$_t" ]] && return 1   # no creds at all → gaps path handles
+  curl -sf --max-time 10 "$_u/ping" -H "Authorization: Bearer $_t" 2>/dev/null | grep -q PONG && return 1
+  return 0
+}
+if _kit_gaps || _kit_creds_dead; then
+  _creds_dead=0; _kit_creds_dead && _creds_dead=1
   for _src in "$HOME/.secrets/env.sh" "/home/z/.payswap-env"; do
     # shellcheck disable=SC1090
     [[ -f "$_src" ]] && . "$_src" && break
   done
   _ru="${UPSTASH_REDIS_REST_URL:-}"; _rt="${UPSTASH_REDIS_REST_TOKEN:-}"
+  # Dead-credentials heal (recycles #18-#20): ambient sources carry the
+  # SAME stale endpoint as the kit — the mirror is unreachable with them.
+  # The GitHub tier is the only one that rolls forward: pull the live
+  # vault from the PRIVATE payswapdotorg/ops-vault repo with the kit PAT,
+  # install, and re-resolve. vault_guard.py (supervised) covers the
+  # steady-state; this covers the recovery path.
+  if [[ -n "$_ru" && -n "$_rt" ]] && ! curl -sf --max-time 10 "$_ru/ping" -H "Authorization: Bearer $_rt" 2>/dev/null | grep -q PONG; then
+    _vp=""
+    _sp="$(sed -n 's/^export PAYSWAP_PAT="\?\([^"]*\)"\?$/\1/p' "$DURABLE_DIR/credentials.env" 2>/dev/null | head -1)"
+    [[ -z "$_sp" ]] && _sp="$(sed -n 's/^export GITHUB_TOKEN="\?\([^"]*\)"\?$/\1/p' "$DURABLE_DIR/credentials.env" 2>/dev/null | head -1)"
+    if [[ -n "$_sp" ]]; then
+      rm -rf /tmp/tlr-vault-pull
+      if GIT_TERMINAL_PROMPT=0 git clone --quiet --depth 1 \
+          "https://x-access-token:${_sp}@github.com/payswapdotorg/ops-vault.git" \
+          /tmp/tlr-vault-pull >/dev/null 2>&1 && [[ -s /tmp/tlr-vault-pull/credentials.env ]]; then
+        _nu="$(sed -n 's/^export UPSTASH_REDIS_REST_URL="\?\([^"]*\)"\?$/\1/p' /tmp/tlr-vault-pull/credentials.env | head -1)"
+        _nt="$(sed -n 's/^export UPSTASH_REDIS_REST_TOKEN="\?\([^"]*\)"\?$/\1/p' /tmp/tlr-vault-pull/credentials.env | head -1)"
+        if [[ -n "$_nu" && -n "$_nt" ]] && curl -sf --max-time 10 "$_nu/ping" -H "Authorization: Bearer $_nt" 2>/dev/null | grep -q PONG; then
+          cp /tmp/tlr-vault-pull/credentials.env "$DURABLE_DIR/credentials.env"
+          chmod 600 "$DURABLE_DIR/credentials.env"
+          cp "$DURABLE_DIR/credentials.env" /home/z/.payswap-env
+          [[ -d /home/z/my-project/browser-profile ]] && cp "$DURABLE_DIR/credentials.env" /home/z/my-project/browser-profile/ops-vault.env
+          _ru="$_nu"; _rt="$_nt"; _creds_dead=0
+          log "kit creds were DEAD — live vault installed from private ops-vault repo"
+        else
+          log "WARN: private ops-vault repo reachable but its endpoint is also dead — operator rotation needed"
+        fi
+      else
+        log "WARN: private ops-vault repo unreachable — steady-state heal deferred to vault_guard.py"
+      fi
+      rm -rf /tmp/tlr-vault-pull
+    fi
+    unset _vp _sp _nu _nt
+  fi
   if [[ -n "$_ru" && -n "$_rt" ]]; then
     log "durable kit incomplete — restoring missing entries from the Upstash Redis mirror"
     _redis_get() {
@@ -82,7 +131,8 @@ try:
 except Exception:
     pass' 2>/dev/null
     }
-    if [[ ! -s "$DURABLE_DIR/credentials.env" ]]; then
+    if [[ ! -s "$DURABLE_DIR/credentials.env" || "$_creds_dead" == 1 ]]; then
+      # liveness override: a DEAD seed must NOT win over the mirror's live vault
       _v="$(_redis_get credentials-env)"
       [[ -n "$_v" ]] && printf '%s\n' "$_v" > "$DURABLE_DIR/credentials.env" && chmod 600 "$DURABLE_DIR/credentials.env"
     fi
@@ -110,10 +160,10 @@ except Exception:
   else
     log "NOTE: durable kit has gaps and no Upstash credentials in env — seed ~/.secrets/env.sh with UPSTASH_REDIS_REST_URL/TOKEN to pull the mirror"
   fi
-  unset _ru _rt _v _src
+  unset _ru _rt _v _src _creds_dead
   unset -f _redis_get 2>/dev/null || true
 fi
-unset -f _kit_gaps 2>/dev/null || true
+unset -f _kit_gaps _kit_creds_dead 2>/dev/null || true
 
 # 1. secrets
 if [[ -f "$DURABLE_DIR/credentials.env" ]]; then
