@@ -1,0 +1,10 @@
+{
+  "name": "ali4-heal",
+  "version": "1.0.0",
+  "private": true,
+  "description": "ali4 station heal watchdog (:3040) — the permanence ladder's top rung (likewise-station recovery-#15 doctrine, ali4 adaptation). Platform auto-starts every mini-service at boot; this watchdog probes the replay stack and fires the full station recovery (recover.sh) when the stack is down. Healthy-stack = silent poll. Master copy: replay2 scripts/heal_service_ali4/.",
+  "scripts": {
+    "start": "bun run index.ts",
+    "dev": "bun --hot index.ts"
+  }
+}
