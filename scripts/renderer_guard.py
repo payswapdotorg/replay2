@@ -33,6 +33,7 @@ Launch detached: dfork_launch.py logs/renderer_guard.log <py> renderer_guard.py
 """
 import json
 import os
+import re
 import subprocess
 import sys
 import time
@@ -262,6 +263,58 @@ def oom_evidence():
         return f"dmesg unavailable ({e!r})"
 
 
+_phantom_seen = {}   # /c/<uuid> -> first-sighting ts (the second-sighting rule)
+
+
+def sweep_phantoms(tabs):
+    """Close /c/ tabs belonging to NO registry chat (2026-10-14 w3-024
+    dispatch finding: capacity-fight sends leave phantom /c/ tabs — the
+    chat does not exist server-side, yet the tab holds 100-400MB of
+    renderer RSS; five burned ~530MB and drove the box to 131MB avail).
+    dispatch_worker's own sweep catches the flow-observed class; THIS
+    round-level sweep also catches tabs the SITE opens during send
+    attempts (never seen by the flow's URL check). SECOND-SIGHTING RULE:
+    a uuid is swept only after >=2*POLL seconds with no registry record —
+    a just-landed session writes its registry record within seconds of
+    the /c/ navigation, so by the next round it is known and protected;
+    a phantom stays unknown and dies. Never touches registry chats, bare
+    home tabs (login/session/fight base) or non-chat pages."""
+    known = set()
+    try:
+        with open(REG, encoding="utf-8") as fh:
+            for line in fh:
+                line = line.strip()
+                if not line:
+                    continue
+                try:
+                    u = json.loads(line).get("url") or ""
+                except ValueError:
+                    continue
+                m = re.search(r"/c/([0-9a-f-]{36})", u)
+                if m:
+                    known.add(m.group(1))
+    except FileNotFoundError:
+        return
+    now = time.time()
+    for tid, t in list(tabs.items()):
+        m = re.search(r"/c/([0-9a-f-]{36})", t.get("url") or "")
+        if not m or m.group(1) in known:
+            continue
+        uuid = m.group(1)
+        first = _phantom_seen.setdefault(uuid, now)
+        if now - first < 2 * POLL:
+            continue   # too young — could be a landing session mid-record
+        try:
+            urllib.request.urlopen(
+                "http://localhost:9222/json/close/" + tid,
+                timeout=10).read()
+            log(f"phantom sweep: closed /c/{uuid[:8]} tab (no registry "
+                "chat, {int(now - first)}s old — capacity-fight garbage)")
+            _phantom_seen.pop(uuid, None)
+        except Exception:
+            pass
+
+
 def main():
     try:
         with open(PIDFILE, "w") as f:
@@ -279,6 +332,10 @@ def main():
             log(f"CDP /json unavailable ({e!r}) — round skipped")
             time.sleep(POLL)
             continue
+        try:
+            sweep_phantoms(tabs)
+        except Exception:
+            pass
         for tid, (url, sname) in live_tabs().items():
             tab = tabs.get(tid)
             if not tab:
