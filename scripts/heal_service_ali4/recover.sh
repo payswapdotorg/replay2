@@ -57,6 +57,28 @@ pgrep -f homepage_tab_gc.py >/dev/null 2>&1 || \
   "$VENV_PY" scripts/dfork_launch.py scripts/logs/homepage_tab_gc.out "$VENV_PY" scripts/homepage_tab_gc.py
 echo "[5/6] GC daemons armed"
 
+# --- Step 5b: ali4 vault_guard opt-out (worklog R65 decision) ---
+# replay2 >= 2fc46c9 wires ensure_vault_guard() into the supervisor. That daemon
+# cures the SIBLING station's stale-Upstash-kit class — an architecture ali4 does
+# not share: this station's cred source is env.sh (zero Upstash keys) and its
+# off-box store is GitHub (station/ali4-worklog mirror). With no Upstash URL,
+# vault_guard would sit in permanent "dead endpoint" mode and heal() would
+# overwrite /home/z/.payswap-env with the ops-vault's credentials.env (dual-source
+# ambiguity). Neuter it locally: kill any instance + replace with an inert stub;
+# skip-worktree keeps future pulls clean. Supervised-by-5b: inert, heartbeats never.
+pkill -f vault_guard.py 2>/dev/null
+rm -f scripts/flags/vault_guard_heartbeat scripts/flags/vault_guard.lock
+cat > scripts/vault_guard.py <<'STUB'
+"""ali4 opt-out stub — this station runs the env.sh credential architecture
+(no Upstash dependency; off-box store = GitHub branch mirrors). The sibling
+station's ops-vault healer is not applicable here. See worklog R65. Sleeping."""
+import time
+while True:
+    time.sleep(3600)
+STUB
+git update-index --skip-worktree scripts/vault_guard.py 2>/dev/null || true
+echo "[5b] vault_guard neutered for ali4 (env.sh architecture)"
+
 # --- Step 6: verify ---
 sleep 20
 GW=$(curl -s -m 5 -o /dev/null -w '%{http_code}' http://127.0.0.1:3100/healthz)
