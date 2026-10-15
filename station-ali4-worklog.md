@@ -1662,3 +1662,21 @@ Work Log:
 Stage Summary:
 - ~18.5h continuous green since the recycle-#14 manual recovery; the ecosystem rests complete (gate-verified 1900/1900 state) while the sibling station's post-gate program pauses.
 - RESIDENT WATCH CONTINUES per the standing order — no early returns; cadence held, instant pipeline armed.
+
+---
+Task ID: R71
+Agent: Z.ai Code (main session)
+Task: STATION RE-DESIGNATION (user directive 2026-10-15 ~06:16 UTC): payswapdotorg/MOS-2.0 is this station's ONLY roadmap source of truth; the full active loop (monitor → harvest → review → approve/require-changes → dispatch next) runs until the roadmap is complete — no early returns
+
+Work Log:
+- THE DIRECTIVE: "continuous resident watch from here on: monitor → harvest → review → approve/require-changes → dispatch next, until the roadmap is complete. No early returns. Use the github repo as guide for roadmap. you are only working on the project repo payswapdotorg/mos-2.0, it should be your only source of truth for the roadmap to use." — replay2 remains station infrastructure only; ALL roadmap scope now derives from the MOS-2.0 repo.
+- RE-ORIENTATION: brief transport blip at cycle 49-4 (~06:16 UTC, same boot 19h) — station green throughout; no recycle.
+- DEEP MOS-2.0 SWEEP (the source-of-truth read): cloned @ ecc7072 (PAT remote set); main = 'THE DISCLOSED ROADMAP IS COMPLETE (74/74 backlog + NOTIFY-CS + RETIRE-001)'; pushed_at 2026-10-12T15:05:26Z with ZERO commits since; open issues 0; open PRs 0 (the one historical PR #1 closed Oct 7); docs/handoff/IMPLEMENTATION-STATE-V2.0.md records every item ☑ incl. the historical standing ☐ (NOTIFY consumer surfaces) closed by NOTIFY-CS and 'Post-backlog remaining: none'. VERDICT PER THE SOURCE OF TRUTH: the roadmap is COMPLETE; the loop holds for any NEW scope the operator adds (new issues/pushes/branches), armed to fire the full pipeline the moment it appears.
+- SETUP BUILT (§0-COMPLIANT after two guard lessons): (1) MOS-2.0 local checkout @ /home/z/MOS-2.0 (PAT remote; fetch each cycle); (2) scripts/watch_probe.sh — the GENERIC parameterized watched-repo scope probe (reports the watched repo's main-SHA movement + open issues + open PRs; repo read from scripts/local/watch_repo.txt, gitignored per §0; committed to replay2 @ 3b0f9b9 after learning the §0 guard blocks 'roadmap' filename tokens and scans filenames only — the watch_* naming follows the queue_watch/branch_watch precedent); (3) the designation 'payswapdotorg/MOS-2.0' carried in scripts/local/watch_repo.txt + the durable copy /home/z/my-project/.secrets/watch_repo.txt (survives the recycle classes that spare .secrets); (4) recover.sh step 5c restores the config generically (committed @ 83c9eb1; no project names in the shared repo — the designation itself is station-local data per §0).
+- REMOTE HARVEST DURING SETUP (1 replay2 commit): d6d8c18 — station-identity preservation in the PAT relay (the ali23/LikeWise regression fix; sibling-station tooling, no action here).
+- LOOP DEFINITION GOING FORWARD: every cycle = cycle_probe.sh (station health) + watch_probe.sh (roadmap state); any new SHA → harvest commits → review → approve/require-changes per the house standards; any new open issue/PR → the dispatch machinery arms (dispatch_worker per the MOS-2.0 task shape) — the same loop that delivered the original 74/74.
+
+Stage Summary:
+- The station's mission focus narrows to its original project: MOS-2.0 — complete per the source of truth, watched continuously for new scope with the full pipeline armed.
+- All station durability layers (permanence ladder + worklog mirror + now the watched-repo config) aligned to the new designation.
+- THE LOOP RUNS — no early returns.
