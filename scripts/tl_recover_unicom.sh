@@ -210,6 +210,72 @@ PROMPTEOF
   log "w2-028 prompt stub materialized"
 fi
 
+# 4e. w1-026 lane-history materialization (recycle #23 lesson, 2026-10-15:
+#     the lane retired 19:27:55Z Oct 14 [merged a3e135d, TL battery 413/413 +
+#     browser 8/8] but its trio was never added HERE — the recycle erased the
+#     Issue #22 product-home lane from the workers strip. Doctrine: EVERY
+#     retired lane gets its trio in this script AT RETIREMENT TIME.)
+if ! grep -q '"name": "w1-026", "action": "done"' "$REPLAY2/scripts/flags/session_registry.jsonl" 2>/dev/null; then
+  cat >> "$REPLAY2/scripts/flags/session_registry.jsonl" << 'LANEEOF'
+{"name": "w1-026", "action": "create", "ts": 1791995486, "prompt_file": "/home/z/replay2/scripts/worker-prompts/w1-026.md", "tab_id": ""}
+{"name": "w1-026", "action": "send", "ts": 1791995546, "url": "https://chat.z.ai/c/b328e018-104d-4427-8fce-4fac6c047808", "sent": true}
+{"name": "w1-026", "action": "done", "ts": 1792006075}
+LANEEOF
+  log "w1-026 lane history materialized"
+fi
+[[ -f "$REPLAY2/scripts/flags/w1-026-complete.marker" ]] || \
+  { touch "$REPLAY2/scripts/flags/w1-026-complete.marker"; log "w1-026 complete marker materialized"; }
+[[ -s "$REPLAY2/scripts/worker-prompts/w1-026.md" ]] || \
+  { printf '# W1-026 — UNiCOM Product Home and Buyer/Merchant First Journeys\n\n> [recycle #23 provenance, 2026-10-15] Stub — the work order survives verbatim in-repo: payswapdotorg/UniCom docs/work-orders/W1-026.md. Lane RETIRED: merged a3e135d 19:27:55Z Oct 14 (TL: battery 413/413, browser 8/8). Session b328e018.\n' > "$REPLAY2/scripts/worker-prompts/w1-026.md"; log "w1-026 prompt stub materialized"; }
+
+# 4f. w2-029 lane-history materialization (recycle #23 lesson, same class:
+#     retired 19:56:36Z Oct 14 [merged e440cd1, TL battery 414/414 + browser
+#     9/9]; trio added here per the doctrine.)
+if ! grep -q '"name": "w2-029", "action": "done"' "$REPLAY2/scripts/flags/session_registry.jsonl" 2>/dev/null; then
+  cat >> "$REPLAY2/scripts/flags/session_registry.jsonl" << 'LANEEOF'
+{"name": "w2-029", "action": "create", "ts": 1791995983, "prompt_file": "/home/z/replay2/scripts/worker-prompts/w2-029.md", "tab_id": ""}
+{"name": "w2-029", "action": "send", "ts": 1791996043, "url": "https://chat.z.ai/c/5d0e428b-78e7-4372-a212-80afa6617ffb", "sent": true}
+{"name": "w2-029", "action": "done", "ts": 1792007796}
+LANEEOF
+  log "w2-029 lane history materialized"
+fi
+[[ -f "$REPLAY2/scripts/flags/w2-029-complete.marker" ]] || \
+  { touch "$REPLAY2/scripts/flags/w2-029-complete.marker"; log "w2-029 complete marker materialized"; }
+[[ -s "$REPLAY2/scripts/worker-prompts/w2-029.md" ]] || \
+  { printf '# W2-029 — Main-Agent, Autonomy, Decisions and Trust UX\n\n> [recycle #23 provenance, 2026-10-15] Stub — the work order survives verbatim in-repo: payswapdotorg/UniCom docs/work-orders/W2-029.md. Lane RETIRED: merged e440cd1 19:56:36Z Oct 14 (TL: battery 414/414, browser 9/9). Session 5d0e428b.\n' > "$REPLAY2/scripts/worker-prompts/w2-029.md"; log "w2-029 prompt stub materialized"; }
+
+# 4g. w3-024 LIVE-row materialization (the lane is IN FLIGHT — round-5
+#     session a096556f landed 04:40:04Z Oct 15, pod bound, generation queued.
+#     NO complete marker, NO done row. The any-row guard means a later
+#     round-6+ re-dispatch (the ladder appends its own rows) suppresses this
+#     materialization automatically.)
+if ! grep -q '"name": "w3-024"' "$REPLAY2/scripts/flags/session_registry.jsonl" 2>/dev/null; then
+  cat >> "$REPLAY2/scripts/flags/session_registry.jsonl" << 'LANEEOF'
+{"name": "w3-024", "action": "create", "ts": 1792039204, "prompt_file": "/home/z/replay2/scripts/worker-prompts/w3-024.md", "tab_id": ""}
+{"name": "w3-024", "action": "send", "ts": 1792039204, "url": "https://chat.z.ai/c/a096556f-6813-4a1b-9a35-a5e7dd77be8e", "sent": true}
+LANEEOF
+  log "w3-024 live rows materialized"
+fi
+[[ -s "$REPLAY2/scripts/worker-prompts/w3-024.md" ]] || \
+  { printf '# W3-024 — Default Web + Ubuntu Desktop UNiCOM Launch Experience\n\n> [recycle #23 provenance, 2026-10-15] Stub — the work order survives verbatim in-repo: payswapdotorg/UniCom docs/work-orders/W3-024.md. Lane LIVE (round-5, session a096556f, pod bound). Branch work/w3-024, base 82d2d68.\n' > "$REPLAY2/scripts/worker-prompts/w3-024.md"; log "w3-024 prompt stub materialized"; }
+
+# 4h. STATION DESIGNATION enforcement (the R23 cross-station clobber class,
+#     2026-10-15 09:2xZ: recycle #23's vault heal restored the ops-vault
+#     HOME-STATION designation (aurum-chat) onto THIS box because the
+#     designation files were absent — the console board then drift-healed to
+#     the aurum mirror key and rendered AURUM content on the UniCom console.
+#     Doctrine: THIS station is the UniCom TL station; the designation files
+#     are PRESENT durably so the vault heal (absent/empty restore path) never
+#     fires, and this step re-asserts them idempotently at every recovery.)
+printf 'payswapdotorg/UniCom' > "$DURABLE_DIR/watch_repo.txt"
+printf '# Station designation (durable kit — present files are never restored by the vault heal)\n# This station: the UniCom TL station. The vault home-station default (aurum-chat) is NOT this station.\npayswapdotorg/UniCom\npayswapdotorg/replay2\n' > "$DURABLE_DIR/repos.txt"
+mkdir -p "$REPLAY2/scripts/flags" && printf 'payswapdotorg/UniCom' > "$REPLAY2/scripts/flags/watch_repo.txt"
+if [[ -f "$HOME/.secrets/env.sh" ]] && grep -q '^REPO=payswapdotorg/aurum-chat$' "$HOME/.secrets/env.sh" 2>/dev/null; then
+  sed -i 's|^REPO=payswapdotorg/aurum-chat$|REPO=payswapdotorg/UniCom|' "$HOME/.secrets/env.sh"
+  log "relay REPO re-pointed aurum-chat -> UniCom (station designation)"
+fi
+log "station designation enforced (UniCom)"
+
 # 5. deploy (only if unhealthy — idempotent)
 if stack_healthy; then
   log "replay stack already healthy — skipping deploy"
