@@ -1806,3 +1806,18 @@ Work Log:
 Stage Summary:
 - The loop holds; the source of truth rests complete with zero open scope; pipeline armed for any new SHA/issue/PR on payswapdotorg/MOS-2.0.
 - THE LOOP RUNS — no early returns.
+
+---
+Task ID: R81
+Agent: Z.ai Code (main session)
+Task: THE MOS-2.0 LOOP — cycles 57-6..58-6 (16:37→17:54 UTC): one transport blip bridged (same boot, station held green autonomously); 2 sibling movements harvested; ~8h27m continuous green
+
+Work Log:
+- TRANSPORT BLIP: cycle 57-6's call failed ~16:46 UTC (context canceled); re-orientation at 16:59 confirmed SAME BOOT (uptime 7:33 = the 09:26Z recycle-#15 boot) — pure transport-layer fault; the station held green autonomously through the ~13-min gap (all metrics green on return; frame grew 66KB→73KB).
+- LOOP CYCLES 57-6..58-6 (9 min cadence, dual-probe, blip window covered by the re-orient probe): every cycle green — gw=200, core, CDP, frame 200/73KB, ring 3, hb 7/5, login=logged-in(ali4), gc=2, inbox 0, watcher_alive, err=0; watch_probe steady all batch: MOS-2.0 main=ecc7072 behind=0 open-issues=0 open-prs=0. heal silent (fires=0); same boot throughout (uptime 8:18 at cycle 58-5).
+- MOVEMENTS HARVESTED (replay2 26abc25→75b27e7, 2 commits — sibling-station intelligence, zero roadmap scope): (1) 2b67945 (ali23 R24) — the fourth-plus unattended recovery: stale-kit designation regression root-caused (platform snapshot restored a pre-fix kit; predev-heal prefers the kit copy so the master's repos.txt REPO fallback never ran → repo card blank; the "snapshot-pins-the-kit" class, third recurrence on their side); board drift-healed from the per-station scoped key (the R23 fix held — no cross-station clobber). THIS STATION'S EXPOSURE: none — my kit was rebuilt fresh post-recycle-#15 from the correct current state (designation = payswapdotorg/MOS-2.0 in flags/ + .secrets/ + kit, all three layers coherent). (2) 75b27e7 (D-033 staged-packet law) — dispatch_worker create now writes flags/pkt_{name}_staged.md on every verified send so recoveries can re-dispatch autonomously (their aprod006w8 recovery-#1 event exposed creates never left a re-dispatchable packet). Intelligence noted for any future dispatch use on this station.
+- Station cumulative green since recycle-#15 boot (09:26Z): ~8h27m.
+
+Stage Summary:
+- The loop holds; the source of truth rests complete with zero open scope; pipeline armed.
+- THE LOOP RUNS — no early returns.
