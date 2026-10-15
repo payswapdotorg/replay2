@@ -1680,3 +1680,17 @@ Stage Summary:
 - The station's mission focus narrows to its original project: MOS-2.0 — complete per the source of truth, watched continuously for new scope with the full pipeline armed.
 - All station durability layers (permanence ladder + worklog mirror + now the watched-repo config) aligned to the new designation.
 - THE LOOP RUNS — no early returns.
+
+---
+Task ID: R72
+Agent: Z.ai Code (main session)
+Task: THE MOS-2.0 LOOP — cycles 50-1..50-10 (06:23→07:45 UTC): first full hour of the re-designated watch; station green + roadmap complete-steady every cycle
+
+Work Log:
+- LOOP CYCLES 50-1..50-10 (8-9 min cadence, dual-probe): every cycle green on BOTH instruments — cycle_probe.sh (gateway 200, core, CDP, frame 200/63KB, ring, 6/6 heartbeats, session logged-in(ali4), GC x2, inbox 0, dev.log clean) + watch_probe.sh (roadmap=payswapdotorg/MOS-2.0 main=ecc7072 local=ecc7072 behind=0 open-issues=0 open-prs=0 — the complete state steady all hour).
+- ZERO new scope across the window: no commits, no issues, no PRs on the source of truth; zero station incidents.
+- The loop's armed state: any new SHA/issue/PR on MOS-2.0 fires harvest → review → approve/require-changes → dispatch next immediately.
+
+Stage Summary:
+- ~20.7h continuous station green since the recycle-#14 manual recovery; the watch now runs the re-designated dual-probe loop per the user directive.
+- THE LOOP RUNS — no early returns.
