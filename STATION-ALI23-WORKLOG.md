@@ -998,3 +998,22 @@ Work Log:
 
 Stage Summary:
 - R24 = fourth-plus consecutive unattended recovery; the ladder is proven. Program state unchanged: LikeWise roadmap COMPLETE (12 waves, 1900/1900 GREEN, a425c6f); the operator's launch-gate sign-off remains THE one human step. The resident watch continues.
+
+---
+Task ID: 71
+Agent: Z.ai Code (main orchestrator, TL-B — station re-designated to payswapdotorg/Flauz; the continuous resident watch begins; GAP-1 dispatched)
+
+Task: The operator's directive: "continuous resident watch from here on: monitor → harvest → review → approve/require-changes → dispatch next, until the roadmap is complete. No early returns. Use the github repo as guide for roadmap. you are only working on the project repo payswapdotorg/flauz, it should be your only source of truth."
+
+Work Log:
+- RE-DESIGNATION: repos.txt + watch_repo.txt + the REPO relay re-pointed to payswapdotorg/Flauz; the console card verified live (Flauz main 0c73b69aed). The LikeWise designation retired (its program was complete + accepted; the records stand).
+- R25 FIRED MID-SESSION (21:18:56Z): the platform snapshot rolled back to the 00:04 vintage — the platform-side R24 commit (e6194b4) and the 16:47 kit re-sync were lost; the GitHub-pushed records (2b67945) survived via the 21:19 re-clone. The board drift-healed from the mirror. Re-done this cycle: kit tl_recover.sh re-synced from master bfd0742 (the stale-kit class, FOURTH recurrence), REPO relay re-seeded.
+- THE FLAUZ PROGRAM SURVEYED (the repo as the only source of truth): FLAUZ-START-HERE → SOURCE-OF-TRUTH → MASTER-ROADMAP → WORK-REGISTRY (wave-11 record) → CURRENT-STATE → FRESH-CHAT-TL-B-HANDOFF → REPORT.md. State: DH-001..013 ALL LANDED (13 families, PRs #193-#204); the six-row honest gap ledger = the TL-B residue (row 1 LAB industry task-worlds first); TL-A owns sustained production-operation closure; INF live-provider exchange env-gated.
+- FRONTIER VERIFIED LIVE (the never-trust-reported-numbers law — minimal gate env built: mocha 10.8.2 + tsc + tsx + @types, the full-tree npm install fails on native builds): the full 13-family battery sweep **1868/1868** (181/158/152/126/101/102/118/156/158/153/156/173/134 — matches the registry exactly), the acceptance tsc gate EXIT 0, the acceptance battery 134/134, the lab family 210/210.
+- THE FLAUZ BOARD AUTHORED + written to all 3 local tiers + the NEW per-station scoped mirror key payswap:recovery:mission-state:payswapdotorg-flauz (readback-verified; written BEFORE the guard's next cycle to prevent the legacy-shared-key clobber class at the designation change).
+- SIBLING DISCOVERY: replay2 main advanced to bfd0742 with TL-A-station commits (aprod006w8 harvest/dispatch tooling — the dispatch_worker.py staged-packet law). The fleet's TL-A station is live on the Flauz program's TL-A lane.
+- GAP-1 DISPATCHED (the first residue row): worker session dh-gap1-worlds (agents-tab, GLM-5.3 exact, Full-Stack — the operator directive 2026-09-08; prompt VERIFIED at send; tab 33EE23E4). The WO: the three industry task-worlds (finance/healthcare/construction) in the LAB-003 fixture lane + the scoped lab tsconfig + 120+ tests + the additive DH-009 binding (guarded) + the control-plane addenda; token-transient branch-only push (flauz-tlb/dh-gap1-lab-worlds).
+- The outbox refreshed (the re-designation report); the kit seed updated.
+
+Stage Summary:
+- The station is re-designated to Flauz, the frontier is station-verified (1868/1868), the board is live on the new scoped key, and the first residue worker is dispatched. The watch loop is ACTIVE: monitor (watch probe + worker check) → harvest → station-gate (tsc + mocha + determinism greps) → review → approve (PR+merge) or require-changes → dispatch next (rows 2-6). No early returns.
