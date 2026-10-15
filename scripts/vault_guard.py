@@ -177,9 +177,37 @@ def ensure_board_fresh(url, token):
 
 def write_relay(pat, url, token):
     os.makedirs(os.path.dirname(RELAY), exist_ok=True)
+    # 2026-10-15 station-identity preservation (the ali23/LikeWise regression,
+    # same class as e324f16): the relay's REPO line is the STATION's watch
+    # designation — the aurum-chat default belongs to the vault's home station
+    # only. Preserve the live relay's REPO when present; else fall back to the
+    # kit's repos.txt (§0-clean); only then the default. Never clobber a
+    # station's designation.
+    repo_line = None
+    try:
+        with open(RELAY) as f:
+            for line in f:
+                if line.strip().startswith("REPO="):
+                    repo_line = line.strip()
+                    break
+    except FileNotFoundError:
+        pass
+    if repo_line is None:
+        for rt in ("/home/z/my-project/download/recovery/repos.txt",
+                   os.path.join(BASE, "repos.txt")):
+            try:
+                with open(rt) as f:
+                    repo = f.readline().strip()
+                    if repo:
+                        repo_line = f"REPO={repo}"
+                        break
+            except (FileNotFoundError, OSError):
+                pass
+    if repo_line is None:
+        repo_line = "REPO=payswapdotorg/aurum-chat"
     body = ("# relay (vault_guard): PAT + live Upstash creds for the "
             "watcher + tl_recover bootstrap\n"
-            f"REPO=payswapdotorg/aurum-chat\n"
+            f"{repo_line}\n"
             f"PAYSWAP_PAT={pat}\nGITHUB_TOKEN={pat}\n"
             f"UPSTASH_REDIS_REST_URL={url}\n"
             f"UPSTASH_REDIS_REST_TOKEN={token}\n")

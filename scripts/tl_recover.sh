@@ -189,9 +189,20 @@ if [[ -n "$_pat" ]]; then
   {
     printf '# PAT relay for replay watcher (auto-seeded by tl_recover.sh 2026-10-09)\n'
     # REPO relay (generic, §0-clean): propagate the deployment-local repo
-    # designation from the sourced vault into the relay file so bridge.py's
-    # repo card + launch_prod.py env parity survive recycles.
-    [[ -n "${REPO:-}" ]] && printf 'REPO=%s\n' "$REPO"
+    # designation into the relay file so bridge.py's repo card +
+    # launch_prod.py env parity survive recycles. 2026-10-15 fallback
+    # (ali23/LikeWise regression, post-R22): the ops-vault credentials.env
+    # carries NO REPO line — the relay lost the station designation and the
+    # repo card went blank. The vault is fleet-shared; the designation is
+    # station-local. §0-clean source: the kit's repos.txt first line. Never
+    # guess; skip the line if no source has one.
+    _repo_line=""
+    if [[ -n "${REPO:-}" ]]; then
+      _repo_line="REPO=$REPO"
+    elif [[ -s "${DURABLE_DIR:-}/repos.txt" ]]; then
+      _repo_line="REPO=$(head -1 "${DURABLE_DIR}/repos.txt")"
+    fi
+    [[ -n "$_repo_line" ]] && printf '%s\n' "$_repo_line"
     printf 'PAYSWAP_PAT=%s\nGITHUB_TOKEN=%s\n' "$_pat" "$_pat"
   } > "$HOME/.secrets/env.sh"
   chmod 600 "$HOME/.secrets/env.sh"
