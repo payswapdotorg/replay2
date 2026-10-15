@@ -65,8 +65,9 @@ fi
 # URL stays anonymous — post-recovery PUSHES fail until this is set (the
 # durability law's push step silently breaks otherwise). Same pattern as the
 # UniCom/TradRL/Fleetos PAT remotes below.
-if [[ -n "${GITHUB_PAT:-}" ]] && [[ -d "$REPLAY2/.git" ]]; then
-  (cd "$REPLAY2" && git remote set-url origin "https://${GITHUB_PAT}@github.com/payswapdotorg/replay2.git" >/dev/null 2>&1)
+_PATVAL="${GITHUB_PAT:-${PAYSWAP_PAT:-}}"
+if [[ -n "$_PATVAL" ]] && [[ -d "$REPLAY2/.git" ]]; then
+  (cd "$REPLAY2" && git remote set-url origin "https://x-access-token:${_PATVAL}@github.com/payswapdotorg/replay2.git" >/dev/null 2>&1)
   log "replay2 PAT remote set (push-ready)"
 fi
 
@@ -316,8 +317,9 @@ if [[ ! -d "$UNICOM/.git" ]]; then
 else
   (cd "$UNICOM" && git fetch --quiet origin && log "UniCom refreshed (main @ $(git rev-parse --short origin/main))")
 fi
-if [[ -n "${GITHUB_PAT:-}" ]] && [[ -d "$UNICOM/.git" ]]; then
-  (cd "$UNICOM" && git remote set-url origin "https://${GITHUB_PAT}@github.com/payswapdotorg/UniCom.git" >/dev/null 2>&1)
+_PATVAL="${GITHUB_PAT:-${PAYSWAP_PAT:-}}"
+if [[ -n "$_PATVAL" ]] && [[ -d "$UNICOM/.git" ]]; then
+  (cd "$UNICOM" && git remote set-url origin "https://x-access-token:${_PATVAL}@github.com/payswapdotorg/UniCom.git" >/dev/null 2>&1)
   log "UniCom PAT remote set"
 fi
 command -v pnpm >/dev/null 2>&1 || corepack prepare pnpm@10.33.2 --activate >/dev/null 2>&1
