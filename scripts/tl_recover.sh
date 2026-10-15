@@ -145,8 +145,24 @@ except Exception:
       [[ -n "$_v" ]] && printf '%s'   "$_v" > "$DURABLE_DIR/watch_repo.txt"
     fi
     if [[ ! -s "$DURABLE_DIR/mission-state.json" ]]; then
-      _v="$(_redis_get mission-state)"
+      # Per-station board key (2026-10-15 doctrine, live-caught on the
+      # Epoch-2.0 station): the SHARED mission-state key holds whichever
+      # station healed last — a full-image reset restored the PARALLEL
+      # station's board onto this console. This station's board lives under
+      # mission-state:<slug> (slug = watch-repo, restored just above or
+      # carried by the snapshot kit); the legacy shared key is the fallback
+      # for stations that have not adopted per-station keys.
+      _slug="$(tr 'A-Z' 'a-z' < "$DURABLE_DIR/watch_repo.txt" 2>/dev/null | sed 's/[^a-z0-9]\+/-/g; s/^-*//; s/-*$//')"
+      _v=""
+      if [[ -n "$_slug" ]]; then
+        _v="$(_redis_get "mission-state:$_slug")"
+        [[ -n "$_v" ]] && log "mission-state restored from PER-STATION mirror key (mission-state:$_slug)"
+      fi
+      if [[ -z "$_v" ]]; then
+        _v="$(_redis_get mission-state)"
+      fi
       [[ -n "$_v" ]] && printf '%s\n' "$_v" > "$DURABLE_DIR/mission-state.json"
+      unset _slug
     fi
     if [[ ! -s "$DURABLE_DIR/agent_outbox.seed.jsonl" ]]; then
       _v="$(_redis_get outbox)"

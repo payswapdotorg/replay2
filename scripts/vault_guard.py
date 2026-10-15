@@ -33,6 +33,7 @@ Run: dfork_launch.py <log> /home/z/.venv/bin/python3 scripts/vault_guard.py
 import fcntl
 import json
 import os
+import re
 import shutil
 import subprocess
 import time
@@ -67,6 +68,40 @@ MIRROR_ENTRIES = [  # (mirror key suffix, local file) — restored only when abs
     ("mission-state", os.path.join(DURABLE, "mission-state.json")),
     ("outbox", os.path.join(DURABLE, "agent_outbox.seed.jsonl")),
 ]
+
+
+def station_slug():
+    """Per-station identity for mirror keys (per-station-board doctrine,
+    2026-10-15 live-caught on the Epoch-2.0 station: the SHARED mission-state
+    key holds whichever station healed last — a full-image reset restored the
+    PARALLEL station's board onto this console; the shared watch-repo key
+    carried the same cross-station clobber risk and only survives because a
+    station's snapshot kit usually carries its own designation). Station
+    identity = the watched repo (live flags/watch_repo.txt, then the kit
+    copy)."""
+    for path in (os.path.join(FLAGS, "watch_repo.txt"),
+                 os.path.join(DURABLE, "watch_repo.txt")):
+        try:
+            with open(path, encoding="utf-8", errors="replace") as f:
+                v = f.read().strip()
+            if v:
+                return re.sub(r"[^a-z0-9]+", "-", v.lower()).strip("-")
+        except Exception:
+            continue
+    return ""
+
+
+def redis_get_board(url, token):
+    """The mission board under the PER-STATION mirror key
+    (mission-state:<slug>); falls back to the legacy shared key when the
+    per-station key is absent — stations that have not adopted per-station
+    keys keep their exact prior behavior. Returns (value, key-used)."""
+    slug = station_slug()
+    if slug:
+        v = redis_get(url, token, f"payswap:recovery:mission-state:{slug}")
+        if v:
+            return v, f"mission-state:{slug}"
+    return redis_get(url, token, "payswap:recovery:mission-state"), "mission-state"
 
 
 def log(msg):
@@ -151,7 +186,7 @@ def ensure_board_fresh(url, token):
     mirror's copy to the kit + both console data locations. Never downgrades
     (a newer local — live edits — always wins)."""
     try:
-        v = redis_get(url, token, "payswap:recovery:mission-state")
+        v, board_key = redis_get_board(url, token)
         if not v:
             return False
         mirror_ts = json.loads(v).get("updatedAt", "")
@@ -167,7 +202,7 @@ def ensure_board_fresh(url, token):
                     f.write(v)
             except Exception:
                 continue
-        log(f"board version-drift healed: {local_ts or 'missing'} → "
+        log(f"board version-drift healed ({board_key}): {local_ts or 'missing'} → "
             f"{mirror_ts} (mirror newer — rollback-stale local replaced)")
         return True
     except Exception as exc:
@@ -274,12 +309,19 @@ def heal(env):
     for suffix, path in MIRROR_ENTRIES:
         if os.path.isfile(path) and os.path.getsize(path) > 0:
             continue
-        v = redis_get(url, token, f"payswap:recovery:{suffix}")
+        if suffix == "mission-state":
+            # per-station board key first (doctrine), legacy shared fallback
+            v, used_key = redis_get_board(url, token)
+            restored.append(used_key)
+        else:
+            v = redis_get(url, token, f"payswap:recovery:{suffix}")
+            restored.append(suffix)
         if v:
             os.makedirs(os.path.dirname(path), exist_ok=True)
             with open(path, "w") as f:
                 f.write(v)
-            restored.append(suffix)
+        else:
+            restored.pop()  # nothing restored under this key
     # board version-drift + propagation (the 'wrong replay' gap: fresh clone
     # loses the gitignored board; heal only when the console copies are
     # missing OR rollback-stale vs the mirror's updatedAt)
