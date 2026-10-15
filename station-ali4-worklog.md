@@ -1711,3 +1711,18 @@ Stage Summary:
 - Station fully recovered from its deepest recycle yet; every durability layer that could save the recovery DID (env.sh creds, public clone, off-box worklog mirror, durable browser profile session, in-repo probe/heal masters).
 - The R65 vault_guard opt-out is now part of the mandatory recovery sequence (recycle clears skip-worktree — check it EVERY recovery).
 - The MOS-2.0 loop resumes immediately: roadmap complete-steady at ecc7072, zero open scope, pipeline armed, no early returns.
+
+---
+Task ID: R74
+Agent: Z.ai Code (main session)
+Task: THE MOS-2.0 LOOP — cycles 51-1..51-6 (09:50→10:38 UTC): the post-recovery watch batch; every cycle green; 3 sibling-station movements harvested as intelligence (zero roadmap scope on the source of truth)
+
+Work Log:
+- LOOP CYCLES 51-1..51-6 (9 min cadence, dual-probe): every cycle green — gw=200, core up, CDP up, frame 200/66KB, ring 3, hb 7/5, session logged-in(ali4), gc=2, inbox 0, watcher_alive, dev.log err=0; watch_probe steady all batch: roadmap=payswapdotorg/MOS-2.0 main=ecc7072 local=ecc7072 behind=0 open-issues=0 open-prs=0 (the complete state unmoved). heal watchdog silent (fires=0). One tool-call timeout at cycle 51-4 (double-sleep exceeded the 20-min tool frame — lesson: one sleep+probe per command; the missed window probed clean on the immediate re-fire).
+- MOVEMENTS HARVESTED (replay2 66d1415→26abc25, 3 commits — ALL sibling-station UniCom recycle-#23 lessons, infrastructure intelligence, zero action on this station's roadmap): (1) 17c4395 — designation enforcement class: their recycle-#23 vault heal restored the ops-vault home-station designation (aurum-chat) onto the UniCom box because designation files were absent → the board drift-healed to the wrong mirror key and rendered AURUM content on the UniCom console; cure = watch_repo/repos/relay re-pointed at every recovery + retired-lane trios self-materialize. THIS STATION'S EXPOSURE: none — the same attack surface is triple-blocked here (three-layer designation: flags/ + .secrets/ + kit; no Upstash credentials so no vault-heal path at all; vault_guard neutered per R65). (2) b5dda54 — w3-024 round-7 registry-row truth fix (queue_watch server-truth gate; sibling lane mechanics). (3) 26abc25 — PAT-remote fix (their recover script checked only GITHUB_PAT while the durable env exports PAYSWAP_PAT → post-recycle anonymous remotes → push failures; now accepts either + x-access-token form). THIS STATION'S EXPOSURE CHECKED: no gap — my recover.sh already greps PAYSWAP_PAT from env.sh (line 22-23) and sets the remote with it (line 38).
+- Station cumulative green since recycle-#15 boot: ~72 min (09:26Z boot → 10:38Z, all-green at every probe).
+
+Stage Summary:
+- The re-designated loop is fully back on cadence after the deepest recycle yet; the source of truth (MOS-2.0 @ ecc7072) rests complete with zero open scope — the pipeline stays armed for any new SHA/issue/PR.
+- The sibling station's designation-hijack lesson (17c4395) validates this station's three-layer designation + no-vault architecture; the PAT-remote lesson (26abc25) audited clean here.
+- THE LOOP RUNS — no early returns.
