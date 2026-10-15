@@ -9,7 +9,7 @@
 set -uo pipefail
 R="${1:-/home/z/flauz}"
 cd "$R" || exit 1
-MOCHA="NODE_OPTIONS=--import tsx node_modules/.bin/mocha --ui tdd"
+# mocha invocation: NODE_OPTIONS="--import tsx" (quoted — the value contains a space)
 FAIL=0
 
 echo "== gate 1: scoped tsc per harness family =="
@@ -39,8 +39,8 @@ TOTAL=0
 for famdir in build/flauz/harness/contract build/flauz/harness/onboarding build/flauz/harness/roles build/flauz/harness/ontology build/flauz/harness/templates build/flauz/harness/bodies build/flauz/harness/packs build/flauz/harness/profiles build/flauz/harness/benchmarks build/flauz/harness/projections build/flauz/harness/activation build/flauz/harness/optimization build/flauz/harness/acceptance build/flauz/lab; do
   files=$(find "$famdir/test" -name "*.test.ts" 2>/dev/null)
   [[ -z "$files" ]] && continue
-  n=$(NODE_OPTIONS=--import tsx node_modules/.bin/mocha --ui tdd $files 2>&1 | rg -o "([0-9]+) passing" | head -1 | rg -o "[0-9]+" )
-  f=$(NODE_OPTIONS=--import tsx node_modules/.bin/mocha --ui tdd $files 2>&1 | rg -o "([0-9]+) failing" | head -1 | rg -o "[0-9]+")
+  n=$(NODE_OPTIONS="--import tsx" node_modules/.bin/mocha --ui tdd $files 2>&1 | rg -o "([0-9]+) passing" | head -1 | rg -o "[0-9]+" )
+  f=$(NODE_OPTIONS="--import tsx" node_modules/.bin/mocha --ui tdd $files 2>&1 | rg -o "([0-9]+) failing" | head -1 | rg -o "[0-9]+")
   echo "  $(basename $famdir): ${n:-0} passing, ${f:-0} failing"
   TOTAL=$((TOTAL + ${n:-0}))
   [[ "${f:-0}" != "0" ]] && FAIL=1
