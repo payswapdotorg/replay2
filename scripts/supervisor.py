@@ -12,6 +12,8 @@ automatically restarts:
   4. replayd    :3100  (persistent CDP daemon — realtime frames + drags)
   5. vault_guard.py    (rollback-proof ops-vault healer — dead-endpoint
      kit healed from the private payswapdotorg/ops-vault repo)
+  6. skills_sync.py    (agent-skills keeper — reinstalls the upstash set
+     when a recycle resets $HOME)
 
 Also rotates logs so nothing grows unbounded, and touches
 flags/supervisor_heartbeat (distinct from the agent heartbeat flag).
@@ -738,6 +740,34 @@ def ensure_vault_guard():
     log("vault_guard restarted")
 
 
+def ensure_skills_sync():
+    """skills_sync.py — keeps the agent skills installed across sandbox
+    recycles (2026-10-15 recycle #21: $HOME resets to the snapshot vintage,
+    wiping post-snapshot installs; the 14-skill upstash set is a standing
+    operator request). Checks ~/.agents/skills each cycle, reinstalls via
+    the non-interactive skills CLI when below expectation. Flock-guarded,
+    idempotent — restart is always safe."""
+    pidfile = os.path.join(BASE, "skills_sync.pid")
+    pid = read_pid(pidfile)
+    if pid_alive(pid, "skills_sync.py"):
+        return
+    r = subprocess.run(["pgrep", "-f", "skills_sync.py"],
+                       capture_output=True, text=True)
+    pid = r.stdout.strip().split("\n")[0] if r.stdout.strip() else ""
+    if pid:
+        try:
+            open(pidfile, "w").write(pid)
+        except Exception:
+            pass
+        return
+    log("skills_sync DEAD — restarting (agent-skills keeper)")
+    subprocess.Popen(
+        [PY, os.path.join(BASE, "skills_sync.py")],
+        stdout=open(os.path.join(LOGDIR, "skills_sync.out"), "a"),
+        stderr=subprocess.STDOUT, start_new_session=True)
+    log("skills_sync restarted")
+
+
 def ensure_queue_watch():
     """Resurrect queue_watch.py for every flags/queue_watch.spec.<name>.
 
@@ -920,6 +950,7 @@ def main():
                 ensure_frame_guard()
                 ensure_renderer_guard()
                 ensure_vault_guard()
+                ensure_skills_sync()
                 if cycle % 3 == 0:          # browser check every ~30s
                     ensure_browser()
                     ensure_dev()

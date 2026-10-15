@@ -126,6 +126,55 @@ def redis_get(url, token, key):
         return ""
 
 
+def board_updated_at(path):
+    """Best-effort read of a mission-state.json updatedAt field."""
+    try:
+        with open(path, encoding="utf-8", errors="replace") as f:
+            return json.load(f).get("updatedAt", "")
+    except Exception:
+        return ""
+
+
+BOARD_LOCATIONS = [
+    os.path.join(DURABLE, "mission-state.json"),
+    os.path.abspath(os.path.join(BASE, "..", "data", "mission-state.json")),
+    "/home/z/my-project/data/mission-state.json",
+]
+
+
+def ensure_board_fresh(url, token):
+    """Version-drift check (recycle #21 lesson): the snapshot's heal seed_kit
+    restores a ROLLBACK-STALE mission board before any fresh code runs —
+    present-but-stale wins under the seed-wins doctrine, same class as the
+    dead-credentials bug. updatedAt is the board's version clock: when the
+    mirror's is strictly newer, the local is rollback-stale → restore the
+    mirror's copy to the kit + both console data locations. Never downgrades
+    (a newer local — live edits — always wins)."""
+    try:
+        v = redis_get(url, token, "payswap:recovery:mission-state")
+        if not v:
+            return False
+        mirror_ts = json.loads(v).get("updatedAt", "")
+        if not mirror_ts:
+            return False
+        local_ts = board_updated_at(BOARD_LOCATIONS[0])
+        if local_ts >= mirror_ts:
+            return False
+        for path in BOARD_LOCATIONS:
+            try:
+                os.makedirs(os.path.dirname(path), exist_ok=True)
+                with open(path, "w") as f:
+                    f.write(v)
+            except Exception:
+                continue
+        log(f"board version-drift healed: {local_ts or 'missing'} → "
+            f"{mirror_ts} (mirror newer — rollback-stale local replaced)")
+        return True
+    except Exception as exc:
+        log(f"board freshness check failed ({exc!r}) — continuing")
+        return False
+
+
 def write_relay(pat, url, token):
     os.makedirs(os.path.dirname(RELAY), exist_ok=True)
     body = ("# relay (vault_guard): PAT + live Upstash creds for the "
@@ -203,20 +252,22 @@ def heal(env):
             with open(path, "w") as f:
                 f.write(v)
             restored.append(suffix)
-    # mission board propagation (the 'wrong replay' gap: fresh clone loses
-    # the gitignored board; heal only when the console copies are missing)
-    for board in [os.path.join(BASE, "..", "data", "mission-state.json"),
-                  "/home/z/my-project/data/mission-state.json"]:
-        board = os.path.abspath(board)
-        if not (os.path.isfile(board) and os.path.getsize(board) > 0):
-            src_board = os.path.join(DURABLE, "mission-state.json")
-            if os.path.isfile(src_board) and os.path.getsize(src_board) > 0:
-                try:
-                    os.makedirs(os.path.dirname(board), exist_ok=True)
-                    shutil.copyfile(src_board, board)
-                    restored.append(f"board:{os.path.dirname(board)}")
-                except Exception:
-                    pass
+    # board version-drift + propagation (the 'wrong replay' gap: fresh clone
+    # loses the gitignored board; heal only when the console copies are
+    # missing OR rollback-stale vs the mirror's updatedAt)
+    if ensure_board_fresh(url, token):
+        restored.append("board:version-drift")
+    else:
+        for board in BOARD_LOCATIONS[1:]:
+            if not (os.path.isfile(board) and os.path.getsize(board) > 0):
+                src_board = os.path.join(DURABLE, "mission-state.json")
+                if os.path.isfile(src_board) and os.path.getsize(src_board) > 0:
+                    try:
+                        os.makedirs(os.path.dirname(board), exist_ok=True)
+                        shutil.copyfile(src_board, board)
+                        restored.append(f"board:{os.path.dirname(board)}")
+                    except Exception:
+                        pass
     log(f"heal OK: vault ({n} exports) installed to {len(installed)} "
         f"locations; relay re-armed; mirror entries restored: "
         f"{restored or 'none needed'}")
@@ -241,6 +292,9 @@ def main():
             token = env.get("UPSTASH_REDIS_REST_TOKEN", "")
             if url and token and ping(url, token):
                 log("kit endpoint healthy (PONG)")
+                # steady-state: the board can still be rollback-stale even
+                # with a healthy endpoint (recycle #21 live-observed)
+                ensure_board_fresh(url, token)
             elif time.time() - last_heal >= HEAL_BACKOFF_S:
                 log("kit endpoint DEAD — healing from private ops-vault repo")
                 last_heal = time.time()
