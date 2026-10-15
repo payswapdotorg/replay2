@@ -35,7 +35,7 @@ LOGDIR = os.path.join(ROOT, "logs")
 OUTDIR = os.path.join(ROOT, "worker-reports")
 FLAGS = os.path.join(ROOT, "flags")
 URL = "http://127.0.0.1:3000/api/agent/chat"
-REPO = "/home/z/WebFlix-Desktop"
+REPO = os.environ.get("EM_REPO", "/home/z/WebFlix-Desktop")
 
 REALITY = """REALITY CHECK (driver-verified, do not argue with it):
 - git log needle "%s": %s
@@ -73,7 +73,7 @@ def verify(m):
     return ok, needle_ok, gate_rc, gate_out, detail
 
 
-def post_turn(messages, conv_id, model="glm-5.3"):
+def post_turn(messages, conv_id, model=os.environ.get("EM_MODEL", "glm-5.3")):
     body = json.dumps({"messages": messages, "conversation_id": conv_id,
                        "model": model}).encode()
     req = urllib.request.Request(URL, data=body, method="POST",
@@ -137,8 +137,11 @@ def main():
                 turn -= 1
                 continue
             dt = time.time() - t0
-            # rate-limit awareness: a 429 turn is a WAIT, not a work turn
-            if "[API-ERROR]" in text and ("429" in text or "no model backend" in text):
+            # rate-limit awareness: a 429 turn is a WAIT, not a work turn.
+            # 2026-10-14: a 401 (broken/expired fallback key while the
+            # primary is rate-limited) is ALSO an outage signal — treat it
+            # as WAIT too, else 0s turns burn the whole milestone budget.
+            if "[API-ERROR]" in text and ("429" in text or "no model backend" in text or "401" in text or "402" in text):
                 log(conv, "milestone %d turn %d RATE-LIMITED — backing off %ds (turn not consumed)"
                     % (mi + 1, turn, rl_backoff))
                 with open(os.path.join(LOGDIR, "emergency-%s-transcript.txt" % conv), "a") as f:

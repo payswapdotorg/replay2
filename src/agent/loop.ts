@@ -25,6 +25,39 @@ export type ChatMsg = {
   tool_call_id?: string;
 };
 
+// 2026-10-15: Cloudflare Workers AI's OpenAI-compat endpoint 400s when the
+// request REPLAYS structured tool messages (assistant-with-tool_calls /
+// tool role) — its compat layer produces array content the native schema
+// rejects ("Type mismatch of '/messages/N/content', 'array' not in
+// 'string'"). Emission of native tool_calls works fine (verified). So for
+// @cf/ models we flatten past tool rounds into plain text: the assistant's
+// calls become "[tool calls: name(args)]" narration, tool results become
+// user-role "[tool result ...]" messages. A pure VIEW at request-build
+// time — the internal structured history is never mutated, and non-CF
+// backends (z-ai primary/fallback, OpenRouter) keep the native format.
+function flattenToolHistoryForCompat(messages: ChatMsg[]): ChatMsg[] {
+  const out: ChatMsg[] = [];
+  for (const m of messages) {
+    if (m.role === "assistant" && Array.isArray(m.tool_calls) && m.tool_calls.length) {
+      const calls = m.tool_calls
+        .map((t) => `${t.function.name}(${t.function.arguments})`)
+        .join("; ");
+      out.push({
+        role: "assistant",
+        content: `[tool calls: ${calls}]${m.content ? `\n${m.content}` : ""}`,
+      });
+    } else if (m.role === "tool") {
+      out.push({
+        role: "user",
+        content: `[tool result${m.tool_call_id ? ` ${m.tool_call_id}` : ""}]: ${m.content ?? ""}`,
+      });
+    } else {
+      out.push(m);
+    }
+  }
+  return out;
+}
+
 const MAX_STEPS = 16;
 const MAX_MESSAGES = 80;
 const RETRY_DELAYS_MS = [4000, 8000, 15000];
@@ -143,7 +176,16 @@ async function createCompletion(
         if (signal.aborted) throw e;
         const msg = String(e);
         const transient = /429|rate|502|503|504|timeout/i.test(msg);
-        const dead = /fetch failed|ENOTFOUND|ECONNREFUSED|EAI_AGAIN|ECONN|network|timeout|404|not found|no such model/i.test(msg);
+        // 2026-10-15: credit-exhaustion (402 "requires more credits" /
+        // "insufficient") and Workers-plan gating (403 "not available on the
+        // Workers Free plan") join the dead class. A zero-credit OpenRouter
+        // or plan-gated Cloudflare self-hosted backend must fall through to
+        // the standard chain with the cooldown, not hard-throw — the direct
+        // throw blocked every glm-* console turn while the primary was
+        // rate-limited (the ring-env-fix-1 bug class). Eligible free/plan
+        // model ids never hit this; gated ids degrade to the normal
+        // drought-WAIT chain.
+        const dead = /fetch failed|ENOTFOUND|ECONNREFUSED|EAI_AGAIN|ECONN|network|timeout|404|not found|no such model|402|insufficient|requires more credits|403|not available/i.test(msg);
         if (dead) selfHostedDeadUntil = Date.now() + SELF_HOSTED_DEAD_COOLDOWN_MS;
         if (!dead && !transient) throw e; // auth/validation errors surface directly
         emit({ type: "status", text: "self-hosted model backend unavailable — continuing on the standard chain" });
@@ -235,9 +277,11 @@ export async function runAgentTurn(opts: {
     }
 
     const isLastStep = step === MAX_STEPS;
+    // @cf/ models get the flattened view (see flattenToolHistoryForCompat).
+    const isCfModel = typeof model === "string" && model.startsWith("@cf/");
     const body: Record<string, unknown> = {
       model,
-      messages,
+      messages: isCfModel ? flattenToolHistoryForCompat(messages) : messages,
       stream: true,
       tools,
       tool_choice: "auto",

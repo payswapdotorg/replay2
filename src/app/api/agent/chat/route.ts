@@ -63,8 +63,23 @@ export async function POST(req: Request) {
   } catch {
     return Response.json({ error: "bad json" }, { status: 400 });
   }
+  // 2026-10-15: the accepted model set is (a) the console's validated glm-*
+  // picker ids, (b) OpenRouter FREE variants ONLY — vendor/model:free — and
+  // (c) Cloudflare Workers AI ids — @cf/vendor/model (e.g.
+  // @cf/openai/gpt-oss-120b, the drought-independent em lane's model; the
+  // account is on the Workers Free plan — plan-gated ids 403 and the loop's
+  // dead-class falls through to the standard chain). These suffix/namespace
+  // rules are load-bearing: the seam can never route a PAID OpenRouter id
+  // (zero credits — would 402). Anything else falls back to defaultModel().
+  const OPENROUTER_FREE_MODEL = /^[a-z0-9][a-z0-9.\-_]*\/[a-z0-9][a-z0-9.\-_]*:free$/i;
+  const CF_WORKERS_AI_MODEL = /^@cf\/[a-z0-9][a-z0-9._\-]*(\/[a-z0-9][a-z0-9._\-]*)*$/i;
   const model =
-    typeof body.model === "string" && /^glm-[0-9a-z.\-]+$/i.test(body.model) ? body.model : defaultModel();
+    typeof body.model === "string" &&
+    (/^glm-[0-9a-z.\-]+$/i.test(body.model) ||
+      OPENROUTER_FREE_MODEL.test(body.model) ||
+      CF_WORKERS_AI_MODEL.test(body.model))
+      ? body.model
+      : defaultModel();
   const conversationId = (body.conversation_id || "default").replace(/[^a-zA-Z0-9_-]/g, "-").slice(0, 64) || "default";
 
   const encoder = new TextEncoder();
