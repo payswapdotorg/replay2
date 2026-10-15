@@ -245,19 +245,19 @@ fi
   { printf '# W2-029 — Main-Agent, Autonomy, Decisions and Trust UX\n\n> [recycle #23 provenance, 2026-10-15] Stub — the work order survives verbatim in-repo: payswapdotorg/UniCom docs/work-orders/W2-029.md. Lane RETIRED: merged e440cd1 19:56:36Z Oct 14 (TL: battery 414/414, browser 9/9). Session 5d0e428b.\n' > "$REPLAY2/scripts/worker-prompts/w2-029.md"; log "w2-029 prompt stub materialized"; }
 
 # 4g. w3-024 LIVE-row materialization (the lane is IN FLIGHT — round-5
-#     session a096556f landed 04:40:04Z Oct 15, pod bound, generation queued.
+#     session 82290725 (round-7, the real 13,812-char packet) dispatched 10:08:38Z Oct 15.
 #     NO complete marker, NO done row. The any-row guard means a later
 #     round-6+ re-dispatch (the ladder appends its own rows) suppresses this
 #     materialization automatically.)
 if ! grep -q '"name": "w3-024"' "$REPLAY2/scripts/flags/session_registry.jsonl" 2>/dev/null; then
   cat >> "$REPLAY2/scripts/flags/session_registry.jsonl" << 'LANEEOF'
-{"name": "w3-024", "action": "create", "ts": 1792039204, "prompt_file": "/home/z/replay2/scripts/worker-prompts/w3-024.md", "tab_id": ""}
-{"name": "w3-024", "action": "send", "ts": 1792039204, "url": "https://chat.z.ai/c/a096556f-6813-4a1b-9a35-a5e7dd77be8e", "sent": true}
+{"name": "w3-024", "action": "create", "ts": 1792058918, "prompt_file": "/home/z/replay2/scripts/worker-prompts/w3-024.md", "tab_id": ""}
+{"name": "w3-024", "action": "send", "ts": 1792058918, "url": "https://chat.z.ai/c/82290725-b4a5-4034-a708-b31dcddf37b5", "sent": true}
 LANEEOF
   log "w3-024 live rows materialized"
 fi
 [[ -s "$REPLAY2/scripts/worker-prompts/w3-024.md" ]] || \
-  { printf '# W3-024 — Default Web + Ubuntu Desktop UNiCOM Launch Experience\n\n> [recycle #23 provenance, 2026-10-15] Stub — the work order survives verbatim in-repo: payswapdotorg/UniCom docs/work-orders/W3-024.md. Lane LIVE (round-5, session a096556f, pod bound). Branch work/w3-024, base 82d2d68.\n' > "$REPLAY2/scripts/worker-prompts/w3-024.md"; log "w3-024 prompt stub materialized"; }
+  { printf '# W3-024 — Default Web + Ubuntu Desktop UNiCOM Launch Experience\n\n> [recycle #23 provenance, 2026-10-15] Stub — the work order survives verbatim in-repo: payswapdotorg/UniCom docs/work-orders/W3-024.md. Lane LIVE (round-7, session 82290725 — the real packet pkt_w3-024_staged.md; round-5 a096556f + round-6 stub both voided 2026-10-15, zero work lost). Branch work/w3-024, base 82d2d68.\n' > "$REPLAY2/scripts/worker-prompts/w3-024.md"; log "w3-024 prompt stub materialized"; }
 
 # 4h. STATION DESIGNATION enforcement (the R23 cross-station clobber class,
 #     2026-10-15 09:2xZ: recycle #23's vault heal restored the ops-vault
