@@ -1459,6 +1459,22 @@ def create(name, prompt_file):
                            "prompt_file": prompt_file, "prompt_chars": len(prompt),
                            "mode": "agents-tab", "model": WANT_MODEL, "skill": WANT_SKILL,
                            "insert_pct": pct, "sent": ok})
+                    # 2026-10-15 fix (TL-A): write the STAGED PACKET for this
+                    # lane on every verified create — the drought sentinel's
+                    # D-028 recovery voids + re-dispatches stale lanes from
+                    # flags/pkt_{name}_staged.md; a create that writes no
+                    # packet leaves recovery helpless ("packet missing —
+                    # Lead review", the aprod006w8 recovery-#1 event 16:46Z:
+                    # canary PROBE15 admitted, trigger fired, re-dispatch
+                    # skipped). The staged form is the RESOLVED prompt
+                    # verbatim (_subst_pat output actually sent) — never a
+                    # placeholder, so the sentinel's D-033 resolver accepts it.
+                    try:
+                        _pkt = os.path.join(BASE, "flags", f"pkt_{name}_staged.md")
+                        with open(_pkt, "w", encoding="utf-8") as _f:
+                            _f.write(prompt)
+                    except OSError:
+                        pass
                     return 0
                 if not st.get("capacity"):
                     # no capacity dialog: genuine insert/send failure — climb the
