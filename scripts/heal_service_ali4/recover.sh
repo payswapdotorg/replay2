@@ -79,6 +79,17 @@ STUB
 git update-index --skip-worktree scripts/vault_guard.py 2>/dev/null || true
 echo "[5b] vault_guard neutered for ali4 (env.sh architecture)"
 
+# --- Step 5c: watched-repo config restore (generic; the station's designated
+# source-of-truth repo. §0: project designations never enter the shared repo —
+# the durable copy lives in my-project/.secrets/) ---
+if [ -f /home/z/my-project/.secrets/watch_repo.txt ]; then
+  mkdir -p scripts/local
+  cp /home/z/my-project/.secrets/watch_repo.txt scripts/local/watch_repo.txt
+  echo "[5c] watched-repo config restored"
+else
+  echo "[5c] no watched-repo designation present"
+fi
+
 # --- Step 6: verify ---
 sleep 20
 GW=$(curl -s -m 5 -o /dev/null -w '%{http_code}' http://127.0.0.1:3100/healthz)
