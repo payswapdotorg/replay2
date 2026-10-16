@@ -142,6 +142,18 @@ def _tab_for(s):
 
 # ------------------------------------------------------------ dom helpers --
 
+JS_TOGGLE_SIDEBAR = r"""(() => {
+  // 2026-10-16 second UI shift: fresh tabs can land in the sidebar-COLLAPSED
+  // "zen" landing (composer + model chip render, sidebar DOM absent). One
+  // click on the header's Toggle Sidebar control restores the full app shell.
+  // Never touches a tab whose sidebar is already open (the shell gate only
+  // reaches this when JS_AGENT_PRESENT failed — i.e. no sidebar DOM).
+  const el = document.querySelector('[aria-label="Toggle Sidebar"]');
+  if (!el) return 'no-toggle';
+  el.click();
+  return 'ok';
+})()"""
+
 JS_AGENT_PRESENT = r"""(() => {
   // page shell: the sidebar 'Agent' nav (classic two-view UI) OR the
   // agents-mode 'New Task' marker. 2026-10-16 live-caught site change: the
@@ -1322,6 +1334,22 @@ def create(name, prompt_file):
                 print("[2/7] waiting for page shell ...")
                 try:
                     ok_shell, last = _wait(c, JS_AGENT_PRESENT, "found", tries=25, sleep=1.5, desc="shell")
+                    if not ok_shell:
+                        # 2026-10-16 second UI shift (recycle-#26 watch, live-caught
+                        # 15:2x-15:4xZ): fresh tabs now land in the sidebar-COLLAPSED
+                        # "zen" landing — composer + model chip (GLM-5.3) + skill chips
+                        # render fine, but the sidebar DOM is absent so 'New Task' /
+                        # 'Meet Your AI Agents' never appear and the shell gate (and
+                        # step 3's agent-mode check) go blind. One click on
+                        # [aria=Toggle Sidebar] restores it (sticky per tab: reload
+                        # does NOT — proven live on E34D30258E3E, 3 reloads all zen).
+                        print("      shell not found — sidebar toggle (collapsed-landing recovery)")
+                        try:
+                            _tog = _eval(c, JS_TOGGLE_SIDEBAR, timeout=10)
+                            print(f"      sidebar toggle: {_tog}")
+                        except Exception as _te:
+                            print(f"      sidebar toggle eval failed: {_te}")
+                        ok_shell, last = _wait(c, JS_AGENT_PRESENT, "found", tries=8, sleep=1.5, desc="shell-toggle")
                     if not ok_shell:
                         # 2026-09-13 lesson: fresh tabs intermittently land in a
                         # network-error opaque-origin state — one reload recovers.
