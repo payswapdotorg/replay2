@@ -1120,3 +1120,22 @@ Work Log:
 Stage Summary:
 - W038 is one worker round away: the toolchain is proven green on real arm64 runners, the artifacts are real AArch64, the TL publish path is landed and simulated — the remaining blockers are exactly the worker's 8 RC items (all in worker-owned files; the round-2 prompt with the full findings + CI evidence is server-side in conversation 0b51f21b, waiting on the agent lane to recover).
 - The lane outage is the only clock risk; the patient loop is armed. No early returns.
+
+---
+Task ID: 74-b
+Agent: Z.ai Code (main orchestrator, TL — the lane-outage diagnosis round + the patient loop armed)
+
+Task: The w038w1r2 dispatch parked on the agent-lane outage — diagnose, neutralize the duplicate risk, update the operator display, hold the patient loop.
+
+Work Log:
+- LANE DIAGNOSIS (server-side, the 73-e method refined): conversation 0b51f21b holds the prompt (1 user message, models=['glm-5.3'] server-verified) but the task never spawned — sandbox/version/list total=0 for the chat (no sandbox ever materialized); the telemetry shows the site BEGAN task creation (chats/new, sandbox/version/list?chatId=0b51f21b, workspaces/status) then a global_network_error storm (HTTP status 0 / Failed to fetch) — the agent/sandbox backend errors at the network level while the chat API itself returns 200. The nudge send (DOM-VERIFIED) was swallowed server-side (history unchanged).
+- CALIBRATION FINDING (matters for future rounds): /api/v1/chats/<id> history.messages is NOT the agent-task transcript — the delivered round-1 conversation (9b381282, 5 commits shipped) ALSO shows msgs=1/user-only. The parked-vs-alive discriminator is the TASK state (sandbox existence + page task UI + the error banner), not the message count alone. Old agent conversations' /c/ URLs now bounce to the landing page (the SPA retires them).
+- ACCOUNT PICTURE: the 8 newest conversations (mine + the sister station's PROBE1/PROBE2-era canaries + the overnight dispatches) ALL hold 1 user message, zero assistant turns — nothing is generating anywhere on the account; the lane has been down since ~00:14Z (15h).
+- DUPLICATE NEUTRALIZED: the overnight completion-round dispatch (w038w2, chat 9ff0307c, 00:24Z — discovered via the mission-state title) sat parked with an INFERIOR prompt (missing the RC-1 x64-freeze violation and the aarch64->arm64 correction). DELETED via the API (200; re-probe 403) to prevent a double-spawn when the queue recovers — my w038w1r2 (0b51f21b) is the canonical round 2 with the full evidence package.
+- CAPACITY RULED OUT: dispatch_worker sandboxes -> 'limit OK (no modal — under the cap)' — the 4d68e60 zombie-workspace class is NOT this outage (the 18h-degraded-window twin theory checked and excluded).
+- STALL MACHINERY CALIBRATED: stall_recovery triggers on dead TURNS (assistant msg len=0 + frozen DOM); the parked-prompt class (no assistant message at all) is explicitly outside its net — the lane-recovery re-kick is the TL's job (void + fresh dispatch is the proven pattern if 0b51f21b does not spawn within minutes of recovery).
+- OPERATOR DISPLAY: data/mission-state.json updated + served (14:58:37Z) — W037 CLOSED / W038 round-2 dispatched + parked / the full round evidence; baseline main=ef7fe58.
+- PATIENT LOOP: probes at 14:58/15:08/15:18Z — sandbox total=0, no conversation movement, error banner persists. Cadence ~10 min, no flooding. THE RECOVERY PLAY (ready to fire): lane back -> give 0b51f21b a few minutes to spawn -> if dead, void + fresh dispatch from the on-disk prompt (scripts/worker-prompts/W038-R2-arm64-require-changes.md) -> worker delivers -> review -> both CI candidates on the final tip -> merge -> 3.14.5 bump + tag -> publish -> verify -> state docs.
+
+Stage Summary:
+- The W038 round-2 evidence package sits server-side waiting on the agent lane; every alternative cause (capacity, workspace zombies, local fault, wrong model) checked and excluded; the account-wide outage is the sole blocker. Patient loop holds. No early returns.
