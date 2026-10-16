@@ -151,7 +151,7 @@ JS_AGENT_PRESENT = r"""(() => {
   for (const el of all) {
     const own = Array.from(el.childNodes).filter(n => n.nodeType === 3)
       .map(n => n.textContent.trim()).join(' ');
-    if (own === 'Agent') return 'found';
+    if (own === 'Agent' || own === 'Meet Your AI Agents') return 'found';
   }
   return 'not-found';
 })()"""
