@@ -338,13 +338,35 @@ JS_DISMISS_DIALOG = r"""(() => {
   // GLM-5.3-Flash launch dialog) overlay the composer, steal focus and eat
   // clicks — insertText lands 0%, Enter vanishes, sends fail with url=None.
   // Close them via their close button (aria-label or bare svg button).
-  const dlg = document.querySelector('[role=dialog]');
-  if (!dlg) return 'none';
-  const btns = [...dlg.querySelectorAll('button')];
-  const close = btns.find(b => /close/i.test(b.getAttribute('aria-label') || '')
-                              || ((b.innerText||'').trim() === '' && b.querySelector('svg')));
-  if (close) { close.click(); return 'closed'; }
-  return 'dialog-no-close-button';
+  // 2026-10-16 (w038w1r2 dispatch, live-caught): TWO new promo classes —
+  // (a) 'GLM-5.1 ... Buy Now | Maybe Later': a bits portal with NO close
+  // button; the only safe exit is the dismiss-word button ('Maybe Later');
+  // while it is open the app roots go inert, so even synthetic el.click()
+  // on the model selector does nothing. (b) the 'Save task results to a
+  // folder' feature notice: NOT a role=dialog — an overlay root carrying
+  // data-state=open with an aria-label=Close button the old role=dialog-only
+  // scan never reached. Scan dialog roots + open-state roots + non-empty
+  // bits portals (the portal scaffolding is state=closed/empty — the
+  // text+buttons guard skips it); close via aria-label close / bare-svg
+  // (dialog roots only) / explicit dismiss WORDS (maybe later, later, not
+  // now, no thanks, dismiss, got it, ok). NEVER a positive action — Buy
+  // Now / Next / upgrade are never clicked.
+  const roots = new Set();
+  document.querySelectorAll('[role=dialog], [role=alertdialog], [data-state=open], div[id^=bits]').forEach(r => roots.add(r));
+  const acted = [];
+  for (const root of roots) {
+    const btns = [...root.querySelectorAll('button')];
+    if (!btns.length) continue;
+    const txt = (root.innerText || '');
+    if (!txt.trim()) continue;
+    const isDialog = root.matches('[role=dialog], [role=alertdialog]');
+    const close = btns.find(b => /close/i.test(b.getAttribute('aria-label') || '')
+                              || (isDialog && (b.innerText||'').trim() === '' && b.querySelector('svg')));
+    if (close) { close.click(); acted.push('close-btn'); continue; }
+    const later = btns.find(b => /^(maybe later|later|not now|no thanks|dismiss|got it|ok)$/i.test((b.innerText||'').trim()));
+    if (later) { later.click(); acted.push('later-btn'); continue; }
+  }
+  return acted.length ? 'closed:' + acted.join(',') : 'none';
 })()"""
 
 JS_CLEAR_COMPOSER = r"""(() => {
@@ -1318,7 +1340,7 @@ def create(name, prompt_file):
                     # dismiss any promotional/notification dialog that overlays
                     # the composer (GLM-5.3-Flash launch popup etc.) — it steals
                     # focus and eats the clicks/inserts that follow
-                    for _ in range(2):
+                    for _ in range(4):
                         dres = _eval(c, JS_DISMISS_DIALOG, timeout=10)
                         if dres == 'none':
                             break
@@ -1755,7 +1777,7 @@ def send(name, message):
             return 0
         # dismiss promotional/notification dialogs first (they overlay the
         # composer, steal focus and eat clicks — GLM-5.3-Flash popup etc.)
-        for _ in range(2):
+        for _ in range(4):
             dres = _eval(c, JS_DISMISS_DIALOG, timeout=10)
             if dres == "none":
                 break
