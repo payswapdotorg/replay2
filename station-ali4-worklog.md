@@ -2049,3 +2049,18 @@ Work Log:
 Stage Summary:
 - The MOS product now has a downloadable, installable Ubuntu desktop app — publicly hosted on the source-of-truth repo, branded MOS end-to-end, smoke-tested live.
 - The loop resumes: monitor → harvest → review → approve/require-changes → dispatch next — no early returns.
+
+---
+Task ID: R98
+Agent: Z.ai Code (main session)
+Task: THE DOWNLOAD SURFACE — the MOS Desktop release wired onto the station console's mission board (amber download chips, per the sibling station's 01e283d Mission Control pattern); prod console upgraded to the downloads-capable bundle; loops resumed
+
+Work Log:
+- MOVEMENT CONSUMED (replay2 c891e51→01e28d3, 2 commits): (1) 01e28d3 — Mission Control 'downloads' array (id/label/url/detail) rendered as amber chips next to the production link; first used by the sibling station for their Aurum Chat desktop client. THE SAME OPERATOR PATTERN this station just delivered (R97) — adopted immediately: my mission board now carries the MOS Desktop v3.14.3-mos.1 deb + AppImage entries. (2) 9d97fc7 — their recycle #24/#25 recovery (vpn_heal + window_catcher rebuilt; tl_recover_unicom 4a-2). Sibling-lane intelligence.
+- CONSOLE UPGRADE EXECUTED: replay2 clone pulled 26abc25→01e28d3 (skip-worktree stub untouched — no conflict); prod console bundle rebuilt (.next-prod via NEXT_DIST_DIR bun build, ~3 min); console swapped dev→prod via the §5b doctrine (kill old pid group → launch_prod.py). VERIFIED: /api/mission now returns the downloads array (both MOS Desktop entries); frame 200; session logged-in; title 'Replay Console'; station green post-swap.
+- MISSION BOARD SURFACE (operator-visible): the console header now shows 'MOS Desktop v3.14.3-mos.1 (deb)' + '(AppImage)' chips → one-click/one-wget download path for the operator's local agent, straight from the mission board.
+- STATE SYNC: mission-state.json now lives in BOTH the durable kit (download/recovery/) and the console's read path (replay2/data/) — the re-clone gap closed this session (the console had been reading a missing file → neutral board; now loading the MOS-2.0 board).
+
+Stage Summary:
+- The operator directive fully closed: product → build → release → console-visible download surface, all green.
+- THE LOOP RUNS — no early returns.
