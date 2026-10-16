@@ -295,6 +295,17 @@ def recover(trigger, lanes, lane_now, probes_now):
             events.append(f"{name}: GENERATING — untouched")
             log(f"{name} generating — no re-dispatch")
             continue
+        # R40-a completion gate: msgs>=2 = ADMITTED (live generation done or
+        # a completed report awaiting harvest). The sentinel must NEVER void
+        # admitted work — the qw owns admitted-lane lifecycle (zombie doctrine
+        # + in-place cures + void-as-last-resort). Blast radius without this
+        # gate: a canary's first admission landing just after WO completion
+        # (batch closed, msgs=2+) would void the completed report and
+        # re-dispatch — the whole cycle wasted.
+        if c_state and c_state["msgs"] >= 2:
+            events.append(f"{name}: ADMITTED (msgs>=2) — sentinel hands off to qw")
+            log(f"{name} admitted (msgs={c_state['msgs']}) — no re-dispatch (qw owns it)")
+            continue
         # D-033: packet resolution order — staged (resolved dispatch base,
         # most recent send) > redispatch (wave-28 form) > raw (must NOT carry
         # the __DISPATCH_BASE__ placeholder; a placeholder packet would

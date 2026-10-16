@@ -1,7 +1,9 @@
 #!/usr/bin/env python3
 """harvest_w8.py — one-command harvest of the A-PROD-006-W8 worker delivery.
 
-Polls chat 54dddc88 (lane aprod006w8) server-side for the COMPLETION REPORT
+Polls the lane aprod006w8's CURRENT chat server-side (registry-resolved:
+the latest non-void row's /c/<uuid> — survives the sentinel's recover()
+void+re-dispatch cycles) for the COMPLETION REPORT
 markers; once present, fetches the bundle + MANIFEST via the workspaces files
 API, verifies every MANIFEST sha256 + the TREE-SELF-CHECK, reconstructs the
 branch from the bundle, and re-verifies the frozen-instrument sha256 table.
@@ -11,9 +13,38 @@ Usage: harvest_w8.py [--wait]   (polls until the report lands; default: one shot
 import json, os, re, subprocess, sys, time
 
 BASE = os.path.dirname(os.path.abspath(__file__))
-CHAT = "54dddc88-108d-4acd-aa4c-59e89b66eac6"  # R39-a re-dispatch lane (old 3ef8ac4a voided: dead URL)
+LANE = "aprod006w8"
+REGISTRY = os.path.join(BASE, "flags", "session_registry.jsonl")
+_FALLBACK_CHAT = "54dddc88-108d-4acd-aa4c-59e89b66eac6"  # R39-a re-dispatch lane
+
+
+def resolve_chat():
+    """The lane's CURRENT live chat id from the registry (the truth source).
+    Void/failed/done rows CLOSE the lane; a later create/tab-reopen/send row
+    re-opens it with its /c/<uuid>. Survives recover() void+re-dispatch: the
+    fresh create row carries the new chat id. Falls back to the last-known
+    id only if the registry is unreadable or the lane is mid-recovery
+    (voided, fresh create not yet landed — a seconds-wide gap)."""
+    try:
+        rows = [json.loads(l) for l in open(REGISTRY) if l.strip()]
+    except (OSError, ValueError):
+        return _FALLBACK_CHAT
+    chat = None
+    for r in rows:
+        if r.get("name") != LANE:
+            continue
+        if r.get("action") in ("void", "failed", "done"):
+            chat = None  # closes the lane (registry truth)
+            continue
+        m = re.search(r"/c/([0-9a-f-]{36})", r.get("url") or "")
+        if m:
+            chat = m.group(1)  # LAST live row wins
+    return chat or _FALLBACK_CHAT
+
+
+CHAT = resolve_chat()
 WS_DEFAULT = None
-OUT = "/home/z/leads-harvest/54dddc88/tree/flauz-delivery/aprod-006-w8-sustained-cycle"
+OUT = f"/home/z/leads-harvest/{CHAT[:8]}/tree/flauz-delivery/aprod-006-w8-sustained-cycle"
 MARK_BEGIN = "FLAUZ-APROD-006-W8-REPORT BEGIN"
 MARK_END = "FLAUZ-APROD-006-W8-REPORT END"
 FILES = ["flauz-delivery/aprod-006-w8-sustained-cycle/aprod-006-w8.bundle",
@@ -56,8 +87,12 @@ def workspace_id():
 
 
 def main():
+    global CHAT, OUT
     wait = "--wait" in sys.argv
     while True:
+        if wait:  # long-running: track recover() void+re-dispatch mid-wait (R40-a)
+            CHAT = resolve_chat()
+            OUT = f"/home/z/leads-harvest/{CHAT[:8]}/tree/flauz-delivery/aprod-006-w8-sustained-cycle"
         blob = report_text(chat_detail())
         if MARK_BEGIN in blob and MARK_END in blob:
             rep = blob[blob.index(MARK_BEGIN):blob.index(MARK_END) + len(MARK_END)]
