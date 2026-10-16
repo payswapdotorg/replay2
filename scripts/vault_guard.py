@@ -313,6 +313,18 @@ def heal(env):
             # per-station board key first (doctrine), legacy shared fallback
             v, used_key = redis_get_board(url, token)
             restored.append(used_key)
+        elif suffix == "outbox":
+            # per-station key ONLY (2026-10-16 recycle-#26 live catch: the
+            # shared outbox key carried the PARALLEL station's thread — the
+            # aurum "RESIDENT WATCH" message was healed into THIS station's
+            # kit as our seed. Same class as the mission-state clobber, but
+            # for outbox there is no safe shared fallback: a station's
+            # operator thread is never another station's content. An empty
+            # per-station key restores NOTHING — the local kit seed wins.)
+            slug = station_slug()
+            v = (redis_get(url, token, f"payswap:recovery:outbox:{slug}")
+                 if slug else None)
+            restored.append(f"outbox:{slug}" if slug else "outbox:noslug")
         else:
             v = redis_get(url, token, f"payswap:recovery:{suffix}")
             restored.append(suffix)
