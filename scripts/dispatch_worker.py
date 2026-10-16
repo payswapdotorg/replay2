@@ -156,17 +156,31 @@ JS_TOGGLE_SIDEBAR = r"""(() => {
 
 JS_AGENT_PRESENT = r"""(() => {
   // page shell: the sidebar 'Agent' nav (classic two-view UI) OR the
-  // agents-mode 'New Task' marker. 2026-10-16 live-caught site change: the
-  // root now lands directly in the agents interface and the sidebar 'Agent'
-  // nav no longer exists — step 3 (_select_insert_send) already accepts the
-  // 'New Task' marker as agents-mode-on, so the shell gate accepts the same
-  // two states (a logged-out page shows neither -> still fails -> the
-  // login-expired diagnosis path is preserved).
-  const all = document.querySelectorAll('div,span,button,li,a,p');
-  for (const el of all) {
-    const own = Array.from(el.childNodes).filter(n => n.nodeType === 3)
-      .map(n => n.textContent.trim()).join(' ');
-    if (own === 'Agent' || own === 'New Task') return 'found';
+  // agents-mode 'New Task' marker. 2026-10-16 live-caught site changes (two
+  // the same day): (a) the root lands directly in the agents interface and
+  // the sidebar 'Agent' nav no longer exists — step 3 accepts the 'New Task'
+  // marker as agents-mode-on; (b) LATER the same day fresh tabs land on the
+  // skill-picker landing with the sidebar COLLAPSED — the markers exist
+  // behind the top-left hamburger. Open the sidebar ONCE (window-flagged so
+  // the retry loop can never flip-flop it closed), then the next poll finds
+  // the marker. A logged-out page shows neither -> still fails -> the
+  // login-expired diagnosis path is preserved.
+  const hasMarker = () => {
+    for (const el of document.querySelectorAll('div,span,button,li,a,p')) {
+      const own = Array.from(el.childNodes).filter(n => n.nodeType === 3)
+        .map(n => n.textContent.trim()).join(' ');
+      if (own === 'Agent' || own === 'New Task') return true;
+    }
+    return false;
+  };
+  if (hasMarker()) return 'found';
+  if (!window.__zaiSidebarToggled) {
+    window.__zaiSidebarToggled = true;
+    const btns = Array.from(document.querySelectorAll('button')).filter(b => {
+      const r = b.getBoundingClientRect();
+      return r.x < 40 && r.y < 60 && r.width > 0 && b.querySelector('svg');
+    });
+    if (btns.length) btns[0].click();
   }
   return 'not-found';
 })()"""
