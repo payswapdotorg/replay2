@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """harvest_w8.py — one-command harvest of the A-PROD-006-W8 worker delivery.
 
-Polls chat 3ef8ac4a (lane aprod006w8) server-side for the COMPLETION REPORT
+Polls chat 54dddc88 (lane aprod006w8) server-side for the COMPLETION REPORT
 markers; once present, fetches the bundle + MANIFEST via the workspaces files
 API, verifies every MANIFEST sha256 + the TREE-SELF-CHECK, reconstructs the
 branch from the bundle, and re-verifies the frozen-instrument sha256 table.
@@ -11,9 +11,9 @@ Usage: harvest_w8.py [--wait]   (polls until the report lands; default: one shot
 import json, os, re, subprocess, sys, time
 
 BASE = os.path.dirname(os.path.abspath(__file__))
-CHAT = "3ef8ac4a-f89a-4c1c-a1c1-0cf87578d5a3"
+CHAT = "54dddc88-108d-4acd-aa4c-59e89b66eac6"  # R39-a re-dispatch lane (old 3ef8ac4a voided: dead URL)
 WS_DEFAULT = None
-OUT = "/home/z/leads-harvest/3ef8ac4a/tree/flauz-delivery/aprod-006-w8-sustained-cycle"
+OUT = "/home/z/leads-harvest/54dddc88/tree/flauz-delivery/aprod-006-w8-sustained-cycle"
 MARK_BEGIN = "FLAUZ-APROD-006-W8-REPORT BEGIN"
 MARK_END = "FLAUZ-APROD-006-W8-REPORT END"
 FILES = ["flauz-delivery/aprod-006-w8-sustained-cycle/aprod-006-w8.bundle",
