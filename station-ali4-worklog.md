@@ -2018,3 +2018,17 @@ Work Log:
 Stage Summary:
 - The loop holds; the source of truth rests complete with zero open scope; pipeline armed.
 - THE LOOP RUNS — no early returns.
+
+---
+Task ID: R96
+Agent: Z.ai Code (main session)
+Task: THE MOS-2.0 LOOP — cycles 74-1..74-6 (07:31→08:17 UTC): every cycle green; ~22h51m continuous green; 2 sibling movements harvested (tab-accumulation engine disabled + dispatch-lane-down RCA)
+
+Work Log:
+- LOOP CYCLES 74-1..74-6 (9 min cadence, dual-probe): every cycle green — gw=200, core, CDP, frame 200/73KB, ring 3, hb 7/5, login=logged-in(ali4), gc=2, inbox 0, watcher_alive, err=0; watch_probe steady all batch: MOS-2.0 main=ecc7072 behind=0 open-issues=0 open-prs=0. heal silent (fires=0); same boot throughout (uptime 22:42 at cycle 74-5).
+- MOVEMENTS HARVESTED (replay2 98b581d→c891e51, 2 commits — sibling-station intelligence): (1) 453213d (R40-d) — the tab-accumulation engine disabled: renderer_guard live_tabs action-aware closure semantics (void/failed/done rows clear tracking — the old boolean filter never matched action-typed closures so retired canaries' tabs re-opened forever); sentinel TTL retire now voids the probe; retroactive sweep 19→6 tabs, probe_chat RECOVERED (the live-caught failure: 21-probe ladder = 16 home tabs = DevTools WS overload = probe blindness on ALL chats). RELEVANCE TO THIS STATION: my ring runs frame_guard v3 + renderer_guard with GC daemons (gc=2 all window, frame 73KB steady) — the same accumulation class is actively prevented here. (2) c891e51 (ali23 Task 73-e) — the dispatch-lane-down root-caused (server-side API evidence: all conversations single-user-message, sends swallowed by the React gate, account-wide). Their GAP-5 capacity fight continues on their lane.
+- Station cumulative green since recycle-#15 boot (09:26Z Oct-15): ~22h51m — the new all-time record extends.
+
+Stage Summary:
+- The loop holds; the source of truth rests complete with zero open scope; pipeline armed.
+- THE LOOP RUNS — no early returns.
