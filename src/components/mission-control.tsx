@@ -7,6 +7,7 @@ import {
   CircleDot,
   Clock,
   Database,
+  Download,
   GitBranch,
   GitMerge,
   Globe,
@@ -146,6 +147,9 @@ export function MissionControl() {
   // crashed here at 144:33 — `?? []` keeps any legacy state renderable.
   const items = state.items ?? [];
   const lanes = Array.isArray(state.lanes) ? state.lanes : [];
+  const downloads = Array.isArray((state as MissionState).downloads)
+    ? (state as MissionState).downloads
+    : [];
   const doneCount = items.filter(
     (i) => i.status === "done" || i.status === "merged"
   ).length;
@@ -198,6 +202,19 @@ export function MissionControl() {
                   not deployed yet
                 </Badge>
               )}
+              {(downloads ?? []).map((dl) => (
+                <a
+                  key={dl.id}
+                  href={dl.url}
+                  target="_blank"
+                  rel="noreferrer"
+                  title={dl.detail ?? dl.url}
+                  className="inline-flex items-center gap-1.5 rounded-md border border-amber-700/70 bg-amber-950/60 px-2.5 py-1 text-xs font-medium text-amber-300 hover:bg-amber-900/60 transition-colors"
+                >
+                  <Download className="h-3.5 w-3.5" aria-hidden />
+                  {dl.label}
+                </a>
+              ))}
               <Badge
                 variant="outline"
                 className="border-zinc-700 bg-zinc-900/60 text-zinc-300 font-mono"

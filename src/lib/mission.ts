@@ -45,6 +45,16 @@ export interface TimelineEntry {
   text: string;
 }
 
+// Operator-facing downloadable artifacts (e.g. desktop-client release
+// assets). Optional and field-normalized like everything else: absent in
+// any legacy state → empty list → nothing renders.
+export interface MissionDownload {
+  id: string;
+  label: string;
+  url: string;
+  detail?: string | null;
+}
+
 export interface MissionState {
   updatedAt: string;
   mission: {
@@ -62,6 +72,7 @@ export interface MissionState {
     deployedAt: string | null;
     status: string;
   };
+  downloads: MissionDownload[];
 }
 
 const STATE_PATH = path.join(process.cwd(), "data", "mission-state.json");
@@ -93,6 +104,7 @@ function neutralMissionState(): MissionState {
       },
     ],
     production: { url: null, deployedAt: null, status: "unknown" },
+    downloads: [],
   };
 }
 
@@ -125,6 +137,19 @@ export async function readMissionState(): Promise<MissionState> {
         deployedAt: parsed.production?.deployedAt ?? null,
         status: parsed.production?.status ?? "unknown",
       },
+      downloads: Array.isArray(parsed.downloads)
+        ? parsed.downloads
+            .filter(
+              (d): d is MissionDownload =>
+                !!d && typeof d.id === "string" && typeof d.label === "string" && typeof d.url === "string",
+            )
+            .map((d) => ({
+              id: d.id,
+              label: d.label,
+              url: d.url,
+              detail: typeof d.detail === "string" ? d.detail : null,
+            }))
+        : [],
     };
   } catch {
     // Never render a broken console — fall back to a NEUTRAL no-mission
