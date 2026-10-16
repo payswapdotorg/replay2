@@ -166,6 +166,19 @@ print(f"outbox seed: {added} messages appended")
 OUTBOXEOF
   log "operator thread restored (idempotent)"
 fi
+# (d) the staged W3-024 dispatch packet (recycle #26 lesson, 2026-10-16:
+#     the 14:11Z re-clone wiped flags/pkt_w3-024_staged.md — the sentinel's
+#     D-033 resolution order found NOTHING and the auto-dispatch chain went
+#     BLIND; the packet is re-derivable but every re-derivation is 30+ min
+#     of TL surgery while an admission window can open+close in 90s.
+#     Durable kit copy: recovery/packets/pkt_w3-024_staged.md. Restored
+#     ONLY when the runtime copy is absent — never downgrades a newer
+#     staged packet.)
+if [[ -f "$DURABLE_DIR/packets/pkt_w3-024_staged.md" ]] && [[ ! -s "$REPLAY2/scripts/flags/pkt_w3-024_staged.md" ]]; then
+  cp "$DURABLE_DIR/packets/pkt_w3-024_staged.md" "$REPLAY2/scripts/flags/pkt_w3-024_staged.md"
+  chmod 600 "$REPLAY2/scripts/flags/pkt_w3-024_staged.md" 2>/dev/null
+  log "W3-024 staged packet restored from durable kit ($(wc -c < "$REPLAY2/scripts/flags/pkt_w3-024_staged.md") bytes)"
+fi
 
 # 4b. lane-history materialization (recovery #10 lesson, 2026-10-12 ~22:4xZ
 #     recycle: the registry/seed + prompt + marker trio was WIPE-VULNERABLE —
