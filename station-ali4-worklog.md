@@ -2004,3 +2004,17 @@ Work Log:
 Stage Summary:
 - The loop holds; the source of truth rests complete with zero open scope; pipeline armed.
 - THE LOOP RUNS — no early returns.
+
+---
+Task ID: R95
+Agent: Z.ai Code (main session)
+Task: THE MOS-2.0 LOOP — cycles 72-5..73-6 (06:18→07:22 UTC): every cycle green; ~22h continuous green (record +1.2h and climbing); 5 sibling movements harvested (reset-durability + sentinel laws)
+
+Work Log:
+- LOOP CYCLES 72-5..73-6 (9 min cadence, dual-probe): every cycle green — gw=200, core, CDP, frame 200/73KB, ring 3, hb 7/5, login=logged-in(ali4), gc=2, inbox 0, watcher_alive, err=0; watch_probe steady all batch: MOS-2.0 main=ecc7072 behind=0 open-issues=0 open-prs=0. heal silent (fires=0); same boot throughout (uptime 21:56 at cycle 73-6).
+- MOVEMENTS HARVESTED (replay2 b8aba54→98b581d, 5 commits — sibling-station intelligence, zero roadmap scope here): (1) 1ffaa2a (ali23 reset-durability law) — the A-PROD-006-W8 work order packet force-added to git (scripts/flags/ is gitignored; without the tracked packet a reset leaves the sentinel's recover() with 'packet missing' — the D-033 transcript-recovery path is the expensive fallback). RELEVANCE TO THIS STATION: the same class applies to my flags/ contents — noted as a future hardening option (my watch_repo.txt designation is triple-layered: flags/ + .secrets/ + kit, so the designation itself is already covered). (2) 065e3f4 (R40-a hardening) — harvest_w8 registry-driven lane resolution with void/failed/done CLOSES semantics + the drought_sentinel completion gate (msgs>=2 = ADMITTED, sentinel never voids admitted work). (3) 98b581d — the W4-class generic-token fix (work order/dispatch/session added to GENERIC_NAME_TOKENS; stale sandbox rows release) + the sustained-contention record. All Flauz-lane mechanics; intelligence banked.
+- Station cumulative green since recycle-#15 boot (09:26Z Oct-15): ~22h — 1.2h past the previous all-time record, still climbing; the sibling's recycle #18 (~06:00Z) passed this box as nothing.
+
+Stage Summary:
+- The loop holds; the source of truth rests complete with zero open scope; pipeline armed.
+- THE LOOP RUNS — no early returns.
