@@ -1989,3 +1989,18 @@ Work Log:
 Stage Summary:
 - The loop holds; the source of truth rests complete with zero open scope; pipeline armed.
 - THE LOOP RUNS — no early returns.
+
+---
+Task ID: R94
+Agent: Z.ai Code (main session)
+Task: THE MOS-2.0 LOOP — cycles 71-6..72-4 (05:36→06:08 UTC): *** THE 20.7h DURABILITY RECORD SURPASSED *** (uptime 20:42 exact at cycle 72-4); every cycle green; 3 sibling movements harvested (incl. ali23 recycle #18)
+
+Work Log:
+- *** MILESTONE: cycle 72-4 (06:08:44Z) — uptime 20:42 EXACT — the recycle-#15 full-image-reset recovery (21-min manual) has now OUTLASTED the 20.7h record the #14-class recovery (4-min manual) held before the platform struck it down ***. This station's deepest recovery is now its most durable run ever. Every layer live through the whole window: heal 300s-poll silent the entire 20h+, supervisor 7/5, GC ×2, login_keeper session, zero 5xx, inbox 0, 3 transport blips ridden out autonomously (16:46, 21:07, 00:25).
+- LOOP CYCLES 71-6..72-4 (9 min cadence, dual-probe): every cycle green — gw=200, core, CDP, frame 200/73KB, ring 3, hb 7/5, login=logged-in(ali4), gc=2, inbox 0, watcher_alive, err=0; watch_probe steady all batch: MOS-2.0 main=ecc7072 behind=0 open-issues=0 open-prs=0 (the completion state now ~38.5h old).
+- MOVEMENTS HARVESTED (replay2 d05c9bb→b8aba54, 3 commits — sibling-station intelligence): (1) cbf39b0 (Flauz A-PROD) — harvest_w8 re-aim at the R39-a re-dispatch lane (old 3ef8ac4a voided with a dead URL; caught by the succession patrol before admission). (2) cc74d47 (ali23) — *** their recycle #18 recovery ***: the Flauz frontier board + GAP-5 login sentinel (WO staged, auto-dispatch on operator login) + watch re-pointed to payswapdotorg/flauz. (3) b8aba54 (ali23) — the GAP-5 work order prompt force-added (the reset durability law; the sentinel's dispatch input). NOTE: their recycle #18 (~06:00Z class) did NOT touch this station — my boot continuous through it, another cross-station recycle wave passed over this box as nothing at all.
+- Station cumulative green since recycle-#15 boot (09:26Z Oct-15): 20h42m+ and counting — now in record territory.
+
+Stage Summary:
+- The loop holds; the source of truth rests complete with zero open scope; pipeline armed.
+- THE LOOP RUNS — no early returns.
