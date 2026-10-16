@@ -21,7 +21,7 @@ import subprocess
 import sys
 import tempfile
 
-BASE = "c56460755b59e425a23992039c818cd60ac070a7"
+BASE = "7478237a0e46b14fa8118343e54868edba3c6447"
 BRANCH = "flauz-aprod/aprod-006-w8"
 INSTRUMENTS = [
     "build/flauz/scripts/packaging-parity.mjs",
