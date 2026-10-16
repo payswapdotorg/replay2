@@ -407,9 +407,22 @@ if [[ -f "$DURABLE_DIR/repos.txt" ]]; then
     [[ "$repo" == \#* ]] && continue
     dir="/home/z/${repo##*/}"
     if [[ ! -d "$dir/.git" ]]; then
-      git clone --quiet "https://github.com/${repo}.git" "$dir" \
-        && log "$repo cloned @ $(cd "$dir" && git rev-parse --short HEAD)" \
-        || log "WARN: $repo clone failed"
+      # 2026-10-16 flauz switch: the flauz repo is 1.3GB of history — a full
+      # clone at recovery hangs the ladder for tens of minutes. Sparse
+      # blob-filtered clone when the kit carries a sparse spec
+      # (sparse-${name}.txt, one dir per line); plain clone otherwise (§0:
+      # era-neutral — other repos keep the original behavior).
+      _name="${repo##*/}"
+      if [[ -f "$DURABLE_DIR/sparse-${_name}.txt" ]]; then
+        git clone --quiet --filter=blob:none --sparse --depth 50 "https://github.com/${repo}.git" "$dir" \
+          && (cd "$dir" && git sparse-checkout add $(tr '\n' ' ' < "$DURABLE_DIR/sparse-${_name}.txt")) \
+          && log "$repo sparse-cloned @ $(cd "$dir" && git rev-parse --short HEAD)" \
+          || log "WARN: $repo sparse clone failed"
+      else
+        git clone --quiet "https://github.com/${repo}.git" "$dir" \
+          && log "$repo cloned @ $(cd "$dir" && git rev-parse --short HEAD)" \
+          || log "WARN: $repo clone failed"
+      fi
     else
       (cd "$dir" && git fetch --quiet origin && log "$repo refreshed (main @ $(git rev-parse --short origin/main 2>/dev/null || echo '?'))")
     fi
@@ -434,6 +447,24 @@ command -v pnpm >/dev/null 2>&1 || corepack prepare pnpm@10.33.2 --activate >/de
 # (already on PATH via the export above) is the reliable fallback.
 command -v pnpm >/dev/null 2>&1 || npm install -g pnpm@10.33.2 >/dev/null 2>&1
 log "pnpm: $(pnpm --version 2>/dev/null || echo MISSING)"
+
+# 8b. flauz station toolchain (2026-10-16 switch): the flauz family gates run
+#     `~/toolchain/node_modules/.bin/tsc` + `bunx --bun mocha` (the families'
+#     own README run commands) — the repo itself carries no root node_modules
+#     install (a 1.3GB VS Code fork; the root install is not needed for the
+#     build/flauz lane). Rebuild the toolchain + the node_modules symlink so
+#     the scoped tsconfigs resolve "types": ["node","mocha"] after a recycle.
+if [[ -f "/home/z/flauz/.git" ]]; then
+  if [[ ! -x "$HOME/toolchain/node_modules/.bin/tsc" ]]; then
+    mkdir -p "$HOME/toolchain"
+    (cd "$HOME/toolchain" && bun add typescript@5.9 @types/node@24 @types/mocha >/dev/null 2>&1) \
+      && log "flauz toolchain built (tsc + node/mocha types)" \
+      || log "WARN: flauz toolchain build failed (bun add)"
+  fi
+  [[ -d "$HOME/toolchain/node_modules" && ! -e "/home/z/flauz/node_modules" ]] \
+    && ln -sfn "$HOME/toolchain/node_modules" "/home/z/flauz/node_modules" \
+    && log "flauz node_modules symlink restored (~/toolchain)"
+fi
 
 # 9. predev boot hook durability (2026-10-08 recycle lesson: download/recovery/
 #    is NOT fully durable — the hook died with it; the repo copy is the master).
