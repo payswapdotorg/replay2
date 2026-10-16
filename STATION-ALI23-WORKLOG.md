@@ -1085,3 +1085,19 @@ Work Log:
 
 Stage Summary:
 - GAP-5 dispatched + queued (conversation be018f47 holds the WO); the generation waits on the account's capacity. The dispatcher's generic-token fix is a durable fleet improvement (committed next). The watch continues — the patient loop, no early returns.
+
+---
+Task ID: 73-e
+Agent: Z.ai Code (main orchestrator, TL-B — the dispatch-lane-down diagnosis, root-caused via the server API)
+
+Task: The GAP-5 generation block root-caused.
+
+Work Log:
+- THE SERVER-SIDE TRUTH (via the in-page API fetch — /api/v1/chats/<id>): ALL SIX dispatch conversations (81226077, bb52bdca, edb5160e, fa7293c0, be018f47 + the first) hold EXACTLY ONE user message (the WO, ~7.5k chars) and ZERO assistant messages — the task generation never spawned on ANY dispatch.
+- THE SENDS WERE SWALLOWED: every "message sent: VERIFIED (composer-cleared+grew)" follow-up never landed server-side (the React submit-gate class — the stall-recovery forensic's own signature: "the composer accepts typing but form submits are silently swallowed"). The dispatcher's send verification (DOM-only) is a false positive for this state; the true verification needs the server-side message-count check.
+- The account's recent-chat list: only MY dispatch conversations (all "general_agent", status active, no assistant turns); the sibling's INF chats are OLD (not active) — the account-wide agent lane is DOWN (not local, not fleet contention: NOBODY's agent tasks are generating).
+- The lane broke between ~23:00Z (GAP-2 generated fine) and 00:14Z (GAP-5 dispatch 1 — never generated).
+- THE PLAN: the patient loop through the reset window's end (~09:36Z); if the lane stays down, the TL-authored wave (GAP-5) with the full disclosure (the lane-down deviation, the same gates + evidence laws + registry discipline — the station has the full toolchain: the repo, the gate env, the browser E2E).
+
+Stage Summary:
+- The GAP-5 block is an account/site-level agent-lane outage, not a local fault (root-caused with server-side evidence). The watch continues — patient, honest, no early returns.
