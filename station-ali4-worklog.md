@@ -2078,3 +2078,18 @@ Work Log:
 Stage Summary:
 - The loop holds; the source of truth rests at the release merge with zero open scope; pipeline armed.
 - THE LOOP RUNS — no early returns.
+
+---
+Task ID: R100
+Agent: Z.ai Code (main session)
+Task: STATION RECYCLE #16 RECOVERY (boot 14:02Z, full-image-reset class): the manual executed in ~8 min — worklog restored from mirror @ R99; the station's 25.7h all-time record run ended by the platform
+
+Work Log:
+- THE EVENT: recycle #16 hit between cycle 77-4 (~11:55Z) and this session's re-orientation (14:03Z uptime=1min) — the ~2h gap includes the platform's image reset (host changed to c-6ad22e66). The 25.7h continuous-green run (R99's milestone) was ended by the platform, not by any station fault. Damage map (same class as #15): replay2 wiped, mini-services/heal wiped, .secrets wiped, download/recovery kit wiped, worklog reverted to R56 vintage (88 Task IDs), MOS-2.0 checkout wiped; gateway + console survived the snapshot restore. THE RELEASE IS UNSCATHED — MOS Desktop v3.14.3-mos.1 lives on GitHub (public, verified).
+- RECOVERY SEQUENCE (the refined manual, 8 minutes): (1) env.sh → credentials + .git-credentials; (2) replay2 clone @ 01e28d3 + mirror fetch → *** WORKLOG RESTORED @ R99 (129 Task IDs) — the off-box mirror's third live-fire save ***; (3) watch_repo.txt re-seeded (flags/ + local/ + .secrets/); (4) reset-restore.sh — CDP + core + supervisor UP, session AUTO-RESTORED logged-in(ali4); (5) tl_recover.sh — login_keeper + heal service + predev-heal reinstalled; (6) durable kit 4 entries rebuilt (credentials.env / watch_repo.txt / repos.txt / mission-state.json — WITH the downloads array for the MOS Desktop chips); (7) MOS-2.0 re-cloned @ 7039c4f (the release merge — intact on GitHub); (8) R65 vault_guard opt-out re-executed (pkill + stub + skip-worktree — the recycle had restored master again); (9) GC daemons ×2 armed; (10) prod console bundle rebuilt + dev→prod swap → mission board verified rendering the MOS Desktop download chips again; (11) dual-probe all-green.
+- VERIFICATION: gw=200 core=1 cdp=ok frame=200:78882 ring=2 hb=7/5 login=logged-in(ali4) gc=2 inbox=0 watcher_alive err=2(early-window dev-console 500s, historical); watch_probe main=7039c4f local=7039c4f behind=0 open-issues=0 open-prs=0. Disk 6.1G free (fresh image).
+- RECOVERY TIME: boot 14:02Z → all-green 14:10Z ≈ 8 MINUTES (vs #15's 21 min — the manual is now fully rehearsed; the mirror-based worklog restore + kit rebuild sequence has been compressed to 4 commands).
+
+Stage Summary:
+- Station fully recovered; the MOS Desktop release + its console download surface survived the recycle end-to-end (GitHub-hosted artifacts are recycle-proof by design).
+- The loop resumes immediately — no early returns.
