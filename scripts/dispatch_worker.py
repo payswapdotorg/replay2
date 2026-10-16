@@ -143,11 +143,18 @@ def _tab_for(s):
 # ------------------------------------------------------------ dom helpers --
 
 JS_AGENT_PRESENT = r"""(() => {
+  // page shell: the sidebar 'Agent' nav (classic two-view UI) OR the
+  // agents-mode 'New Task' marker. 2026-10-16 live-caught site change: the
+  // root now lands directly in the agents interface and the sidebar 'Agent'
+  // nav no longer exists — step 3 (_select_insert_send) already accepts the
+  // 'New Task' marker as agents-mode-on, so the shell gate accepts the same
+  // two states (a logged-out page shows neither -> still fails -> the
+  // login-expired diagnosis path is preserved).
   const all = document.querySelectorAll('div,span,button,li,a,p');
   for (const el of all) {
     const own = Array.from(el.childNodes).filter(n => n.nodeType === 3)
       .map(n => n.textContent.trim()).join(' ');
-    if (own === 'Agent') return 'found';
+    if (own === 'Agent' || own === 'New Task') return 'found';
   }
   return 'not-found';
 })()"""
