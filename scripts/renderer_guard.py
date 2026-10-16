@@ -92,7 +92,11 @@ def heartbeat():
 
 def live_tabs():
     """{tab_id: (url, name)} for registry sessions not done/void
-    (latest record per tab id wins; the name feeds the tab-reopen record)."""
+    (latest record per tab id wins; the name feeds the tab-reopen record).
+    R40-d: closure rows are ACTION-typed ('void'/'failed'/'done') — the old
+    boolean-field filter never matched them, so voided sessions stayed
+    tracked forever (the guard re-opened their tabs on every memory trigger
+    — the monotonic tab-accumulation engine behind the probe blindness)."""
     out = {}
     try:
         with open(REG, encoding="utf-8") as f:
@@ -100,9 +104,13 @@ def live_tabs():
     except FileNotFoundError:
         return out
     for row in rows:
+        tid = str(row.get("tab_id") or "")
+        if row.get("action") in ("void", "failed", "done"):
+            if tid:
+                out.pop(tid, None)  # closure rows clear the tracking
+            continue
         if row.get("done") or row.get("void"):
             continue
-        tid = str(row.get("tab_id") or "")
         url = str(row.get("url") or "")
         name = str(row.get("name") or "")
         if tid and url:

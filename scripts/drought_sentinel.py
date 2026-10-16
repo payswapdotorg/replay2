@@ -460,6 +460,26 @@ def main():
                     _cid = st["probes"][pname].get("cid", "")
                     del st["probes"][pname]
                     _close_tabs_for_cid(_cid)
+                    # R40-d: ALSO void the registry row. A retired canary's
+                    # tab is home-rolled (URL carries no cid — _close_tabs_
+                    # for_cid misses it) and its create row stays registry-
+                    # live forever: renderer_guard kept re-opening fresh
+                    # tabs for RETIRED probes on every memory trigger ->
+                    # monotonic tab accumulation -> DevTools WS overload ->
+                    # probe blindness (observed live: 21-probe ladder = 16
+                    # home tabs, probe_chat timeouts on all chats). dw.void
+                    # closes the CURRENT tab (latest tab-reopen record's
+                    # tab_id) AND writes the closure record the guard now
+                    # honors.
+                    try:
+                        subprocess.run(
+                            [PY, os.path.join(BASE, "dispatch_worker.py"),
+                             "void", pname,
+                             "canary TTL retirement (1800s unadmitted): "
+                             "registry closure + tab close (R40-d)"],
+                            capture_output=True, timeout=60, cwd=BASE)
+                    except Exception as e:
+                        log(f"{pname} registry void failed: {e}")
             # rolling launches
             if (now - st.get("last_launch", 0) >= CANARY_EVERY
                     and len(st.get("probes", {})) < MAX_LIVE_PROBES):
