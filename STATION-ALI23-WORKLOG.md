@@ -1050,3 +1050,22 @@ Work Log:
 
 Stage Summary:
 - Gap ledger rows 1-2 CLOSED (PRs #205/#206). Residue: rows 3-6 (INF live-provider env-gated; production-real harness deploy TL-A-owned; workbench node-lane binding IN FLIGHT; CR integration gaps next). The watch continues.
+
+---
+Task ID: 73-b
+Agent: Z.ai Code (main orchestrator, TL-B — the GAP-5 capacity fight, honestly recorded)
+
+Task: The GAP-5 dispatch hit the sustained capacity-crunch class; the fight per the operator's never-wait doctrine.
+
+Work Log:
+- Dispatch 1 (00:14Z): "prompt sent: VERIFIED" but NO conversation URL formed (the tab sat at the root — the capacity popup killed the task generation server-side; the dispatcher's 'queued server-side' note was optimistic). The staged packet (D-033) was NOT written for this send — written manually from the prompt file.
+- Void + Dispatch 2 (00:55Z): the conversation 81226077 formed + the prompt landed; the generation never started (75 min, no assistant turn, no stop/regen indicators).
+- Nudge 1 (02:0xZ): surfaced the REAL blocker — the 'Limit Sandbox Concurrency' modal (3 holders: the stale GAP-1/GAP-2 sandboxes + a New Chat). The sandboxes command released the idle 'New Chat' (the GAP-1/2 ones kept by the dispatcher's keyword-truth). Under the cap after 1 release.
+- Nudge 2 + the fresh-turn kick: the turns ended EMPTY (the regen button = the assistant turn died empty — the generation capacity crunch, not the sandbox cap).
+- The capacity_recover.dh-gap5-node-lane.json flag armed → the supervisor's poller launched → it saw the live session + cleared the flag (the poller's success condition is session-existence, not generation — the stalled-generation class is the pre-D-033 gap in the machinery, honestly recorded).
+- The sidebar discovery: INF-003/INF-004 work-order chats — a SIBLING STATION is dispatching INF-lane workers on this shared account (the flauz program's INF residue) — the capacity crunch is fleet-wide contention, not a local fault.
+- Void + Dispatch 3 (01:48Z): the conversation bb52bdca formed + the prompt landed; the generation sits queued (the sustained-crunch signature; the quota reset window is 05:38Z-09:36Z).
+- THE PLAY (the quota-drain doctrine): the gentle cadence (no 30-60s probe flooding) + the TL continues the other watch work (the GAP-6 WO preparation) while probing GAP-5 every ~10 min.
+
+Stage Summary:
+- GAP-5 is dispatched + queued; the generation will fire when the fleet's capacity frees (the sibling's INF workers completing). The watch loop continues — the records + the GAP-6 preparation proceed in parallel. No early returns.
