@@ -65,7 +65,7 @@ WANT_SKILL = "Full-Stack"
 # concurrency modal and the automatic release refuses to free ANY stale
 # holder). Seeded with the platform default; add a deployment's brand tokens
 # via REPLAY_GENERIC_TOKENS (comma-separated).
-GENERIC_NAME_TOKENS = {"worker"} | {
+GENERIC_NAME_TOKENS = {"worker", "work order", "dispatch", "session"} | {
     t.strip().lower()
     for t in os.environ.get("REPLAY_GENERIC_TOKENS", "").split(",")
     if t.strip()

@@ -1069,3 +1069,19 @@ Work Log:
 
 Stage Summary:
 - GAP-5 is dispatched + queued; the generation will fire when the fleet's capacity frees (the sibling's INF workers completing). The watch loop continues — the records + the GAP-6 preparation proceed in parallel. No early returns.
+
+---
+Task ID: 73-d
+Agent: Z.ai Code (main orchestrator, TL-B — the GAP-5 sustained-contention record + the generic-token fix)
+
+Task: The GAP-5 generation fight through the quota window; the dispatcher bug found + fixed.
+
+Work Log:
+- THE GENERIC-TOKEN BUG (the W4-class recurrence, root-caused): the dispatcher's prompt-prefix keyword derivation yields "WORK ORDER" (every WO's first line) as a keep-keyword — it matches ALL WO-titled sandbox rows in the concurrency modal, so the automatic release KEPT the stale GAP-1/GAP-2 sandboxes and the modal never fully cleared (two of three slots held by done sessions' sandboxes). FIXED: GENERIC_NAME_TOKENS += {"work order", "dispatch", "session"} (the established W4-fix pattern; ast-clean; the release now frees the stale rows).
+- The window-edge plays (05:42Z create fa7293c0 → the in-window kick → the modal release → the regenerate click): every turn died EMPTY (the regenerate button = the dead-turn signature) and the site bounced the session tab to the root after each hard capacity refusal (the tab-churn root cause).
+- The autonomous poller armed (the capacity flag + the supervisor's relauncher): the poller's create SUCCEEDED (rc=0, the conversation be018f47, prompt VERIFIED) — but its success condition is registry-based (session + prompt landed), not generation-based — the generation-stall class is the machinery's pre-D-033 design gap, honestly recorded (twice now).
+- The account state: sustained contention (the fleet's stations + the account's quota rhythm); the reset window (05:38Z-09:36Z per the doctrine) is 40+ minutes in with the generation still unserved.
+- THE PLAY: the patient loop — the prober re-aimed at the live conversation (be018f47, DOM-only 600s), the TL's periodic checks, the records current. No probe flooding; no more manual churn (the §8 doctrine).
+
+Stage Summary:
+- GAP-5 dispatched + queued (conversation be018f47 holds the WO); the generation waits on the account's capacity. The dispatcher's generic-token fix is a durable fleet improvement (committed next). The watch continues — the patient loop, no early returns.

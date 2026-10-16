@@ -12,7 +12,7 @@ import channel
 
 LOG = '/home/z/replay2/scripts/logs/gap5_queue_probe.log'
 MARKER = '/home/z/replay2/scripts/flags/gap5_generation_started'
-URL_PAT = 'chat.z.ai/c/edb5160e'
+URL_PAT = 'chat.z.ai/c/be018f47'
 ECHO = 7591
 PROBE_S = 600
 
