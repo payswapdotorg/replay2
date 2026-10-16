@@ -111,6 +111,62 @@ PYEOF
   log "registry seeds merged (idempotent)"
 fi
 
+# 4a-2. UNICOM WATCH-MACHINE STATE RESTORE (recycles #24/#25 lesson,
+#     2026-10-16: the runtime-only artifacts — lane_list, the rebuilt
+#     watcher scripts, the operator thread — were wipe-vulnerable and the
+#     sentinel's auto-recovery went BLIND to w3-024 again; this section
+#     restores all of them from the durable kit on EVERY recycle.)
+# (a) lane_list — the sentinel's lane visibility (the 00:08Z root cause:
+#     lane_names() fell back to legacy lanes and the recover would have
+#     re-dispatched NOTHING on the next admission window)
+if [[ -s "$DURABLE_DIR/lane_list.txt" ]]; then
+  cp "$DURABLE_DIR/lane_list.txt" "$REPLAY2/scripts/flags/lane_list.txt"
+  log "lane_list restored ($(tr '\n' ' ' < "$DURABLE_DIR/lane_list.txt"))"
+else
+  log "lane_list MISSING in durable kit — LOUD DEFAULT: writing w3-024"
+  printf 'w3-024\n' > "$REPLAY2/scripts/flags/lane_list.txt"
+fi
+# (b) the rebuilt watcher scripts (vpn_heal.py + window_catcher.py were
+#     runtime-only creations wiped by the re-clone; durable copies live in
+#     download/recovery/scripts/)
+if [[ -d "$DURABLE_DIR/scripts" ]]; then
+  n_scripts=0
+  for f in "$DURABLE_DIR"/scripts/*.py; do
+    [[ -f "$f" ]] || continue
+    cp "$f" "$REPLAY2/scripts/$(basename "$f")"
+    chmod +x "$REPLAY2/scripts/$(basename "$f")"
+    n_scripts=$((n_scripts+1))
+  done
+  [[ $n_scripts -gt 0 ]] && log "watcher scripts restored ($n_scripts)"
+fi
+# (c) the operator thread (agent_outbox) — IDEMPOTENT seed merge (never
+#     overwrite: the runtime outbox may carry messages newer than the seed)
+if [[ -f "$DURABLE_DIR/agent_outbox.seed.jsonl" ]]; then
+  python3 - "$DURABLE_DIR/agent_outbox.seed.jsonl" "$REPLAY2/scripts/flags/agent_outbox.jsonl" << 'OUTBOXEOF'
+import json, os, sys
+seed_path, out_path = sys.argv[1], sys.argv[2]
+have = set()
+if os.path.exists(out_path):
+    for l in open(out_path):
+        try:
+            have.add((json.loads(l).get("ts"), json.loads(l).get("text", "")[:80]))
+        except Exception:
+            pass
+added = 0
+with open(out_path, "a") as f:
+    for l in open(seed_path):
+        try:
+            d = json.loads(l)
+        except Exception:
+            continue
+        if (d.get("ts"), d.get("text", "")[:80]) not in have:
+            f.write(l if l.endswith("\n") else l + "\n")
+            added += 1
+print(f"outbox seed: {added} messages appended")
+OUTBOXEOF
+  log "operator thread restored (idempotent)"
+fi
+
 # 4b. lane-history materialization (recovery #10 lesson, 2026-10-12 ~22:4xZ
 #     recycle: the registry/seed + prompt + marker trio was WIPE-VULNERABLE —
 #     only the script itself survives every recycle via git clone, so the
