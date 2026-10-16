@@ -2093,3 +2093,17 @@ Work Log:
 Stage Summary:
 - Station fully recovered; the MOS Desktop release + its console download surface survived the recycle end-to-end (GitHub-hosted artifacts are recycle-proof by design).
 - The loop resumes immediately — no early returns.
+
+---
+Task ID: R101
+Agent: Z.ai Code (main session)
+Task: THE MOS-2.0 LOOP — cycles 78-1..78-6 (14:20→15:06 UTC): the post-recycle watch batch; every cycle green; 6 sibling movements harvested (the 2026-10-16 site-UI change wave)
+
+Work Log:
+- LOOP CYCLES 78-1..78-6 (9 min cadence, dual-probe): every cycle green — gw=200, core, CDP, frame 200/79KB, ring 2, hb 7/5, login=logged-in(ali4), gc=2, inbox 0, watcher_alive, err=2 (the early-window dev-console 500s from the recovery, stale count — zero new); watch_probe steady all batch: MOS-2.0 main=7039c4f local=7039c4f behind=0 open-issues=0 open-prs=0. heal silent (fires=0); same boot throughout (54 min at cycle 78-5).
+- MOVEMENTS HARVESTED (replay2 01e28d3→5c4a2ce, 6 commits — ALL sibling-station intelligence, zero roadmap scope here): (1) caf2650 — tl_recover_unicom 4a-2(d): staged-packet restore from recovery/packets/ (their recycle #26 at 14:11Z — ~9 min after MY #16 at 14:02Z; the cross-station recycle wave pattern again, both hit in the same window). (2) 0563dc4 + (3) af74127 — the 2026-10-16 SITE-UI change wave: the target site's sidebar 'Agent' nav is GONE (now 'Meet Your AI Agents' header) + stacked promo dialogs (GLM-5.1 bits portal with no close button; 'Save task results' overlay) — their dispatch shell gates and dismiss loops fixed live-proven. RELEVANCE TO THIS STATION: noted — if this station ever dispatches worker lanes through the same site UI, the same marker/dismiss classes apply; watch_loop only reads repos (no composer path), so no action now. (4) 38072da — vault_guard per-station outbox mirror key (a station's thread is never another station's content; the same class as the mission-state clobber). (5) 95a9bf6 + (6) a96f370 + 5c4a2ce — the sister stations' Task 74-a wave (W038 round-2, arm64 CI leg, rebase resolution corrected: dispatch_worker = af74127 wholesale).
+- Station cumulative green since recycle-#16 boot (14:02Z): ~1h04m; every durability layer live (heal 300s-poll silent, mirror @ R100 pushed, prod console with the MOS Desktop download chips, GC ×2, login_keeper).
+
+Stage Summary:
+- The loop holds; the source of truth rests at the release merge with zero open scope; pipeline armed.
+- THE LOOP RUNS — no early returns.
