@@ -2360,3 +2360,17 @@ Work Log:
 Stage Summary:
 - The loop holds; fourteen green batches; the keeper class cross-checked and clean.
 - THE LOOP RUNS — no early returns.
+
+---
+Task ID: R120
+Agent: Z.ai Code (main session)
+Task: THE MOS-2.0 LOOP — cycles 95-1..95-6 (20:59→21:45 UTC): fifteenth consecutive green batch; 1 worklog-doc movement; uptime ~12h58m
+
+Work Log:
+- LOOP CYCLES 95-1..95-6 (9 min cadence, dual-probe): every cycle green — gw=200, core, CDP, frame 200/~66.6KB, ring 2, hb 7/5, login=logged-in(ali4), gc=2, inbox 0, watcher_alive, err=0; watch_probe steady all batch: MOS-2.0 main=1d744a5 local=1d744a5 behind=0 open-issues=0 open-prs=0. heal silent; same boot throughout (uptime ~12h58m at 95-6 — the #18 boot approaches 13 hours).
+- MOVEMENTS HARVESTED (replay2 9c99691→9e3a2b6, 1 commit — sibling worklog doc, zero scope): 9e3a2b6 — their Task 80: the R47 window, the row-4 LIVE redeploy discovered + byte-verified station-side. Intelligence banked.
+- MOS-2.0 rests at its own installer merge with zero open scope; pipeline armed; every durability layer green through the whole evening window.
+
+Stage Summary:
+- The loop holds; fifteen green batches.
+- THE LOOP RUNS — no early returns.
