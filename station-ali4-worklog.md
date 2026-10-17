@@ -2387,3 +2387,17 @@ Work Log:
 Stage Summary:
 - The loop holds; sixteen green batches.
 - THE LOOP RUNS — no early returns.
+
+---
+Task ID: R122
+Agent: Z.ai Code (main session)
+Task: THE MOS-2.0 LOOP — cycles 97-1..97-6 (22:31→23:17 UTC): seventeenth consecutive green batch; 1 sibling movement (openspace reverse-engineering); uptime ~14h29m
+
+Work Log:
+- LOOP CYCLES 97-1..97-6 (9 min cadence, dual-probe): every cycle green — gw=200, core, CDP, frame 200/~66.6KB, ring 2, hb 7/5, login=logged-in(ali4), gc=2, inbox 0, watcher_alive, err=0; watch_probe steady all batch: MOS-2.0 main=1d744a5 local=1d744a5 behind=0 open-issues=0 open-prs=0. heal silent; same boot throughout (uptime ~14h29m at 97-6).
+- MOVEMENTS HARVESTED (replay2 9e3a2b6→5917a6c, 1 commit — sibling-lane, zero scope): 5917a6c — openspace reverse-engineering: their login watcher v3 + 5c login-stage self-heal wired into their recovery script. Intelligence banked (their lane's login-stage resilience work continues).
+- MOS-2.0 rests at its own installer merge with zero open scope; pipeline armed; every layer green through the night window.
+
+Stage Summary:
+- The loop holds; seventeen green batches.
+- THE LOOP RUNS — no early returns.
