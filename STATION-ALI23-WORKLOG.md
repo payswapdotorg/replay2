@@ -1186,3 +1186,20 @@ Work Log:
 Stage Summary:
 - W038 round 2 delivered as the disclosed TL-authored fallback (the lane's third day of outage made it the only progress path); every fix is the work order's own spec + CI-proven values; the real-artifact validator proof anchors RC-4 before CI even runs
 - The candidates on 8a9a1e8 are the merge gate: both green -> merge -> 3.14.5 bump -> tag -> publish -> verify -> state docs. Watch continues.
+
+---
+Task ID: 75-b
+Agent: Z.ai Code (main orchestrator, TL — the W038 merge + the epoch-v3.14.5 two-arch release)
+
+Task: The merge gate + the release sequence (the CI candidates on the fixed tip green -> merge -> battery -> bump -> tag -> publish).
+
+Work Log:
+- CI 39009918131 @ 1582982: FIRST fully green run — one live-caught fix in between (the manifest arg destructure: the arch argument reached the ...artifactNames rest param and was stat'd as a file — 'stat dist/x64'; the destructure now binds arch; proven locally in the production shape (node - stdin) for BOTH arches before re-dispatch). The run: BOTH candidates green — arm64 build + non-root install/launch drill + brand audit + the real 10-step Electron window journey on the REAL arm64 artifacts (the hosted ubuntu-24.04-arm runner, evidence under evidence/arm64/); x64 the same full gate with byte-identical names (the freeze law; gate 4 of the acceptance spec).
+- MERGE 27e863f (main): the full W038 record in the merge message (worker round 1 credited + the TL round 2 disclosure + all evidence).
+- BATTERY at the merge commit (acceptance gate 5): frozen install green 49.9s; root typecheck 0 errors; lint 0 errors / 101 advisories — VERIFIED IDENTICAL pre/post merge (101 at ef7fe58 too: the 99->101 drift came from the W037-era commits, ZERO new from W038); architecture 0 violations.
+- VERSION BUMP 99754bf: 3.14.4 -> 3.14.5 (the two-arch release; root + desktop package.json per the 3.14.4 precedent).
+- TAG epoch-v3.14.5 pushed -> the publish pipeline fired (run 39011626978): both candidates rebuild on the tag commit, then the two-arch publish (per-arch sums verified then merged, per-arch manifests under -arm64 names, the two-arch merged update feed with x64 entries first, the >=11-asset post-publication verification).
+
+Stage Summary:
+- W038 acceptance 6/6 gates on the path to closure: mechanical (validator live-proven), real arm64 journey (CI green), x86_64 non-regression (CI green, frozen names), battery (green at the merge), release (publishing now), post-publication verification next
+- Watch continues through the publish + the anonymous verification
