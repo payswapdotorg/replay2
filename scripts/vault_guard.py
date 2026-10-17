@@ -67,6 +67,7 @@ MIRROR_ENTRIES = [  # (mirror key suffix, local file) — restored only when abs
     ("watch-repo", os.path.join(DURABLE, "watch_repo.txt")),
     ("mission-state", os.path.join(DURABLE, "mission-state.json")),
     ("outbox", os.path.join(DURABLE, "agent_outbox.seed.jsonl")),
+    ("desktop-release", os.path.join(DURABLE, "desktop-release.env")),
 ]
 
 
@@ -325,6 +326,17 @@ def heal(env):
             v = (redis_get(url, token, f"payswap:recovery:outbox:{slug}")
                  if slug else None)
             restored.append(f"outbox:{slug}" if slug else "outbox:noslug")
+        elif suffix == "desktop-release":
+            # per-station key ONLY (outbox doctrine): a station's desktop-
+            # release spec is never another station's content — no shared
+            # fallback. The spec drives the generic §4b mirror in
+            # tl_recover.sh + ensure_desktop_mirror() below (2026-10-17
+            # recycle lesson: the spec file lived only in the kit, a
+            # rollback reverted it, and the console mirror 404'd).
+            slug = station_slug()
+            v = (redis_get(url, token, f"payswap:recovery:desktop-release:{slug}")
+                 if slug else None)
+            restored.append(f"desktop-release:{slug}" if slug else "desktop-release:noslug")
         else:
             v = redis_get(url, token, f"payswap:recovery:{suffix}")
             restored.append(suffix)
@@ -357,6 +369,97 @@ def heal(env):
     return True
 
 
+def ensure_desktop_mirror(url, token):
+    """Desktop-release console-mirror self-heal (2026-10-17 recycle lesson:
+    §4b in tl_recover.sh only runs at recover time and only when the kit
+    spec survives the rollback; a reverted desktop-release.env skipped the
+    mirror entirely and /desktop/* 404'd until manually fixed). Generic and
+    spec-driven (governance §0): no artifact names are hardcoded — everything
+    comes from desktop-release.env (kit first, then the per-station mirror
+    key). Re-materializes missing/mismatched artifacts into
+    replay2/public/desktop/ with sha256 verification when a checksum is
+    given; every failure is a WARN-logged skip, NEVER fatal (the canonical
+    release URLs in the board's downloads[] keep working regardless).
+    Returns True when the mirror is complete after the call."""
+    env_path = os.path.join(DURABLE, "desktop-release.env")
+    spec = ""
+    try:
+        with open(env_path, encoding="utf-8", errors="replace") as f:
+            spec = f.read()
+    except Exception:
+        pass
+    if not spec.strip():
+        slug = station_slug()
+        if not slug:
+            return False
+        spec = redis_get(url, token, f"payswap:recovery:desktop-release:{slug}")
+        if spec.strip():
+            try:
+                os.makedirs(DURABLE, exist_ok=True)
+                with open(env_path, "w") as f:
+                    f.write(spec)
+                os.chmod(env_path, 0o600)
+                log("desktop-release.env restored from per-station mirror key")
+            except Exception:
+                pass
+    if not spec.strip():
+        return False
+    fields = {}
+    for line in spec.splitlines():
+        line = line.strip()
+        if line and not line.startswith("#") and "=" in line:
+            k, v = line.split("=", 1)
+            fields[k.strip()] = v.strip()
+    sha = fields.get("DESKTOP_RELEASE_SHA256", "")
+    pairs = [("DESKTOP_RELEASE_DEB_URL", "DESKTOP_RELEASE_DEB_NAME"),
+             ("DESKTOP_RELEASE_SCRIPT_URL", "DESKTOP_RELEASE_SCRIPT_NAME")]
+    dest_dir = os.path.abspath(os.path.join(BASE, "..", "public", "desktop"))
+    complete = True
+    for u, n in pairs:
+        artifact_url, name = fields.get(u, ""), fields.get(n, "")
+        if not (artifact_url and name):
+            continue  # spec entries are optional
+        dest = os.path.join(dest_dir, name)
+        need = True
+        if os.path.isfile(dest) and os.path.getsize(dest) > 0:
+            if sha and name.endswith(".deb"):
+                import hashlib
+                h = hashlib.sha256()
+                with open(dest, "rb") as f:
+                    for chunk in iter(lambda: f.read(131072), b""):
+                        h.update(chunk)
+                need = h.hexdigest() != sha
+            else:
+                need = False
+        if need:
+            try:
+                os.makedirs(dest_dir, exist_ok=True)
+                req = urllib.request.Request(
+                    artifact_url, headers={"User-Agent": "vault-guard-mirror"})
+                with urllib.request.urlopen(req, timeout=120) as r, \
+                        open(dest, "wb") as f:
+                    f.write(r.read())
+                if sha and name.endswith(".deb"):
+                    import hashlib
+                    h = hashlib.sha256()
+                    with open(dest, "rb") as f:
+                        for chunk in iter(lambda: f.read(131072), b""):
+                            h.update(chunk)
+                    if h.hexdigest() != sha:
+                        os.remove(dest)
+                        log(f"desktop mirror: sha256 MISMATCH on {name} — "
+                            "dropped (canonical release URLs unaffected)")
+                        complete = False
+                        continue
+                log(f"desktop mirror: re-materialized {name} "
+                    f"({os.path.getsize(dest)} bytes)")
+            except Exception as exc:
+                log(f"desktop mirror: download FAILED for {name} ({exc!r}) — "
+                    "canonical release URLs unaffected")
+                complete = False
+    return complete
+
+
 def main():
     os.makedirs(FLAGS, exist_ok=True)
     lock_fh = open(LOCK, "w")
@@ -377,6 +480,9 @@ def main():
                 # steady-state: the board can still be rollback-stale even
                 # with a healthy endpoint (recycle #21 live-observed)
                 ensure_board_fresh(url, token)
+                # steady-state mirror self-heal: public/desktop/ artifacts
+                # do not survive a fresh clone (gitignored) — re-materialize
+                ensure_desktop_mirror(url, token)
             elif time.time() - last_heal >= HEAL_BACKOFF_S:
                 log("kit endpoint DEAD — healing from private ops-vault repo")
                 last_heal = time.time()

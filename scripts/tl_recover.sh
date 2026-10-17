@@ -61,6 +61,10 @@ _kit_gaps() {
   [[ ! -s "$DURABLE_DIR/repos.txt" ]] && return 0
   [[ ! -s "$DURABLE_DIR/watch_repo.txt" ]] && return 0
   [[ ! -s "$DURABLE_DIR/mission-state.json" ]] && return 0
+  # 2026-10-17 recycle lesson: the desktop-release spec is a kit entry too —
+  # a rollback that reverts it must trigger the mirror path so §4b can
+  # restore the console /desktop/ artifacts at recover time.
+  [[ ! -s "$DURABLE_DIR/desktop-release.env" ]] && return 0
   return 1
 }
 # 2026-10-14 recycles #18-#20 lesson: the snapshot-pinned kit carries a
@@ -171,6 +175,20 @@ except Exception:
       # it after the clone refresh (seed wins only when the live outbox is
       # absent/empty — never clobbers a fresher local thread).
       [[ -n "$_v" ]] && printf '%s\n' "$_v" > "$DURABLE_DIR/agent_outbox.seed.jsonl"
+    fi
+    if [[ ! -s "$DURABLE_DIR/desktop-release.env" ]]; then
+      # Per-station key ONLY (outbox doctrine): a station's desktop-release
+      # spec is never another station's content — no shared fallback. The
+      # spec feeds the generic §4b console mirror; restored here so the
+      # mirror materializes at RECOVER time (vault_guard's cycle covers
+      # steady-state self-heal) — 2026-10-17 recycle lesson: without this,
+      # a reverted spec 404'd /desktop/* until manually fixed.
+      _slug="$(tr 'A-Z' 'a-z' < "$DURABLE_DIR/watch_repo.txt" 2>/dev/null | sed 's/[^a-z0-9]\+/-/g; s/^-*//; s/-*$//')"
+      if [[ -n "$_slug" ]]; then
+        _v="$(_redis_get desktop-release:$_slug)"
+        [[ -n "$_v" ]] && printf '%s\n' "$_v" > "$DURABLE_DIR/desktop-release.env" && chmod 600 "$DURABLE_DIR/desktop-release.env" && log "desktop-release.env restored from PER-STATION mirror key (desktop-release:$_slug)"
+      fi
+      unset _slug
     fi
     log "Redis per-entry restore done ($(ls -A "$DURABLE_DIR" | wc -l) kit entries on disk)"
   else
