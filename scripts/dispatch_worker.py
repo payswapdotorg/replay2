@@ -56,7 +56,13 @@ BASE = os.path.dirname(os.path.abspath(__file__))
 REG = os.path.join(BASE, "flags/session_registry.jsonl")
 
 CHAT_URL = "https://chat.z.ai/"
-WANT_MODEL = "GLM-5.3"
+# Model override (2026-10-17 station lesson, peak-hours class): during site
+# peak windows GLM-5.3 vanishes from the model menu entirely ("intensifying
+# the coordination of resources") and every dispatch hard-fails at step 4.
+# The capacity protocol (never wait) allows a Flash downgrade dispatch:
+#   DISPATCH_MODEL='GLM-5.3-Flash' python3 dispatch_worker.py create ...
+# Default stays GLM-5.3 (the operator's doctrine preference).
+WANT_MODEL = os.environ.get("DISPATCH_MODEL", "GLM-5.3")
 WANT_SKILL = "Full-Stack"
 
 # Generic shared name tokens are never lane discriminators (the 2026-09-26
@@ -311,6 +317,15 @@ JS_CLICK_MODEL = r"""(() => {
   row.click();
   return 'ok';
 })()"""
+
+# 2026-10-17 (peak-hours lesson): parameterize the exact-name model-row
+# matchers with WANT_MODEL. The replace targets only the QUOTED comparison
+# literals ('GLM-5.3' including its closing quote) — the 'GLM-5.3-Flash'
+# mentions inside comments do not contain that exact substring, so they stay
+# untouched; with the default model this is a no-op.
+_model_js = json.dumps(WANT_MODEL)  # e.g. "'GLM-5.3-Flash'" (JS literal)
+JS_MODEL_OPTION_POS = JS_MODEL_OPTION_POS.replace("'GLM-5.3'", _model_js)
+JS_CLICK_MODEL = JS_CLICK_MODEL.replace("'GLM-5.3'", _model_js)
 
 JS_SKILL_STATE = r"""(() => {
   // returns {introChips: [...], composerChip: bool}
