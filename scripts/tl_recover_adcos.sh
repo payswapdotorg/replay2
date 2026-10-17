@@ -220,9 +220,17 @@ else
 fi
 
 # 6. login keeper (auto-restores the session from the durable token)
+# Task 22 fix: login_keeper MUST run under the venv python (system python
+# lacks the websocket module — the 2026-10-17T13:09Z recovery launched it
+# with bare python3 and it crashed at import, leaving the session unkept).
+# Same law for the drought sentinels and any channel.py-based watcher.
+PYBIN="/home/z/.venv/bin/python3"
+[[ -x "$PYBIN" ]] || PYBIN="$(command -v python3)"
 pgrep -f login_keeper.py >/dev/null \
   && log "login_keeper already live" \
-  || { (cd "$REPLAY2/scripts" && python3 dfork_launch.py logs/login_keeper.log python3 login_keeper.py); log "login_keeper launched"; }
+  || { (cd "$REPLAY2/scripts" && "$PYBIN" dfork_launch.py logs/login_keeper.log "$PYBIN" login_keeper.py); log "login_keeper launched (venv python)"; }
+pgrep -f drought_watch_p5w1.py >/dev/null \
+  || { (cd "$REPLAY2/scripts" && "$PYBIN" dfork_launch.py logs/drought_watch_p5w1.log "$PYBIN" /home/z/my-project/download/recovery/drought_watch_p5w1.py) 2>/dev/null; log "p5w1 drought sentinel re-armed"; }
 
 # 7. adcos-2.0 clone + PAT remote + install + desktop toolchain (the integration station)
 if [[ ! -d "$SPORTA/.git" ]]; then
@@ -248,8 +256,11 @@ if [[ -d "$SPORTA/.git" ]] && [[ ! -d "$SPORTA/node_modules" ]]; then
   log "adcos install + desktop toolchain provisioning started (background)"
 elif [[ -d "$SPORTA/.git" ]] && [[ ! -d "$SPORTA/node_modules/electron/dist" || ! -f "$SPORTA/apps/desktop-adcos/out/main/index.js" ]]; then
   # Partial states (deps survived but electron binary or desktop build did not):
-  # same idempotent chain re-runs only what is missing.
-  PROVISION_CHAIN='ELECTRON_MIRROR=https://npmmirror.com/mirrors/electron/ node node_modules/electron/install.js \
+  # same idempotent chain re-runs only what is missing. Edge case (Task 22):
+  # node_modules present but the electron PACKAGE missing (torn install) —
+  # re-run the dep install first or node electron/install.js would fail.
+  PROVISION_CHAIN='if [[ ! -d node_modules/electron ]]; then pnpm install --ignore-scripts; fi \
+    && ELECTRON_MIRROR=https://npmmirror.com/mirrors/electron/ node node_modules/electron/install.js \
     && (cd packages/desktop && node scripts/node-pty-rebuild.mjs || true) \
     && pnpm --filter @adcos/desktop-app build \
     && echo "STATION-REPROVISION DONE (electron+pty+desktop)"'
