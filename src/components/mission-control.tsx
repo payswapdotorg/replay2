@@ -4,8 +4,10 @@ import { useCallback, useEffect, useState } from "react";
 import { motion } from "framer-motion";
 import {
   Activity,
+  Check,
   CircleDot,
   Clock,
+  Copy,
   Database,
   Download,
   GitBranch,
@@ -91,12 +93,45 @@ const TIMELINE_KIND: Record<string, string> = {
 
 function timeAgo(iso: string): string {
   const diff = Date.now() - new Date(iso).getTime();
+  if (diff < 0) return "just now";
   const mins = Math.floor(diff / 60000);
   if (mins < 1) return "just now";
   if (mins < 60) return `${mins}m ago`;
   const hours = Math.floor(mins / 60);
   if (hours < 24) return `${hours}h ago`;
   return `${Math.floor(hours / 24)}d ago`;
+}
+
+// Copy-to-clipboard affordance for install commands / checksums.
+// Degrades silently when the clipboard API is unavailable (insecure
+// context, permission denied) — the text stays selectable either way.
+function CopyButton({ text, label }: { text: string; label: string }) {
+  const [copied, setCopied] = useState(false);
+  const onCopy = useCallback(async () => {
+    try {
+      await navigator.clipboard.writeText(text);
+      setCopied(true);
+      setTimeout(() => setCopied(false), 1600);
+    } catch {
+      /* clipboard unavailable — selectable text remains */
+    }
+  }, [text]);
+  return (
+    <button
+      type="button"
+      onClick={onCopy}
+      aria-label={label}
+      title={label}
+      className="inline-flex shrink-0 items-center gap-1 rounded border border-zinc-700 bg-zinc-900/80 px-2 py-1 text-[10px] font-medium text-zinc-400 transition-colors hover:border-zinc-600 hover:text-zinc-200"
+    >
+      {copied ? (
+        <Check className="h-3 w-3 text-emerald-400" aria-hidden />
+      ) : (
+        <Copy className="h-3 w-3" aria-hidden />
+      )}
+      {copied ? "Copied" : "Copy"}
+    </button>
+  );
 }
 
 export function MissionControl() {
@@ -280,6 +315,72 @@ export function MissionControl() {
             </Card>
           ))}
         </section>
+
+        {/* Downloadable artifacts (e.g. the product's desktop client).
+            Fully data-driven from mission-state `downloads` — the console
+            stays project-agnostic; entries with a `command` get a
+            copyable one-liner, `sha256`/`size` render as install
+            metadata. Absent/empty → nothing renders (legacy tolerance). */}
+        {downloads.length > 0 && (
+          <section aria-label="Downloads">
+            <h2 className="mb-3 flex items-center gap-2 px-1 text-sm font-semibold text-zinc-300">
+              <Download className="h-4 w-4 text-amber-400" aria-hidden />
+              Downloads
+            </h2>
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+              {downloads.map((dl) => (
+                <Card
+                  key={dl.id}
+                  className="border-zinc-800 bg-zinc-900/40 p-4 shadow-none"
+                >
+                  <div className="flex items-start justify-between gap-3">
+                    <div className="min-w-0">
+                      <h3 className="flex flex-wrap items-baseline gap-x-2 text-[13px] font-semibold text-zinc-100">
+                        <span className="truncate">{dl.label}</span>
+                        {dl.size && (
+                          <span className="text-[11px] font-normal text-zinc-500">
+                            {dl.size}
+                          </span>
+                        )}
+                      </h3>
+                      {dl.detail && (
+                        <p className="mt-1 text-xs leading-relaxed text-zinc-400">
+                          {dl.detail}
+                        </p>
+                      )}
+                    </div>
+                    <a
+                      href={dl.url}
+                      download={dl.url.startsWith("/") ? true : undefined}
+                      target={dl.url.startsWith("/") ? undefined : "_blank"}
+                      rel={dl.url.startsWith("/") ? undefined : "noreferrer"}
+                      className="inline-flex shrink-0 items-center gap-1.5 rounded-md border border-amber-700/70 bg-amber-950/60 px-2.5 py-1.5 text-xs font-medium text-amber-300 transition-colors hover:bg-amber-900/60"
+                    >
+                      <Download className="h-3.5 w-3.5" aria-hidden />
+                      Get
+                    </a>
+                  </div>
+                  {dl.command && (
+                    <div className="mt-3 flex items-start justify-between gap-2 rounded-md border border-zinc-800 bg-neutral-950 px-3 py-2">
+                      <code className="min-w-0 break-all font-mono text-[11px] leading-relaxed text-amber-200/90">
+                        {dl.command}
+                      </code>
+                      <CopyButton text={dl.command} label={`Copy command for ${dl.label}`} />
+                    </div>
+                  )}
+                  {dl.sha256 && (
+                    <div className="mt-2 flex items-start justify-between gap-2">
+                      <p className="min-w-0 break-all font-mono text-[10px] leading-relaxed text-zinc-600">
+                        sha256&nbsp;{dl.sha256}
+                      </p>
+                      <CopyButton text={dl.sha256} label={`Copy sha256 for ${dl.label}`} />
+                    </div>
+                  )}
+                </Card>
+              ))}
+            </div>
+          </section>
+        )}
 
         {/* Lane board */}
         <section aria-label="Worker lanes">

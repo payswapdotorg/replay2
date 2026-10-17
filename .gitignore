@@ -79,3 +79,7 @@ src/app/api/harvest/
 # local env (lab db path etc.)
 .env
 .next-prod/
+
+# Desktop-release mirror (deployment-local artifacts seeded by tl_recover.sh §4b
+# from the durable kit desktop-release.env — never commit binaries)
+public/desktop/

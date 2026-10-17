@@ -274,6 +274,56 @@ fi
 if [[ -d "$DURABLE_DIR/worker-prompts" ]] && [[ -n "$(ls -A "$DURABLE_DIR/worker-prompts" 2>/dev/null)" ]]; then
   cp "$DURABLE_DIR"/worker-prompts/*.md "$REPLAY2/scripts/worker-prompts/" 2>/dev/null && log "worker packets restored"
 fi
+# 4b. desktop-release mirror (generic, 2026-10-17): if the durable kit
+#     describes a desktop release (desktop-release.env: artifact URLs +
+#     sha256), mirror the artifacts into replay2/public/desktop/ so the
+#     console serves them at /desktop/<name> (survives recycles). sha256-
+#     verified when a checksum is given; every failure is a WARN-logged
+#     skip, NEVER fatal — the canonical release URLs (mission-state
+#     downloads) keep working regardless. The spec file is deployment-
+#     local (durable kit, gitignored); this script stays project-agnostic
+#     (governance §0).
+if [[ -s "$DURABLE_DIR/desktop-release.env" ]]; then
+  (
+    set -a; . "$DURABLE_DIR/desktop-release.env"; set +a
+    _sha="${DESKTOP_RELEASE_SHA256:-}"
+    _ok=0
+    _mirror_one() { # $1=url $2=name (uses _sha, increments _ok)
+      local url="${1:-}" name="${2:-}" dest need=1
+      [[ -z "$url" || -z "$name" ]] && return 0
+      dest="$REPLAY2/public/desktop/$name"
+      mkdir -p "$REPLAY2/public/desktop"
+      if [[ -s "$dest" ]]; then
+        if [[ "$name" == *.deb && -n "$_sha" ]]; then
+          if echo "$_sha  $dest" | sha256sum -c --status 2>/dev/null; then need=0; fi
+        else
+          need=0
+        fi
+      fi
+      if [[ "$need" -eq 1 ]]; then
+        if curl -fsSL --max-time 120 -o "$dest" "$url"; then
+          if [[ "$name" == *.deb && -n "$_sha" ]] && ! echo "$_sha  $dest" | sha256sum -c --status 2>/dev/null; then
+            rm -f "$dest"
+            echo "[recover] desktop-release mirror: sha256 MISMATCH on $name — dropped (canonical release URLs unaffected)"
+            return 0
+          fi
+          _ok=$((_ok+1))
+        else
+          rm -f "$dest" 2>/dev/null
+          echo "[recover] desktop-release mirror: download FAILED for $name (canonical release URLs unaffected)"
+          return 0
+        fi
+      else
+        _ok=$((_ok+1))
+      fi
+      return 0
+    }
+    _mirror_one "${DESKTOP_RELEASE_DEB_URL:-}" "${DESKTOP_RELEASE_DEB_NAME:-}"
+    _mirror_one "${DESKTOP_RELEASE_SCRIPT_URL:-}" "${DESKTOP_RELEASE_SCRIPT_NAME:-}"
+    [[ "$_ok" -gt 0 ]] && echo "[recover] desktop-release mirror ready ($_ok artifact(s) at public/desktop/)"
+    exit 0
+  ) >> "$LOG" 2>&1
+fi
 # agent outbox seed (from the Redis mirror via step 0b): install only when
 # the live thread is absent/empty — a fresher local outbox always wins.
 if [[ -f "$DURABLE_DIR/agent_outbox.seed.jsonl" ]]; then

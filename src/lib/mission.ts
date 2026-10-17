@@ -47,12 +47,17 @@ export interface TimelineEntry {
 
 // Operator-facing downloadable artifacts (e.g. desktop-client release
 // assets). Optional and field-normalized like everything else: absent in
-// any legacy state → empty list → nothing renders.
+// any legacy state → empty list → nothing renders. `command`/`sha256`/
+// `size` are optional install metadata — rendered by the Downloads card
+// when present, silently omitted otherwise (same legacy tolerance).
 export interface MissionDownload {
   id: string;
   label: string;
   url: string;
   detail?: string | null;
+  command?: string | null;
+  sha256?: string | null;
+  size?: string | null;
 }
 
 export interface MissionState {
@@ -148,6 +153,9 @@ export async function readMissionState(): Promise<MissionState> {
               label: d.label,
               url: d.url,
               detail: typeof d.detail === "string" ? d.detail : null,
+              command: typeof d.command === "string" ? d.command : null,
+              sha256: typeof d.sha256 === "string" ? d.sha256 : null,
+              size: typeof d.size === "string" ? d.size : null,
             }))
         : [],
     };
