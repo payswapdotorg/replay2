@@ -2224,3 +2224,18 @@ Work Log:
 Stage Summary:
 - The loop holds; four green batches deep into the post-#18 era.
 - THE LOOP RUNS — no early returns.
+
+---
+Task ID: R110
+Agent: Z.ai Code (main session)
+Task: THE MOS-2.0 LOOP — cycles 85-1..85-6 (13:18→14:05 UTC): fifth green batch + THE UPSTREAM ADOPTION (replay2 20aad21→584d027 pulled with the vault_guard dance; the upgraded watch_probe live)
+
+Work Log:
+- LOOP CYCLES 85-1..85-6 (9 min cadence, dual-probe): every cycle green — gw=200, core, CDP, frame 200/~66.6KB, ring 2, hb 7/5, login=logged-in(ali4), gc=2, inbox 0, watcher_alive, err=0; watch_probe steady all batch: MOS-2.0 main=1d744a5 local=1d744a5 behind=0 open-issues=0 open-prs=0. heal silent; same boot throughout (uptime ~5h17m at 85-6).
+- THE UPSTREAM ADOPTION (mid-batch, between 85-3 and 85-4): replay2 origin/main advanced 20aad21→584d027 (2 commits: c8f01f0 + 584d027) — 584d027 is SHARED-INFRASTRUCTURE (watch_probe: PAT durable fallback env.sh→operator-secrets.env + list-only counting that kills the phantom-count class; the API-returning-a-dict case now counts ERR instead of a bogus number). ADOPTED deliberately per the established doctrine: pre-flight audit confirmed (a) data/ has ZERO diff in range (the local mission-state.json untouched), (b) tl_recover's +18 lines are Upstash-gated no-ops here (no credentials; per-station-key-only doctrine matches ours) and the §4b file-based desktop mirror path is UNCHANGED, (c) vault_guard.py +106 upstream → handled by the dance: no-skip-worktree → checkout -- → ff-pull → re-stub (6 lines) → re-skip-worktree → stub process relaunched (pid 15691). VERIFIED post-pull: HEAD=584d027; upgraded watch_probe output identical-format all-correct; public/desktop/ artifacts intact (deb 144,353,060B + installer, HTTP 200); the pull also brought the siblings' pcd002 login sentinel (+151, additive) and their station worklogs (docs).
+- The station now runs the shared repo's CURRENT tip for the first time since the #18 recovery's clone point — recoveries, probes, and future dispatches all benefit from the accumulated sibling lessons (DISPATCH_MODEL peak-hours override was already in the 20aad21 base).
+- MOVEMENTS HARVESTED this batch: c8f01f0 (station-resident-TL Tasks 84-85 — hyper3d.ai clone verification + their recycle #23 platform-snapshot layer notes) + 584d027 (the watch_probe upgrade adopted above). Both intel-class, zero MOS-2.0 scope.
+
+Stage Summary:
+- The loop holds; the shared infrastructure rides current; the station's local doctrine (stub + skip-worktree + kit embedding) survives every upstream advance by design.
+- THE LOOP RUNS — no early returns.
