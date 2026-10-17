@@ -39,13 +39,20 @@ TOTAL=0
 for famdir in build/flauz/harness/contract build/flauz/harness/onboarding build/flauz/harness/roles build/flauz/harness/ontology build/flauz/harness/templates build/flauz/harness/bodies build/flauz/harness/packs build/flauz/harness/profiles build/flauz/harness/benchmarks build/flauz/harness/projections build/flauz/harness/activation build/flauz/harness/optimization build/flauz/harness/acceptance build/flauz/lab; do
   files=$(find "$famdir/test" -name "*.test.ts" 2>/dev/null)
   [[ -z "$files" ]] && continue
-  n=$(NODE_OPTIONS="--import tsx" node_modules/.bin/mocha --ui tdd $files 2>&1 | rg -o "([0-9]+) passing" | head -1 | rg -o "[0-9]+" )
-  f=$(NODE_OPTIONS="--import tsx" node_modules/.bin/mocha --ui tdd $files 2>&1 | rg -o "([0-9]+) failing" | head -1 | rg -o "[0-9]+")
+  # 2026-10-17 (Task 75): the CANONICAL family recipe (every family README) is
+  # `bunx --bun mocha --ui tdd '<family>/test/common/*.test.ts'` — bun resolves
+  # the kits' .js specifiers natively with SINGLE module identity. The old
+  # node+tsx invocation double-loads vocabularies on fresh toolchain tsx
+  # versions (reference-equality assertion failures, 4 in profiles — live-
+  # caught at the recycle-#27 re-bootstrap; bun re-run: 156/0). Bun is the law.
+  out=$(timeout 200 bunx --bun mocha --ui tdd "$famdir/test/common/*.test.ts" 2>&1)
+  n=$(echo "$out" | rg -o "([0-9]+) passing" | head -1 | rg -o "[0-9]+" )
+  f=$(echo "$out" | rg -o "([0-9]+) failing" | head -1 | rg -o "[0-9]+")
   echo "  $(basename $famdir): ${n:-0} passing, ${f:-0} failing"
   TOTAL=$((TOTAL + ${n:-0}))
   [[ "${f:-0}" != "0" ]] && FAIL=1
 done
-echo "  SWEEP TOTAL: $TOTAL (registry pin pre-GAP-1: 1868 + 210 lab = 2078)"
+echo "  SWEEP TOTAL: $TOTAL (station-verified 2026-10-17 @ 71e2041: 2,226 = DH families 1,734 + acceptance 161 + lab 331; 0 failing)"
 
 echo "== gate 4: determinism greps (family modules, law-comments excluded is worker's duty; raw grep here) =="
 for pat in "Math\.random" "Date\.now" "new Date\(" "process\.env"; do
