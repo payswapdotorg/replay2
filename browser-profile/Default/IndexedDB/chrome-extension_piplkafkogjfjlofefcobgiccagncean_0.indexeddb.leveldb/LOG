@@ -1,0 +1,6 @@
+2026/10/17-07:18:11.832 693 Creating DB /home/z/my-project/browser-profile/Default/IndexedDB/chrome-extension_piplkafkogjfjlofefcobgiccagncean_0.indexeddb.leveldb since it was missing.
+2026/10/17-07:18:11.832 693 Reusing MANIFEST /home/z/my-project/browser-profile/Default/IndexedDB/chrome-extension_piplkafkogjfjlofefcobgiccagncean_0.indexeddb.leveldb/MANIFEST-000001
+2026/10/17-07:18:11.848 693 Level-0 table #5: started
+2026/10/17-07:18:11.848 693 Level-0 table #5: 1347 bytes OK
+2026/10/17-07:18:11.848 693 Delete type=0 #3
+2026/10/17-07:18:11.849 693 Manual compaction at level-0 from '\x00\x01\x00\x00\x00' @ 72057594037927935 : 1 .. '\x00\x02\x00\x00\x00' @ 0 : 0; will stop at (end)

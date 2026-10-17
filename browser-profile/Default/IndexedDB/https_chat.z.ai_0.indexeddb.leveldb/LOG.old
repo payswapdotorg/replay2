@@ -1,0 +1,14 @@
+2026/10/17-11:53:58.636 693 Reusing MANIFEST /home/z/my-project/browser-profile/Default/IndexedDB/https_chat.z.ai_0.indexeddb.leveldb/MANIFEST-000001
+2026/10/17-11:53:58.636 693 Recovering log #33
+2026/10/17-11:53:58.636 693 Reusing old log /home/z/my-project/browser-profile/Default/IndexedDB/https_chat.z.ai_0.indexeddb.leveldb/000033.log 
+2026/10/17-11:53:58.636 693 Delete type=2 #31
+2026/10/17-11:53:58.638 693 Level-0 table #38: started
+2026/10/17-11:53:58.638 693 Level-0 table #38: 1061 bytes OK
+2026/10/17-11:53:58.639 693 Delete type=0 #33
+2026/10/17-11:53:58.639 693 Manual compaction at level-0 from '\x00\x09\x00\x00\x00' @ 72057594037927935 : 1 .. '\x00\x0a\x00\x00\x00' @ 0 : 0; will stop at '\x00\x09\x00\x00\xc8\x04\x00d\x00a\x00t\x00a' @ 534 : 1
+2026/10/17-11:53:58.639 693 Compacting 1@0 + 1@1 files
+2026/10/17-11:53:58.639 693 Generated table #39@0: 4 keys, 259 bytes
+2026/10/17-11:53:58.639 693 Compacted 1@0 + 1@1 files => 259 bytes
+2026/10/17-11:53:58.639 693 compacted to: files[ 0 1 1 0 0 0 0 ]
+2026/10/17-11:53:58.639 693 Delete type=2 #38
+2026/10/17-11:53:58.639 693 Manual compaction at level-0 from '\x00\x09\x00\x00\xc8\x04\x00d\x00a\x00t\x00a' @ 534 : 1 .. '\x00\x0a\x00\x00\x00' @ 0 : 0; will stop at (end)

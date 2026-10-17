@@ -1,0 +1,8 @@
+2026/10/17-06:34:54.553 6b5 Creating DB /home/z/my-project/browser-profile/Default/Local Storage/leveldb since it was missing.
+2026/10/17-06:34:54.560 6b5 Reusing MANIFEST /home/z/my-project/browser-profile/Default/Local Storage/leveldb/MANIFEST-000001
+2026/10/17-08:50:43.027 6bb Level-0 table #5: started
+2026/10/17-08:50:43.028 6bb Level-0 table #5: 16693 bytes OK
+2026/10/17-08:50:43.029 6bb Delete type=0 #3
+2026/10/17-11:29:55.039 6bb Level-0 table #7: started
+2026/10/17-11:29:55.043 6bb Level-0 table #7: 21907 bytes OK
+2026/10/17-11:29:55.044 6bb Delete type=0 #4
