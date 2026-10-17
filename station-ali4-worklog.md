@@ -2252,3 +2252,17 @@ Work Log:
 Stage Summary:
 - The loop holds; six green batches since #18 — the autonomy era's rhythm.
 - THE LOOP RUNS — no early returns.
+
+---
+Task ID: R112
+Agent: Z.ai Code (main session)
+Task: THE MOS-2.0 LOOP — cycles 87-1..87-6 (14:51→15:37 UTC): seventh consecutive green batch; 2 sibling movements (poison-kill refactor + succession worklog); uptime ~6h49m
+
+Work Log:
+- LOOP CYCLES 87-1..87-6 (9 min cadence, dual-probe): every cycle green — gw=200, core, CDP, frame 200/~66.6KB, ring 2, hb 7/5, login=logged-in(ali4), gc=2, inbox 0, watcher_alive, err=0; watch_probe steady all batch: MOS-2.0 main=1d744a5 local=1d744a5 behind=0 open-issues=0 open-prs=0. heal silent; same boot throughout (uptime ~6h49m at 87-6).
+- MOVEMENTS HARVESTED (replay2 584d027→7450942, 2 commits — sibling-lane, zero MOS-2.0 scope, no pull needed): (1) 8b9b8e7 — poison-kill: their sporta-era recover script replaced by a delegating wrapper, tl_recover_adcos.sh published as their real recovery entry (their lane's refactor; this station's canonical tl_recover.sh untouched). (2) 7450942 — their Task 77 worklog: the R44 succession window, the stale R39 task closed (three-party W8 generation verdict). Intelligence banked.
+- MOS-2.0 rests at its own installer merge with zero open scope; the pipeline stays armed.
+
+Stage Summary:
+- The loop holds; the shared tip (584d027) serves the station cleanly through its first full post-adoption batch.
+- THE LOOP RUNS — no early returns.
