@@ -271,16 +271,25 @@ def main():
             if grew:
                 s["last_growth"] = time.time()
                 s["stall_flagged"] = False
-            # the stuck-start law
+            # the stuck-start law (2026-10-18 19:28 amendment: NEVER click
+            # stop on a home-surface chat — a fresh chat exists only as its
+            # pending first generation; stopping it destroys the chat and
+            # the tab falls back to home. Stop-clicks are for ESTABLISHED
+            # /c/ chats only; fresh chats get nudge-only recovery.)
             frozen = (len(s["lens"]) >= FROZEN_CYCLES
                       and len(set(s["lens"][-FROZEN_CYCLES:])) == 1)
             if st.get("stopBtn") and frozen and s["nudges"] < NUDGE_BUDGET:
                 s["unstick_count"] += 1
-                log(f"{name}: STUCK-START (stopBtn + frozen {FROZEN_CYCLES} "
-                    f"cycles) — force-unstick #{s['unstick_count']}")
-                r = click_stop(tab)
-                log(f"{name}: stop click: {r}")
-                time.sleep(8)
+                if s["chat"]:
+                    log(f"{name}: STUCK-START (stopBtn + frozen {FROZEN_CYCLES} "
+                        f"cycles) — force-unstick #{s['unstick_count']}")
+                    r = click_stop(tab)
+                    log(f"{name}: stop click: {r}")
+                    time.sleep(8)
+                else:
+                    log(f"{name}: STUCK-START on fresh home-surface chat — "
+                        f"nudge-only recovery #{s['unstick_count']} (stop would "
+                        f"destroy the chat)")
                 lines = run([os.path.join(BASE, "dispatch_worker.py"), "send",
                              name, "Begin the work order now (station setup "
                              "first). If already started, continue from "
