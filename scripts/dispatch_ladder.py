@@ -74,10 +74,48 @@ def chat_state(cid_prefix):
         cdp.close()
 
 
+def adopt_live():
+    """Adopt a LIVE r4-w1 session from the registry (a prior ladder run may
+    have created one before dying — spawning a duplicate wastes a slot and
+    creates the duplicate-worker class). Returns (name, chat) or None."""
+    reg = os.path.join(FLAGS, "session_registry.jsonl")
+    try:
+        recs = [json.loads(l) for l in open(reg) if l.strip()]
+    except Exception:
+        return None
+    # latest CREATE per name, invalidated by later void/done on that name
+    latest = {}
+    for r in recs:
+        name = r.get("name") or ""
+        if not name.startswith("payswap3-r4-w1"):
+            continue
+        act = r.get("action")
+        if act in ("void", "done", "failed"):
+            latest[name] = None
+        elif act is None and r.get("sent") and r.get("url") and "/c/" in r["url"]:
+            latest[name] = r
+    for name, r in latest.items():
+        if r is None:
+            continue
+        chat = r["url"].split("/c/")[-1].split()[0]
+        log(f"adopting live session {name} ({chat[:8]})")
+        return name, chat
+    return None
+
+
 def main():
     log(f"dispatch ladder online — {PROMPT}, {MAX_ATTEMPTS} attempts cap")
     outbox("R4-W1 dispatch ladder armed (saturation window; rolled-back "
            "chats respawn with the next suffix until one generates).")
+    adopted = adopt_live()
+    if adopted:
+        name, cur_chat = adopted
+        with open(os.path.join(FLAGS, "r4w1_current.json"), "w") as f:
+            json.dump({"name": name, "chat": cur_chat,
+                       "ts": int(time.time() * 1000)}, f)
+        # monitor the adopted chat first; respawn only if it rolls back
+        if monitor(name, cur_chat):
+            return 0
     for attempt in range(MAX_ATTEMPTS):
         suffix = SUFFIXES[attempt] if attempt < len(SUFFIXES) else "z"
         name = f"payswap3-r4-w1{suffix}"
@@ -106,40 +144,47 @@ def main():
         if not cur_chat:
             time.sleep(CYCLE)
             continue
-        for poll in range(POLLS_PER_ATTEMPT):
-            time.sleep(CYCLE)
-            st = chat_state(cur_chat[:8])
-            if st.get("err"):
-                log(f"  {name}: probe issue {st.get('err')}")
-                continue
-            if not st.get("tab"):
-                log(f"  {name}: tab gone — treat as rollback")
-                break
-            if st.get("streaming") or st.get("stopBtn"):
-                log(f"  {name}: GENERATING — LADDER SUCCESS")
-                outbox(f"R4-W1 LADDER SUCCESS: {name} ({cur_chat}) is "
-                       f"GENERATING. TL: let it run; auto-harvest is armed.")
-                return 0
-            if st.get("landing"):
-                log(f"  {name}: ROLLED BACK — void + respawn")
-                try:
-                    run([os.path.join(BASE, "dispatch_worker.py"), "void",
-                         name, "saturation rollback (ladder respawn)"])
-                except subprocess.TimeoutExpired:
-                    pass
-                break
-            if st.get("noresp"):
-                log(f"  {name}: queued — light nudge")
-                try:
-                    run([os.path.join(BASE, "dispatch_worker.py"), "send",
-                         name, "Begin the R4-W1 work order now (station "
-                               "setup first). If already started, continue."])
-                except subprocess.TimeoutExpired:
-                    pass
+        if monitor(name, cur_chat):
+            return 0
     log("attempt cap reached — standing down")
     outbox("R4-W1 LADDER EXHAUSTED: saturation window destroyed every fresh "
            "chat. TL: re-arm when the window clears.")
     return 1
+
+
+def monitor(name, cur_chat):
+    """Poll one session up to POLLS_PER_ATTEMPT cycles. True = GENERATING."""
+    for poll in range(POLLS_PER_ATTEMPT):
+        time.sleep(CYCLE)
+        st = chat_state(cur_chat[:8])
+        if st.get("err"):
+            log(f"  {name}: probe issue {st.get('err')}")
+            continue
+        if not st.get("tab"):
+            log(f"  {name}: tab gone — treat as rollback")
+            return False
+        if st.get("streaming") or st.get("stopBtn"):
+            log(f"  {name}: GENERATING — LADDER SUCCESS")
+            outbox(f"R4-W1 LADDER SUCCESS: {name} ({cur_chat}) is "
+                   f"GENERATING. TL: let it run; auto-harvest is armed.")
+            return True
+        if st.get("landing"):
+            log(f"  {name}: ROLLED BACK — void + respawn")
+            try:
+                run([os.path.join(BASE, "dispatch_worker.py"), "void",
+                     name, "saturation rollback (ladder respawn)"])
+            except subprocess.TimeoutExpired:
+                pass
+            return False
+        if st.get("noresp"):
+            log(f"  {name}: queued — light nudge")
+            try:
+                run([os.path.join(BASE, "dispatch_worker.py"), "send",
+                     name, "Begin the R4-W1 work order now (station "
+                           "setup first). If already started, continue."])
+            except subprocess.TimeoutExpired:
+                pass
+    return False
 
 
 if __name__ == "__main__":
