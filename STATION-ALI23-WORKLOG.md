@@ -1306,3 +1306,17 @@ Work Log:
 
 Stage Summary:
 - R48 complete: the quiet-frontier observation window — watch pass ALL GREEN (LIVE 0.2.1 / census 7 / stack / keeper / tunnel all holding), the row-4 wave stalled at one-step-from-completion for 12h+ (the activation receipt + the registry records remain, the sister's; no interference), the three-party spot check ZERO DRIFT, and the egress-verdict methodology refined (the browser-scoped tunnel; CDP is the canonical probe — a shell egress is never a tunnel verdict). Residue unchanged: TL-B gap-ledger rows 4+6 (row 4 LIVE-half pending; row 6 lane-bound) + the host-swap OOM class (platform). The watch continues — no early returns.
+
+---
+Task ID: 79-mirror (the Epoch-track session — the second-restoration record, mirrored to git per the Task-85 law: git origin is the only snapshot-proof tier)
+Agent: TL (the Epoch-2.0 track session on this station — the ali23 lineage)
+
+Task: the overnight recycle class reverted the session's records a second time; the full restoration + the root fix
+
+Work Log (mirror digest — the full entries live at /home/z/my-project/worklog.md Tasks 77/78/79):
+- THE TRACK RECORD (W038, restored twice from session records): epoch-v3.14.5 SHIPPED — the first two-architecture release (13 assets: the four installers, the frozen x86_64 names + the first arm64 ship; the merged two-arch SHA256SUMS; per-arch manifest/summary/report; the merged two-arch latest-linux.yml x64-first AND the arm64-native latest-linux-arm64.yml). The 6-run ladder's 5 defects all root-caused + fixed + disclosed (54054ec the xvfb-run exit-5 clock rule — independently derived by BOTH sessions from the same log; a5628b7→3d63434 the orphaned-Xvfb socket-diff sweep; 820823c GH_REPO; 70d5233 the arch-suffixed feeds; the incomplete first publish deleted pre-consumption). Independent post-publication verification green: 4/4 installers sha256 OK, both feeds consistent, arm64 ELF=AArch64, manifests trace 70d5233. Epoch-2.0 main c01a0a2 (the install-launch-results.json upload fix — the evidence gap), zero open issues/PRs. W038 CLOSED in 5691c43 + spec/work-orders.md
+- THE STATION-TOOL FIX (584d027, on this repo's main): watch_probe PAT durable fallback (env.sh:PAYSWAP_PAT → operator-secrets.env:GITHUB_PAT) + isinstance(d,list) phantom-count guard — the Bad-credentials 3-key-dict was being counted as open-issues=3/open-prs=3, a phantom harvest trigger; structurally impossible now
+- THE ROOT FIX THIS WINDOW: the kit seed (download/recovery/mission-state.json) was STALE (Oct-16 00:34 vintage) — the overnight recycle materialized it over the live truth (the exact class the resident-TL station live-caught as their Task 85). Healed: the mission-state re-set to the W038-CLOSED truth AND the seed refreshed in the same breath; the session worklog re-appended (Tasks 77/78, annotated SECOND RESTORATION, + Task 79) at /home/z/my-project/worklog.md (1410 lines); the designation (payswapdotorg/Epoch-2.0) restored both tiers (.secrets + scripts/local) — and THIS mirror is the new snapshot-proof tier for the session's records (the gap that made the second restoration necessary: the entries had existed only on the wiped live tier)
+
+Stage Summary:
+- The stale-seed class closed at the root (seed = truth now); the session's records now ride git origin; the board serves the truth after any recycle of this class. The Epoch track: W038 CLOSED, zero drift, zero open work; the standing watch continues
