@@ -36,7 +36,7 @@ REGISTRY = os.path.join(FLAGS, "session_registry.jsonl")
 CYCLE = 120
 STALL_AFTER = 1800        # 30 min without tree/worklog/body growth = stall
 FROZEN_CYCLES = 3 # stopBtn + frozen body this many cycles = stuck
-NUDGE_BUDGET = 24
+NUDGE_BUDGET = 96
 WINDOW = 14 * 3600
 MARKERS = ("COMPLETION-REPORT.md", "MANIFEST.sha256", ".bundle", ".bundle.b64")
 TRACK_PREFIXES = ("payswap3-",)   # session names we watch
