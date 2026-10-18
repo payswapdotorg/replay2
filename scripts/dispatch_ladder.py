@@ -95,6 +95,14 @@ def main():
                 cur_chat = ln.split("/c/")[-1].split()[0]
         verdict = lines[-1] if lines else "no output"
         log(f"  chat={cur_chat or '?'} verdict: {verdict[:110]}")
+        if cur_chat:
+            # publish the current chat so auto_harvest can follow the ladder
+            try:
+                with open(os.path.join(FLAGS, "r4w1_current.json"), "w") as f:
+                    json.dump({"name": name, "chat": cur_chat,
+                               "ts": int(time.time() * 1000)}, f)
+            except Exception:
+                pass
         if not cur_chat:
             time.sleep(CYCLE)
             continue

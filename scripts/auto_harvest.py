@@ -32,14 +32,8 @@ LANES = {
         "dest": "/home/z/lanes/r3-w3-harvest",
         "harvested": False,
     },
-    "3c307f43": {
-        "chat": "3c307f43-4db2-43b7-9dec-a50fc7ffacf4",
-        "ws": None,   # discovered dynamically once the sandbox provisions
-        "label": "r4-w1b lab",
-        "dest": "/home/z/lanes/r4-w1-harvest",
-        "harvested": False,
-    },
 }
+R4W1_FLAG = os.path.join(FLAGS, "r4w1_current.json")
 MARKERS = ("COMPLETION-REPORT.md", "MANIFEST.sha256")
 
 
@@ -85,7 +79,8 @@ def tree_paths(chat, ws_id):
 
 
 def discover_ws():
-    """Fill in r4-w1b's workspace id once it provisions (bare-uuid law)."""
+    """Track the ladder's CURRENT r4-w1 chat (flag file) + provision its ws;
+    refresh mer-B's ws if it ever changes."""
     try:
         raw = page_eval(
             "(async () => { const r = await fetch('/api/v1/web-dev/workspaces/"
@@ -95,13 +90,27 @@ def discover_ws():
         items = v if isinstance(v, list) else next(
             (v[k] for k in ("workspaces", "list", "items")
              if isinstance(v.get(k), list)), [])
+        # dynamic r4-w1 lane from the ladder's flag file
+        r4 = None
+        try:
+            r4 = json.load(open(R4W1_FLAG))
+        except Exception:
+            pass
         for it in items:
             cid = str(it.get("chat_id") or it.get("chatId") or "").removeprefix("chat-")
             wid = it.get("function_name") or it.get("workspace_id") or it.get("id")
             for pfx, lane in LANES.items():
-                if cid.startswith(pfx) and not lane["ws"]:
-                    lane["ws"] = wid
-                    log(f"{lane['label']}: workspace provisioned {wid}")
+                if cid.startswith(pfx):
+                    if lane["ws"] != wid:
+                        lane["ws"] = wid
+                    break
+            else:
+                if r4 and cid.startswith(str(r4.get("chat", ""))[:8]):
+                    LANES[cid[:8]] = {
+                        "chat": cid, "ws": wid, "label": f"r4-w1 ladder ({r4.get('name', '?')})",
+                        "dest": "/home/z/lanes/r4-w1-harvest", "harvested": False,
+                    }
+                    log(f"r4-w1 ladder lane bound: {cid[:8]} ws={wid}")
     except Exception as e:
         log(f"discover error: {str(e)[:80]}")
 
@@ -146,8 +155,17 @@ def main():
             outbox(f"AUTO-HARVEST DONE: {lane['label']} -> {verdict} "
                    f"(bundle: {bundle or 'NOT FOUND'}). TL: MANIFEST verify + "
                    f"station battery + review vs oracle + merge + PUSH (PAT era).")
-        if all(l["harvested"] for l in LANES.values()):
-            log("all lanes harvested — standing down")
+        # stand down early ONLY if every static lane is harvested AND no
+        # r4-w1 ladder flag exists (the dynamic lane may still provision)
+        r4_flagged = os.path.exists(R4W1_FLAG)
+        static_done = all(l["harvested"] for k, l in LANES.items()
+                          if k != "dynamic" and l["label"].startswith("r3-w3"))
+        if static_done and not r4_flagged:
+            log("all static lanes harvested (no r4-w1 ladder) — standing down")
+            break
+        if static_done and r4_flagged and all(
+                l["harvested"] for l in LANES.values()):
+            log("all lanes (incl. ladder) harvested — standing down")
             break
         time.sleep(CYCLE)
     log("auto-harvest window expired")
