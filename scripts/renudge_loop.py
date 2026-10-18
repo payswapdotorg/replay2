@@ -22,8 +22,11 @@ import channel
 
 BASE = os.path.dirname(os.path.abspath(__file__))
 LOG = os.path.join(BASE, "logs", "renudge_loop.log")
-CYCLE = 240
-MAX_NUDGES_PER_CHAT = 20
+CYCLE = 300
+MAX_NUDGES_PER_CHAT = 12
+SEND_TIMEOUT = 290   # the dispatcher send can take >110s under browser
+                    # contention (watch + probes share Chrome); reading the
+                    # verdict beats re-nudging blind
 
 CHATS = {
     "7b4c016d": {"name": "payswap3-r3-w3b", "label": "mer-B"},
@@ -88,7 +91,7 @@ def main():
                 r = subprocess.run(
                     [sys.executable, os.path.join(BASE, "dispatch_worker.py"),
                      "send", meta["name"], NUDGE],
-                    capture_output=True, text=True, timeout=110)
+                    capture_output=True, text=True, timeout=SEND_TIMEOUT)
                 out = (r.stdout or "").strip().splitlines()
                 verdict = out[-1] if out else f"rc={r.returncode}"
                 counts[cid] += 1
