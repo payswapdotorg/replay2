@@ -30,7 +30,7 @@ SEND_TIMEOUT = 290   # the dispatcher send can take >110s under browser
 
 CHATS = {
     "7b4c016d": {"name": "payswap3-r3-w3b", "label": "mer-B"},
-    "07f7cac8": {"name": "payswap3-r4-w1", "label": "r4-w1 lab"},
+    "3c307f43": {"name": "payswap3-r4-w1b", "label": "r4-w1 lab"},
 }
 
 NUDGE = ("Continue the work order from where you stopped. "

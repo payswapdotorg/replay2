@@ -18,7 +18,10 @@ import channel
 
 CHAT = sys.argv[1]
 WS = sys.argv[2]
-PREFIX = sys.argv[3].rstrip("/") + "/"
+# 2026-10-18 (Task 84): ls-tree paths are ROOT-RELATIVE (no leading slash)
+# — an empty prefix must mean "everything", not "/" (which matched 0 files).
+_raw_pfx = sys.argv[3]
+PREFIX = "" if _raw_pfx in ("", "/") else _raw_pfx.rstrip("/") + "/"
 LOCAL = sys.argv[4]
 
 CONTENT_JS = """

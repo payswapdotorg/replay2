@@ -30,7 +30,7 @@ WINDOW = 24 * 3600
 
 LANES = {
     "7b4c016d": "r3-w3 merchant-B (test battery in flight)",
-    "07f7cac8": "r4-w1 lab (P6-W1 first run; dispatched 16:39Z)",
+    "3c307f43": "r4-w1b lab (P6-W1 re-dispatch 17:24Z)",
 }
 MARKERS = ("COMPLETION-REPORT.md", "MANIFEST.sha256", ".bundle")
 
