@@ -1320,3 +1320,19 @@ Work Log (mirror digest — the full entries live at /home/z/my-project/worklog.
 
 Stage Summary:
 - The stale-seed class closed at the root (seed = truth now); the session's records now ride git origin; the board serves the truth after any recycle of this class. The Epoch track: W038 CLOSED, zero drift, zero open work; the standing watch continues
+
+---
+Task ID: 84-mirror (the Epoch-track session — the put-direction root fix, mirrored to git per the Task-85 law)
+Agent: TL (the Epoch-2.0 track session on this station)
+
+Task: the second deep rollback caught at 21:51Z; the restore-only architecture gap closed with vault_guard's put direction
+
+Work Log (mirror digest — full entry at /home/z/my-project/worklog.md Task 84):
+- The 2026-10-18 evening recycle reverted /home/z/my-project wholesale: the Task-79 seed refresh itself was rollback-reverted (download/recovery/ is a platform tier, NOT immune); .secrets/ and the my-project git tier (3890966) also reverted — only git origin survived for records (the re-clone restored 4c8aef1). The board fell to an Oct-16-00:34 vintage twice in 24h by the same mechanism
+- ROOT CAUSE: the entire mirror system (vault_guard MIRROR_ENTRIES + tl_recover) was RESTORE-ONLY — nothing ever WROTE the Redis immune tier for this station's board; an empty mirror cannot restore, so the stale non-empty platform file won by default. ensure_board_fresh was correct but short-circuited by the empty mirror
+- ROOT FIX (5df51cf on this repo's main, live-proven first cycle): vault_guard gains redis_set (REST SET, raw-body semantics — the {key,value} envelope form round-trips a wrapper into the value, live-caught and fixed) + board_upsert (every 120s: the fittest local board, max updatedAt across BOARD_LOCATIONS, written up under mission-state:<slug> when >= mirror; never downgrades; no-slug → skip+log). Daemon order: ensure_board_fresh → board_upsert → ensure_desktop_mirror
+- Verified: the Redis key payswap:recovery:mission-state:payswapdotorg-epoch-2-0 now carries the clean W038-CLOSED board (updatedAt 2026-10-18T21:53:56). Any future platform rollback heals within one 120s cycle
+- The Epoch track itself: zero drift (main c01a0a2, 0 issues / 0 PRs), W038 CLOSED stands; this mirror entry is the record tier for the session (the my-project live worklog is platform-revertible — proven twice)
+
+Stage Summary:
+- The stale-seed class closed at the architecture level (both directions armed; the immune tier never left empty again); watch continues
