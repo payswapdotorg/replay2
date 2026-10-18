@@ -560,10 +560,22 @@ fi
 _HEAL_DIR="/home/z/my-project/mini-services/heal"
 if [[ -f "$REPLAY2/scripts/heal_service.sh" ]]; then
   mkdir -p "$_HEAL_DIR"
+  # 2026-10-18 recycle #19 lesson (the snapshot-vintage trap): the old
+  # install-if-missing guard let a STALE snapshot-vintage heal.sh survive
+  # every recovery — live-disk patches (ownership enforcement, PAT
+  # quote-strip) were silently reverted to the pre-patch era. The repo
+  # master is the canonical source of truth: converge the live copy to it
+  # whenever they drift (cmp-first so the common case costs nothing and
+  # restarts stay rare — the running 300s-poll instance keeps its parsed
+  # script until the next dfork relaunch below).
   if [[ ! -f "$_HEAL_DIR/heal.sh" ]]; then
     cp "$REPLAY2/scripts/heal_service.sh" "$_HEAL_DIR/heal.sh"
     chmod +x "$_HEAL_DIR/heal.sh"
     log "heal.sh installed from repo master"
+  elif ! cmp -s "$REPLAY2/scripts/heal_service.sh" "$_HEAL_DIR/heal.sh"; then
+    cp "$REPLAY2/scripts/heal_service.sh" "$_HEAL_DIR/heal.sh"
+    chmod +x "$_HEAL_DIR/heal.sh"
+    log "heal.sh UPDATED to repo master (snapshot-vintage drift corrected)"
   fi
   if [[ ! -f "$_HEAL_DIR/package.json" ]]; then
     printf '{\n  "name": "heal",\n  "version": "1.0.0",\n  "private": true,\n  "scripts": { "dev": "bash heal.sh" }\n}\n' > "$_HEAL_DIR/package.json"
