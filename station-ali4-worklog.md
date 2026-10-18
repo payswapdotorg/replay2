@@ -2441,3 +2441,16 @@ Work Log:
 Stage Summary:
 - The loop holds; twenty green batches; 120-for-120 cycles.
 - THE LOOP RUNS — no early returns.
+
+---
+Task ID: R126
+Agent: Z.ai Code (main session)
+Task: THE MOS-2.0 LOOP — cycles 101-1..101-6 (01:35→02:21 UTC): twenty-first consecutive green batch; zero movements; uptime ~17h34m
+
+Work Log:
+- LOOP CYCLES 101-1..101-6 (9 min cadence, dual-probe): every cycle green — gw=200, core, CDP, frame 200/~66.6KB, ring 2, hb 7/5, login=logged-in(ali4), gc=2, inbox 0, watcher_alive, err=0; watch_probe steady all batch: MOS-2.0 main=1d744a5 local=1d744a5 behind=0 open-issues=0 open-prs=0. replay2 frozen @ 5917a6c all batch; heal silent; same boot throughout (uptime ~17h34m at 101-6).
+- Quiet batch: zero movements, zero scope, every layer green through the deep-night window. MOS-2.0 rests at its own installer merge; pipeline armed.
+
+Stage Summary:
+- The loop holds; twenty-one green batches.
+- THE LOOP RUNS — no early returns.
