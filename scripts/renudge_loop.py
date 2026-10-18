@@ -66,7 +66,9 @@ def chat_state(cid):
 
 def main():
     counts = {cid: 0 for cid in CHATS}
-    log("renudge loop online — chats: " + ", ".join(f"{v['label']}({k[:8]})" for k, v in CHATS.items()))
+    frozen = {cid: {"len": None, "since": None} for cid in CHATS}
+    log("renudge loop online v2 — chats: " + ", ".join(f"{v['label']}({k[:8]})" for k, v in CHATS.items()) +
+        " | nudge triggers: 'No response' OR body-frozen 2 cycles (the half-dead Thought-Process turn class)")
     for rounds in range(200):  # ~13h max
         for cid, meta in CHATS.items():
             st = chat_state(cid)
@@ -79,9 +81,19 @@ def main():
             if st.get("streaming") or st.get("stopBtn"):
                 log(f"{meta['label']}: STREAMING (len={st.get('len')}) — no nudge")
                 counts[cid] = 0
+                frozen[cid] = {"len": st.get("len"), "since": time.time()}
                 continue
-            if not st.get("noresp"):
-                log(f"{meta['label']}: no 'No response' marker (len={st.get('len')}) — leaving alone")
+            # body-freeze tracking (the half-dead turn class: no streaming
+            # marker, no stop button, no 'No response' — just a frozen body)
+            cur_len = st.get("len")
+            fz = frozen[cid]
+            if fz["len"] == cur_len and cur_len is not None:
+                frozen_for = time.time() - (fz["since"] or time.time())
+            else:
+                frozen[cid] = {"len": cur_len, "since": time.time()}
+                frozen_for = 0
+            needs_nudge = st.get("noresp") or frozen_for >= 2 * CYCLE
+            if not needs_nudge:
                 continue
             if counts[cid] >= MAX_NUDGES_PER_CHAT:
                 log(f"{meta['label']}: nudge budget exhausted")
