@@ -162,6 +162,25 @@ def redis_get(url, token, key):
         return ""
 
 
+def redis_set(url, token, key, value):
+    """REST SET (put direction). Returns True on success.
+    Gateway semantics (probed live 2026-10-18): POST /set/{key} with the
+    body text stored AS the value — no {"key","value"} envelope (that form
+    round-trips the wrapper object into the stored value; the pre-existing
+    clean mirror values were written as raw JSON bodies)."""
+    try:
+        req = urllib.request.Request(
+            f"{url.rstrip('/')}/set/{key}",
+            data=value.encode(),
+            headers={"Authorization": f"Bearer {token}",
+                    "Content-Type": "application/json"},
+            method="POST")
+        with urllib.request.urlopen(req, timeout=HTTP_TIMEOUT_S) as r:
+            return json.loads(r.read()).get("result", None) == "OK"
+    except Exception:
+        return False
+
+
 def board_updated_at(path):
     """Best-effort read of a mission-state.json updatedAt field."""
     try:
@@ -176,6 +195,59 @@ BOARD_LOCATIONS = [
     os.path.abspath(os.path.join(BASE, "..", "data", "mission-state.json")),
     "/home/z/my-project/data/mission-state.json",
 ]
+
+
+def board_upsert(url, token):
+    """PUT direction (the 2026-10-18 recycle lesson): the whole mirror
+    system was restore-only — the Redis immune tier was never WRITTEN by
+    anyone, so a rollback that reverted the platform-tier seed could not be
+    caught by ensure_board_fresh (an empty mirror means "nothing to restore
+    from"; the stale non-empty platform file then won by default, twice).
+    This closes the loop: when the fittest local board (max updatedAt across
+    BOARD_LOCATIONS) is at least as new as the mirror, WRITE it up under the
+    per-station key. Never downgrades (a strictly-newer mirror wins — the
+    next ensure_board_fresh pass then heals the stale locals). No slug →
+    skip (the shared key stays last-writer-wins legacy; a station that
+    never adopts per-station keys keeps its exact prior behavior)."""
+    try:
+        slug = station_slug()
+        if not slug:
+            log("board upsert skipped: no station slug (designation sources "
+                "absent — restore the watch_repo files to adopt the immune tier)")
+            return False
+        best, best_ts, best_path = "", "", ""
+        for path in BOARD_LOCATIONS:
+            ts = board_updated_at(path)
+            if ts and ts >= best_ts:
+                try:
+                    with open(path, encoding="utf-8", errors="replace") as f:
+                        v = f.read()
+                    json.loads(v)  # must be valid JSON to be mirror-worthy
+                    best, best_ts, best_path = v, ts, path
+                except Exception:
+                    continue
+        if not best:
+            return False
+        board_key = f"mission-state:{slug}"
+        mirror = redis_get(url, token, f"payswap:recovery:{board_key}")
+        mirror_ts = ""
+        if mirror:
+            try:
+                mirror_ts = json.loads(mirror).get("updatedAt", "")
+            except Exception:
+                mirror_ts = ""
+        if mirror_ts and mirror_ts > best_ts:
+            return False  # a strictly-newer mirror exists — never downgrade
+        if mirror and mirror_ts == best_ts and mirror == best:
+            return True  # already current, idempotent no-op
+        if redis_set(url, token, f"payswap:recovery:{board_key}", best):
+            log(f"board upsert ({board_key}): {best_ts} ← {best_path} "
+                f"(mirror was {mirror_ts or 'empty'})")
+            return True
+        return False
+    except Exception as exc:
+        log(f"board upsert failed ({exc!r}) — continuing")
+        return False
 
 
 def ensure_board_fresh(url, token):
@@ -480,6 +552,11 @@ def main():
                 # steady-state: the board can still be rollback-stale even
                 # with a healthy endpoint (recycle #21 live-observed)
                 ensure_board_fresh(url, token)
+                # the 2026-10-18 closure: the immune tier needs a WRITER —
+                # upsert the fittest local board so the next rollback of the
+                # platform-tier seed heals from the mirror (restore-only was
+                # twice insufficient: an empty mirror cannot restore)
+                board_upsert(url, token)
                 # steady-state mirror self-heal: public/desktop/ artifacts
                 # do not survive a fresh clone (gitignored) — re-materialize
                 ensure_desktop_mirror(url, token)
