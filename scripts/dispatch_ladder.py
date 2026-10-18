@@ -131,6 +131,22 @@ def main():
         for ln in lines:
             if "chat.z.ai/c/" in ln and "/c/" in ln:
                 cur_chat = ln.split("/c/")[-1].split()[0]
+        # 2026-10-18 fix: the create() stdout no longer prints the chat URL
+        # (verdict line only) — read it from the session registry instead
+        # (the create path appends a record carrying url + sent). Without
+        # this, cur_chat stays None: the ladder never monitors the chat it
+        # just created and burns suffixes blind.
+        if not cur_chat:
+            try:
+                reg = os.path.join(FLAGS, "session_registry.jsonl")
+                recs = [json.loads(l) for l in open(reg) if l.strip()]
+                for r in reversed(recs):
+                    if (r.get("name") == name and r.get("url")
+                            and "/c/" in r["url"] and r.get("sent")):
+                        cur_chat = r["url"].split("/c/")[-1].split()[0]
+                        break
+            except Exception:
+                pass
         verdict = lines[-1] if lines else "no output"
         log(f"  chat={cur_chat or '?'} verdict: {verdict[:110]}")
         if cur_chat:
