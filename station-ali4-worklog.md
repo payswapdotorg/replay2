@@ -2493,3 +2493,18 @@ Work Log:
 Stage Summary:
 - The loop holds; twenty-four green batches; one cycle-window from the record.
 - THE LOOP RUNS — no early returns.
+
+---
+Task ID: R130
+Agent: Z.ai Code (main session)
+Task: THE MOS-2.0 LOOP — cycles 105-1..105-6 + the 106-1 confirmation probe (04:39→05:31 UTC): *** THE 20.7h-CLASS MARK CROSSED — the #18 autonomous-recovery boot now outlasts every boot but the all-time record ***
+
+Work Log:
+- LOOP CYCLES 105-1..105-6 (9 min cadence, dual-probe): every cycle green — gw=200, core, CDP, frame 200/~66.6KB, ring 2, hb 7/5, login=logged-in(ali4), gc=2, inbox 0, watcher_alive, err=0; watch_probe steady all batch: MOS-2.0 main=1d744a5 local=1d744a5 behind=0 open-issues=0 open-prs=0. replay2 frozen @ 5917a6c→db54b55 late in the batch (1 movement); heal silent; same boot throughout.
+- *** MILESTONE CONFIRMED: the 106-1 confirmation probe at 05:31:13Z shows uptime 20:43 — the #18 boot has CROSSED the 20.7h class mark *** (the #14-era record, first outlasted by the #15 boot at 20:42 exact on Oct-16 06:08Z per R94). The autonomy era now owns the second-best durability run in station history; ONLY the #15 boot's all-time 25.7h stands ahead, with the crossing point at ~10:30Z if the platform lets the boot live. Historical symmetry, fourth iteration: the #14-era record died at ~05:20Z Oct-15; the #15 boot crossed 20h at ~05:26Z Oct-16; the #18 boot crossed at ~05:29-05:31Z Oct-18 — the same early-morning window every time, still green through it this once.
+- MOVEMENTS HARVESTED (replay2 5917a6c→db54b55, 1 commit — sibling worklog doc, zero scope): db54b55 — their Task 81: the R48 window, the quiet-frontier observation (row-4 stalled one-step-out 12h+, receipt + re-[verification]). Intelligence banked.
+- The station's every layer ran unbroken through the crossing: the boot recovered itself in 102 seconds (R104), needed one supervised console swap (the ownership gap, since patched permanently), and has otherwise needed NOTHING for ~21 hours. MOS-2.0 rests at its own installer merge; pipeline armed.
+
+Stage Summary:
+- The loop holds; 25 consecutive green batches; the 20.7h class crossed at 20h43m; the 25.7h all-time record is the last mark ahead.
+- THE LOOP RUNS — no early returns.
