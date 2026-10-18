@@ -85,6 +85,36 @@ def get_pat():
     return ""
 
 
+# 2026-10-18 (post-recycle-#28 lesson): the sandbox recycle wipes
+# ~/.secrets/env.sh, leaving this watcher in degraded mode for hours until
+# the resident agent notices. The durable kit at /home/z/my-project survives
+# every recycle and carries the PAT — self-heal the file from it.
+DURABLE_ENV = "/home/z/my-project/download/credentials.env"
+SECRETS_ENV = os.path.expanduser("~/.secrets/env.sh")
+
+
+def restore_env_sh():
+    """If ~/.secrets/env.sh is gone but the durable kit carries PAYSWAP_PAT,
+    recreate it (UNQUOTED — get_pat() regex demands PAYSWAP_PAT=ghp_...).
+    Returns True if a restore happened. Never raises."""
+    try:
+        if os.path.exists(SECRETS_ENV) or not os.path.exists(DURABLE_ENV):
+            return False
+        for line in open(DURABLE_ENV, encoding="utf-8", errors="replace"):
+            m = re.match(r'\s*(?:export\s+)?PAYSWAP_PAT=["\']?(ghp_[A-Za-z0-9]+|github_pat_[A-Za-z0-9_]+)["\']?\s*$', line)
+            if m:
+                os.makedirs(os.path.dirname(SECRETS_ENV), mode=0o700, exist_ok=True)
+                with open(SECRETS_ENV, "w", encoding="utf-8") as f:
+                    f.write("# auto-restored by watcher.py %s (recycle wiped it)\n"
+                            % time.strftime("%Y-%m-%d %H:%MZ", time.gmtime()))
+                    f.write("export PAYSWAP_PAT=%s\n" % m.group(1))
+                os.chmod(SECRETS_ENV, 0o600)
+                return True
+        return False
+    except Exception:
+        return False
+
+
 def _jwt_email(tok):
     """Decode any email-looking string from a JWT payload (guest discrimination).
     A fresh browser profile auto-creates a GUEST session that ALSO has a
@@ -404,6 +434,8 @@ def main():
             # 2026-09-15: re-read the PAT every cycle — the operator may drop
             # it into ~/.secrets/env.sh mid-flight (console-thread PAT relay);
             # the watcher must not need a restart to notice.
+            if restore_env_sh():
+                log("env.sh was wiped (recycle) — restored from the durable kit")
             pat_now = get_pat()
             if pat_now and pat_now != pat:
                 pat = pat_now
