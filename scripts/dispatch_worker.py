@@ -1817,12 +1817,30 @@ def send(name, message):
         # session). Verify the tab is on THIS session's chat URL before
         # touching the composer; a destroyed session is the watcher
         # assault's job, not the send path's.
-        want = (s.get("url") or "").rstrip("/").split("/c/")[-1]
+        # 2026-10-18 fix (stuck-start era): a FRESH-chat session is recorded
+        # with the home-surface url (no /c/ yet — the chat id is assigned
+        # only after the first exchange). For those, the tab is valid iff it
+        # is on the same home surface, OR has ADVANCED to a /c/ url (the
+        # chat id was assigned — adopt it; tab identity is the anchor: this
+        # tab was pinned at create time).
+        rec_url = (s.get("url") or "").rstrip("/")
         cur = _eval(c, "location.href", timeout=15) or ""
-        if "/c/" not in cur or (want and want not in cur):
-            print(f"tab is NOT on {name}'s session (at {cur[:70]}) — destroyed; "
-                  "refusing to send into a blank/home chat")
-            return 3
+        if "/c/" in rec_url:
+            want = rec_url.split("/c/")[-1]
+            if "/c/" not in cur or (want and want not in cur):
+                print(f"tab is NOT on {name}'s session (at {cur[:70]}) — destroyed; "
+                      "refusing to send into a blank/home chat")
+                return 3
+        else:
+            if "/c/" in cur:
+                s["url"] = cur.split("#")[0]
+                _save({"action": "url-adopt", "name": name, "tab_id": tab["id"],
+                       "ts": int(time.time()), "url": s["url"],
+                       "note": "fresh chat advanced to its /c/ url"})
+            elif cur.rstrip("/") != rec_url:
+                print(f"tab left the home surface for {name} (at {cur[:70]}) — "
+                      "session moved or destroyed; refusing to send blind")
+                return 3
         # refuse to interrupt an actively-generating turn
         busy = _eval(c, r"""(() => {
           const btns = Array.from(document.querySelectorAll('button'))
