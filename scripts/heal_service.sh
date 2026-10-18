@@ -167,6 +167,24 @@ recover_now() {
     git -C "$REPLAY2" remote set-url origin "https://payswapdotorg:${_PAT}@github.com/payswapdotorg/replay2.git" 2>/dev/null
     log "[post-recovery] PAT remote re-embedded on replay2 clone"
   fi
+  # 2026-10-18 #19 lesson (the worklog gap): the snapshot reverts
+  # my-project/worklog.md to its cut vintage — R104..R134 survived ONLY on
+  # the off-box mirror branch (its 5th live-fire save) and needed a manual
+  # restore. Converge automatically: when the mirror's worklog carries MORE
+  # Task IDs than the disk copy, the mirror is ahead — restore it. Never
+  # touches a disk copy that is level or ahead (agent mid-session state).
+  if git -C "$REPLAY2" fetch -q origin station/ali4-worklog 2>/dev/null; then
+    _mwl="$(git -C "$REPLAY2" show FETCH_HEAD:station-ali4-worklog.md 2>/dev/null)"
+    if [[ -n "$_mwl" ]]; then
+      _disk_n="$(grep -c '^Task ID:' /home/z/my-project/worklog.md 2>/dev/null || echo 0)"
+      _mirr_n="$(printf '%s\n' "$_mwl" | grep -c '^Task ID:' || echo 0)"
+      if [[ "$_mirr_n" -gt "$_disk_n" ]]; then
+        printf '%s\n' "$_mwl" > /home/z/my-project/worklog.md
+        log "[post-recovery] worklog restored from mirror ($_disk_n → $_mirr_n Task IDs)"
+      fi
+    fi
+  fi
+  unset _mwl _disk_n _mirr_n 2>/dev/null || true
   pkill -f vault_guard.py 2>/dev/null
   rm -f "$REPLAY2/scripts/flags/vault_guard_heartbeat" "$REPLAY2/scripts/flags/vault_guard.lock"
   cat > "$REPLAY2/scripts/vault_guard.py" <<'VGSTUB'
