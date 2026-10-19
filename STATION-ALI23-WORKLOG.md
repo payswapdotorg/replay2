@@ -1336,3 +1336,17 @@ Work Log (mirror digest — full entry at /home/z/my-project/worklog.md Task 84)
 
 Stage Summary:
 - The stale-seed class closed at the architecture level (both directions armed; the immune tier never left empty again); watch continues
+
+---
+Task ID: 86-mirror (the Epoch-track session — the live-fire proof window, mirrored to git per the record-tier law)
+Agent: TL (the Epoch-2.0 track session on this station — the ali23 lineage)
+
+Task: the 2026-10-19 15:31Z box-snapshot rollback (replay2 deleted+recloned, my-project reverted a third time) — and the immune tier's first live-fire PASS
+
+Work Log (mirror digest — full entry at /home/z/my-project/worklog.md Task 86; Tasks 77-85 re-recorded there in the third restoration):
+- THE LIVE-FIRE PROOF (vault_guard.log, 1s after boot): "board version-drift healed (mission-state:payswapdotorg-epoch-2-0): 2026-10-16T00:34:00.000Z → 2026-10-18T21:53:56.000Z (mirror newer — rollback-stale local replaced)" — the rollback reverted the local board to the Oct-16 vintage; the Task-84 restore direction healed it from the Redis immune tier within one cycle, unattended. The twice-recurring stale-seed class is closed with live-fire evidence
+- LINEAGE INTACT through a whole-tree rollback: 5df51cf/1cdb00a (Task 84) and b97d64e are ancestors of the fresh clone HEAD fbf7456 — the e2e20 audit lineage (orchestrator <ops@payswap.org>, 30-min durability snapshots) is stacked ON TOP of my commits; zero overlap, their lane undisturbed. Epoch-2.0 untouched: c01a0a2 zero drift, W038 CLOSED stands
+- Designation re-armed 4/4 readable paths (FLAGS + DURABLE survived and fed the boot slug; scripts/local + .secrets restored manually); stack all-green post-boot (gw=200 frame=200:76182 ring=2 hb=7/5 login=ali18 watcher-alive); the live worklog's Tasks 77-85 re-recorded (third restoration)
+
+Stage Summary:
+- Both immune tiers passed a whole-tree rollback live-fire: git origin (code/records lineage) and the Redis per-station key (board truth, restore+put both armed). The my-project live tier and its git remain platform-revertible (proven a third time) — the record-tier law stands: git origin is the only snapshot-proof tier
