@@ -52,24 +52,51 @@ def next_fire_wait():
     return d * 60 - sec
 
 
+def fire_cycle():
+    """Run one e2e cycle; returns (started_at, rc, outcome_line)."""
+    started = time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime())
+    rc = None
+    outcome_line = ""
+    try:
+        r = subprocess.run(["python3", E2E], capture_output=True, text=True, timeout=560)
+        rc = r.returncode
+        tail = ((r.stdout or "") + (r.stderr or "")).strip().splitlines()
+        outcome_line = next((l for l in reversed(tail) if l.startswith("RESULT neural:")), "")
+        log(f"cycle done rc={rc} | {outcome_line[:160]}")
+    except subprocess.TimeoutExpired:
+        log("cycle TIMEOUT (560s) — continuing")
+    return started, rc, outcome_line
+
+
+def load_cycles():
+    """Reload the cycle history so a loop restart never loses the record."""
+    try:
+        with open(CYCLE_LOG) as f:
+            data = json.load(f)
+        if isinstance(data, list):
+            return data
+    except Exception:
+        pass
+    return []
+
+
 def main():
-    cycles = []
-    log("cdp companion loop started — 20-min cadence at :05/:25/:45 through the VPN egress pool")
+    cycles = load_cycles()
+    log("cdp companion loop started — 20-min cadence at :05/:25/:45 through the VPN egress pool"
+        + (f" (resumed, {len(cycles)} cycles on record)" if cycles else ""))
     while True:
         wait = next_fire_wait()
         log(f"next fire in {int(wait/60)} min")
         time.sleep(wait)
-        started = time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime())
-        rc = None
-        outcome_line = ""
-        try:
-            r = subprocess.run(["python3", E2E], capture_output=True, text=True, timeout=560)
-            rc = r.returncode
-            tail = ((r.stdout or "") + (r.stderr or "")).strip().splitlines()
-            outcome_line = next((l for l in reversed(tail) if l.startswith("RESULT neural:")), "")
-            log(f"cycle done rc={rc} | {outcome_line[:160]}")
-        except subprocess.TimeoutExpired:
-            log("cycle TIMEOUT (560s) — continuing")
+        started, rc, outcome_line = fire_cycle()
+        # The stale-tab/flap transient (Uncaught TypeError: Failed to fetch in
+        # an early phase through a flapping VPN node) kills ~half the cycles
+        # 12s in — an immediate single retry recovers them (verified pattern:
+        # rc=1 cycles alternate with clean rc=0 reruns).
+        if rc == 1:
+            log("rc=1 (stale-tab/flap transient?) — one immediate retry")
+            time.sleep(30)
+            started, rc, outcome_line = fire_cycle()
         # read the result the script banked
         res = None
         try:
