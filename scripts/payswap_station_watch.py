@@ -39,6 +39,12 @@ FROZEN_CYCLES = 3 # stopBtn + frozen body this many cycles = stuck
 NUDGE_BUDGET = 96
 WINDOW = 14 * 3600
 MARKERS = ("COMPLETION-REPORT.md", "MANIFEST.sha256", ".bundle", ".bundle.b64")
+# 2026-10-19 law (the r3-w3d live catch): the hardened packets deliver
+# INCREMENTALLY (bundle + MANIFEST mirrored after EVERY commit), so those
+# two markers are SALVAGE points, not completion. ONLY COMPLETION-REPORT.md
+# completes a lane (written after 4/4 per the packet). Partial harvests
+# re-arm; the watch keeps watching until the report lands or the lane dies.
+DONE_MARKER = "COMPLETION-REPORT.md"
 TRACK_PREFIXES = ("payswap3-",)   # session names we watch
 
 
@@ -209,9 +215,9 @@ def main():
                 "lens": [], "nudges": 0, "chat": None, "ws": None,
                 "tree": 0, "wl": 0, "last_growth": time.time(),
                 "stall_flagged": False, "harvested": False,
-                "unstick_count": 0, "dead": False,
+                "unstick_count": 0, "dead": False, "completed": False,
             })
-            if s["dead"] or s["harvested"]:
+            if s["dead"] or s["completed"]:
                 continue
             tab = tab_for(rec)
             if tab is None:
@@ -256,18 +262,28 @@ def main():
                         grew = True
                     blob = "\n".join(paths)
                     marks = [m for m in MARKERS if m in blob]
-                    if marks and not s["harvested"]:
+                    done = DONE_MARKER in blob
+                    # incremental-delivery law: partial markers (bundle/
+                    # MANIFEST without the report) harvest a SALVAGE copy
+                    # but keep the lane live; only the report completes.
+                    if marks and (not s["harvested"] or done):
                         s["harvested"] = True
-                        log(f"{name}: MARKERS {marks} — AUTO-HARVEST")
-                        outbox(f"AUTO-HARVEST LAUNCH: {name} carries {marks}. "
+                        kind = "COMPLETE" if done else "PARTIAL(salvage)"
+                        log(f"{name}: MARKERS {marks} — {kind} — AUTO-HARVEST")
+                        outbox(f"AUTO-HARVEST LAUNCH ({kind}): {name} carries {marks}. "
                                f"Pulling via harvest_robust NOW.")
                         lines = run([os.path.join(BASE, "harvest_robust.py"),
                                      s["chat"], s["ws"], "",
                                      f"/home/z/lanes/{name}-harvest"])
                         verdict = lines[-1] if lines else "?"
                         log(f"{name}: harvest: {verdict}")
-                        outbox(f"AUTO-HARVEST DONE: {name} -> {verdict}. "
-                               f"TL: MANIFEST verify + battery + merge + push.")
+                        outbox(f"AUTO-HARVEST DONE ({kind}): {name} -> {verdict}. " +
+                               ("TL: MANIFEST verify + battery + merge + push."
+                                if done else
+                                "Salvage copy pulled; lane stays LIVE until "
+                                "COMPLETION-REPORT.md appears."))
+                        if done:
+                            s["completed"] = True  # lane finished; stop probing
             if grew:
                 s["last_growth"] = time.time()
                 s["stall_flagged"] = False
