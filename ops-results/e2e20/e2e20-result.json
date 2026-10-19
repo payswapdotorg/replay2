@@ -1,7 +1,7 @@
 {
   "url": "https://hyper3d-clone.vercel.app",
   "chrome_egress": "198.244.234.214",
-  "started_utc": "2026-10-19T16:05:00Z",
+  "started_utc": "2026-10-19T16:45:00Z",
   "phases": {
     "landing": {
       "title": "Hyper3D Rodin \u2013 Best AI 3D Model Generator",
@@ -12,7 +12,10 @@
       "e2e20-01-landing.png",
       "e2e20-02-signed-in.png",
       "e2e20-03-uploaded-captioned.png",
-      "e2e20-04-task-result.png"
+      "e2e20-04-task-result.png",
+      "e2e20-05-viewer.png",
+      "e2e20-06-confirmed-exports.png",
+      "e2e20-07-final.png"
     ],
     "signin": {
       "already": true,
@@ -34,7 +37,7 @@
     },
     "caption": {
       "captioned": true,
-      "value": "A glossy red apple with a short brown stem, flanked by two green apples in soft focus. simple geometry.",
+      "value": "A glossy red apple with a short brown stem and two green apples behind it. simple geometry.",
       "uploaded": true
     },
     "pre_generate": {
@@ -57,14 +60,14 @@
       "at": 0.0
     },
     "task_attribution": {
-      "captured_create_uuid": "8a690c07-f406-4c82-9317-9ecc3176dad0",
-      "anchor_newest_before": "52126651-a85e-4e36-a80a-30546938c8a8",
+      "captured_create_uuid": "d660cc68-c785-40b0-84bd-d381b8ff1baf",
+      "anchor_newest_before": "7fb2a9e6-06ec-4667-80f5-800afedd8967",
       "attribution": "create-response"
     },
     "generation": {
       "hf_space_reqs": [
         0,
-        0,
+        1,
         3,
         3,
         3,
@@ -72,16 +75,135 @@
       ],
       "engine_used": "fast",
       "fallback_reason": null,
-      "seed": 40948,
+      "seed": 61687,
       "user_state": "DonePreview",
-      "task_uuid": "8a690c07-f406-4c82-9317-9ecc3176dad0",
+      "task_uuid": "d660cc68-c785-40b0-84bd-d381b8ff1baf",
       "neural_toast_at": null,
-      "fallback_toast_at": null,
-      "confirm_btn_at": 80.4,
-      "total_s": 80.4
-    }
+      "fallback_toast_at": 32.2,
+      "confirm_btn_at": 32.2,
+      "total_s": 32.2
+    },
+    "verdict_card": {
+      "user_state": "DonePreview",
+      "engine_used": "fast",
+      "fallback_reason": "neural engine reported an error event",
+      "confirmed": false
+    },
+    "confirm": {
+      "click": "clicked",
+      "exports": [
+        {
+          "label": "GLB",
+          "disabled": false
+        },
+        {
+          "label": "GLTF",
+          "disabled": false
+        },
+        {
+          "label": "OBJ",
+          "disabled": false
+        },
+        {
+          "label": "STL",
+          "disabled": false
+        },
+        {
+          "label": "USDZ",
+          "disabled": false
+        }
+      ],
+      "card": {
+        "user_state": "DonePreview",
+        "confirmed": true,
+        "engine_used": "fast",
+        "fallback_reason": "neural engine reported an error event"
+      },
+      "post_balance": 48
+    },
+    "byte_verify": {
+      "glb": {
+        "size": 143284,
+        "magic": "glTF",
+        "head": "glTF\u0002\u0000\u0000\u0000\u00b4/\u0002\u0000\u00f8\u001c\u0000\u0000",
+        "gltf": true
+      },
+      "obj": {
+        "size": 721212,
+        "head": "o lathe | v 0.38033911463983794 -0.5189742387601061 0 | v 0.3803"
+      }
+    },
+    "hf_log": [
+      {
+        "url": "/api/task/rodin_mesh_image_process",
+        "t": 1792428316193,
+        "status": 200,
+        "body": "{\"prompt\":\"A glossy red apple with a short brown stem and two green apples behind it. simple geometry.\",\"components\":[{\"primitive\":\"lathe\",\"params\":{\"points\":[[0,0],[0.42,0.06],[0.75,0.28],[0.92,0.58],[0.88,0.88],[0.7,1.1],[0.38,1.22],[0,1.24]]},\"position\":[0,0,0],\"scale\":1,\"rotation\":[0,0,0],\"color\":\"#C1121F\"},{\"primitive\":\"cylinder\",\"params\":{\"radius\":0.045,\"height\":0.28},\"position\":[0,1.38,0],\"scale\":1,\"rotation\":[0,0,0],\"color\":\"#5D4037\"},{\"primitive\":\"lathe\",\"params\":{\"points\":[[0,0],[0.4,0.05],[0.72,0.26],[0.88,0.55],[0.84,0.84],[0.68,1.05],[0.36,1.16],[0,1.18]]},\"position\":[-0.8,0,0],\"s",
+        "chunks": []
+      },
+      {
+        "url": "/api/task",
+        "t": 1792428340972,
+        "status": 200,
+        "body": "{\"uuid\":\"d660cc68-c785-40b0-84bd-d381b8ff1baf\",\"producer\":\"standard\",\"engine\":\"neural\",\"pay_by_result\":true,\"job\":{\"uuids\":[\"d660cc68-c785-40b0-84bd-d381b8ff1baf\"],\"subscription_key\":\"clone-local\"}}",
+        "chunks": []
+      },
+      {
+        "url": "https://tencent-hunyuan3d-2-1.hf.space/upload",
+        "t": 1792428349096,
+        "status": 200,
+        "body": null,
+        "chunks": []
+      },
+      {
+        "url": "https://tencent-hunyuan3d-2-1.hf.space/call/shape_generation",
+        "t": 1792428354522,
+        "status": 200,
+        "body": null,
+        "chunks": []
+      },
+      {
+        "url": "https://tencent-hunyuan3d-2-1.hf.space/call/shape_generation/dc4d3fac441b4847aca09b16174794b1",
+        "t": 1792428355309,
+        "status": 200,
+        "body": null,
+        "chunks": [
+          "event: error\ndata: null\n\n"
+        ]
+      },
+      {
+        "url": "/api/task/d660cc68-c785-40b0-84bd-d381b8ff1baf/fallback",
+        "t": 1792428355639,
+        "status": 202,
+        "body": "{\"fallback\":\"fast\",\"reason\":\"neural engine reported an error event\",\"task_uuid\":\"d660cc68-c785-40b0-84bd-d381b8ff1baf\"}",
+        "chunks": []
+      },
+      {
+        "url": "/api/task/d660cc68-c785-40b0-84bd-d381b8ff1baf/confirm",
+        "t": 1792428375911,
+        "status": 200,
+        "body": "{\"confirmed\":true,\"charged\":1,\"balance\":48}",
+        "chunks": []
+      },
+      {
+        "url": "/api/task/d660cc68-c785-40b0-84bd-d381b8ff1baf/export?format=glb",
+        "t": 1792428380467,
+        "status": 200,
+        "body": "glTF\u0002\u0000\u0000\u0000\ufffd/\u0002\u0000\ufffd\u001c\u0000\u0000JSON{\"asset\":{\"version\":\"2.0\",\"generator\":\"THREE.GLTFExporter r186\"},\"scenes\":[{\"name\":\"AuxScene\",\"nodes\":[0]}],\"scene\":0,\"nodes\":[{\"matrix\":[0.701316538582564,0,0,0,0,0.701316538582564,0,0,0,0,0.701316538582564,0,0,0,0,1],\"children\":[1]},{\"matrix\":[1,0,0,0,0,1,0,0,0,0,1,0,0.5423216104507447,-0.7400000002980233,0,1],\"name\":\"A glossy red apple with a short brown stem and two green apples behind it. simpl\",\"children\":[2,3,4,5,6,7]},{\"name\":\"lathe\",\"mesh\":0},{\"matrix\":[1,0,0,0,0,1,0,0,0,0,1,0,0,1.34,0,1],\"name\":\"cylinder\",\"mesh\":1},{\"matrix\":[0.9,0,0,0,0,0.9,0,0,0,0,0.9,0,-1.2,0,0",
+        "chunks": []
+      },
+      {
+        "url": "/api/task/d660cc68-c785-40b0-84bd-d381b8ff1baf/export?format=obj",
+        "t": 1792428382025,
+        "status": 200,
+        "body": "o lathe\nv 0.38033911463983794 -0.5189742387601061 0\nv 0.38033911463983794 -0.5131608809584406 0.07799026390213701\nv 0.38033911463983794 -0.5045136432631248 0.18976335325531002\nv 0.38033911463983794 -0.4878122245945722 0.2992991673581647\nv 0.38033911463983794 -0.45832334529927166 0.37785049921373465\nv 0.38033911463983794 -0.4169160423008023 0.43890852055725976\nv 0.38033911463983794 -0.3677528580381545 0.4890039145976081\nv 0.38033911463983794 -0.31491262699969624 0.5317698363012752\nv 0.38033911463983794 -0.25662990566003197 0.5683261538316454\nv 0.38033911463983794 -0.19357432627284954 0.59652998",
+        "chunks": []
+      }
+    ]
   },
   "ok": false,
-  "fatal": "js error: {\"exceptionId\": 2, \"text\": \"Uncaught (in promise) TypeError: Failed to fetch\", \"lineNumber\": 0, \"columnNumber\": 0, \"exception\": {\"type\": \"object\", \"subtype\": \"error\", \"className\": \"TypeError\", \"descri",
-  "finished_utc": "2026-10-19T16:07:07Z"
+  "neural": false,
+  "verdict_source": "card:d660cc68-c785-40b0-84bd-d381b8ff1baf",
+  "exports_byte_verified": true,
+  "finished_utc": "2026-10-19T16:46:32Z"
 }
