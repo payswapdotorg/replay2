@@ -1,12 +1,12 @@
 {
   "url": "https://hyper3d-clone.vercel.app",
   "chrome_egress": "198.244.234.214",
-  "started_utc": "2026-10-19T02:05:00Z",
+  "started_utc": "2026-10-19T02:25:00Z",
   "phases": {
     "landing": {
       "title": "Hyper3D Rodin \u2013 Best AI 3D Model Generator",
       "startCreating": true,
-      "body": "Skip to main content\nHYPER3D.AI\nProducts\nFeatures\nUse Cases\nStyles\nPricing\nENG\n20\ncredits\nFree \u00b7 7-Day Trial\nStart Creat"
+      "body": "Skip to main content\nHYPER3D.AI\nProducts\nFeatures\nUse Cases\nStyles\nPricing\nENG\n19\ncredits\nFree \u00b7 7-Day Trial\nStart Creat"
     },
     "shots": [
       "e2e20-01-landing.png",
@@ -20,7 +20,7 @@
     "signin": {
       "already": true,
       "user": "demo creator",
-      "balance": 20
+      "balance": 19
     },
     "mode": {
       "image_tab": "clicked",
@@ -37,7 +37,7 @@
     },
     "caption": {
       "captioned": true,
-      "value": "A shiny red apple with a short brown stem and water droplets, flanked by two green apples in soft focus. simple geometry.",
+      "value": "A glossy red apple with a short brown stem, flanked by two green apples in soft focus. simple geometry.",
       "uploaded": true
     },
     "pre_generate": {
@@ -53,14 +53,14 @@
           "checked": "false"
         }
       ],
-      "balance": 20
+      "balance": 19
     },
     "generate_click": {
       "result": "clicked:GENERATE 1 Credit",
       "at": 0.0
     },
     "pre_task_anchor": {
-      "newest_before": "58953f9c-ab0d-421e-bdaf-a488a3568a0a"
+      "newest_before": "b3acc644-1d37-4ec4-9ef4-9d6c6b2a2774"
     },
     "generation": {
       "hf_space_reqs": [
@@ -74,13 +74,13 @@
       ],
       "engine_used": "fast",
       "fallback_reason": null,
-      "seed": 1692,
+      "seed": 40610,
       "user_state": "DonePreview",
-      "task_uuid": "31453475-f958-4f90-b991-d39c1331eee8",
+      "task_uuid": "087aaa48-b463-4b9d-b9e0-53c4c3c0fb1b",
       "neural_toast_at": null,
-      "fallback_toast_at": 6.0,
-      "confirm_btn_at": null,
-      "total_s": 28.2
+      "fallback_toast_at": 6.3,
+      "confirm_btn_at": 28.8,
+      "total_s": 28.8
     },
     "confirm": {
       "click": "clicked",
@@ -112,45 +112,45 @@
         "engine_used": "fast",
         "fallback_reason": "neural engine reported an error event"
       },
-      "post_balance": 19
+      "post_balance": 18
     },
     "byte_verify": {
       "glb": {
-        "size": 143284,
+        "size": 143256,
         "magic": "glTF",
-        "head": "glTF\u0002\u0000\u0000\u0000\u00b4/\u0002\u0000\u00f8\u001c\u0000\u0000",
+        "head": "glTF\u0002\u0000\u0000\u0000\u0098/\u0002\u0000\u00dc\u001c\u0000\u0000",
         "gltf": true
       },
       "obj": {
-        "size": 718095,
-        "head": "o lathe | v 0.2953277833132454 -0.5901723601899567 0 | v 0.29532"
+        "size": 722411,
+        "head": "o lathe | v 0.38862948303807865 -0.4826967636020796 0 | v 0.3886"
       }
     },
     "hf_log": [
       {
         "url": "/api/task/rodin_mesh_image_process",
-        "t": 1792375514052,
+        "t": 1792376713708,
         "status": 200,
-        "body": "{\"prompt\":\"A shiny red apple with a short brown stem and water droplets, flanked by two green apples in soft focus. simple geometry.\",\"components\":[{\"primitive\":\"lathe\",\"params\":{\"points\":[[0,0],[0.48,0.06],[0.75,0.28],[0.88,0.58],[0.83,0.88],[0.65,1.08],[0.32,1.18],[0,1.2]]},\"position\":[0,0,0],\"scale\":1,\"rotation\":[0,0,0],\"color\":\"#C1121F\"},{\"primitive\":\"cylinder\",\"params\":{\"radius\":0.045,\"height\":0.25},\"position\":[0,1.32,0],\"scale\":1,\"rotation\":[0,0,0],\"color\":\"#5D4037\"},{\"primitive\":\"lathe\",\"params\":{\"points\":[[0,0],[0.46,0.06],[0.72,0.27],[0.84,0.56],[0.79,0.86],[0.62,1.06],[0.31,1.16],[0,",
+        "body": "{\"prompt\":\"A glossy red apple with a short brown stem, flanked by two green apples in soft focus. simple geometry.\",\"components\":[{\"primitive\":\"lathe\",\"params\":{\"points\":[[0,0],[0.42,0.06],[0.75,0.28],[0.92,0.58],[0.88,0.88],[0.7,1.08],[0.38,1.18],[0,1.2]]},\"position\":[0.8,0,0],\"scale\":1,\"rotation\":[0,0,0],\"color\":\"#C1121F\"},{\"primitive\":\"cylinder\",\"params\":{\"radius\":0.045,\"height\":0.22},\"position\":[0.8,1.31,0],\"scale\":1,\"rotation\":[0,0,0],\"color\":\"#5D4037\"},{\"primitive\":\"lathe\",\"params\":{\"points\":[[0,0],[0.4,0.05],[0.72,0.26],[0.88,0.55],[0.84,0.84],[0.68,1.04],[0.36,1.13],[0,1.15]]},\"positio",
         "chunks": []
       },
       {
         "url": "https://tencent-hunyuan3d-2-1.hf.space/upload",
-        "t": 1792375532650,
+        "t": 1792376735985,
         "status": 200,
         "body": null,
         "chunks": []
       },
       {
         "url": "https://tencent-hunyuan3d-2-1.hf.space/call/shape_generation",
-        "t": 1792375535036,
+        "t": 1792376737895,
         "status": 200,
         "body": null,
         "chunks": []
       },
       {
-        "url": "https://tencent-hunyuan3d-2-1.hf.space/call/shape_generation/e62e20ec3bbc4b2ab4c8be71c8092c6d",
-        "t": 1792375535671,
+        "url": "https://tencent-hunyuan3d-2-1.hf.space/call/shape_generation/4e8619ea55f34819990e4b7162649383",
+        "t": 1792376738576,
         "status": 200,
         "body": null,
         "chunks": [
@@ -158,31 +158,31 @@
         ]
       },
       {
-        "url": "/api/task/31453475-f958-4f90-b991-d39c1331eee8/fallback",
-        "t": 1792375536111,
+        "url": "/api/task/087aaa48-b463-4b9d-b9e0-53c4c3c0fb1b/fallback",
+        "t": 1792376739002,
         "status": 202,
-        "body": "{\"fallback\":\"fast\",\"reason\":\"neural engine reported an error event\",\"task_uuid\":\"31453475-f958-4f90-b991-d39c1331eee8\"}",
+        "body": "{\"fallback\":\"fast\",\"reason\":\"neural engine reported an error event\",\"task_uuid\":\"087aaa48-b463-4b9d-b9e0-53c4c3c0fb1b\"}",
         "chunks": []
       },
       {
-        "url": "/api/task/31453475-f958-4f90-b991-d39c1331eee8/confirm",
-        "t": 1792375564703,
+        "url": "/api/task/087aaa48-b463-4b9d-b9e0-53c4c3c0fb1b/confirm",
+        "t": 1792376766542,
         "status": 200,
-        "body": "{\"confirmed\":true,\"charged\":1,\"balance\":19}",
+        "body": "{\"confirmed\":true,\"charged\":1,\"balance\":18}",
         "chunks": []
       },
       {
-        "url": "/api/task/31453475-f958-4f90-b991-d39c1331eee8/export?format=glb",
-        "t": 1792375567822,
+        "url": "/api/task/087aaa48-b463-4b9d-b9e0-53c4c3c0fb1b/export?format=glb",
+        "t": 1792376770465,
         "status": 200,
-        "body": "glTF\u0002\u0000\u0000\u0000\ufffd/\u0002\u0000\ufffd\u001c\u0000\u0000JSON{\"asset\":{\"version\":\"2.0\",\"generator\":\"THREE.GLTFExporter r186\"},\"scenes\":[{\"name\":\"AuxScene\",\"nodes\":[0]}],\"scene\":0,\"nodes\":[{\"matrix\":[0.7975302161517218,0,0,0,0,0.7975302161517218,0,0,0,0,0.7975302161517218,0,0,0,0,1],\"children\":[1]},{\"matrix\":[1,0,0,0,0,1,0,0,0,0,1,0,0.37030293941497805,-0.7400000002980233,0,1],\"name\":\"A shiny red apple with a short brown stem and water droplets, flanked by two gre\",\"children\":[2,3,4,5,6,7]},{\"name\":\"lathe\",\"mesh\":0},{\"matrix\":[1,0,0,0,0,1,0,0,0,0,1,0,0,1.34,0,1],\"name\":\"cylinder\",\"mesh\":1},{\"matrix\":[1,0,0,0,0,1,0,0,0,0,1,0,-0.8,0,0,1",
+        "body": "glTF\u0002\u0000\u0000\u0000\ufffd/\u0002\u0000\ufffd\u001c\u0000\u0000JSON{\"asset\":{\"version\":\"2.0\",\"generator\":\"THREE.GLTFExporter r186\"},\"scenes\":[{\"name\":\"AuxScene\",\"nodes\":[0]}],\"scene\":0,\"nodes\":[{\"matrix\":[0.689566805145828,0,0,0,0,0.689566805145828,0,0,0,0,0.689566805145828,0,0,0,0,1],\"children\":[1]},{\"matrix\":[1,0,0,0,0,1,0,0,0,0,1,0,0.5635849639773367,-0.7,0,1],\"name\":\"A glossy red apple with a short brown stem, flanked by two green apples in soft \",\"children\":[2,3,4,5,6,7]},{\"name\":\"lathe\",\"mesh\":0},{\"matrix\":[1,0,0,0,0,1,0,0,0,0,1,0,0,1.275,0,1],\"name\":\"cylinder\",\"mesh\":1},{\"matrix\":[0.95,0,0,0,0,0.95,0,0,0,0,0.95,0,-1.2,0,0,1],\"name\":",
         "chunks": []
       },
       {
-        "url": "/api/task/31453475-f958-4f90-b991-d39c1331eee8/export?format=obj",
-        "t": 1792375568433,
+        "url": "/api/task/087aaa48-b463-4b9d-b9e0-53c4c3c0fb1b/export?format=obj",
+        "t": 1792376771436,
         "status": 200,
-        "body": "o lathe\nv 0.2953277833132454 -0.5901723601899567 0\nv 0.2953277833132454 -0.5835614673205256 0.08868975506169184\nv 0.2953277833132454 -0.5737279143257553 0.21579700436733087\nv 0.2953277833132454 -0.5547352265621214 0.3403600464344189\nv 0.2953277833132454 -0.521200765324424 0.42968784241138924\nv 0.2953277833132454 -0.4741127907881707 0.4991224190696228\nv 0.2953277833132454 -0.4182049049554164 0.5560904046214155\nv 0.2953277833132454 -0.35811551797649044 0.604723386882446\nv 0.2953277833132454 -0.29183698497357763 0.6462948688278626\nv 0.2953277833132454 -0.2201308051081055 0.67836798658999\nv 0.2953",
+        "body": "o lathe\nv 0.38862948303807865 -0.4826967636020796 0\nv 0.38862948303807865 -0.46970752774743935 0.07668362879359832\nv 0.38862948303807865 -0.45085218670365135 0.18658409154658506\nv 0.38862948303807865 -0.42613073661746087 0.29428476196370035\nv 0.38862948303807865 -0.39514412543147065 0.3715200586773229\nv 0.38862948303807865 -0.35712791363360324 0.43155512471394636\nv 0.38862948303807865 -0.31434549281452395 0.480811229369259\nv 0.38862948303807865 -0.26930343090611225 0.5228491499854018\nv 0.38862948303807865 -0.22091676438717767 0.5582937098090819\nv 0.38862948303807865 -0.16959706197110663 0.5855",
         "chunks": []
       }
     ]
@@ -190,5 +190,5 @@
   "ok": false,
   "neural": false,
   "exports_byte_verified": true,
-  "finished_utc": "2026-10-19T02:06:09Z"
+  "finished_utc": "2026-10-19T02:26:14Z"
 }

@@ -206,6 +206,72 @@
       "seed": 11149,
       "hf_reqs": 3,
       "outcome": "fallback"
+    },
+    {
+      "cycle": 7,
+      "at": "2026-10-19T02:18:58Z",
+      "user": "demo creator",
+      "pre_balance": 19,
+      "upload": "uploaded:119314",
+      "caption": {
+        "captioned": true,
+        "value": "A glossy red apple with a short brown stem and water droplets, flanked by two green apples",
+        "uploaded": true
+      },
+      "anchor": "31453475-f958-4f90-b991-d39c1331eee8",
+      "generate": "clicked:GENERATE 1 Credit",
+      "final_poll": {
+        "hf": 3,
+        "mine": {
+          "uuid": "b3acc644-1d37-4ec4-9ef4-9d6c6b2a2774",
+          "user_state": "DonePreview",
+          "engine_used": "fast",
+          "seed": 12073,
+          "confirmed": false
+        },
+        "confirm": true,
+        "neuralToast": false,
+        "fallbackToast": false
+      },
+      "task_uuid": "b3acc644-1d37-4ec4-9ef4-9d6c6b2a2774",
+      "user_state": "DonePreview",
+      "engine_used": "fast",
+      "seed": 12073,
+      "hf_reqs": 3,
+      "outcome": "fallback"
+    },
+    {
+      "cycle": 8,
+      "at": "2026-10-19T02:35:04Z",
+      "user": "demo creator",
+      "pre_balance": 18,
+      "upload": "uploaded:119314",
+      "caption": {
+        "captioned": true,
+        "value": "A shiny red apple with a short brown stem and water droplets, flanked by two green apples ",
+        "uploaded": true
+      },
+      "anchor": "087aaa48-b463-4b9d-b9e0-53c4c3c0fb1b",
+      "generate": "clicked:GENERATE 1 Credit",
+      "final_poll": {
+        "hf": 3,
+        "mine": {
+          "uuid": "43e0c7b9-6cd0-448b-8bcd-0ef6426b7c08",
+          "user_state": "DonePreview",
+          "engine_used": "fast",
+          "seed": 44462,
+          "confirmed": false
+        },
+        "confirm": true,
+        "neuralToast": false,
+        "fallbackToast": false
+      },
+      "task_uuid": "43e0c7b9-6cd0-448b-8bcd-0ef6426b7c08",
+      "user_state": "DonePreview",
+      "engine_used": "fast",
+      "seed": 44462,
+      "hf_reqs": 3,
+      "outcome": "fallback"
     }
   ],
   "done": false,
