@@ -36,6 +36,12 @@ REGISTRY = os.path.join(FLAGS, "session_registry.jsonl")
 CYCLE = 120
 STALL_AFTER = 1800        # 30 min without tree/worklog/body growth = stall
 FROZEN_CYCLES = 3 # stopBtn + frozen body this many cycles = stuck
+# 2026-10-19 law (r3-w3d resume catch): subagent waves tick the DOM in
+# sparse bursts — a healthy generation can sit body-frozen for many
+# minutes while 10 subagents run tests. A stop-click on mere body-frozen
+# kills LIVE work. Stop-clicks now ALSO require no growth of ANY kind
+# (body/tree/worklog) for STUCK_QUIET seconds.
+STUCK_QUIET = 900          # 15 min of total silence before a stop-click
 NUDGE_BUDGET = 96
 WINDOW = 14 * 3600
 MARKERS = ("COMPLETION-REPORT.md", "MANIFEST.sha256", ".bundle", ".bundle.b64")
@@ -201,11 +207,11 @@ def ws_tree(chat, ws_id):
 
 
 def main():
-    log("station watch v4 online — registry-driven lanes; stuck-start law; "
-        "marker auto-harvest")
-    outbox("STATION WATCH v4 armed: unified sentinel (registry lanes + "
-           "stuck-start force-unstick + marker auto-harvest). Replaces lane "
-           "watch v3 / renudge v2 / auto-harvest.")
+    log("station watch v4.2 online — registry lanes; quiet-guarded unstick; "
+        "marker-set + tree-growth auto-harvest")
+    outbox("STATION WATCH v4.2 armed: quiet-guard (no stop-click on live "
+           "subagent waves), marker-set-change + tree-growth salvage "
+           "harvests, hash-driven refresh (MANIFEST).")
     state = {}
     deadline = time.time() + WINDOW
     while time.time() < deadline:
@@ -214,7 +220,7 @@ def main():
             s = state.setdefault(name, {
                 "lens": [], "nudges": 0, "chat": None, "ws": None,
                 "tree": 0, "wl": 0, "last_growth": time.time(),
-                "stall_flagged": False, "harvested": False,
+                "stall_flagged": False, "last_marks": None,
                 "unstick_count": 0, "dead": False, "completed": False,
             })
             if s["dead"] or s["completed"]:
@@ -252,6 +258,10 @@ def main():
                 s["ws"] = discover_ws(s["chat"])
                 if s["ws"]:
                     log(f"{name}: workspace {s['ws']}")
+            # 2. marker harvest driven by marker-SET CHANGE (v4.2): every
+            # new commit appends/refreshes markers; harvest whenever the
+            # visible marker set differs from the last-harvested set (this
+            # implements the documented re-arm law) or the report lands.
             if s["ws"]:
                 paths = ws_tree(s["chat"], s["ws"])
                 if paths is not None:
@@ -261,15 +271,19 @@ def main():
                         s["tree"] = len(paths)
                         grew = True
                     blob = "\n".join(paths)
-                    marks = [m for m in MARKERS if m in blob]
+                    marks = tuple(sorted(m for m in MARKERS if m in blob))
                     done = DONE_MARKER in blob
-                    # incremental-delivery law: partial markers (bundle/
-                    # MANIFEST without the report) harvest a SALVAGE copy
-                    # but keep the lane live; only the report completes.
-                    if marks and (not s["harvested"] or done):
-                        s["harvested"] = True
+                    marks_changed = marks != s.get("last_marks")
+                    # v4.2 crash-safety: tree growth since the last harvest
+                    # also re-arms (a fresh commit landed files; pull them
+                    # even if the marker SET is unchanged)
+                    tree_grew = (s.get("last_h_tree") is not None
+                                 and len(paths) != s["last_h_tree"])
+                    if marks and (marks_changed or tree_grew or done):
+                        s["last_marks"] = marks
+                        s["last_h_tree"] = len(paths)
                         kind = "COMPLETE" if done else "PARTIAL(salvage)"
-                        log(f"{name}: MARKERS {marks} — {kind} — AUTO-HARVEST")
+                        log(f"{name}: MARKERS {list(marks)} — {kind} — AUTO-HARVEST")
                         outbox(f"AUTO-HARVEST LAUNCH ({kind}): {name} carries {marks}. "
                                f"Pulling via harvest_robust NOW.")
                         lines = run([os.path.join(BASE, "harvest_robust.py"),
@@ -294,11 +308,14 @@ def main():
             # /c/ chats only; fresh chats get nudge-only recovery.)
             frozen = (len(s["lens"]) >= FROZEN_CYCLES
                       and len(set(s["lens"][-FROZEN_CYCLES:])) == 1)
-            if st.get("stopBtn") and frozen and s["nudges"] < NUDGE_BUDGET:
+            quiet = time.time() - s["last_growth"] > STUCK_QUIET
+            if (st.get("stopBtn") and frozen and quiet
+                    and s["nudges"] < NUDGE_BUDGET):
                 s["unstick_count"] += 1
                 if s["chat"]:
                     log(f"{name}: STUCK-START (stopBtn + frozen {FROZEN_CYCLES} "
-                        f"cycles) — force-unstick #{s['unstick_count']}")
+                        f"cycles + quiet {STUCK_QUIET}s) — force-unstick "
+                        f"#{s['unstick_count']}")
                     r = click_stop(tab)
                     log(f"{name}: stop click: {r}")
                     time.sleep(8)
