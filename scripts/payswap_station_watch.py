@@ -207,8 +207,8 @@ def ws_tree(chat, ws_id):
 
 
 def main():
-    log("station watch v4.2 online — registry lanes; quiet-guarded unstick; "
-        "marker-set + tree-growth auto-harvest")
+    log("station watch v4.3 online — registry lanes; stop-click SUPPRESSED "
+        "(agent-mode death law); marker-set + tree-growth auto-harvest")
     outbox("STATION WATCH v4.2 armed: quiet-guard (no stop-click on live "
            "subagent waves), marker-set-change + tree-growth salvage "
            "harvests, hash-driven refresh (MANIFEST).")
@@ -312,17 +312,19 @@ def main():
             if (st.get("stopBtn") and frozen and quiet
                     and s["nudges"] < NUDGE_BUDGET):
                 s["unstick_count"] += 1
-                if s["chat"]:
-                    log(f"{name}: STUCK-START (stopBtn + frozen {FROZEN_CYCLES} "
-                        f"cycles + quiet {STUCK_QUIET}s) — force-unstick "
-                        f"#{s['unstick_count']}")
-                    r = click_stop(tab)
-                    log(f"{name}: stop click: {r}")
-                    time.sleep(8)
-                else:
-                    log(f"{name}: STUCK-START on fresh home-surface chat — "
-                        f"nudge-only recovery #{s['unstick_count']} (stop would "
-                        f"destroy the chat)")
+                # v4.3 (2026-10-19 19:45Z): STOP-CLICK SUPPRESSED — the
+                # agent-mode death correlation. Three lanes (gov-w1 17:20,
+                # gov-w1r 18:12, r4-w1 18:40) were mid-work stop-clicked and
+                # their chats were platform-recycled within minutes; the one
+                # survival (r3-w3d 16:29) was already finishing. A mid-work
+                # stop on an orchestrated agent session appears to cascade
+                # into session teardown. Recovery is now NUDGE-ONLY; the
+                # LAW-2 per-commit bundle salvage is the safety net (proven:
+                # r3-w3d full harvest; r4-w1 3/4 harvest).
+                log(f"{name}: STUCK-START (stopBtn + frozen {FROZEN_CYCLES} "
+                    f"cycles + quiet {STUCK_QUIET}s) — stop-click SUPPRESSED "
+                    f"(v4.3 agent-mode death law) — nudge-only recovery "
+                    f"#{s['unstick_count']}")
                 lines = run([os.path.join(BASE, "dispatch_worker.py"), "send",
                              name, "Begin the work order now (station setup "
                              "first). If already started, continue from "
