@@ -1,7 +1,7 @@
 {
   "url": "https://hyper3d-clone.vercel.app",
   "chrome_egress": "198.244.234.214",
-  "started_utc": "2026-10-19T17:05:00Z",
+  "started_utc": "2026-10-19T17:45:01Z",
   "phases": {
     "landing": {
       "title": "hyper3d-clone.vercel.app",
@@ -13,6 +13,6 @@
     ]
   },
   "ok": false,
-  "fatal": "js error: {\"exceptionId\": 3, \"text\": \"Uncaught (in promise) TypeError: Failed to fetch\", \"lineNumber\": 0, \"columnNumber\": 0, \"exception\": {\"type\": \"object\", \"subtype\": \"error\", \"className\": \"TypeError\", \"descri",
-  "finished_utc": "2026-10-19T17:05:18Z"
+  "fatal": "js error: {\"exceptionId\": 4, \"text\": \"Uncaught (in promise) TypeError: Failed to fetch\", \"lineNumber\": 0, \"columnNumber\": 0, \"exception\": {\"type\": \"object\", \"subtype\": \"error\", \"className\": \"TypeError\", \"descri",
+  "finished_utc": "2026-10-19T17:45:18Z"
 }

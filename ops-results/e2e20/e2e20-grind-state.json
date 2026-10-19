@@ -85,6 +85,252 @@
       },
       "outcome": "fallback",
       "hf_log": "[{\"t\":1792430230408,\"kind\":\"upload\",\"status\":200,\"body\":\"[\\\"/tmp/gradio/699652fc90c0b2358bd70329bd22bd5b822216abd4e040dc126971919b155aa5/reference.jpg\\\"]\"},{\"t\":1792430230644,\"kind\":\"other-hf\",\"url\":\"https://tencent-hunyuan3d-2-1.hf.space/config\",\"status\":200},{\"t\":1792430230884,\"kind\":\"other-hf\",\"url\":\"https://tencent-hunyuan3d-2-1.hf.space/queue/join\",\"status\":200},{\"t\":1792430231117,\"kind\":\"other-hf\",\"url\":\"https://tencent-hunyuan3d-2-1.hf.space/queue/data?session_hash=22cff473-55e6-4b51-a7c6-c44fab4e9837\",\"status\":200}]"
+    },
+    {
+      "cycle": 3,
+      "at": "2026-10-19T17:22:32Z",
+      "user": "demo creator",
+      "pre_balance": 48,
+      "upload": "uploaded:119314",
+      "caption": {
+        "captioned": true,
+        "value": "A glossy red apple with a short brown stem, flanked by two green apples in soft focus. sim",
+        "uploaded": true
+      },
+      "anchor": "6f2ea404-e429-4bec-a857-0076d0da66b5",
+      "generate": "clicked:GENERATE 1 Credit",
+      "tracked_uuid": "6f5f4de4-50a3-454a-ad4d-1f9a0d76c429",
+      "final_poll": {
+        "hf": 4,
+        "mine": {
+          "uuid": "6f5f4de4-50a3-454a-ad4d-1f9a0d76c429",
+          "user_state": "DonePreview",
+          "engine_used": "fast",
+          "seed": 10223,
+          "confirmed": false
+        },
+        "confirm": true,
+        "neuralToast": false,
+        "fallbackToast": true
+      },
+      "task_uuid": "6f5f4de4-50a3-454a-ad4d-1f9a0d76c429",
+      "user_state": "DonePreview",
+      "engine_used": "fast",
+      "seed": 10223,
+      "hf_reqs": 4,
+      "card": {
+        "user_state": "DonePreview",
+        "engine_used": "fast",
+        "fallback_reason": "neural engine reported an error event: 'You have exceeded your ZeroGPU quota (90s requested vs. 74s left). Try again in 19:54:14. Authenticate with a Hugging Face token for more quota - https://huggingface.co/settings/tokens'",
+        "confirmed": false
+      },
+      "outcome": "fallback",
+      "hf_log": "[{\"t\":1792430587013,\"kind\":\"upload\",\"status\":200,\"body\":\"[\\\"/tmp/gradio/699652fc90c0b2358bd70329bd22bd5b822216abd4e040dc126971919b155aa5/reference.jpg\\\"]\"},{\"t\":1792430587248,\"kind\":\"other-hf\",\"url\":\"https://tencent-hunyuan3d-2-1.hf.space/config\",\"status\":200},{\"t\":1792430587686,\"kind\":\"other-hf\",\"url\":\"https://tencent-hunyuan3d-2-1.hf.space/queue/join\",\"status\":200},{\"t\":1792430587909,\"kind\":\"other-hf\",\"url\":\"https://tencent-hunyuan3d-2-1.hf.space/queue/data?session_hash=4313fbf0-c10b-489b-8773-b501b7765f40\",\"status\":200}]"
+    },
+    {
+      "cycle": 4,
+      "at": "2026-10-19T17:28:24Z",
+      "user": "demo creator",
+      "pre_balance": 47,
+      "upload": "uploaded:119314",
+      "caption": {
+        "captioned": true,
+        "value": "A glossy red apple with a short brown stem, flanked by two green apples in soft focus. sim",
+        "uploaded": true
+      },
+      "anchor": "3110a57c-1081-4bac-904d-e7e153bf374c",
+      "generate": "clicked:GENERATE 1 Credit",
+      "tracked_uuid": "191f0dbb-7eb0-47d8-8e1b-bfd38321dd73",
+      "final_poll": {
+        "hf": 4,
+        "mine": {
+          "uuid": "191f0dbb-7eb0-47d8-8e1b-bfd38321dd73",
+          "user_state": "DonePreview",
+          "engine_used": "fast",
+          "seed": 52090,
+          "confirmed": false
+        },
+        "confirm": true,
+        "neuralToast": false,
+        "fallbackToast": true
+      },
+      "task_uuid": "191f0dbb-7eb0-47d8-8e1b-bfd38321dd73",
+      "user_state": "DonePreview",
+      "engine_used": "fast",
+      "seed": 52090,
+      "hf_reqs": 4,
+      "card": {
+        "user_state": "DonePreview",
+        "engine_used": "fast",
+        "fallback_reason": "neural engine reported an error event: 'You have exceeded your ZeroGPU quota (90s requested vs. 74s left). Try again in 19:48:23. Authenticate with a Hugging Face token for more quota - https://huggingface.co/settings/tokens'",
+        "confirmed": false
+      },
+      "outcome": "fallback",
+      "hf_log": "[{\"t\":1792430938073,\"kind\":\"upload\",\"status\":200,\"body\":\"[\\\"/tmp/gradio/699652fc90c0b2358bd70329bd22bd5b822216abd4e040dc126971919b155aa5/reference.jpg\\\"]\"},{\"t\":1792430938315,\"kind\":\"other-hf\",\"url\":\"https://tencent-hunyuan3d-2-1.hf.space/config\",\"status\":200},{\"t\":1792430938551,\"kind\":\"other-hf\",\"url\":\"https://tencent-hunyuan3d-2-1.hf.space/queue/join\",\"status\":200},{\"t\":1792430938780,\"kind\":\"other-hf\",\"url\":\"https://tencent-hunyuan3d-2-1.hf.space/queue/data?session_hash=db31c060-9303-4fe1-b687-ef6a76737186\",\"status\":200}]"
+    },
+    {
+      "cycle": 5,
+      "at": "2026-10-19T17:34:14Z",
+      "user": "demo creator",
+      "pre_balance": 47,
+      "upload": "uploaded:119314",
+      "caption": {
+        "captioned": true,
+        "value": "A glossy red apple with a short brown stem and two green apples behind it. simple geometry",
+        "uploaded": true
+      },
+      "anchor": "191f0dbb-7eb0-47d8-8e1b-bfd38321dd73",
+      "generate": "clicked:GENERATE 1 Credit",
+      "tracked_uuid": "ee1ba744-b0e5-4aad-bf9e-259dc662e77c",
+      "final_poll": {
+        "hf": 4,
+        "mine": {
+          "uuid": "ee1ba744-b0e5-4aad-bf9e-259dc662e77c",
+          "user_state": "DonePreview",
+          "engine_used": "fast",
+          "seed": 7265,
+          "confirmed": false
+        },
+        "confirm": true,
+        "neuralToast": false,
+        "fallbackToast": true
+      },
+      "task_uuid": "ee1ba744-b0e5-4aad-bf9e-259dc662e77c",
+      "user_state": "DonePreview",
+      "engine_used": "fast",
+      "seed": 7265,
+      "hf_reqs": 4,
+      "card": {
+        "user_state": "DonePreview",
+        "engine_used": "fast",
+        "fallback_reason": "neural engine reported an error event: 'You have exceeded your ZeroGPU quota (90s requested vs. 74s left). Try again in 19:42:36. Authenticate with a Hugging Face token for more quota - https://huggingface.co/settings/tokens'",
+        "confirmed": false
+      },
+      "outcome": "fallback",
+      "hf_log": "[{\"t\":1792431284718,\"kind\":\"upload\",\"status\":200,\"body\":\"[\\\"/tmp/gradio/699652fc90c0b2358bd70329bd22bd5b822216abd4e040dc126971919b155aa5/reference.jpg\\\"]\"},{\"t\":1792431284955,\"kind\":\"other-hf\",\"url\":\"https://tencent-hunyuan3d-2-1.hf.space/config\",\"status\":200},{\"t\":1792431285399,\"kind\":\"other-hf\",\"url\":\"https://tencent-hunyuan3d-2-1.hf.space/queue/join\",\"status\":200},{\"t\":1792431285639,\"kind\":\"other-hf\",\"url\":\"https://tencent-hunyuan3d-2-1.hf.space/queue/data?session_hash=4b6c1675-cb91-430e-888d-da401597dbce\",\"status\":200}]"
+    },
+    {
+      "cycle": 6,
+      "at": "2026-10-19T17:40:06Z",
+      "user": "demo creator",
+      "pre_balance": 47,
+      "upload": "uploaded:119314",
+      "caption": {
+        "captioned": true,
+        "value": "A glossy red apple with a short brown stem, flanked by two green apples in soft focus. sim",
+        "uploaded": true
+      },
+      "anchor": "ee1ba744-b0e5-4aad-bf9e-259dc662e77c",
+      "generate": "clicked:GENERATE 1 Credit",
+      "tracked_uuid": "5db0b5ff-9364-41e6-a00c-a734c25d5d16",
+      "final_poll": {
+        "hf": 4,
+        "mine": {
+          "uuid": "5db0b5ff-9364-41e6-a00c-a734c25d5d16",
+          "user_state": "DonePreview",
+          "engine_used": "fast",
+          "seed": 44724,
+          "confirmed": false
+        },
+        "confirm": true,
+        "neuralToast": false,
+        "fallbackToast": true
+      },
+      "task_uuid": "5db0b5ff-9364-41e6-a00c-a734c25d5d16",
+      "user_state": "DonePreview",
+      "engine_used": "fast",
+      "seed": 44724,
+      "hf_reqs": 4,
+      "card": {
+        "user_state": "DonePreview",
+        "engine_used": "fast",
+        "fallback_reason": "neural engine reported an error event: 'You have exceeded your ZeroGPU quota (90s requested vs. 74s left). Try again in 19:36:45. Authenticate with a Hugging Face token for more quota - https://huggingface.co/settings/tokens'",
+        "confirmed": false
+      },
+      "outcome": "fallback",
+      "hf_log": "[{\"t\":1792431636244,\"kind\":\"upload\",\"status\":200,\"body\":\"[\\\"/tmp/gradio/699652fc90c0b2358bd70329bd22bd5b822216abd4e040dc126971919b155aa5/reference.jpg\\\"]\"},{\"t\":1792431636479,\"kind\":\"other-hf\",\"url\":\"https://tencent-hunyuan3d-2-1.hf.space/config\",\"status\":200},{\"t\":1792431636719,\"kind\":\"other-hf\",\"url\":\"https://tencent-hunyuan3d-2-1.hf.space/queue/join\",\"status\":200},{\"t\":1792431636954,\"kind\":\"other-hf\",\"url\":\"https://tencent-hunyuan3d-2-1.hf.space/queue/data?session_hash=053c1243-28d1-4b0b-867b-1f09874e3259\",\"status\":200}]"
+    },
+    {
+      "cycle": 7,
+      "at": "2026-10-19T17:45:58Z",
+      "user": "demo creator",
+      "pre_balance": 47,
+      "upload": "uploaded:119314",
+      "caption": {
+        "captioned": true,
+        "value": "A shiny red apple with a short brown stem, flanked by two green apples in soft focus. simp",
+        "uploaded": true
+      },
+      "anchor": "5db0b5ff-9364-41e6-a00c-a734c25d5d16",
+      "generate": "clicked:GENERATE 1 Credit",
+      "tracked_uuid": "b9371bff-ad7a-4160-8cdd-d36f421ab416",
+      "final_poll": {
+        "hf": 4,
+        "mine": {
+          "uuid": "b9371bff-ad7a-4160-8cdd-d36f421ab416",
+          "user_state": "DonePreview",
+          "engine_used": "fast",
+          "seed": 21919,
+          "confirmed": false
+        },
+        "confirm": true,
+        "neuralToast": false,
+        "fallbackToast": true
+      },
+      "task_uuid": "b9371bff-ad7a-4160-8cdd-d36f421ab416",
+      "user_state": "DonePreview",
+      "engine_used": "fast",
+      "seed": 21919,
+      "hf_reqs": 4,
+      "card": {
+        "user_state": "DonePreview",
+        "engine_used": "fast",
+        "fallback_reason": "neural engine reported an error event: 'You have exceeded your ZeroGPU quota (90s requested vs. 74s left). Try again in 19:30:47. Authenticate with a Hugging Face token for more quota - https://huggingface.co/settings/tokens'",
+        "confirmed": false
+      },
+      "outcome": "fallback",
+      "hf_log": "[{\"t\":1792431993589,\"kind\":\"upload\",\"status\":200,\"body\":\"[\\\"/tmp/gradio/699652fc90c0b2358bd70329bd22bd5b822216abd4e040dc126971919b155aa5/reference.jpg\\\"]\"},{\"t\":1792431993829,\"kind\":\"other-hf\",\"url\":\"https://tencent-hunyuan3d-2-1.hf.space/config\",\"status\":200},{\"t\":1792431994295,\"kind\":\"other-hf\",\"url\":\"https://tencent-hunyuan3d-2-1.hf.space/queue/join\",\"status\":200},{\"t\":1792431994548,\"kind\":\"other-hf\",\"url\":\"https://tencent-hunyuan3d-2-1.hf.space/queue/data?session_hash=3a279110-60c7-4bab-a908-7ba1044e84e0\",\"status\":200}]"
+    },
+    {
+      "cycle": 8,
+      "at": "2026-10-19T17:51:54Z",
+      "user": "demo creator",
+      "pre_balance": 47,
+      "upload": "uploaded:119314",
+      "caption": {
+        "captioned": true,
+        "value": "A glossy red apple with a short brown stem, flanked by two green apples in soft focus. sim",
+        "uploaded": true
+      },
+      "anchor": "b9371bff-ad7a-4160-8cdd-d36f421ab416",
+      "generate": "clicked:GENERATE 1 Credit",
+      "tracked_uuid": "730f60ad-7285-427f-a046-ab5635ee2c92",
+      "final_poll": {
+        "hf": 4,
+        "mine": {
+          "uuid": "730f60ad-7285-427f-a046-ab5635ee2c92",
+          "user_state": "DonePreview",
+          "engine_used": "fast",
+          "seed": 15962,
+          "confirmed": false
+        },
+        "confirm": true,
+        "neuralToast": false,
+        "fallbackToast": true
+      },
+      "task_uuid": "730f60ad-7285-427f-a046-ab5635ee2c92",
+      "user_state": "DonePreview",
+      "engine_used": "fast",
+      "seed": 15962,
+      "hf_reqs": 4,
+      "card": {
+        "user_state": "DonePreview",
+        "engine_used": "fast",
+        "fallback_reason": "neural engine reported an error event: 'You have exceeded your ZeroGPU quota (90s requested vs. 74s left). Try again in 19:24:57. Authenticate with a Hugging Face token for more quota - https://huggingface.co/settings/tokens'",
+        "confirmed": false
+      },
+      "outcome": "fallback",
+      "hf_log": "[{\"t\":1792432344230,\"kind\":\"upload\",\"status\":200,\"body\":\"[\\\"/tmp/gradio/699652fc90c0b2358bd70329bd22bd5b822216abd4e040dc126971919b155aa5/reference.jpg\\\"]\"},{\"t\":1792432344462,\"kind\":\"other-hf\",\"url\":\"https://tencent-hunyuan3d-2-1.hf.space/config\",\"status\":200},{\"t\":1792432344700,\"kind\":\"other-hf\",\"url\":\"https://tencent-hunyuan3d-2-1.hf.space/queue/join\",\"status\":200},{\"t\":1792432344943,\"kind\":\"other-hf\",\"url\":\"https://tencent-hunyuan3d-2-1.hf.space/queue/data?session_hash=03972730-3e85-4704-8ac4-b82ebab7603a\",\"status\":200}]"
     }
   ],
   "done": false,
