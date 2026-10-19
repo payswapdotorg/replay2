@@ -88,6 +88,20 @@
         "confirmed": false
       },
       "outcome": "fallback"
+    },
+    {
+      "cycle": 3,
+      "at": "2026-10-19T08:54:38Z",
+      "signin": "submitted:Sign in",
+      "outcome": "error",
+      "reason": "sign-in failed: None"
+    },
+    {
+      "cycle": 4,
+      "at": "2026-10-19T09:09:57Z",
+      "signin": "submitted:Sign in",
+      "outcome": "error",
+      "reason": "sign-in failed: None"
     }
   ],
   "done": false,
