@@ -243,5 +243,6 @@
   "ok": true,
   "neural": true,
   "exports_byte_verified": true,
-  "finished_utc": "2026-10-19T02:52:28Z"
+  "finished_utc": "2026-10-19T02:52:28Z",
+  "AUDIT_VERDICT": "FALSE POSITIVE \u2014 rejected; see e2e20-audit-2026-10-19.md"
 }

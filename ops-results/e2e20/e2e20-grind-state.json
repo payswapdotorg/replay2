@@ -305,6 +305,666 @@
       "seed": 416,
       "hf_reqs": 3,
       "outcome": "fallback"
+    },
+    {
+      "cycle": 10,
+      "at": "2026-10-19T03:07:10Z",
+      "user": "demo creator",
+      "pre_balance": 18,
+      "upload": "uploaded:119314",
+      "caption": {
+        "captioned": true,
+        "value": "A shiny red apple with a short brown stem, flanked by two green apples. simple geometry.",
+        "uploaded": true
+      },
+      "anchor": "6d7add2e-7e35-47fe-af62-88b953f0de9a",
+      "generate": "clicked:GENERATE 1 Credit",
+      "final_poll": {
+        "hf": 3,
+        "mine": {
+          "uuid": "5c440b53-b7a0-4b74-ae12-a31a4aeeb38d",
+          "user_state": "DonePreview",
+          "engine_used": "fast",
+          "seed": 16786,
+          "confirmed": false
+        },
+        "confirm": true,
+        "neuralToast": false,
+        "fallbackToast": false
+      },
+      "task_uuid": "5c440b53-b7a0-4b74-ae12-a31a4aeeb38d",
+      "user_state": "DonePreview",
+      "engine_used": "fast",
+      "seed": 16786,
+      "hf_reqs": 3,
+      "outcome": "fallback"
+    },
+    {
+      "cycle": 11,
+      "at": "2026-10-19T03:23:06Z",
+      "user": "demo creator",
+      "pre_balance": 18,
+      "upload": "uploaded:119314",
+      "caption": {
+        "captioned": true,
+        "value": "A shiny red apple with a short brown stem and water droplets, flanked by two green apples ",
+        "uploaded": true
+      },
+      "anchor": "5c440b53-b7a0-4b74-ae12-a31a4aeeb38d",
+      "generate": "clicked:GENERATE 1 Credit",
+      "final_poll": {
+        "hf": 3,
+        "mine": {
+          "uuid": "e9f78130-ba92-4ae8-9eb1-49969aaff0ae",
+          "user_state": "DonePreview",
+          "engine_used": "fast",
+          "seed": 15089,
+          "confirmed": false
+        },
+        "confirm": true,
+        "neuralToast": false,
+        "fallbackToast": false
+      },
+      "task_uuid": "e9f78130-ba92-4ae8-9eb1-49969aaff0ae",
+      "user_state": "DonePreview",
+      "engine_used": "fast",
+      "seed": 15089,
+      "hf_reqs": 3,
+      "outcome": "fallback"
+    },
+    {
+      "cycle": 12,
+      "at": "2026-10-19T03:38:56Z",
+      "user": "demo creator",
+      "pre_balance": 18,
+      "upload": "uploaded:119314",
+      "caption": {
+        "captioned": true,
+        "value": "A glossy red apple with a short brown stem and two green apples behind it. simple geometry",
+        "uploaded": true
+      },
+      "anchor": "e9f78130-ba92-4ae8-9eb1-49969aaff0ae",
+      "generate": "clicked:GENERATE 1 Credit",
+      "final_poll": {
+        "hf": 3,
+        "mine": {
+          "uuid": "2259acd1-b638-4bd4-888c-065b75c508f3",
+          "user_state": "DonePreview",
+          "engine_used": "fast",
+          "seed": 29188,
+          "confirmed": false
+        },
+        "confirm": true,
+        "neuralToast": false,
+        "fallbackToast": false
+      },
+      "task_uuid": "2259acd1-b638-4bd4-888c-065b75c508f3",
+      "user_state": "DonePreview",
+      "engine_used": "fast",
+      "seed": 29188,
+      "hf_reqs": 3,
+      "outcome": "fallback"
+    },
+    {
+      "cycle": 13,
+      "at": "2026-10-19T03:54:51Z",
+      "user": "demo creator",
+      "pre_balance": 18,
+      "upload": "uploaded:119314",
+      "caption": {
+        "captioned": true,
+        "value": "A glossy red apple with a short brown stem, flanked by two green apples in soft focus. sim",
+        "uploaded": true
+      },
+      "anchor": "2259acd1-b638-4bd4-888c-065b75c508f3",
+      "generate": "clicked:GENERATE 1 Credit",
+      "final_poll": {
+        "hf": 3,
+        "mine": {
+          "uuid": "dbb678ed-9af2-442b-9cae-a4a5c1918ced",
+          "user_state": "DonePreview",
+          "engine_used": "fast",
+          "seed": 40125,
+          "confirmed": false
+        },
+        "confirm": true,
+        "neuralToast": false,
+        "fallbackToast": false
+      },
+      "task_uuid": "dbb678ed-9af2-442b-9cae-a4a5c1918ced",
+      "user_state": "DonePreview",
+      "engine_used": "fast",
+      "seed": 40125,
+      "hf_reqs": 3,
+      "outcome": "fallback"
+    },
+    {
+      "cycle": 14,
+      "at": "2026-10-19T04:10:42Z",
+      "user": "demo creator",
+      "pre_balance": 18,
+      "upload": "uploaded:119314",
+      "caption": {
+        "captioned": true,
+        "value": "A glossy red apple with a short brown stem and two green apples behind it. simple geometry",
+        "uploaded": true
+      },
+      "anchor": "dbb678ed-9af2-442b-9cae-a4a5c1918ced",
+      "generate": "clicked:GENERATE 1 Credit",
+      "final_poll": {
+        "hf": 3,
+        "mine": {
+          "uuid": "36b8d16d-6df4-4e7b-bfa6-4dc60838a66b",
+          "user_state": "DonePreview",
+          "engine_used": "fast",
+          "seed": 8497,
+          "confirmed": false
+        },
+        "confirm": true,
+        "neuralToast": false,
+        "fallbackToast": false
+      },
+      "task_uuid": "36b8d16d-6df4-4e7b-bfa6-4dc60838a66b",
+      "user_state": "DonePreview",
+      "engine_used": "fast",
+      "seed": 8497,
+      "hf_reqs": 3,
+      "outcome": "fallback"
+    },
+    {
+      "cycle": 15,
+      "at": "2026-10-19T04:26:39Z",
+      "user": "demo creator",
+      "pre_balance": 18,
+      "upload": "uploaded:119314",
+      "caption": {
+        "captioned": true,
+        "value": "A glossy red apple with a short brown stem and two green apples behind it. simple geometry",
+        "uploaded": true
+      },
+      "anchor": "36b8d16d-6df4-4e7b-bfa6-4dc60838a66b",
+      "generate": "clicked:GENERATE 1 Credit",
+      "final_poll": {
+        "hf": 3,
+        "mine": {
+          "uuid": "7e2d23cb-64dd-42bc-b675-e315d0cf6b62",
+          "user_state": "DonePreview",
+          "engine_used": "fast",
+          "seed": 49043,
+          "confirmed": false
+        },
+        "confirm": false,
+        "neuralToast": false,
+        "fallbackToast": false
+      },
+      "task_uuid": "7e2d23cb-64dd-42bc-b675-e315d0cf6b62",
+      "user_state": "DonePreview",
+      "engine_used": "fast",
+      "seed": 49043,
+      "hf_reqs": 3,
+      "outcome": "fallback"
+    },
+    {
+      "cycle": 16,
+      "at": "2026-10-19T04:42:52Z",
+      "user": "demo creator",
+      "pre_balance": 18,
+      "upload": "uploaded:119314",
+      "caption": {
+        "captioned": true,
+        "value": "A glossy red apple with a short brown stem, flanked by two green apples in soft focus. sim",
+        "uploaded": true
+      },
+      "anchor": "7e2d23cb-64dd-42bc-b675-e315d0cf6b62",
+      "generate": "clicked:GENERATE 1 Credit",
+      "final_poll": {
+        "hf": 3,
+        "mine": {
+          "uuid": "bbd2d326-ac68-47a9-ae46-20fbd58589fa",
+          "user_state": "DonePreview",
+          "engine_used": "fast",
+          "seed": 10840,
+          "confirmed": false
+        },
+        "confirm": true,
+        "neuralToast": false,
+        "fallbackToast": false
+      },
+      "task_uuid": "bbd2d326-ac68-47a9-ae46-20fbd58589fa",
+      "user_state": "DonePreview",
+      "engine_used": "fast",
+      "seed": 10840,
+      "hf_reqs": 3,
+      "outcome": "fallback"
+    },
+    {
+      "cycle": 17,
+      "at": "2026-10-19T04:59:01Z",
+      "user": "demo creator",
+      "pre_balance": 18,
+      "upload": "uploaded:119314",
+      "caption": {
+        "captioned": true,
+        "value": "A shiny red apple with a short brown stem, flanked by two green apples. simple geometry.",
+        "uploaded": true
+      },
+      "anchor": "bbd2d326-ac68-47a9-ae46-20fbd58589fa",
+      "generate": "clicked:GENERATE 1 Credit",
+      "final_poll": {
+        "hf": 3,
+        "mine": {
+          "uuid": "94499bf3-680f-4432-9f26-7a894493440e",
+          "user_state": "DonePreview",
+          "engine_used": "fast",
+          "seed": 25604,
+          "confirmed": false
+        },
+        "confirm": true,
+        "neuralToast": false,
+        "fallbackToast": false
+      },
+      "task_uuid": "94499bf3-680f-4432-9f26-7a894493440e",
+      "user_state": "DonePreview",
+      "engine_used": "fast",
+      "seed": 25604,
+      "hf_reqs": 3,
+      "outcome": "fallback"
+    },
+    {
+      "cycle": 18,
+      "at": "2026-10-19T05:15:03Z",
+      "user": "demo creator",
+      "pre_balance": 18,
+      "upload": "uploaded:119314",
+      "caption": {
+        "captioned": true,
+        "value": "A shiny red apple with a short brown stem, flanked by two green apples. simple geometry.",
+        "uploaded": true
+      },
+      "anchor": "94499bf3-680f-4432-9f26-7a894493440e",
+      "generate": "clicked:GENERATE 1 Credit",
+      "final_poll": {
+        "hf": 3,
+        "mine": {
+          "uuid": "1ff51295-36c8-4f55-bd0b-88022254ed92",
+          "user_state": "DonePreview",
+          "engine_used": "fast",
+          "seed": 19880,
+          "confirmed": false
+        },
+        "confirm": true,
+        "neuralToast": false,
+        "fallbackToast": false
+      },
+      "task_uuid": "1ff51295-36c8-4f55-bd0b-88022254ed92",
+      "user_state": "DonePreview",
+      "engine_used": "fast",
+      "seed": 19880,
+      "hf_reqs": 3,
+      "outcome": "fallback"
+    },
+    {
+      "cycle": 19,
+      "at": "2026-10-19T05:30:58Z",
+      "user": "demo creator",
+      "pre_balance": 18,
+      "upload": "uploaded:119314",
+      "caption": {
+        "captioned": true,
+        "value": "A glossy red apple with a short brown stem, flanked by two green apples in soft focus. sim",
+        "uploaded": true
+      },
+      "anchor": "1ff51295-36c8-4f55-bd0b-88022254ed92",
+      "generate": "clicked:GENERATE 1 Credit",
+      "final_poll": {
+        "hf": 3,
+        "mine": {
+          "uuid": "7fa01d0a-6226-4014-b3d7-2aeb4f4cca79",
+          "user_state": "DonePreview",
+          "engine_used": "fast",
+          "seed": 52003,
+          "confirmed": false
+        },
+        "confirm": true,
+        "neuralToast": false,
+        "fallbackToast": false
+      },
+      "task_uuid": "7fa01d0a-6226-4014-b3d7-2aeb4f4cca79",
+      "user_state": "DonePreview",
+      "engine_used": "fast",
+      "seed": 52003,
+      "hf_reqs": 3,
+      "outcome": "fallback"
+    },
+    {
+      "cycle": 20,
+      "at": "2026-10-19T05:47:10Z",
+      "user": "demo creator",
+      "pre_balance": 18,
+      "upload": "uploaded:119314",
+      "caption": {
+        "captioned": true,
+        "value": "A shiny red apple with a short brown stem, flanked by two green apples in soft focus. simp",
+        "uploaded": true
+      },
+      "anchor": "7fa01d0a-6226-4014-b3d7-2aeb4f4cca79",
+      "generate": "clicked:GENERATE 1 Credit",
+      "final_poll": {
+        "hf": 3,
+        "mine": {
+          "uuid": "15c67d66-2a97-4ae1-bfc1-51b3bc9060b3",
+          "user_state": "DonePreview",
+          "engine_used": "fast",
+          "seed": 19589,
+          "confirmed": false
+        },
+        "confirm": true,
+        "neuralToast": false,
+        "fallbackToast": false
+      },
+      "task_uuid": "15c67d66-2a97-4ae1-bfc1-51b3bc9060b3",
+      "user_state": "DonePreview",
+      "engine_used": "fast",
+      "seed": 19589,
+      "hf_reqs": 3,
+      "outcome": "fallback"
+    },
+    {
+      "cycle": 21,
+      "at": "2026-10-19T06:03:00Z",
+      "user": "demo creator",
+      "pre_balance": 18,
+      "upload": "uploaded:119314",
+      "caption": {
+        "captioned": true,
+        "value": "A glossy red apple with a short brown stem, flanked by two green apples in soft focus. sim",
+        "uploaded": true
+      },
+      "anchor": "15c67d66-2a97-4ae1-bfc1-51b3bc9060b3",
+      "generate": "clicked:GENERATE 1 Credit",
+      "final_poll": {
+        "hf": 3,
+        "mine": {
+          "uuid": "92f6fb2a-4434-407b-a11f-774c166153ae",
+          "user_state": "DonePreview",
+          "engine_used": "fast",
+          "seed": 63927,
+          "confirmed": false
+        },
+        "confirm": true,
+        "neuralToast": false,
+        "fallbackToast": false
+      },
+      "task_uuid": "92f6fb2a-4434-407b-a11f-774c166153ae",
+      "user_state": "DonePreview",
+      "engine_used": "fast",
+      "seed": 63927,
+      "hf_reqs": 3,
+      "outcome": "fallback"
+    },
+    {
+      "cycle": 22,
+      "at": "2026-10-19T06:19:08Z",
+      "user": "demo creator",
+      "pre_balance": 18,
+      "upload": "uploaded:119314",
+      "caption": {
+        "captioned": true,
+        "value": "A glossy red apple with a short brown stem, flanked by two green apples in soft focus. sim",
+        "uploaded": true
+      },
+      "anchor": "92f6fb2a-4434-407b-a11f-774c166153ae",
+      "generate": "clicked:GENERATE 1 Credit",
+      "final_poll": {
+        "hf": 3,
+        "mine": {
+          "uuid": "4876bbf3-0614-48b5-8c08-855323ff930f",
+          "user_state": "DonePreview",
+          "engine_used": "fast",
+          "seed": 19648,
+          "confirmed": false
+        },
+        "confirm": true,
+        "neuralToast": false,
+        "fallbackToast": false
+      },
+      "task_uuid": "4876bbf3-0614-48b5-8c08-855323ff930f",
+      "user_state": "DonePreview",
+      "engine_used": "fast",
+      "seed": 19648,
+      "hf_reqs": 3,
+      "outcome": "fallback"
+    },
+    {
+      "cycle": 23,
+      "at": "2026-10-19T06:35:15Z",
+      "user": "demo creator",
+      "pre_balance": 18,
+      "upload": "uploaded:119314",
+      "caption": {
+        "captioned": true,
+        "value": "A shiny red apple with a short brown stem and two green apples behind it. simple geometry.",
+        "uploaded": true
+      },
+      "anchor": "4876bbf3-0614-48b5-8c08-855323ff930f",
+      "generate": "clicked:GENERATE 1 Credit",
+      "final_poll": {
+        "hf": 3,
+        "mine": {
+          "uuid": "625e9ca8-c5f2-45ad-8095-19591319ed62",
+          "user_state": "DonePreview",
+          "engine_used": "fast",
+          "seed": 29896,
+          "confirmed": false
+        },
+        "confirm": true,
+        "neuralToast": false,
+        "fallbackToast": false
+      },
+      "task_uuid": "625e9ca8-c5f2-45ad-8095-19591319ed62",
+      "user_state": "DonePreview",
+      "engine_used": "fast",
+      "seed": 29896,
+      "hf_reqs": 3,
+      "outcome": "fallback"
+    },
+    {
+      "cycle": 24,
+      "at": "2026-10-19T06:51:24Z",
+      "user": "demo creator",
+      "pre_balance": 18,
+      "upload": "uploaded:119314",
+      "caption": {
+        "captioned": true,
+        "value": "A glossy red apple with a short brown stem and water droplets, flanked by two green apples",
+        "uploaded": true
+      },
+      "anchor": "625e9ca8-c5f2-45ad-8095-19591319ed62",
+      "generate": "clicked:GENERATE 1 Credit",
+      "final_poll": {
+        "hf": 3,
+        "mine": {
+          "uuid": "9c3afebc-ecb5-4e8e-a383-fe8520674ea6",
+          "user_state": "DonePreview",
+          "engine_used": "fast",
+          "seed": 5544,
+          "confirmed": false
+        },
+        "confirm": true,
+        "neuralToast": false,
+        "fallbackToast": false
+      },
+      "task_uuid": "9c3afebc-ecb5-4e8e-a383-fe8520674ea6",
+      "user_state": "DonePreview",
+      "engine_used": "fast",
+      "seed": 5544,
+      "hf_reqs": 3,
+      "outcome": "fallback"
+    },
+    {
+      "cycle": 25,
+      "at": "2026-10-19T07:07:19Z",
+      "user": "demo creator",
+      "pre_balance": 18,
+      "upload": "uploaded:119314",
+      "caption": {
+        "captioned": true,
+        "value": "A glossy red apple with a short brown stem, flanked by two green apples in soft focus. sim",
+        "uploaded": true
+      },
+      "anchor": "9c3afebc-ecb5-4e8e-a383-fe8520674ea6",
+      "generate": "clicked:GENERATE 1 Credit",
+      "final_poll": {
+        "hf": 3,
+        "mine": {
+          "uuid": "3ff9744b-0d32-4e5b-ad57-97e32c0ce9bb",
+          "user_state": "DonePreview",
+          "engine_used": "fast",
+          "seed": 28354,
+          "confirmed": false
+        },
+        "confirm": true,
+        "neuralToast": false,
+        "fallbackToast": false
+      },
+      "task_uuid": "3ff9744b-0d32-4e5b-ad57-97e32c0ce9bb",
+      "user_state": "DonePreview",
+      "engine_used": "fast",
+      "seed": 28354,
+      "hf_reqs": 3,
+      "outcome": "fallback"
+    },
+    {
+      "cycle": 26,
+      "at": "2026-10-19T07:23:24Z",
+      "user": "demo creator",
+      "pre_balance": 18,
+      "upload": "uploaded:119314",
+      "caption": {
+        "captioned": true,
+        "value": "A glossy red apple with a short brown stem and water droplets, flanked by two green apples",
+        "uploaded": true
+      },
+      "anchor": "064af17c-a5e4-4b64-96d8-17f585873a57",
+      "generate": "clicked:GENERATE 1 Credit",
+      "final_poll": {
+        "hf": 3,
+        "mine": {
+          "uuid": "a801a030-533d-4a84-a5a3-3dff3302cc78",
+          "user_state": "DonePreview",
+          "engine_used": "fast",
+          "seed": 33902,
+          "confirmed": false
+        },
+        "confirm": true,
+        "neuralToast": false,
+        "fallbackToast": false
+      },
+      "task_uuid": "a801a030-533d-4a84-a5a3-3dff3302cc78",
+      "user_state": "DonePreview",
+      "engine_used": "fast",
+      "seed": 33902,
+      "hf_reqs": 3,
+      "outcome": "fallback"
+    },
+    {
+      "cycle": 27,
+      "at": "2026-10-19T07:39:29Z",
+      "user": "demo creator",
+      "pre_balance": 18,
+      "upload": "uploaded:119314",
+      "caption": {
+        "captioned": true,
+        "value": "A glossy red apple with a short brown stem and two green apples behind it. simple geometry",
+        "uploaded": true
+      },
+      "anchor": "a801a030-533d-4a84-a5a3-3dff3302cc78",
+      "generate": "clicked:GENERATE 1 Credit",
+      "final_poll": {
+        "hf": 1,
+        "mine": {
+          "uuid": "0db3c0f5-b9bb-49db-a14e-b543443f400b",
+          "user_state": "DonePreview",
+          "engine_used": "fast",
+          "seed": 5313,
+          "confirmed": false
+        },
+        "confirm": true,
+        "neuralToast": false,
+        "fallbackToast": false
+      },
+      "task_uuid": "0db3c0f5-b9bb-49db-a14e-b543443f400b",
+      "user_state": "DonePreview",
+      "engine_used": "fast",
+      "seed": 5313,
+      "hf_reqs": 1,
+      "outcome": "fallback"
+    },
+    {
+      "cycle": 28,
+      "at": "2026-10-19T07:57:07Z",
+      "user": "demo creator",
+      "pre_balance": 18,
+      "upload": "uploaded:119314",
+      "caption": {
+        "captioned": true,
+        "value": "A glossy red apple with a short brown stem, flanked by two green apples in soft focus. sim",
+        "uploaded": true
+      },
+      "anchor": "0db3c0f5-b9bb-49db-a14e-b543443f400b",
+      "generate": "clicked:GENERATE 1 Credit",
+      "final_poll": {
+        "hf": 3,
+        "mine": {
+          "uuid": "53d2e689-40c5-41e0-a6c4-04a92fec90b8",
+          "user_state": "DonePreview",
+          "engine_used": "fast",
+          "seed": 19904,
+          "confirmed": false
+        },
+        "confirm": true,
+        "neuralToast": false,
+        "fallbackToast": false
+      },
+      "task_uuid": "53d2e689-40c5-41e0-a6c4-04a92fec90b8",
+      "user_state": "DonePreview",
+      "engine_used": "fast",
+      "seed": 19904,
+      "hf_reqs": 3,
+      "outcome": "fallback"
+    },
+    {
+      "cycle": 29,
+      "at": "2026-10-19T08:12:59Z",
+      "user": "demo creator",
+      "pre_balance": 18,
+      "upload": "uploaded:119314",
+      "caption": {
+        "captioned": true,
+        "value": "A shiny red apple with a short brown stem, flanked by two green apples in soft focus. simp",
+        "uploaded": true
+      },
+      "anchor": "0867bd3c-8960-4185-82c2-1ef055125915",
+      "generate": "clicked:GENERATE 1 Credit",
+      "final_poll": {
+        "hf": 3,
+        "mine": {
+          "uuid": "83028b0a-b082-43ab-8193-6f21613be55e",
+          "user_state": "DonePreview",
+          "engine_used": "fast",
+          "seed": 213,
+          "confirmed": false
+        },
+        "confirm": true,
+        "neuralToast": false,
+        "fallbackToast": false
+      },
+      "task_uuid": "83028b0a-b082-43ab-8193-6f21613be55e",
+      "user_state": "DonePreview",
+      "engine_used": "fast",
+      "seed": 213,
+      "hf_reqs": 3,
+      "outcome": "fallback"
     }
   ],
   "done": false,
