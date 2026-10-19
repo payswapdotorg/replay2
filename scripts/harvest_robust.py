@@ -3,11 +3,24 @@
 
 The extension-VPN proxy intermittently drops fetch() calls ("Failed to
 fetch"); the original harvest_delivery.py dies on the first drop. This
-variant retries each file with backoff (drops are transient), skips files
-already harvested with a non-trivial size, and writes a manifest.
+variant retries each file with backoff (drops are transient) and writes
+a manifest.
 
-Usage: harvest_robust.py <chat-id> <workspace-id> <remote-prefix> <local-dir>
+2026-10-19 refresh law (r3-w3d live catch): the OLD skip rule (exists +
+size>0) never re-fetched CHANGED files — the local bundle/MANIFEST sat
+at commit-1 while the remote had moved to commit-2. Now:
+  * If the remote root carries MANIFEST.sha256, it DRIVES the refresh:
+    a file is skipped only when its local sha256 matches the manifest.
+  * Volatile files (MANIFEST.sha256, *.bundle, *.bundle.b64,
+    COMPLETION-REPORT.md, worklog.md) are always re-fetched.
+  * Files in the tree but absent from the manifest (new since last
+    mirror) are fetched.
+  * Optional 5th arg "force" re-fetches everything.
+
+Usage: harvest_robust.py <chat-id> <workspace-id> <remote-prefix> <local-dir> [force]
 """
+import base64
+import hashlib
 import json
 import os
 import sys
@@ -24,6 +37,16 @@ WS = sys.argv[2]
 _raw_pfx = sys.argv[3]
 PREFIX = "" if _raw_pfx in ("", "/", "-") else _raw_pfx.rstrip("/") + "/"
 LOCAL = sys.argv[4]
+FORCE = len(sys.argv) > 5 and sys.argv[5] == "force"
+
+VOLATILE_NAMES = ("MANIFEST.sha256", "COMPLETION-REPORT.md", "worklog.md")
+VOLATILE_SUFFIX = (".bundle", ".bundle.b64")
+
+
+def is_volatile(fp):
+    base = fp.rsplit("/", 1)[-1]
+    return (base in VOLATILE_NAMES or base.endswith(VOLATILE_SUFFIX))
+
 
 CONTENT_JS = """
 (async () => {
@@ -45,8 +68,6 @@ CONTENT_JS = """
 })()
 """.replace("CHAT", "%%CHAT%%").replace("WS", "%%WS%%").replace("FP", "%%FP%%")
 
-import base64
-
 
 def eval_retry(cdp, js, tries=6, timeout=90):
     last = None
@@ -57,6 +78,17 @@ def eval_retry(cdp, js, tries=6, timeout=90):
             last = e
             time.sleep(2 + i * 2)   # backoff
     raise last
+
+
+def fetch_remote(cdp, fp, tries=6, timeout=120):
+    js = CONTENT_JS.replace("%%CHAT%%", json.dumps(CHAT)) \
+                   .replace("%%WS%%", json.dumps(WS)) \
+                   .replace("%%FP%%", json.dumps(fp))
+    raw = eval_retry(cdp, js, tries=tries, timeout=timeout)
+    d = json.loads(raw)
+    if "error" in d:
+        raise RuntimeError(str(d["error"]))
+    return d
 
 
 def main():
@@ -82,25 +114,49 @@ def main():
         if not files:
             return 1
         os.makedirs(LOCAL, exist_ok=True)
+
+        # 2. remote manifest drives the refresh (r3-w3d law)
+        rman = {}
+        man_path = PREFIX + "MANIFEST.sha256" if PREFIX else "MANIFEST.sha256"
+        if man_path in files:
+            try:
+                d = fetch_remote(cdp, man_path, tries=4, timeout=60)
+                text = d.get("text") or base64.b64decode(
+                    d["b64"]).decode("utf-8", "replace")
+                for line in text.splitlines():
+                    parts = line.split(None, 1)
+                    if len(parts) == 2:
+                        rman[parts[1].lstrip("*").strip()] = parts[0].strip()
+                print(f"manifest: {len(rman)} entries drive the refresh")
+            except Exception as e:
+                print(f"manifest fetch failed ({str(e)[:60]}) — existence-skip fallback")
+
+        def local_hash(fp):
+            dest = os.path.join(LOCAL, fp[len(PREFIX):])
+            if not os.path.exists(dest):
+                return None
+            h = hashlib.sha256()
+            with open(dest, "rb") as f:
+                h.update(f.read())
+            return h.hexdigest()
+
         ok = fail = skipped = 0
         failed = []
         for idx, fp in enumerate(files):
             rel = fp[len(PREFIX):]
             dest = os.path.join(LOCAL, rel)
-            if os.path.exists(dest) and os.path.getsize(dest) > 0:
-                skipped += 1
-                continue
-            js = CONTENT_JS.replace("%%CHAT%%", json.dumps(CHAT)) \
-                           .replace("%%WS%%", json.dumps(WS)) \
-                           .replace("%%FP%%", json.dumps(fp))
-            try:
-                raw = eval_retry(cdp, js, tries=6, timeout=120)
-                d = json.loads(raw)
-                if "error" in d:
-                    fail += 1
-                    failed.append(fp)
-                    print(f"  FAIL {fp}: {str(d['error'])[:80]}")
+            if not FORCE:
+                if is_volatile(fp):
+                    pass                    # always re-fetch
+                elif fp in rman:
+                    if local_hash(fp) == rman[fp]:
+                        skipped += 1
+                        continue
+                elif os.path.exists(dest) and os.path.getsize(dest) > 0:
+                    skipped += 1           # no manifest coverage: legacy skip
                     continue
+            try:
+                d = fetch_remote(cdp, fp)
                 os.makedirs(os.path.dirname(dest) or LOCAL, exist_ok=True)
                 if "text" in d:
                     with open(dest, "w", encoding="utf-8", newline="") as f:
@@ -115,7 +171,8 @@ def main():
                 fail += 1
                 failed.append(fp)
                 print(f"  ERR  {fp}: {str(e)[:80]}")
-        print(f"done: fetched={ok} skipped(resumed)={skipped} failed={fail}")
+        print(f"done: fetched={ok} skipped={skipped} failed={fail}"
+              + (" FORCE" if FORCE else ""))
         if failed:
             with open(os.path.join(LOCAL, "_failed.json"), "w") as f:
                 json.dump(failed, f, indent=1)
