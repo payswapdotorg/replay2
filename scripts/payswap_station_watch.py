@@ -52,6 +52,7 @@ MARKERS = ("COMPLETION-REPORT.md", "MANIFEST.sha256", ".bundle", ".bundle.b64")
 # re-arm; the watch keeps watching until the report lands or the lane dies.
 DONE_MARKER = "COMPLETION-REPORT.md"
 TRACK_PREFIXES = ("payswap3-",)   # session names we watch
+_phantom_seen = set()             # v4.4: phantom lanes logged once
 
 
 def log(msg):
@@ -78,12 +79,22 @@ def run(cmd, timeout=290):
 
 def live_lanes():
     """Registry-driven lane discovery: latest record per name; void/done
-    invalidates. Returns name -> record."""
+    invalidates. Returns name -> record.
+
+    v4.4 (2026-10-19 20:55Z phantom-dispatch law): a record WITHOUT a /c/
+    url is NOT a live lane. Forensics: the FH-3 three-lane dispatch (18:55Z)
+    recorded sent:true with url=home — the degraded window made chat-creation
+    POSTs fail silently (composer clears, no navigation, no chat server-side)
+    while create()'s generating-state check passed. The watch then nudge-
+    looped home tabs for 2h (17+ nudges/lane, each spawning a garbage chat
+    shell). A lane exists ONLY when its registry record carries the chat /c/
+    url; phantom records are skipped (the redispatch gate owns re-delivery)."""
     try:
         recs = [json.loads(l) for l in open(REGISTRY) if l.strip()]
     except Exception:
         return {}
     latest = {}
+    phantom = set()
     for r in recs:
         name = r.get("name") or ""
         if not name.startswith(TRACK_PREFIXES):
@@ -92,7 +103,14 @@ def live_lanes():
         if act in ("void", "done", "failed"):
             latest[name] = None
         elif r.get("sent") and r.get("url"):
-            latest[name] = r
+            if "/c/" in (r.get("url") or ""):
+                latest[name] = r
+            elif name not in _phantom_seen:
+                _phantom_seen.add(name)
+                phantom.add(name)
+    for name in phantom:
+        log(f"{name}: PHANTOM dispatch record (no /c/ url) — SKIPPED "
+            f"(redispatch gate owns it)")
     return {n: r for n, r in latest.items() if r}
 
 
@@ -207,8 +225,9 @@ def ws_tree(chat, ws_id):
 
 
 def main():
-    log("station watch v4.3 online — registry lanes; stop-click SUPPRESSED "
-        "(agent-mode death law); marker-set + tree-growth auto-harvest")
+    log("station watch v4.4 online — registry lanes (/c/-verified only); "
+        "stop-click SUPPRESSED (agent-mode death law); phantom-dispatch "
+        "records SKIPPED (redispatch gate owns re-delivery)")
     outbox("STATION WATCH v4.2 armed: quiet-guard (no stop-click on live "
            "subagent waves), marker-set-change + tree-growth salvage "
            "harvests, hash-driven refresh (MANIFEST).")
@@ -306,10 +325,14 @@ def main():
             # pending first generation; stopping it destroys the chat and
             # the tab falls back to home. Stop-clicks are for ESTABLISHED
             # /c/ chats only; fresh chats get nudge-only recovery.)
+            # v4.4: nudges are for ESTABLISHED chats only. A lane whose tab
+            # sits on the home surface with no discovered chat id is either a
+            # phantom dispatch or a recycled chat — nudging the home composer
+            # spawns garbage chat shells (50 accumulated 19:41-20:40Z).
             frozen = (len(s["lens"]) >= FROZEN_CYCLES
                       and len(set(s["lens"][-FROZEN_CYCLES:])) == 1)
             quiet = time.time() - s["last_growth"] > STUCK_QUIET
-            if (st.get("stopBtn") and frozen and quiet
+            if (s["chat"] and st.get("stopBtn") and frozen and quiet
                     and s["nudges"] < NUDGE_BUDGET):
                 s["unstick_count"] += 1
                 # v4.3 (2026-10-19 19:45Z): STOP-CLICK SUPPRESSED — the
@@ -334,7 +357,7 @@ def main():
                 log(f"{name}: unstick nudge: {v[:90]}")
                 continue
             # the no-response law
-            if (st.get("noresp") and not st.get("stopBtn")
+            if (s["chat"] and st.get("noresp") and not st.get("stopBtn")
                     and s["nudges"] < NUDGE_BUDGET):
                 s["nudges"] += 1
                 lines = run([os.path.join(BASE, "dispatch_worker.py"), "send",
