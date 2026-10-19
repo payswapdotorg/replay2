@@ -29,17 +29,23 @@ Phases:
 Artifacts: research/out/e2e20-grind-state.json, e2e20-grind.log,
            e2e20-neural-result.json, e2e20-neural-0*.png
 """
+import base64
 import json
+import os
 import re
 import subprocess
 import sys
 import time
 
 PROD = "https://hyper3d-clone.vercel.app"
-APPLE_SRC_TASKS = [
-    "3da90d50-214f-4b38-adb6-4f042f3b0aff",
-    "7aa77721-c4b8-463d-ba49-2f94e5a71e61",
-]
+# Apple fixture embedded as base64 — the upload JS is fully self-contained.
+# (2026-10-19 lesson: the previous version fetched /api/task/<old-uuid>/input
+# from a hardcoded list, which 404'd the moment the production database was
+# migrated to a fresh project — the golden path must not depend on any DB
+# row existing.)
+APPLE_B64 = base64.b64encode(
+    open("/home/z/my-project/research/fixtures/apple.jpg", "rb").read()
+).decode()
 OUT = "/home/z/my-project/research/out"
 STATE_F = f"{OUT}/e2e20-grind-state.json"
 LOG_F = f"{OUT}/e2e20-grind.log"
@@ -188,18 +194,13 @@ JS_MODE = """(() => {
 })()"""
 
 JS_UPLOAD = """(async () => {
-  const uuids = %s;
-  let r = null;
-  for (const u of uuids) {
-    try {
-      r = await fetch('/api/task/' + u + '/input', {credentials: 'include'});
-      if (r.ok) break;
-    } catch (e) {}
-  }
-  if (!r || !r.ok) return 'input-failed:' + (r ? r.status : 'no-fetch');
-  const blob = await r.blob();
-  const size = blob.size;
-  const file = new File([blob], 'apple.jpg', {type: blob.type || 'image/jpeg'});
+  const b64 = window.__ab64 || '';
+  if (!b64) return 'no-b64';
+  const bin = atob(b64);
+  const bytes = new Uint8Array(bin.length);
+  for (let i = 0; i < bin.length; i++) bytes[i] = bin.charCodeAt(i);
+  const blob = new Blob([bytes], {type: 'image/jpeg'});
+  const file = new File([blob], 'apple.jpg', {type: 'image/jpeg'});
   const dt = new DataTransfer();
   dt.items.add(file);
   const dlg = document.querySelector("div[role=dialog][aria-label='Rodin Studio workspace']") || document;
@@ -208,8 +209,8 @@ JS_UPLOAD = """(async () => {
   if (!inp) return 'no-input';
   inp.files = dt.files;
   inp.dispatchEvent(new Event('change', {bubbles: true}));
-  return 'uploaded:' + size;
-})()""" % json.dumps(APPLE_SRC_TASKS)
+  return 'uploaded:' + file.size;
+})()"""
 
 JS_CAPTION = """(() => {
   const dlg = document.querySelector("div[role=dialog][aria-label='Rodin Studio workspace']") || document;
@@ -242,21 +243,65 @@ JS_ANCHOR = """(async () => {
 JS_INSTRUMENT = """(() => {
   if (window.__createdUuid !== undefined) return 'already';
   window.__createdUuid = null;
+  window.__hfLog = [];
+  const log = (e) => { try { window.__hfLog.push(Object.assign({t: Date.now()}, e)); } catch (x) {} };
   const orig = window.fetch.bind(window);
   window.fetch = async (...args) => {
     const url = String(args[0] || '');
-    if (url !== '/api/task') return orig(...args);
-    const res = await orig(...args);
-    try {
-      if (res.ok) {
-        const j = await res.clone().json();
-        if (j && j.uuid) window.__createdUuid = j.uuid;
+    if (url === '/api/task') {
+      const res = await orig(...args);
+      try {
+        if (res.ok) {
+          const j = await res.clone().json();
+          if (j && j.uuid) window.__createdUuid = j.uuid;
+        }
+      } catch (e) {}
+      return res;
+    }
+    if (url.indexOf('hf.space') === -1) return orig(...args);
+    if (url.indexOf('/upload') !== -1) {
+      const res = await orig(...args);
+      let b = null;
+      try { b = (await res.clone().text()).slice(0, 200); } catch (e) {}
+      log({kind: 'upload', status: res.status, body: b});
+      return res;
+    }
+    if (url.indexOf('/call/shape_generation/') !== -1) {
+      const res = await orig(...args);
+      try {
+        const parts = res.body.tee();
+        (async () => {
+          const rd = parts[1].getReader();
+          const dec = new TextDecoder();
+          let buf = '';
+          for (;;) {
+            const r = await rd.read();
+            if (r.done) { log({kind: 'sse', done: true, tail: buf.slice(-700)}); break; }
+            buf += dec.decode(r.value, {stream: true});
+            if (buf.length > 4000) buf = buf.slice(-4000);
+          }
+        })();
+        return new Response(parts[0], {status: res.status, headers: res.headers});
+      } catch (e) {
+        log({kind: 'sse-wrap-fail', err: String(e).slice(0, 200)});
+        return res;
       }
-    } catch (e) {}
+    }
+    if (url.indexOf('/call/shape_generation') !== -1) {
+      const res = await orig(...args);
+      let b = null;
+      try { b = (await res.clone().text()).slice(0, 300); } catch (e) {}
+      log({kind: 'call', status: res.status, body: b});
+      return res;
+    }
+    const res = await orig(...args);
+    log({kind: 'other-hf', url: url.slice(0, 140), status: res.status});
     return res;
   };
   return 'instrumented';
 })()"""
+
+JS_HFLOG = """(() => JSON.stringify(window.__hfLog || []))()"""
 
 JS_CREATED_UUID = "(() => window.__createdUuid || '')()"
 
@@ -349,6 +394,18 @@ def wait_condition(js_check, want_true_key=None, timeout_s=90, interval=4):
 
 def run_golden_path(cycle_n):
     """One full attempt. Returns dict with outcome: success | fallback | error."""
+    outcome = _run_golden_path_inner(cycle_n)
+    # Capture the instrumented hf.space traffic (upload/call/SSE) — the
+    # browser-side neural failures need request/response evidence.
+    try:
+        outcome["hf_log"] = ab_eval(JS_HFLOG, timeout=30)
+    except Exception as e:
+        outcome["hf_log"] = f"capture-failed: {e}"
+    return outcome
+
+
+def _run_golden_path_inner(cycle_n):
+    """One full attempt. Returns dict with outcome: success | fallback | error."""
     outcome = {"cycle": cycle_n, "at": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime())}
     try:
         # 1. open + settle + instrument (create-uuid capture)
@@ -385,7 +442,11 @@ def run_golden_path(cycle_n):
             outcome["reason"] = f"mode click: {r}"
             return outcome
 
-        # 4. upload
+        # 4. upload — the fixture is fed in ~24KB eval chunks first: a single
+        # 159KB eval exceeds the agent-browser argv limit (Errno 7).
+        ab_eval("window.__ab64 = '';", timeout=30)
+        for i in range(0, len(APPLE_B64), 24000):
+            ab_eval("window.__ab64 += %s;" % json.dumps(APPLE_B64[i:i + 24000]), timeout=30)
         r = ab_eval(JS_UPLOAD, timeout=90)
         outcome["upload"] = r
         if not (isinstance(r, str) and r.startswith("uploaded:")):
@@ -525,6 +586,16 @@ def _try(s):
 
 def main():
     log("grind started — target: REAL neural run through the production UI from the raw sandbox IP")
+    # FIRE-ONLY MODE (2026-10-19 lesson): an ADMITTED probe CONSUMES the
+    # window — the probe's own gradio call runs a full server-side
+    # generation (admission is a fixed 90s regardless of params), leaving
+    # the pool below admission for the browser's neural call ~30-60s later.
+    # Observed 3× in a row: probe admitted -> golden path honest fallback.
+    # Skipping the probe lets the browser's own call be the FIRST hit on a
+    # fresh pool. Set PROBE_FIRST=1 to restore probe/ETA behavior.
+    if os.environ.get("PROBE_FIRST") != "1":
+        state["phase"] = "B"
+        log("fire-only mode: probing disabled — the browser's neural call takes the window")
     cycle = 0
     while not state["done"]:
         cycle += 1
@@ -588,8 +659,11 @@ except Exception as e:
             log("textured /generation_all probe:", state["textured_probe"].replace("\n", " ")[:300])
             save_state()
             return
-        # fallback / error — wait 15 min and retry
-        time.sleep(15 * 60)
+        # fallback / error — wait and retry (tighter in fire-only mode:
+        # the browser call costs nothing when rejected, and windows are
+        # empirically noisy — 5 min catches far more of them than 15)
+        wait_s = 5 * 60 if os.environ.get("PROBE_FIRST") != "1" else 15 * 60
+        time.sleep(wait_s)
         save_state()
 
 
