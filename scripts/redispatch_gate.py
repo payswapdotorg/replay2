@@ -48,7 +48,7 @@ CYCLE = 180
 CAP = 12 * 3600
 ROUNDS_MAX = 8
 CREATE_TIMEOUT = 480
-BASE_SHA = "9e481f2caf9ae3134d6567cd302fda25660a971b"
+BASE_SHA = "07556244580d8942076249ee174f6c21b1467bad"
 VERIFY_CLONE = "/home/z/payswap3-0"
 VENV_PY = "/home/z/.venv/bin/python3"
 
@@ -207,7 +207,7 @@ def main():
         + ", ".join(n for n, _ in LANES))
     outbox("REDISPATCH GATE armed: watching for the degraded window to "
            "clear, then verified re-dispatch of r4-w2 + r4-w3 + gov-w1r2 "
-           "(base 9e481f2).")
+           "(base 0755624).")
     streak = 0
     deadline = time.time() + CAP
     rounds = 0
