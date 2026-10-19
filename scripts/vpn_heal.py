@@ -48,7 +48,16 @@ def probe_egress():
     except subprocess.TimeoutExpired:
         return False
     out = r.stdout or ""
-    return any(line.startswith("egress: EGRESS") for line in out.splitlines())
+    # 2026-10-18 hardening (operator catch): a dead tunnel can still pass raw
+    # egress — the sandbox's own IP is NOT a VPN node. Treat it as BAD.
+    RAW_EGRESS_IP = "47.57.242.119"
+    for line in out.splitlines():
+        if line.startswith("egress: EGRESS"):
+            ip = line.split("EGRESS", 1)[1].strip().split()[0] if line.split("EGRESS", 1)[1].strip() else ""
+            if ip == RAW_EGRESS_IP:
+                return False
+            return True
+    return False
 
 
 def heal():

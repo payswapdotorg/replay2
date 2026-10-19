@@ -20,9 +20,9 @@ CHAT = sys.argv[1]
 WS = sys.argv[2]
 # 2026-10-18 (Task 84): ls-tree paths are ROOT-RELATIVE (no leading slash)
 # — an empty prefix must mean "everything", not "/" (which matched 0 files).
+# 2026-10-19 (Task 20 merge): "-" is also accepted as the "everything" marker.
 _raw_pfx = sys.argv[3]
-PREFIX = "" if _raw_pfx in ("", "/") else _raw_pfx.rstrip("/") + "/"
-LOCAL = sys.argv[4]
+PREFIX = "" if _raw_pfx in ("", "/", "-") else _raw_pfx.rstrip("/") + "/"LOCAL = sys.argv[4]
 
 CONTENT_JS = """
 (async () => {
