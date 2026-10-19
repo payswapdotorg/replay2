@@ -1,0 +1,42 @@
+{
+  "at": "2026-10-19T19:51:21Z",
+  "success": false,
+  "attempts": [
+    {
+      "attempt": 0,
+      "ip": "198.244.234.214",
+      "neural": false,
+      "ok": false,
+      "pool": {
+        "requested": 90,
+        "left": 73,
+        "eta_s": 27256
+      },
+      "task": "0a246f6e-0614-4bb5-9b11-43ca2160b4ab",
+      "exports_byte_verified": true
+    },
+    {
+      "attempt": 1,
+      "error": "no-vpn-egress"
+    },
+    {
+      "attempt": 2,
+      "ip": "162.19.205.94",
+      "neural": false,
+      "ok": false,
+      "pool": null,
+      "task": "63645e2b-5d8a-4787-a6ea-5d248f4d7a91",
+      "exports_byte_verified": true
+    },
+    {
+      "attempt": 3,
+      "ip": "162.19.205.94",
+      "note": "repeat-node"
+    },
+    {
+      "attempt": 4,
+      "ip": "162.19.205.94",
+      "note": "repeat-node"
+    }
+  ]
+}

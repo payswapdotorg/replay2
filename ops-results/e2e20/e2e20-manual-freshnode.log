@@ -1,0 +1,43 @@
+[phase] landing: {"title": "Hyper3D Rodin \u2013 Best AI 3D Model Generator", "startCreating": true, "body": "Skip to main content\nHYPER3D.AI\nProducts\nFeatures\nUse Cases\nStyles\nPricing\nENG\n42\ncredits\nFree \u00b7 7-Day Trial\nStart Creat"}
+  [shot] e2e20-01-landing.png
+[phase] signin: {"already": true, "user": "demo creator", "balance": 42}
+  [shot] e2e20-02-signed-in.png
+[phase] mode: {"image_tab": "clicked", "state": {"pressed": "true", "hint": "Image to 3D\nOne image is enough for most objects", "dropzone": true, "fileInputs": 5}}
+[phase] upload: {"nodeId": 1954, "file": "/home/z/my-project/research/fixtures/apple.jpg"}
+[phase] caption: {"captioned": true, "value": "A glossy red apple with a short brown stem and two green apples in the background. simple geometry.", "uploaded": true}
+  [shot] e2e20-03-uploaded-captioned.png
+[phase] pre_generate: {"generateLabel": "GENERATE 1 Credit", "generateDisabled": false, "tierRadios": [{"label": "Quality", "checked": "true"}, {"label": "Fast", "checked": "false"}], "balance": 42}
+[phase] generate_click: {"result": "clicked:GENERATE 1 Credit", "at": 0.0}
+[gen] clicked clicked:GENERATE 1 Credit — polling neural pipeline…
+[phase] task_attribution: {"captured_create_uuid": "63645e2b-5d8a-4787-a6ea-5d248f4d7a91", "anchor_newest_before": "cd6bcad2-a93f-4d89-a207-b93af1f26606", "attribution": "create-response"}
+  [49s] {"hf": 0, "mine": null, "confirm": false, "neuralToast": false, "fallbackToast": false, "elapsed": 49}
+  [61s] {"hf": 1, "mine": null, "confirm": false, "neuralToast": false, "fallbackToast": false, "elapsed": 61}
+  [68s] {"hf": 1, "mine": {"uuid": "63645e2b-5d8a-4787-a6ea-5d248f4d7a91", "user_state": "processing", "engine_used": "neural", "seed": 16607, "confirmed": false, "time": "2026-10-19T19:48:16.998Z"}, "confirm": false, "neuralToast": false, "fallbackToast": false, "elapsed": 68}
+  [73s] {"hf": 1, "mine": {"uuid": "63645e2b-5d8a-4787-a6ea-5d248f4d7a91", "user_state": "DonePreview", "engine_used": "fast", "seed": 16607, "confirmed": false, "time": "2026-10-19T19:48:16.998Z"}, "confirm": true, "neuralToast": false, "fallbackToast": false, "elapsed": 73}
+[phase] generation: {"hf_space_reqs": [0, 1, 1, 1], "engine_used": "fast", "fallback_reason": null, "seed": 16607, "user_state": "DonePreview", "task_uuid": "63645e2b-5d8a-4787-a6ea-5d248f4d7a91", "neural_toast_at": null, "fallback_toast_at": null, "confirm_btn_at": 73.3, "total_s": 73.3}
+  [shot] e2e20-04-task-result.png
+[phase] verdict_card: {"user_state": "DonePreview", "engine_used": "fast", "fallback_reason": "Failed to fetch", "confirmed": false}
+  [shot] e2e20-05-viewer.png
+[phase] confirm: {"click": "clicked", "exports": [{"label": "GLB", "disabled": false}, {"label": "GLTF", "disabled": false}, {"label": "OBJ", "disabled": false}, {"label": "STL", "disabled": false}, {"label": "USDZ", "disabled": false}], "card": {"user_state": "DonePreview", "confirmed": true, "engine_used": "fast", "fallback_reason": "Failed to fetch"}, "post_balance": 41}
+  [shot] e2e20-06-confirmed-exports.png
+[phase] byte_verify: {"glb": {"size": 143368, "magic": "glTF", "head": "glTF\u0002\u0000\u0000\u0000\b0\u0002\u0000L\u001d\u0000\u0000", "gltf": true}, "obj": {"size": 725142, "head": "o lathe | v 0.2706291546466796 -0.6099888004811974 0.064551857"}}
+  [shot] e2e20-07-final.png
+[phase] hf_log: [{"url": "/api/task/rodin_mesh_image_process", "t": 1792439263892, "status": 200, "body": "{\"prompt\":\"A glossy red apple with a short brown stem and two green apples in the background. simple geometry.\",\"components\":[{\"primitive\":\"lathe\",\"params\":{\"points\":[[0,0],[0.48,0.06],[0.75,0.28],[0.88,0.58],[0.84,0.88],[0.68,1.08],[0.35,1.18],[0,1.2]]},\"position\":[0,0,0],\"scale\":1,\"rotat
+RESULT neural: False | task: 63645e2b-5d8a-4787-a6ea-5d248f4d7a91
+{
+ "hf_space_reqs": [
+  0,
+  1,
+  1,
+  1
+ ],
+ "engine_used": "fast",
+ "fallback_reason": null,
+ "seed": 16607,
+ "user_state": "DonePreview",
+ "task_uuid": "63645e2b-5d8a-4787-a6ea-5d248f4d7a91",
+ "neural_toast_at": null,
+ "fallback_toast_at": null,
+ "confirm_btn_at": 73.3,
+ "total_s": 73.3
+}
