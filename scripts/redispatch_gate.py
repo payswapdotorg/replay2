@@ -218,6 +218,9 @@ def main():
             if streak:
                 log(f"window BLOCKED again (status={d.get('status')} "
                     f"err={d.get('err', '')[:40]}) — streak reset")
+            else:
+                log(f"window still BLOCKED (status={d.get('status')} "
+                    f"err={d.get('err', '')[:40]})")
             streak = 0
         else:
             streak += 1
