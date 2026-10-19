@@ -1,0 +1,213 @@
+{
+  "started_utc": "2026-10-19T00:42:57Z",
+  "phase": "B",
+  "fire_at_epoch": null,
+  "probe_history": [
+    {
+      "t": "2026-10-19T00:43:32Z",
+      "admitted": true
+    }
+  ],
+  "cycles": [
+    {
+      "cycle": 1,
+      "at": "2026-10-19T00:43:32Z",
+      "user": "demo creator",
+      "pre_balance": 21,
+      "upload": "uploaded:119314",
+      "caption": {
+        "captioned": true,
+        "value": "A shiny red apple with a short brown stem and two green apples behind it. simple geometry.",
+        "uploaded": true
+      },
+      "anchor": "ec554428-1e60-4d0b-87b7-b9b0481a469f",
+      "generate": "clicked:GENERATE 1 Credit",
+      "final_poll": {
+        "hf": 3,
+        "mine": {
+          "uuid": "ff31f286-0675-4f5f-ae45-ebfe49d1369e",
+          "user_state": "DonePreview",
+          "engine_used": "fast",
+          "seed": 23372,
+          "confirmed": false
+        },
+        "confirm": true,
+        "neuralToast": false,
+        "fallbackToast": false
+      },
+      "task_uuid": "ff31f286-0675-4f5f-ae45-ebfe49d1369e",
+      "user_state": "DonePreview",
+      "engine_used": "fast",
+      "seed": 23372,
+      "hf_reqs": 3,
+      "outcome": "fallback"
+    },
+    {
+      "cycle": 2,
+      "at": "2026-10-19T00:59:27Z",
+      "user": "demo creator",
+      "pre_balance": 21,
+      "upload": "uploaded:119314",
+      "caption": {
+        "captioned": true,
+        "value": "A glossy red apple with a short brown stem, flanked by two green apples in soft focus. sim",
+        "uploaded": true
+      },
+      "anchor": "ff31f286-0675-4f5f-ae45-ebfe49d1369e",
+      "generate": "clicked:GENERATE 1 Credit",
+      "final_poll": {
+        "hf": 3,
+        "mine": {
+          "uuid": "81bc5859-269e-4ec7-9b5c-1cf36d9bcdc3",
+          "user_state": "DonePreview",
+          "engine_used": "fast",
+          "seed": 33373,
+          "confirmed": false
+        },
+        "confirm": true,
+        "neuralToast": false,
+        "fallbackToast": false
+      },
+      "task_uuid": "81bc5859-269e-4ec7-9b5c-1cf36d9bcdc3",
+      "user_state": "DonePreview",
+      "engine_used": "fast",
+      "seed": 33373,
+      "hf_reqs": 3,
+      "outcome": "fallback"
+    },
+    {
+      "cycle": 3,
+      "at": "2026-10-19T01:15:22Z",
+      "user": "demo creator",
+      "pre_balance": 21,
+      "upload": "uploaded:119314",
+      "caption": {
+        "captioned": true,
+        "value": "A shiny red apple with a short brown stem and two green apples behind it. simple geometry.",
+        "uploaded": true
+      },
+      "anchor": "81bc5859-269e-4ec7-9b5c-1cf36d9bcdc3",
+      "generate": "clicked:GENERATE 1 Credit",
+      "final_poll": {
+        "hf": 3,
+        "mine": {
+          "uuid": "1e0b3b6c-864a-4bd3-92f3-9095e3033c09",
+          "user_state": "DonePreview",
+          "engine_used": "fast",
+          "seed": 54890,
+          "confirmed": false
+        },
+        "confirm": true,
+        "neuralToast": false,
+        "fallbackToast": false
+      },
+      "task_uuid": "1e0b3b6c-864a-4bd3-92f3-9095e3033c09",
+      "user_state": "DonePreview",
+      "engine_used": "fast",
+      "seed": 54890,
+      "hf_reqs": 3,
+      "outcome": "fallback"
+    },
+    {
+      "cycle": 4,
+      "at": "2026-10-19T01:31:13Z",
+      "user": "demo creator",
+      "pre_balance": 21,
+      "upload": "uploaded:119314",
+      "caption": {
+        "captioned": true,
+        "value": "A shiny red apple with a short brown stem, flanked by two green apples in soft focus. simp",
+        "uploaded": true
+      },
+      "anchor": "1e0b3b6c-864a-4bd3-92f3-9095e3033c09",
+      "generate": "clicked:GENERATE 1 Credit",
+      "final_poll": {
+        "hf": 3,
+        "mine": {
+          "uuid": "85f64b64-4eed-40a5-a226-74cdd4f239e8",
+          "user_state": "DonePreview",
+          "engine_used": "fast",
+          "seed": 43887,
+          "confirmed": false
+        },
+        "confirm": true,
+        "neuralToast": false,
+        "fallbackToast": false
+      },
+      "task_uuid": "85f64b64-4eed-40a5-a226-74cdd4f239e8",
+      "user_state": "DonePreview",
+      "engine_used": "fast",
+      "seed": 43887,
+      "hf_reqs": 3,
+      "outcome": "fallback"
+    },
+    {
+      "cycle": 5,
+      "at": "2026-10-19T01:47:10Z",
+      "user": "demo creator",
+      "pre_balance": 20,
+      "upload": "uploaded:119314",
+      "caption": {
+        "captioned": true,
+        "value": "A glossy red apple with a short brown stem, flanked by two green apples in soft focus. sim",
+        "uploaded": true
+      },
+      "anchor": "3f02983a-e71a-413c-a43c-c9ae2b5e65f8",
+      "generate": "clicked:GENERATE 1 Credit",
+      "final_poll": {
+        "hf": 3,
+        "mine": {
+          "uuid": "e8d41667-6bb9-42c9-9294-4c5ed951fead",
+          "user_state": "DonePreview",
+          "engine_used": "fast",
+          "seed": 1268,
+          "confirmed": false
+        },
+        "confirm": true,
+        "neuralToast": false,
+        "fallbackToast": false
+      },
+      "task_uuid": "e8d41667-6bb9-42c9-9294-4c5ed951fead",
+      "user_state": "DonePreview",
+      "engine_used": "fast",
+      "seed": 1268,
+      "hf_reqs": 3,
+      "outcome": "fallback"
+    },
+    {
+      "cycle": 6,
+      "at": "2026-10-19T02:03:03Z",
+      "user": "demo creator",
+      "pre_balance": 20,
+      "upload": "uploaded:119314",
+      "caption": {
+        "captioned": true,
+        "value": "A glossy red apple with a short brown stem, flanked by two green apples in soft focus. sim",
+        "uploaded": true
+      },
+      "anchor": "e8d41667-6bb9-42c9-9294-4c5ed951fead",
+      "generate": "clicked:GENERATE 1 Credit",
+      "final_poll": {
+        "hf": 3,
+        "mine": {
+          "uuid": "58953f9c-ab0d-421e-bdaf-a488a3568a0a",
+          "user_state": "DonePreview",
+          "engine_used": "fast",
+          "seed": 11149,
+          "confirmed": false
+        },
+        "confirm": true,
+        "neuralToast": false,
+        "fallbackToast": false
+      },
+      "task_uuid": "58953f9c-ab0d-421e-bdaf-a488a3568a0a",
+      "user_state": "DonePreview",
+      "engine_used": "fast",
+      "seed": 11149,
+      "hf_reqs": 3,
+      "outcome": "fallback"
+    }
+  ],
+  "done": false,
+  "result": null
+}
