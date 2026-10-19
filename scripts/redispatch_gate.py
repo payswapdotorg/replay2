@@ -53,9 +53,9 @@ VERIFY_CLONE = "/home/z/payswap3-0"
 VENV_PY = "/home/z/.venv/bin/python3"
 
 LANES = [
-    ("payswap3-r4-w2", os.path.join(BASE, "worker-prompts", "pkt_r4-w2.md")),
-    ("payswap3-r4-w3", os.path.join(BASE, "worker-prompts", "pkt_r4-w3.md")),
-    ("payswap3-gov-w1r2", os.path.join(BASE, "worker-prompts", "pkt_gov-w1r2.md")),
+    ("payswap3-r4-w2b", os.path.join(BASE, "worker-prompts", "pkt_r4-w2.md")),
+    ("payswap3-r4-w3b", os.path.join(BASE, "worker-prompts", "pkt_r4-w3.md")),
+    ("payswap3-gov-w1r3", os.path.join(BASE, "worker-prompts", "pkt_gov-w1.md")),
 ]
 
 PROBE_JS = """
