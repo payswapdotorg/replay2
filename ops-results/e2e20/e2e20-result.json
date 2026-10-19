@@ -1,18 +1,271 @@
 {
   "url": "https://hyper3d-clone.vercel.app",
   "chrome_egress": "198.244.234.214",
-  "started_utc": "2026-10-19T17:45:01Z",
+  "started_utc": "2026-10-19T18:05:00Z",
   "phases": {
     "landing": {
-      "title": "hyper3d-clone.vercel.app",
-      "startCreating": false,
-      "body": "This site can\u2019t be reached\n\nhyper3d-clone.vercel.app took too long to respond.\n\nTry:\n\nChecking the connection\nChecking t"
+      "title": "Hyper3D Rodin \u2013 Best AI 3D Model Generator",
+      "startCreating": true,
+      "body": "Skip to main content\nHYPER3D.AI\nProducts\nFeatures\nUse Cases\nStyles\nPricing\nENG\n47\ncredits\nFree \u00b7 7-Day Trial\nStart Creat"
     },
     "shots": [
-      "e2e20-01-landing.png"
+      "e2e20-01-landing.png",
+      "e2e20-02-signed-in.png",
+      "e2e20-03-uploaded-captioned.png",
+      "e2e20-04-task-result.png",
+      "e2e20-05-viewer.png",
+      "e2e20-06-confirmed-exports.png",
+      "e2e20-07-final.png"
+    ],
+    "signin": {
+      "already": true,
+      "user": "demo creator",
+      "balance": 47
+    },
+    "mode": {
+      "image_tab": "clicked",
+      "state": {
+        "pressed": "true",
+        "hint": "Image to 3D\nOne image is enough for most objects",
+        "dropzone": true,
+        "fileInputs": 5
+      }
+    },
+    "upload": {
+      "nodeId": 1954,
+      "file": "/home/z/my-project/research/fixtures/apple.jpg"
+    },
+    "caption": {
+      "captioned": true,
+      "value": "A glossy red apple with a short brown stem and two green apples behind it. simple geometry.",
+      "uploaded": true
+    },
+    "pre_generate": {
+      "generateLabel": "GENERATE 1 Credit",
+      "generateDisabled": false,
+      "tierRadios": [
+        {
+          "label": "Quality",
+          "checked": "true"
+        },
+        {
+          "label": "Fast",
+          "checked": "false"
+        }
+      ],
+      "balance": 47
+    },
+    "generate_click": {
+      "result": "clicked:GENERATE 1 Credit",
+      "at": 0.0
+    },
+    "task_attribution": {
+      "captured_create_uuid": "6b45ac62-cd40-49c9-810e-66f56a8644ed",
+      "anchor_newest_before": "872ec70f-261a-4695-9d8f-839a9a93af98",
+      "attribution": "create-response"
+    },
+    "generation": {
+      "hf_space_reqs": [
+        0,
+        1,
+        3,
+        3,
+        3,
+        3,
+        3,
+        4,
+        4,
+        4,
+        4,
+        4,
+        4,
+        4,
+        4,
+        4,
+        5,
+        5,
+        5,
+        5,
+        5,
+        5,
+        5,
+        5,
+        5,
+        5,
+        5,
+        5,
+        5,
+        5,
+        5,
+        5,
+        5,
+        5,
+        5,
+        5,
+        5,
+        5,
+        5,
+        5,
+        5,
+        5,
+        5,
+        5,
+        5,
+        5,
+        5,
+        5,
+        5,
+        5,
+        5,
+        5,
+        5,
+        5,
+        5,
+        5,
+        5,
+        5,
+        5,
+        5,
+        5,
+        5,
+        5,
+        5
+      ],
+      "engine_used": "neural",
+      "fallback_reason": null,
+      "seed": 48356,
+      "user_state": "queued",
+      "task_uuid": "6b45ac62-cd40-49c9-810e-66f56a8644ed",
+      "neural_toast_at": null,
+      "fallback_toast_at": null,
+      "confirm_btn_at": null,
+      "total_s": 365.9
+    },
+    "verdict_card": {
+      "user_state": "queued",
+      "engine_used": null,
+      "fallback_reason": null,
+      "confirmed": false
+    },
+    "confirm": {
+      "click": "NO-BTN",
+      "exports": [
+        {
+          "label": "GLB",
+          "disabled": true
+        },
+        {
+          "label": "GLTF",
+          "disabled": true
+        },
+        {
+          "label": "OBJ",
+          "disabled": true
+        },
+        {
+          "label": "STL",
+          "disabled": true
+        },
+        {
+          "label": "USDZ",
+          "disabled": true
+        }
+      ],
+      "card": {
+        "user_state": "queued",
+        "confirmed": false,
+        "fallback_reason": null
+      },
+      "post_balance": 47
+    },
+    "byte_verify": {
+      "glb": {
+        "error": 402
+      },
+      "obj": {
+        "error": 402
+      }
+    },
+    "hf_log": [
+      {
+        "url": "/api/task/rodin_mesh_image_process",
+        "t": 1792433112291,
+        "status": 200,
+        "body": "{\"prompt\":\"A glossy red apple with a short brown stem and two green apples behind it. simple geometry.\",\"components\":[{\"primitive\":\"lathe\",\"params\":{\"points\":[[0,0],[0.42,0.06],[0.75,0.28],[0.92,0.58],[0.88,0.88],[0.7,1.08],[0.38,1.18],[0,1.2]]},\"position\":[0,0,0],\"scale\":1,\"rotation\":[0,0,0],\"color\":\"#C1121F\"},{\"primitive\":\"cylinder\",\"params\":{\"radius\":0.045,\"height\":0.28},\"position\":[0,1.34,0],\"scale\":1,\"rotation\":[0,0,0],\"color\":\"#5D4037\"},{\"primitive\":\"lathe\",\"params\":{\"points\":[[0,0],[0.4,0.06],[0.72,0.28],[0.88,0.58],[0.84,0.88],[0.68,1.08],[0.36,1.18],[0,1.2]]},\"position\":[-0.8,0,-0.3],",
+        "chunks": []
+      },
+      {
+        "url": "/api/task",
+        "t": 1792433145998,
+        "status": 200,
+        "body": "{\"uuid\":\"6b45ac62-cd40-49c9-810e-66f56a8644ed\",\"producer\":\"standard\",\"engine\":\"neural\",\"pay_by_result\":true,\"job\":{\"uuids\":[\"6b45ac62-cd40-49c9-810e-66f56a8644ed\"],\"subscription_key\":\"clone-local\"}}",
+        "chunks": []
+      },
+      {
+        "url": "https://tencent-hunyuan3d-2-1.hf.space/upload",
+        "t": 1792433150863,
+        "status": 200,
+        "body": null,
+        "chunks": []
+      },
+      {
+        "url": "https://tencent-hunyuan3d-2-1.hf.space/config",
+        "t": 1792433155708,
+        "status": 200,
+        "body": null,
+        "chunks": []
+      },
+      {
+        "url": "https://tencent-hunyuan3d-2-1.hf.space/queue/join",
+        "t": 1792433157563,
+        "status": 200,
+        "body": null,
+        "chunks": []
+      },
+      {
+        "url": "https://tencent-hunyuan3d-2-1.hf.space/queue/data?session_hash=2216afc1-47df-4c25-97e8-f25c1174c2ff",
+        "t": 1792433158371,
+        "status": 200,
+        "body": null,
+        "chunks": [
+          "data: {\"msg\":\"estimation\",\"event_id\":\"f54b6d09119145089e0ee3725ac03934\",\"rank\":0,\"queue_size\":1,\"rank_eta\":26.65519099366175}\n\ndata: {\"msg\":\"process_starts\",\"event_id\":\"f54b6d09119145089e0ee3725ac03934\",\"eta\":26.65519099366175}\n\n",
+          "data: {\"msg\":\"heartbeat\",\"event_id\":null}\n\n",
+          "data: {\"msg\":\"process_completed\",\"event_id\":\"f54b6d09119145089e0ee3725ac03934\",\"output\":{\"data\":[{\"value\":{\"path\":\"/tmp/gradio/9c8fcd9a70e1d7553682f4ca8ed7b4a068f130a35f5265492de815d5a7b97a05/white_mesh.glb\",\"url\":\"https://tencent-hunyuan3d-2-1.hf.space/file=/tmp/gradio/9c8fcd9a70e1d7553682f4ca8ed7b4a068f130a35f5265492de815d5a7b97a05/white_mesh.glb\",\"size\":5618540,\"orig_name\":\"white_mesh.glb\",\"mime_type\":null,\"is_stream\":false,\"meta\":{\"_type\":\"gradio.FileData\"}},\"__type__\":\"update\"},\"\\n        <div style='height: 650; width: 100%;'>\\n        <iframe src=\\\"/static/4fddfa45-876f-4b2e-a876-49cf596d725d/white_mesh.html\\\" height=\\\"650\\\" width=\\\"100%\\\" frameborder=\\\"0\\\"></iframe>\\n        </div>\\n    \",{\"model\":{\"shapegen\":\"tencent/Hunyuan3D-2.1/hunyuan3d-dit-v2-1\",\"texgen\":\"tencent/Hunyuan3D-2."
+        ]
+      },
+      {
+        "url": "https://tencent-hunyuan3d-2-1.hf.space/file=/tmp/gradio/9c8fcd9a70e1d7553682f4ca8ed7b4a068f130a35f5265492de815d5a7b97a05/white_mesh.glb",
+        "t": 1792433179911,
+        "status": 200,
+        "body": null,
+        "chunks": []
+      },
+      {
+        "url": "/api/task/6b45ac62-cd40-49c9-810e-66f56a8644ed/fallback",
+        "t": 1792433219232,
+        "status": "fetch-error",
+        "body": "TypeError: Failed to fetch",
+        "chunks": []
+      },
+      {
+        "url": "/api/task/6b45ac62-cd40-49c9-810e-66f56a8644ed/export?format=glb",
+        "t": 1792433559994,
+        "status": 402,
+        "body": "{\"error\":\"confirmation_required\",\"task_uuid\":\"6b45ac62-cd40-49c9-810e-66f56a8644ed\",\"detail\":\"Preview is free \u2014 confirm the result (1 credit) to unlock exports.\"}",
+        "chunks": []
+      },
+      {
+        "url": "/api/task/6b45ac62-cd40-49c9-810e-66f56a8644ed/export?format=obj",
+        "t": 1792433560523,
+        "status": 402,
+        "body": "{\"error\":\"confirmation_required\",\"task_uuid\":\"6b45ac62-cd40-49c9-810e-66f56a8644ed\",\"detail\":\"Preview is free \u2014 confirm the result (1 credit) to unlock exports.\"}",
+        "chunks": []
+      }
     ]
   },
   "ok": false,
-  "fatal": "js error: {\"exceptionId\": 4, \"text\": \"Uncaught (in promise) TypeError: Failed to fetch\", \"lineNumber\": 0, \"columnNumber\": 0, \"exception\": {\"type\": \"object\", \"subtype\": \"error\", \"className\": \"TypeError\", \"descri",
-  "finished_utc": "2026-10-19T17:45:18Z"
+  "neural": false,
+  "verdict_source": "card:6b45ac62-cd40-49c9-810e-66f56a8644ed",
+  "exports_byte_verified": false,
+  "finished_utc": "2026-10-19T18:12:41Z"
 }
