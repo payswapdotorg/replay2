@@ -272,6 +272,39 @@
       "seed": 44462,
       "hf_reqs": 3,
       "outcome": "fallback"
+    },
+    {
+      "cycle": 9,
+      "at": "2026-10-19T02:50:59Z",
+      "user": "demo creator",
+      "pre_balance": 18,
+      "upload": "uploaded:119314",
+      "caption": {
+        "captioned": true,
+        "value": "A shiny red apple with a short brown stem and water droplets, flanked by two green apples ",
+        "uploaded": true
+      },
+      "anchor": "88ab4d72-79ca-4891-a4c7-fd1e9db98526",
+      "generate": "clicked:GENERATE 1 Credit",
+      "final_poll": {
+        "hf": 3,
+        "mine": {
+          "uuid": "6d7add2e-7e35-47fe-af62-88b953f0de9a",
+          "user_state": "DonePreview",
+          "engine_used": "fast",
+          "seed": 416,
+          "confirmed": false
+        },
+        "confirm": true,
+        "neuralToast": false,
+        "fallbackToast": false
+      },
+      "task_uuid": "6d7add2e-7e35-47fe-af62-88b953f0de9a",
+      "user_state": "DonePreview",
+      "engine_used": "fast",
+      "seed": 416,
+      "hf_reqs": 3,
+      "outcome": "fallback"
     }
   ],
   "done": false,

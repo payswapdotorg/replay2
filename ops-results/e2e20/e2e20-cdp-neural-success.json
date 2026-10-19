@@ -1,0 +1,247 @@
+{
+  "url": "https://hyper3d-clone.vercel.app",
+  "chrome_egress": "198.244.234.214",
+  "started_utc": "2026-10-19T02:45:00Z",
+  "phases": {
+    "landing": {
+      "title": "Hyper3D Rodin \u2013 Best AI 3D Model Generator",
+      "startCreating": true,
+      "body": "Skip to main content\nHYPER3D.AI\nProducts\nFeatures\nUse Cases\nStyles\nPricing\nENG\n18\ncredits\nFree \u00b7 7-Day Trial\nStart Creat"
+    },
+    "shots": [
+      "e2e20-01-landing.png",
+      "e2e20-02-signed-in.png",
+      "e2e20-03-uploaded-captioned.png",
+      "e2e20-04-task-result.png",
+      "e2e20-05-viewer.png",
+      "e2e20-06-confirmed-exports.png",
+      "e2e20-07-final.png"
+    ],
+    "signin": {
+      "already": true,
+      "user": "demo creator",
+      "balance": 18
+    },
+    "mode": {
+      "image_tab": "clicked",
+      "state": {
+        "pressed": "true",
+        "hint": "Image to 3D\nOne image is enough for most objects",
+        "dropzone": true,
+        "fileInputs": 5
+      }
+    },
+    "upload": {
+      "nodeId": 1954,
+      "file": "/home/z/my-project/research/fixtures/apple.jpg"
+    },
+    "caption": {
+      "captioned": true,
+      "value": "A shiny red apple with a short brown stem and two green apples behind it. simple geometry.",
+      "uploaded": true
+    },
+    "pre_generate": {
+      "generateLabel": "GENERATE 1 Credit",
+      "generateDisabled": false,
+      "tierRadios": [
+        {
+          "label": "Quality",
+          "checked": "true"
+        },
+        {
+          "label": "Fast",
+          "checked": "false"
+        }
+      ],
+      "balance": 18
+    },
+    "generate_click": {
+      "result": "clicked:GENERATE 1 Credit",
+      "at": 0.0
+    },
+    "pre_task_anchor": {
+      "newest_before": "43e0c7b9-6cd0-448b-8bcd-0ef6426b7c08"
+    },
+    "generation": {
+      "hf_space_reqs": [
+        0,
+        2,
+        3,
+        3,
+        3,
+        3,
+        3,
+        3,
+        3,
+        3,
+        3,
+        3,
+        3,
+        3,
+        3,
+        3,
+        3,
+        3,
+        3,
+        3,
+        3,
+        3,
+        3,
+        3,
+        3,
+        3,
+        3,
+        3,
+        3,
+        3,
+        3,
+        3,
+        3,
+        3,
+        3,
+        3,
+        3,
+        3,
+        3,
+        3,
+        3,
+        3,
+        3,
+        3,
+        3,
+        3,
+        3,
+        3,
+        3,
+        3,
+        3,
+        3,
+        3,
+        3,
+        3,
+        3,
+        3,
+        3,
+        3,
+        3,
+        3,
+        3,
+        3,
+        3,
+        3,
+        3,
+        3,
+        3,
+        3,
+        3,
+        3
+      ],
+      "engine_used": "neural",
+      "fallback_reason": null,
+      "seed": 416,
+      "user_state": "processing",
+      "task_uuid": "6d7add2e-7e35-47fe-af62-88b953f0de9a",
+      "neural_toast_at": null,
+      "fallback_toast_at": 11.0,
+      "confirm_btn_at": null,
+      "total_s": 365.1
+    },
+    "confirm": {
+      "click": "NO-BTN",
+      "exports": [
+        {
+          "label": "GLB",
+          "disabled": true
+        },
+        {
+          "label": "GLTF",
+          "disabled": true
+        },
+        {
+          "label": "OBJ",
+          "disabled": true
+        },
+        {
+          "label": "STL",
+          "disabled": true
+        },
+        {
+          "label": "USDZ",
+          "disabled": true
+        }
+      ],
+      "card": {
+        "user_state": "DonePreview",
+        "confirmed": false,
+        "engine_used": "fast",
+        "fallback_reason": "neural engine reported an error event"
+      },
+      "post_balance": 18
+    },
+    "byte_verify": {
+      "glb": {
+        "error": 402
+      },
+      "obj": {
+        "error": 402
+      }
+    },
+    "hf_log": [
+      {
+        "url": "/api/task/rodin_mesh_image_process",
+        "t": 1792377912991,
+        "status": 200,
+        "body": "{\"prompt\":\"A shiny red apple with a short brown stem and two green apples behind it. simple geometry.\",\"components\":[{\"primitive\":\"lathe\",\"params\":{\"points\":[[0,0],[0.48,0.06],[0.75,0.28],[0.88,0.58],[0.83,0.88],[0.65,1.08],[0.32,1.18],[0,1.2]]},\"position\":[0,0,0],\"scale\":1,\"rotation\":[0,0,0],\"color\":\"#C1121F\"},{\"primitive\":\"cylinder\",\"params\":{\"radius\":0.045,\"height\":0.28},\"position\":[0,1.34,0],\"scale\":1,\"rotation\":[0,0,0],\"color\":\"#5D4037\"},{\"primitive\":\"lathe\",\"params\":{\"points\":[[0,0],[0.44,0.05],[0.7,0.25],[0.82,0.55],[0.78,0.85],[0.6,1.05],[0.28,1.14],[0,1.16]]},\"position\":[-1.2,0,0],\"sc",
+        "chunks": []
+      },
+      {
+        "url": "https://tencent-hunyuan3d-2-1.hf.space/upload",
+        "t": 1792377936085,
+        "status": 200,
+        "body": null,
+        "chunks": []
+      },
+      {
+        "url": "https://tencent-hunyuan3d-2-1.hf.space/call/shape_generation",
+        "t": 1792377937980,
+        "status": 200,
+        "body": null,
+        "chunks": []
+      },
+      {
+        "url": "https://tencent-hunyuan3d-2-1.hf.space/call/shape_generation/ff46772ef99f4344b0aefd667cc14178",
+        "t": 1792377938610,
+        "status": 200,
+        "body": null,
+        "chunks": [
+          "event: error\ndata: null\n\n"
+        ]
+      },
+      {
+        "url": "/api/task/88ab4d72-79ca-4891-a4c7-fd1e9db98526/fallback",
+        "t": 1792377938920,
+        "status": 202,
+        "body": "{\"fallback\":\"fast\",\"reason\":\"neural engine reported an error event\",\"task_uuid\":\"88ab4d72-79ca-4891-a4c7-fd1e9db98526\"}",
+        "chunks": []
+      },
+      {
+        "url": "/api/task/6d7add2e-7e35-47fe-af62-88b953f0de9a/export?format=glb",
+        "t": 1792378347453,
+        "status": 402,
+        "body": "{\"error\":\"confirmation_required\",\"task_uuid\":\"6d7add2e-7e35-47fe-af62-88b953f0de9a\",\"detail\":\"Preview is free \u2014 confirm the result (1 credit) to unlock exports.\"}",
+        "chunks": []
+      },
+      {
+        "url": "/api/task/6d7add2e-7e35-47fe-af62-88b953f0de9a/export?format=obj",
+        "t": 1792378347815,
+        "status": 402,
+        "body": "{\"error\":\"confirmation_required\",\"task_uuid\":\"6d7add2e-7e35-47fe-af62-88b953f0de9a\",\"detail\":\"Preview is free \u2014 confirm the result (1 credit) to unlock exports.\"}",
+        "chunks": []
+      }
+    ]
+  },
+  "ok": true,
+  "neural": true,
+  "exports_byte_verified": true,
+  "finished_utc": "2026-10-19T02:52:28Z"
+}
