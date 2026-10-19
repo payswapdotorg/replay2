@@ -1,18 +1,9 @@
 {
   "url": "https://hyper3d-clone.vercel.app",
   "chrome_egress": "198.244.234.214",
-  "started_utc": "2026-10-19T14:25:00Z",
-  "phases": {
-    "landing": {
-      "title": "hyper3d-clone.vercel.app",
-      "startCreating": false,
-      "body": "This site can\u2019t be reached\n\nhyper3d-clone.vercel.app took too long to respond.\n\nTry:\n\nChecking the connection\nChecking t"
-    },
-    "shots": [
-      "e2e20-01-landing.png"
-    ]
-  },
+  "started_utc": "2026-10-19T15:51:36Z",
+  "phases": {},
   "ok": false,
-  "fatal": "js error: {\"exceptionId\": 2, \"text\": \"Uncaught (in promise) TypeError: Failed to fetch\", \"lineNumber\": 0, \"columnNumber\": 0, \"exception\": {\"type\": \"object\", \"subtype\": \"error\", \"className\": \"TypeError\", \"descri",
-  "finished_utc": "2026-10-19T14:25:23Z"
+  "fatal": "js error: {\"exceptionId\": 1, \"text\": \"Uncaught\", \"lineNumber\": 4, \"columnNumber\": 26, \"scriptId\": \"6\", \"exception\": {\"type\": \"object\", \"subtype\": \"error\", \"className\": \"TypeError\", \"description\": \"TypeError: Ca",
+  "finished_utc": "2026-10-19T15:51:53Z"
 }
