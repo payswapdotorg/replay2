@@ -1,9 +1,87 @@
 {
   "url": "https://hyper3d-clone.vercel.app",
   "chrome_egress": "198.244.234.214",
-  "started_utc": "2026-10-19T15:51:36Z",
-  "phases": {},
+  "started_utc": "2026-10-19T16:05:00Z",
+  "phases": {
+    "landing": {
+      "title": "Hyper3D Rodin \u2013 Best AI 3D Model Generator",
+      "startCreating": true,
+      "body": "Skip to main content\nHYPER3D.AI\nProducts\nFeatures\nUse Cases\nStyles\nPricing\nENG\n49\ncredits\nFree \u00b7 7-Day Trial\nStart Creat"
+    },
+    "shots": [
+      "e2e20-01-landing.png",
+      "e2e20-02-signed-in.png",
+      "e2e20-03-uploaded-captioned.png",
+      "e2e20-04-task-result.png"
+    ],
+    "signin": {
+      "already": true,
+      "user": "demo creator",
+      "balance": 49
+    },
+    "mode": {
+      "image_tab": "clicked",
+      "state": {
+        "pressed": "true",
+        "hint": "Image to 3D\nOne image is enough for most objects",
+        "dropzone": true,
+        "fileInputs": 5
+      }
+    },
+    "upload": {
+      "nodeId": 1954,
+      "file": "/home/z/my-project/research/fixtures/apple.jpg"
+    },
+    "caption": {
+      "captioned": true,
+      "value": "A glossy red apple with a short brown stem, flanked by two green apples in soft focus. simple geometry.",
+      "uploaded": true
+    },
+    "pre_generate": {
+      "generateLabel": "GENERATE 1 Credit",
+      "generateDisabled": false,
+      "tierRadios": [
+        {
+          "label": "Quality",
+          "checked": "true"
+        },
+        {
+          "label": "Fast",
+          "checked": "false"
+        }
+      ],
+      "balance": 49
+    },
+    "generate_click": {
+      "result": "clicked:GENERATE 1 Credit",
+      "at": 0.0
+    },
+    "task_attribution": {
+      "captured_create_uuid": "8a690c07-f406-4c82-9317-9ecc3176dad0",
+      "anchor_newest_before": "52126651-a85e-4e36-a80a-30546938c8a8",
+      "attribution": "create-response"
+    },
+    "generation": {
+      "hf_space_reqs": [
+        0,
+        0,
+        3,
+        3,
+        3,
+        3
+      ],
+      "engine_used": "fast",
+      "fallback_reason": null,
+      "seed": 40948,
+      "user_state": "DonePreview",
+      "task_uuid": "8a690c07-f406-4c82-9317-9ecc3176dad0",
+      "neural_toast_at": null,
+      "fallback_toast_at": null,
+      "confirm_btn_at": 80.4,
+      "total_s": 80.4
+    }
+  },
   "ok": false,
-  "fatal": "js error: {\"exceptionId\": 1, \"text\": \"Uncaught\", \"lineNumber\": 4, \"columnNumber\": 26, \"scriptId\": \"6\", \"exception\": {\"type\": \"object\", \"subtype\": \"error\", \"className\": \"TypeError\", \"description\": \"TypeError: Ca",
-  "finished_utc": "2026-10-19T15:51:53Z"
+  "fatal": "js error: {\"exceptionId\": 2, \"text\": \"Uncaught (in promise) TypeError: Failed to fetch\", \"lineNumber\": 0, \"columnNumber\": 0, \"exception\": {\"type\": \"object\", \"subtype\": \"error\", \"className\": \"TypeError\", \"descri",
+  "finished_utc": "2026-10-19T16:07:07Z"
 }

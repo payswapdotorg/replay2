@@ -1,45 +1,41 @@
 {
-  "started_utc": "2026-10-19T08:21:59Z",
+  "started_utc": "2026-10-19T16:13:30Z",
   "phase": "B",
   "fire_at_epoch": null,
-  "probe_history": [
-    {
-      "t": "2026-10-19T08:22:38Z",
-      "admitted": true
-    }
-  ],
+  "probe_history": [],
   "cycles": [
     {
       "cycle": 1,
-      "at": "2026-10-19T08:22:38Z",
+      "at": "2026-10-19T16:13:30Z",
+      "signin": "NO-INPUTS:number",
       "user": "demo creator",
-      "pre_balance": 18,
+      "pre_balance": 49,
       "upload": "uploaded:119314",
       "caption": {
         "captioned": true,
-        "value": "A red apple in the foreground with two green apples behind it, all with short stems and wa",
+        "value": "A glossy red apple with a short brown stem and two green apples behind it. simple geometry",
         "uploaded": true
       },
-      "anchor": "83028b0a-b082-43ab-8193-6f21613be55e",
+      "anchor": "d51a9e8f-910d-49f1-a6d4-76f2b238ef14",
       "generate": "clicked:GENERATE 1 Credit",
-      "tracked_uuid": "b499efec-d395-4b4b-9157-409936fbfafb",
+      "tracked_uuid": "b64e1aa2-34a5-4b6a-a929-9182c9438080",
       "final_poll": {
         "hf": 3,
         "mine": {
-          "uuid": "b499efec-d395-4b4b-9157-409936fbfafb",
+          "uuid": "b64e1aa2-34a5-4b6a-a929-9182c9438080",
           "user_state": "DonePreview",
           "engine_used": "fast",
-          "seed": 10475,
+          "seed": 44645,
           "confirmed": false
         },
         "confirm": true,
         "neuralToast": false,
         "fallbackToast": true
       },
-      "task_uuid": "b499efec-d395-4b4b-9157-409936fbfafb",
+      "task_uuid": "b64e1aa2-34a5-4b6a-a929-9182c9438080",
       "user_state": "DonePreview",
       "engine_used": "fast",
-      "seed": 10475,
+      "seed": 44645,
       "hf_reqs": 3,
       "card": {
         "user_state": "DonePreview",
@@ -48,242 +44,6 @@
         "confirmed": false
       },
       "outcome": "fallback"
-    },
-    {
-      "cycle": 2,
-      "at": "2026-10-19T08:38:36Z",
-      "user": "demo creator",
-      "pre_balance": 17,
-      "upload": "uploaded:119314",
-      "caption": {
-        "captioned": true,
-        "value": "A glossy red apple with a short brown stem, flanked by two green apples in soft focus. sim",
-        "uploaded": true
-      },
-      "anchor": "ba39be78-2f1a-48eb-a77c-4eb963f93a33",
-      "generate": "clicked:GENERATE 1 Credit",
-      "tracked_uuid": "e2e75be2-9723-429c-adb9-b096f5ea93b9",
-      "final_poll": {
-        "hf": 3,
-        "mine": {
-          "uuid": "e2e75be2-9723-429c-adb9-b096f5ea93b9",
-          "user_state": "DonePreview",
-          "engine_used": "fast",
-          "seed": 2347,
-          "confirmed": false
-        },
-        "confirm": true,
-        "neuralToast": false,
-        "fallbackToast": true
-      },
-      "task_uuid": "e2e75be2-9723-429c-adb9-b096f5ea93b9",
-      "user_state": "DonePreview",
-      "engine_used": "fast",
-      "seed": 2347,
-      "hf_reqs": 3,
-      "card": {
-        "user_state": "DonePreview",
-        "engine_used": "fast",
-        "fallback_reason": "neural engine reported an error event",
-        "confirmed": false
-      },
-      "outcome": "fallback"
-    },
-    {
-      "cycle": 3,
-      "at": "2026-10-19T08:54:38Z",
-      "signin": "submitted:Sign in",
-      "outcome": "error",
-      "reason": "sign-in failed: None"
-    },
-    {
-      "cycle": 4,
-      "at": "2026-10-19T09:09:57Z",
-      "signin": "submitted:Sign in",
-      "outcome": "error",
-      "reason": "sign-in failed: None"
-    },
-    {
-      "cycle": 5,
-      "at": "2026-10-19T09:25:16Z",
-      "signin": "submitted:Sign in",
-      "outcome": "error",
-      "reason": "sign-in failed: None"
-    },
-    {
-      "cycle": 6,
-      "at": "2026-10-19T09:40:35Z",
-      "signin": "submitted:Sign in",
-      "outcome": "error",
-      "reason": "sign-in failed: None"
-    },
-    {
-      "cycle": 7,
-      "at": "2026-10-19T09:55:55Z",
-      "signin": "submitted:Sign in",
-      "outcome": "error",
-      "reason": "sign-in failed: None"
-    },
-    {
-      "cycle": 8,
-      "at": "2026-10-19T10:11:17Z",
-      "signin": "submitted:Sign in",
-      "outcome": "error",
-      "reason": "sign-in failed: None"
-    },
-    {
-      "cycle": 9,
-      "at": "2026-10-19T10:26:37Z",
-      "signin": "submitted:Sign in",
-      "outcome": "error",
-      "reason": "sign-in failed: None"
-    },
-    {
-      "cycle": 10,
-      "at": "2026-10-19T10:41:56Z",
-      "signin": "submitted:Sign in",
-      "outcome": "error",
-      "reason": "sign-in failed: None"
-    },
-    {
-      "cycle": 11,
-      "at": "2026-10-19T10:57:15Z",
-      "signin": "submitted:Sign in",
-      "outcome": "error",
-      "reason": "sign-in failed: None"
-    },
-    {
-      "cycle": 12,
-      "at": "2026-10-19T11:12:36Z",
-      "signin": "submitted:Sign in",
-      "outcome": "error",
-      "reason": "sign-in failed: None"
-    },
-    {
-      "cycle": 13,
-      "at": "2026-10-19T11:27:55Z",
-      "signin": "submitted:Sign in",
-      "outcome": "error",
-      "reason": "sign-in failed: None"
-    },
-    {
-      "cycle": 14,
-      "at": "2026-10-19T11:43:14Z",
-      "signin": "submitted:Sign in",
-      "outcome": "error",
-      "reason": "sign-in failed: None"
-    },
-    {
-      "cycle": 15,
-      "at": "2026-10-19T11:58:34Z",
-      "signin": "submitted:Sign in",
-      "outcome": "error",
-      "reason": "sign-in failed: None"
-    },
-    {
-      "cycle": 16,
-      "at": "2026-10-19T12:13:52Z",
-      "signin": "submitted:Sign in",
-      "outcome": "error",
-      "reason": "sign-in failed: None"
-    },
-    {
-      "cycle": 17,
-      "at": "2026-10-19T12:29:12Z",
-      "signin": "submitted:Sign in",
-      "outcome": "error",
-      "reason": "sign-in failed: None"
-    },
-    {
-      "cycle": 18,
-      "at": "2026-10-19T12:44:31Z",
-      "signin": "submitted:Sign in",
-      "outcome": "error",
-      "reason": "sign-in failed: None"
-    },
-    {
-      "cycle": 19,
-      "at": "2026-10-19T12:59:49Z",
-      "signin": "submitted:Sign in",
-      "outcome": "error",
-      "reason": "sign-in failed: None"
-    },
-    {
-      "cycle": 20,
-      "at": "2026-10-19T13:15:09Z",
-      "signin": "submitted:Sign in",
-      "outcome": "error",
-      "reason": "sign-in failed: None"
-    },
-    {
-      "cycle": 21,
-      "at": "2026-10-19T13:30:29Z",
-      "signin": "submitted:Sign in",
-      "outcome": "error",
-      "reason": "sign-in failed: None"
-    },
-    {
-      "cycle": 22,
-      "at": "2026-10-19T13:45:48Z",
-      "signin": "submitted:Sign in",
-      "outcome": "error",
-      "reason": "sign-in failed: None"
-    },
-    {
-      "cycle": 23,
-      "at": "2026-10-19T14:01:07Z",
-      "signin": "submitted:Sign in",
-      "outcome": "error",
-      "reason": "sign-in failed: None"
-    },
-    {
-      "cycle": 24,
-      "at": "2026-10-19T14:16:26Z",
-      "signin": "submitted:Sign in",
-      "outcome": "error",
-      "reason": "sign-in failed: None"
-    },
-    {
-      "cycle": 25,
-      "at": "2026-10-19T14:31:47Z",
-      "signin": "submitted:Sign in",
-      "outcome": "error",
-      "reason": "sign-in failed: None"
-    },
-    {
-      "cycle": 26,
-      "at": "2026-10-19T14:47:08Z",
-      "signin": "submitted:Sign in",
-      "outcome": "error",
-      "reason": "sign-in failed: None"
-    },
-    {
-      "cycle": 27,
-      "at": "2026-10-19T15:02:27Z",
-      "signin": "submitted:Sign in",
-      "outcome": "error",
-      "reason": "sign-in failed: None"
-    },
-    {
-      "cycle": 28,
-      "at": "2026-10-19T15:17:47Z",
-      "signin": "submitted:Sign in",
-      "outcome": "error",
-      "reason": "sign-in failed: None"
-    },
-    {
-      "cycle": 29,
-      "at": "2026-10-19T15:33:08Z",
-      "signin": "submitted:Sign in",
-      "outcome": "error",
-      "reason": "sign-in failed: None"
-    },
-    {
-      "cycle": 30,
-      "at": "2026-10-19T15:48:27Z",
-      "signin": "submitted:Sign in",
-      "outcome": "error",
-      "reason": "sign-in failed: None"
     }
   ],
   "done": false,
