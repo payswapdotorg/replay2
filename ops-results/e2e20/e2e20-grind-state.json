@@ -102,6 +102,20 @@
       "signin": "submitted:Sign in",
       "outcome": "error",
       "reason": "sign-in failed: None"
+    },
+    {
+      "cycle": 5,
+      "at": "2026-10-19T09:25:16Z",
+      "signin": "submitted:Sign in",
+      "outcome": "error",
+      "reason": "sign-in failed: None"
+    },
+    {
+      "cycle": 6,
+      "at": "2026-10-19T09:40:35Z",
+      "signin": "submitted:Sign in",
+      "outcome": "error",
+      "reason": "sign-in failed: None"
     }
   ],
   "done": false,
