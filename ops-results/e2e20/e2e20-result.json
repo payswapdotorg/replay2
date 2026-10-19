@@ -1,12 +1,12 @@
 {
   "url": "https://hyper3d-clone.vercel.app",
   "chrome_egress": "198.244.234.214",
-  "started_utc": "2026-10-19T21:47:14Z",
+  "started_utc": "2026-10-19T22:05:00Z",
   "phases": {
     "landing": {
       "title": "Hyper3D Rodin \u2013 Best AI 3D Model Generator",
       "startCreating": true,
-      "body": "Skip to main content\nHYPER3D.AI\nProducts\nFeatures\nUse Cases\nStyles\nPricing\nENG\n37\ncredits\nFree \u00b7 7-Day Trial\nStart Creat"
+      "body": "Skip to main content\nHYPER3D.AI\nProducts\nFeatures\nUse Cases\nStyles\nPricing\nENG\n36\ncredits\nFree \u00b7 7-Day Trial\nStart Creat"
     },
     "shots": [
       "e2e20-01-landing.png",
@@ -20,7 +20,7 @@
     "signin": {
       "already": true,
       "user": "demo creator",
-      "balance": 37
+      "balance": 36
     },
     "mode": {
       "image_tab": "clicked",
@@ -37,7 +37,7 @@
     },
     "caption": {
       "captioned": true,
-      "value": "A shiny red apple with a short brown stem and two green apples behind it. simple geometry.",
+      "value": "A glossy red apple with a short brown stem, flanked by two green apples in soft focus. simple geometry.",
       "uploaded": true
     },
     "pre_generate": {
@@ -53,15 +53,15 @@
           "checked": "false"
         }
       ],
-      "balance": 37
+      "balance": 36
     },
     "generate_click": {
       "result": "clicked:GENERATE 1 Credit",
-      "at": 0.0
+      "at": 0.1
     },
     "task_attribution": {
-      "captured_create_uuid": "c9297106-e317-4362-b3d5-09700bdd36f0",
-      "anchor_newest_before": "dd9139a3-1e8d-4eb9-8faf-648dc8be306e",
+      "captured_create_uuid": "31bb60f5-0d55-4a16-80b3-3228c0441473",
+      "anchor_newest_before": "ac72abae-11b9-4178-9452-aab5357b522a",
       "attribution": "create-response"
     },
     "generation": {
@@ -74,18 +74,18 @@
       ],
       "engine_used": "fast",
       "fallback_reason": null,
-      "seed": 55883,
+      "seed": 676,
       "user_state": "DonePreview",
-      "task_uuid": "c9297106-e317-4362-b3d5-09700bdd36f0",
+      "task_uuid": "31bb60f5-0d55-4a16-80b3-3228c0441473",
       "neural_toast_at": null,
-      "fallback_toast_at": 21.9,
-      "confirm_btn_at": 21.9,
-      "total_s": 21.9
+      "fallback_toast_at": 21.0,
+      "confirm_btn_at": 21.0,
+      "total_s": 21.0
     },
     "verdict_card": {
       "user_state": "DonePreview",
       "engine_used": "fast",
-      "fallback_reason": "neural engine reported an error event: 'You have exceeded your ZeroGPU quota (90s requested vs. 27s left). Try again in 5:47:07. Authenticate with a Hugging Face token for more quota - https://huggingface.co/settings/tokens'",
+      "fallback_reason": "neural engine reported an error event: 'You have exceeded your ZeroGPU quota (90s requested vs. 27s left). Try again in 5:29:19. Authenticate with a Hugging Face token for more quota - https://huggingface.co/settings/tokens'",
       "confirmed": false
     },
     "confirm": {
@@ -116,101 +116,100 @@
         "user_state": "DonePreview",
         "confirmed": true,
         "engine_used": "fast",
-        "fallback_reason": "neural engine reported an error event: 'You have exceeded your ZeroGPU quota (90s requested vs. 27s left). Try again in 5:47:07. Authenticate with a Hugging Face token for more quota - https://huggingface.co/settings/tokens'"
+        "fallback_reason": "neural engine reported an error event: 'You have exceeded your ZeroGPU quota (90s requested vs. 27s left). Try again in 5:29:19. Authenticate with a Hugging Face token for more quota - https://huggingface.co/settings/tokens'"
       },
-      "post_balance": 36
+      "post_balance": 35
     },
     "byte_verify": {
       "glb": {
-        "size": 143304,
+        "size": 143288,
         "magic": "glTF",
-        "head": "glTF\u0002\u0000\u0000\u0000\u00c8/\u0002\u0000\f\u001d\u0000\u0000",
+        "head": "glTF\u0002\u0000\u0000\u0000\u00b8/\u0002\u0000\u00fc\u001c\u0000\u0000",
         "gltf": true
       },
       "obj": {
-        "size": 718552,
-        "head": "o lathe | v 0.27050408013662786 -0.5818469426617279 0 | v 0.2705"
+        "size": 718867,
+        "head": "o lathe | v 0.3269677953728777 -0.5636734289826653 0 | v 0.32696"
       }
     },
     "hf_log": [
       {
         "url": "/api/task/rodin_mesh_image_process",
-        "t": 1792446448396,
+        "t": 1792447513405,
         "status": 200,
-        "body": "{\"prompt\":\"A shiny red apple with a short brown stem and two green apples behind it. simple geometry.\",\"components\":[{\"primitive\":\"lathe\",\"params\":{\"points\":[[0,0],[0.48,0.06],[0.75,0.28],[0.88,0.58],[0.83,0.88],[0.65,1.08],[0.32,1.18],[0,1.2]]},\"position\":[0,0,0],\"scale\":1,\"rotation\":[0,0,0],\"color\":\"#C1121F\"},{\"primitive\":\"cylinder\",\"params\":{\"radius\":0.045,\"height\":0.28},\"position\":[0,1.34,0],\"scale\":1,\"rotation\":[0,0,0],\"color\":\"#5D4037\"},{\"primitive\":\"lathe\",\"params\":{\"points\":[[0,0],[0.44,0.05],[0.7,0.25],[0.82,0.55],[0.78,0.85],[0.6,1.05],[0.28,1.14],[0,1.16]]},\"position\":[-1.2,0,0],\"sc",
+        "body": "{\"prompt\":\"A glossy red apple with a short brown stem, flanked by two green apples in soft focus. simple geometry.\",\"components\":[{\"primitive\":\"lathe\",\"params\":{\"points\":[[0,0],[0.42,0.06],[0.75,0.28],[0.92,0.58],[0.88,0.88],[0.7,1.08],[0.38,1.18],[0,1.2]]},\"position\":[0,0,0],\"scale\":1,\"rotation\":[0,0,0],\"color\":\"#C1121F\"},{\"primitive\":\"cylinder\",\"params\":{\"radius\":0.045,\"height\":0.28},\"position\":[0,1.34,0],\"scale\":1,\"rotation\":[0,0,0],\"color\":\"#5D4037\"},{\"primitive\":\"lathe\",\"params\":{\"points\":[[0,0],[0.4,0.06],[0.72,0.27],[0.88,0.56],[0.84,0.85],[0.68,1.04],[0.36,1.13],[0,1.15]]},\"position\":[",
         "chunks": []
       },
       {
         "url": "/api/task",
-        "t": 1792446464189,
+        "t": 1792447533699,
         "status": 200,
-        "body": "{\"uuid\":\"c9297106-e317-4362-b3d5-09700bdd36f0\",\"producer\":\"standard\",\"engine\":\"neural\",\"pay_by_result\":true,\"job\":{\"uuids\":[\"c9297106-e317-4362-b3d5-09700bdd36f0\"],\"subscription_key\":\"clone-local\"}}",
+        "body": "{\"uuid\":\"31bb60f5-0d55-4a16-80b3-3228c0441473\",\"producer\":\"standard\",\"engine\":\"neural\",\"pay_by_result\":true,\"job\":{\"uuids\":[\"31bb60f5-0d55-4a16-80b3-3228c0441473\"],\"subscription_key\":\"clone-local\"}}",
         "chunks": []
       },
       {
         "url": "https://tencent-hunyuan3d-2-1.hf.space/upload",
-        "t": 1792446466339,
+        "t": 1792447535490,
         "status": 200,
         "body": null,
         "chunks": []
       },
       {
         "url": "https://tencent-hunyuan3d-2-1.hf.space/config",
-        "t": 1792446469371,
+        "t": 1792447537631,
         "status": 200,
         "body": null,
         "chunks": []
       },
       {
         "url": "https://tencent-hunyuan3d-2-1.hf.space/queue/join",
-        "t": 1792446470427,
+        "t": 1792447538423,
         "status": 200,
         "body": null,
         "chunks": []
       },
       {
-        "url": "https://tencent-hunyuan3d-2-1.hf.space/queue/data?session_hash=1bd53da9-2c5f-41f5-8efe-5338f6667c91",
-        "t": 1792446471311,
+        "url": "https://tencent-hunyuan3d-2-1.hf.space/queue/data?session_hash=23c459d5-02c7-47c8-b682-090cba1c3a60",
+        "t": 1792447539134,
         "status": 200,
         "body": null,
         "chunks": [
-          "data: {\"msg\":\"estimation\",\"event_id\":\"68bb185421804f6eaba86cbb2fd6eafb\",\"rank\":0,\"queue_size\":1,\"rank_eta\":28.004497196421276}\n\ndata: {\"msg\":\"process_starts\",\"event_id\":\"68bb185421804f6eaba86cbb2fd6eafb\",\"eta\":28.004497196421276}\n\n",
-          "data: {\"msg\":\"process_completed\",\"event_id\":\"68bb185421804f6eaba86cbb2fd6eafb\",\"output\":{\"error\":\"'You have exceeded your ZeroGPU quota (90s requested vs. 27s left). Try again in 5:47:07. Authenticate with a Hugging Face token for more quota - https://huggingface.co/settings/tokens'\",\"duration\":10,\"visible\":true},\"success\":false}\n\ndata: {\"msg\":\"close_stream\",\"event_id\":null}\n\n"
+          "data: {\"msg\":\"estimation\",\"event_id\":\"29578ef1b31a41ad82a089f1c6427e5d\",\"rank\":0,\"queue_size\":1,\"rank_eta\":28.1475831073584}\n\ndata: {\"msg\":\"process_starts\",\"event_id\":\"29578ef1b31a41ad82a089f1c6427e5d\",\"eta\":28.1475831073584}\n\ndata: {\"msg\":\"process_completed\",\"event_id\":\"29578ef1b31a41ad82a089f1c6427e5d\",\"output\":{\"error\":\"'You have exceeded your ZeroGPU quota (90s requested vs. 27s left). Try again in 5:29:19. Authenticate with a Hugging Face token for more quota - https://huggingface.co/settings/tokens'\",\"duration\":10,\"visible\":true},\"success\":false}\n\ndata: {\"msg\":\"close_stream\",\"event_id\":null}\n\n"
         ]
       },
       {
-        "url": "/api/task/c9297106-e317-4362-b3d5-09700bdd36f0/fallback",
-        "t": 1792446471926,
+        "url": "/api/task/31bb60f5-0d55-4a16-80b3-3228c0441473/fallback",
+        "t": 1792447539542,
         "status": 202,
-        "body": "{\"fallback\":\"fast\",\"reason\":\"neural engine reported an error event: 'You have exceeded your ZeroGPU quota (90s requested vs. 27s left). Try again in 5:47:07. Authenticate with a Hugging Face token for more quota - https://huggingface.co/settings/tokens'\",\"task_uuid\":\"c9297106-e317-4362-b3d5-09700bdd36f0\"}",
+        "body": "{\"fallback\":\"fast\",\"reason\":\"neural engine reported an error event: 'You have exceeded your ZeroGPU quota (90s requested vs. 27s left). Try again in 5:29:19. Authenticate with a Hugging Face token for more quota - https://huggingface.co/settings/tokens'\",\"task_uuid\":\"31bb60f5-0d55-4a16-80b3-3228c0441473\"}",
         "chunks": []
       },
       {
-        "url": "/api/task/c9297106-e317-4362-b3d5-09700bdd36f0/confirm",
-        "t": 1792446490149,
+        "url": "/api/task/31bb60f5-0d55-4a16-80b3-3228c0441473/confirm",
+        "t": 1792447558906,
         "status": 200,
-        "body": "{\"confirmed\":true,\"charged\":1,\"balance\":36}",
+        "body": "{\"confirmed\":true,\"charged\":1,\"balance\":35}",
         "chunks": []
       },
       {
-        "url": "/api/task/c9297106-e317-4362-b3d5-09700bdd36f0/export?format=glb",
-        "t": 1792446493747,
+        "url": "/api/task/31bb60f5-0d55-4a16-80b3-3228c0441473/export?format=glb",
+        "t": 1792447562746,
         "status": 200,
-        "body": "glTF\u0002\u0000\u0000\u0000\ufffd/\u0002\u0000\f\u001d\u0000\u0000JSON{\"asset\":{\"version\":\"2.0\",\"generator\":\"THREE.GLTFExporter r186\"},\"scenes\":[{\"name\":\"AuxScene\",\"nodes\":[0]}],\"scene\":0,\"nodes\":[{\"matrix\":[0.7862796519289166,0,0,0,0,0.7862796519289166,0,0,0,0,0.7862796519289166,0,0,0,0,1],\"children\":[1]},{\"matrix\":[1,0,0,0,0,1,0,0,0,0,1,0,0.34403037071228026,-0.7400000002980233,0,1],\"name\":\"A shiny red apple with a short brown stem and two green apples behind it. simple\",\"children\":[2,3,4,5,6,7]},{\"name\":\"lathe\",\"mesh\":0},{\"matrix\":[1,0,0,0,0,1,0,0,0,0,1,0,0,1.34,0,1],\"name\":\"cylinder\",\"mesh\":1},{\"matrix\":[0.92,0,0,0,0,0.92,0,0,0,0,0.92,0,-",
+        "body": "glTF\u0002\u0000\u0000\u0000\ufffd/\u0002\u0000\ufffd\u001c\u0000\u0000JSON{\"asset\":{\"version\":\"2.0\",\"generator\":\"THREE.GLTFExporter r186\"},\"scenes\":[{\"name\":\"AuxScene\",\"nodes\":[0]}],\"scene\":0,\"nodes\":[{\"matrix\":[0.7617208496698037,0,0,0,0,0.7617208496698037,0,0,0,0,0.7617208496698037,0,0,0,0,1],\"children\":[1]},{\"matrix\":[1,0,0,0,0,1,0,0,0,0,1,0,0.4292488455772401,-0.7400000002980233,0,1],\"name\":\"A glossy red apple with a short brown stem, flanked by two green apples in soft \",\"children\":[2,3,4,5,6,7]},{\"name\":\"lathe\",\"mesh\":0},{\"matrix\":[1,0,0,0,0,1,0,0,0,0,1,0,0,1.34,0,1],\"name\":\"cylinder\",\"mesh\":1},{\"matrix\":[0.9,0,0,0,0,0.9,0,0,0,0,0.9,0,-1,0,",
         "chunks": []
       },
       {
-        "url": "/api/task/c9297106-e317-4362-b3d5-09700bdd36f0/export?format=obj",
-        "t": 1792446494558,
+        "url": "/api/task/31bb60f5-0d55-4a16-80b3-3228c0441473/export?format=obj",
+        "t": 1792447563287,
         "status": 200,
-        "body": "o lathe\nv 0.27050408013662786 -0.5818469426617279 0\nv 0.27050408013662786 -0.575329308045453 0.07428790103745979\nv 0.27050408013662786 -0.5656344745841442 0.18093305212606953\nv 0.27050408013662786 -0.5469097120340269 0.2900865199423082\nv 0.27050408013662786 -0.5138483132611631 0.3790341215592956\nv 0.27050408013662786 -0.4674245972958241 0.4610778811642666\nv 0.27050408013662786 -0.41230539037125924 0.5353458817607235\nv 0.27050408013662786 -0.35306366971722497 0.5978236355632925\nv 0.27050408013662786 -0.2877201118124854 0.6496999434821383\nv 0.27050408013662786 -0.21702547353554552 0.690874137522",
+        "body": "o lathe\nv 0.3269677953728777 -0.5636734289826653 0\nv 0.3269677953728777 -0.5573593673564144 0.08470755617082061\nv 0.3269677953728777 -0.5479673440941579 0.20610764858044023\nv 0.3269677953728777 -0.5298274341975324 0.3250777694852354\nv 0.3269677953728777 -0.4977986811924695 0.4103947183264117\nv 0.3269677953728777 -0.4528249720506939 0.47671165987601066\nv 0.3269677953728777 -0.3994273685025088 0.5311217643205467\nv 0.3269677953728777 -0.3420360145716408 0.5775711098370071\nv 0.3269677953728777 -0.2787334092892317 0.6172760187021423\nv 0.3269677953728777 -0.2102468602563205 0.6479090430296865\nv 0.32",
         "chunks": []
       }
     ]
   },
   "ok": false,
   "neural": false,
-  "verdict_source": "card:c9297106-e317-4362-b3d5-09700bdd36f0",
+  "verdict_source": "card:31bb60f5-0d55-4a16-80b3-3228c0441473",
   "exports_byte_verified": true,
-  "finished_utc": "2026-10-19T21:48:16Z"
+  "finished_utc": "2026-10-19T22:06:04Z"
 }
