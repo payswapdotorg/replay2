@@ -236,6 +236,39 @@ JS_ANCHOR = """(async () => {
   return arr.length ? arr[0].task_uuid : 'EMPTY';
 })()"""
 
+# 2026-10-19 audit fix: arr[0] list-diff tracking misattributes tasks when two
+# grind loops share the demo account (the CDP companion fires on the same
+# account). The CREATE response's uuid is the only robust attribution source.
+JS_INSTRUMENT = """(() => {
+  if (window.__createdUuid !== undefined) return 'already';
+  window.__createdUuid = null;
+  const orig = window.fetch.bind(window);
+  window.fetch = async (...args) => {
+    const url = String(args[0] || '');
+    if (url !== '/api/task') return orig(...args);
+    const res = await orig(...args);
+    try {
+      if (res.ok) {
+        const j = await res.clone().json();
+        if (j && j.uuid) window.__createdUuid = j.uuid;
+      }
+    } catch (e) {}
+    return res;
+  };
+  return 'instrumented';
+})()"""
+
+JS_CREATED_UUID = "(() => window.__createdUuid || '')()"
+
+JS_CARD = """(async () => {
+  const r = await fetch('/api/task/card/%s', {credentials: 'include', cache: 'no-store'});
+  if (!r.ok) return JSON.stringify({error: r.status});
+  const j = await r.json();
+  const s = j.settings || {};
+  return JSON.stringify({user_state: j.user_state, engine_used: s.engine_used || null,
+    fallback_reason: s.fallback_reason || null, confirmed: s.confirmed === true});
+})()"""
+
 JS_POLL = """(async () => {
   const hf = performance.getEntriesByType('resource')
     .filter(e => e.name.includes('hf.space')).length;
@@ -246,8 +279,16 @@ JS_POLL = """(async () => {
     if (r.ok) {
       const arr = await r.json();
       if (Array.isArray(arr) && arr.length) {
-        const t0 = arr[0];
-        if (t0.task_uuid !== '%s') {
+        // attribution: the CAPTURED create-response uuid when present; only
+        // fall back to newest-not-anchor if the capture failed
+        const tracked = '%s';
+        let t0 = null;
+        if (tracked) {
+          t0 = arr.find(t => t.task_uuid === tracked) || null;
+        } else if (arr[0].task_uuid !== '%s') {
+          t0 = arr[0];
+        }
+        if (t0) {
           mine = { uuid: t0.task_uuid, user_state: t0.user_state,
             engine_used: t0.engine_used || null, seed: t0.seed ?? null,
             confirmed: t0.confirmed ?? null };
@@ -310,10 +351,11 @@ def run_golden_path(cycle_n):
     """One full attempt. Returns dict with outcome: success | fallback | error."""
     outcome = {"cycle": cycle_n, "at": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime())}
     try:
-        # 1. open + settle
+        # 1. open + settle + instrument (create-uuid capture)
         ab("open", PROD, timeout=90)
         ab("wait", "--load", "networkidle", timeout=60)
         time.sleep(2)
+        ab_eval(JS_INSTRUMENT, timeout=60)
 
         # 2. session (sign in if needed), then ALWAYS ensure the studio is open
         sess = ab_eval(JS_SESSION, timeout=60)
@@ -373,8 +415,18 @@ def run_golden_path(cycle_n):
             outcome["reason"] = f"generate: {gen}"
             return outcome
 
-        # 7. poll the new task (up to 4 min)
-        poll_js = JS_POLL % str(anchor)
+        # 6.5 capture the create-response uuid (robust attribution)
+        tracked = None
+        for _ in range(15):
+            cap = ab_eval(JS_CREATED_UUID, timeout=30)
+            if isinstance(cap, str) and cap.count("-") >= 4:
+                tracked = cap
+                break
+            time.sleep(2)
+        outcome["tracked_uuid"] = tracked
+
+        # 7. poll the new task (up to 4 min) — by captured uuid when present
+        poll_js = JS_POLL % (tracked or "", str(anchor))
         deadline = time.time() + 240
         last = None
         while time.time() < deadline:
@@ -396,7 +448,13 @@ def run_golden_path(cycle_n):
         outcome["seed"] = m.get("seed")
         outcome["hf_reqs"] = (last or {}).get("hf") if isinstance(last, dict) else None
 
-        if m.get("engine_used") != "neural":
+        # 7.5 VERDICT from the task CARD (server truth) — a just-created
+        # neural task reports engine_used=neural before its pipeline
+        # resolves; only the card's final state counts (2026-10-19 audit)
+        card = eval_json(JS_CARD % m.get("uuid"), timeout=60)
+        outcome["card"] = card
+        if not (isinstance(card, dict) and card.get("user_state") in ("DonePreview", "done")
+                and card.get("engine_used") == "neural" and not card.get("fallback_reason")):
             outcome["outcome"] = "fallback"
             return outcome
 
@@ -431,6 +489,11 @@ def run_golden_path(cycle_n):
           return JSON.stringify({size: t.length, head: t.slice(0, 60)});
         })()""" % uuid, timeout=90)
         outcome["byte_verify"] = {"glb": _try(glb), "obj": _try(obj)}
+        _g = _try(glb)
+        _o = _try(obj)
+        outcome["exports_ok"] = bool(isinstance(_g, dict) and _g.get("gltf") is True
+                                      and isinstance(_g.get("size"), int) and _g["size"] > 1000
+                                      and isinstance(_o, dict) and isinstance(_o.get("size"), int) and _o["size"] > 1000)
 
         # 10. screenshots
         shots = []

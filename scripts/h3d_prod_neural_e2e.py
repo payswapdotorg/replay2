@@ -116,21 +116,30 @@ def main():
         time.sleep(1)
     time.sleep(3)
 
-    # ---------- 1b. instrument fetch: log hf.space traffic + confirm/export API responses ----------
+    # ---------- 1b. instrument fetch: log hf.space traffic + confirm/export API
+    # responses + CAPTURE the create-task response uuid (the 2026-10-19 audit
+    # showed arr[0] list-diff tracking misattributes tasks when two grind
+    # loops share the demo account — the create response is the only robust
+    # attribution source). ----------
     js(ws, """(() => {
       if (window.__hfLog) return 'already';
       window.__hfLog = [];
+      window.__createdUuid = null;
       const orig = window.fetch.bind(window);
       window.fetch = async (...args) => {
         const url = String(args[0] || '');
         const isHf = url.includes('hf.space');
-        const isApi = /\/api\/task\/.*(confirm|fallback|mesh|export)/.test(url);
-        if (!isHf && !isApi) return orig(...args);
+        const isCreate = url === '/api/task';
+        const isApi = /\\/api\\/task\\/.*(confirm|fallback|mesh|export)/.test(url);
+        if (!isHf && !isApi && !isCreate) return orig(...args);
         const entry = {url: url.slice(0, 160), t: Date.now(), status: null, body: null, chunks: []};
         window.__hfLog.push(entry);
         try {
           const res = await orig(...args);
           entry.status = res.status;
+          if (isCreate && res.ok) {
+            try { const j = await res.clone().json(); if (j && j.uuid) window.__createdUuid = j.uuid; } catch (e) {}
+          }
           if (isHf && res.body && (res.headers.get('content-type') || '').includes('event-stream')) {
             // tee the SSE stream: one branch feeds the page, one feeds our log
             const [a, b] = res.body.tee();
@@ -148,7 +157,7 @@ def main():
             })();
             return new Response(a, {status: res.status, statusText: res.statusText, headers: res.headers});
           }
-          if (isApi || (isHf && !res.ok)) {
+          if (isApi || isCreate || (isHf && !res.ok)) {
             try { entry.body = (await res.clone().text()).slice(0, 600); } catch (e) {}
           }
           return res;
@@ -301,7 +310,8 @@ def main():
     phase("generate_click", {"result": gen_click, "at": round(time.time() - t_start, 1)})
     print("[gen] clicked", gen_click, "— polling neural pipeline…", flush=True)
 
-    # anchor: newest task BEFORE generate (poll only accepts a NEW uuid)
+    # anchor: newest task BEFORE generate (fallback attribution only —
+    # primary attribution is the CAPTURED create-response uuid)
     pre_task = js(ws, """(async () => {
       const r = await fetch('/api/task/list?filter=mine', {credentials: 'include'});
       if (!r.ok) return 'ERR';
@@ -311,7 +321,18 @@ def main():
     pre_task_uuid = None
     if pre_task and pre_task.startswith("{"):
         pre_task_uuid = json.loads(pre_task).get("uuid")
-    phase("pre_task_anchor", {"newest_before": pre_task_uuid})
+
+    # capture the create-response uuid (robust attribution — see audit)
+    tracked_uuid = None
+    for _ in range(15):
+        cap = js(ws, "(() => window.__createdUuid || '')()", t=10)
+        if cap:
+            tracked_uuid = cap
+            break
+        time.sleep(2)
+    phase("task_attribution", {"captured_create_uuid": tracked_uuid,
+                              "anchor_newest_before": pre_task_uuid,
+                              "attribution": "create-response" if tracked_uuid else "anchor-diff-fallback"})
 
     observations = {"hf_space_reqs": [], "engine_used": None, "fallback_reason": None,
                     "seed": None, "user_state": None, "task_uuid": None, "neural_toast_at": None,
@@ -330,8 +351,12 @@ def main():
                 if (r.ok) {
                   const arr = await r.json();
                   if (Array.isArray(arr) && arr.length) {
-                    const t0 = arr[0];
-                    if (t0.task_uuid !== '%s') {
+                    // track by the CAPTURED create uuid when present; only
+                    // fall back to newest-not-anchor when capture failed
+                    const t0 = '%s'
+                      ? arr.find(t => t.task_uuid === '%s')
+                      : (arr[0].task_uuid !== '%s' ? arr[0] : null);
+                    if (t0) {
                       mine = { uuid: t0.task_uuid, user_state: t0.user_state,
                         engine_used: t0.engine_used || null, seed: t0.seed ?? null,
                         confirmed: t0.confirmed ?? null, time: t0.time };
@@ -348,7 +373,7 @@ def main():
                 fallbackToast: txt.includes('Neural engine busy'),
                 elapsed: Math.round((Date.now() - %d) / 1000)
               });
-            })()""" % (str(pre_task_uuid), int(t_start * 1000)), t=30)
+            })()""" % (str(tracked_uuid or ""), str(tracked_uuid or ""), str(pre_task_uuid), int(t_start * 1000)), t=30)
         except Exception as e:
             print(f"  [poll-error] {e}", flush=True)
             time.sleep(5)
@@ -384,8 +409,34 @@ def main():
     phase("generation", observations)
     shot(ws, "e2e20-04-task-result")
 
-    neural_ok = observations["engine_used"] == "neural"
+    # VERDICT from the tracked task's CARD (server truth), not the poll's
+    # last engine_used snapshot: a just-created neural task reports
+    # engine_used=neural before its pipeline resolves — the false-positive
+    # mechanism of 2026-10-19 02:45Z.
+    verdict_card = None
+    verdict_uuid = observations.get("task_uuid") or tracked_uuid
+    if verdict_uuid:
+        vc = js(ws, """(async () => {
+          const r = await fetch('/api/task/card/%s', {credentials: 'include', cache: 'no-store'});
+          if (!r.ok) return JSON.stringify({error: r.status});
+          const j = await r.json();
+          const s = j.settings || {};
+          return JSON.stringify({user_state: j.user_state,
+            engine_used: s.engine_used || null,
+            fallback_reason: s.fallback_reason || null,
+            confirmed: s.confirmed === true});
+        })()""" % verdict_uuid, t=30)
+        try:
+            verdict_card = json.loads(vc)
+        except Exception:
+            verdict_card = {"raw": str(vc)[:200]}
+    phase("verdict_card", verdict_card)
+    neural_ok = bool(verdict_card and
+                     verdict_card.get("user_state") in ("DonePreview", "done") and
+                     verdict_card.get("engine_used") == "neural" and
+                     not verdict_card.get("fallback_reason"))
     result["neural"] = neural_ok
+    result["verdict_source"] = "card:%s" % verdict_uuid
 
     # ---------- 7. viewer + poster shot ----------
     time.sleep(2)
@@ -448,8 +499,15 @@ def main():
           const t = await r.text();
           return JSON.stringify({size: t.length, head: t.slice(0, 60).replaceAll('\\n',' | ')});
         })()""" % task_uuid, t=60)
-        phase("byte_verify", {"glb": json.loads(glb or "{}"), "obj": json.loads(obj or "{}")})
-        result["exports_byte_verified"] = True
+        glb_d = json.loads(glb or "{}")
+        obj_d = json.loads(obj or "{}")
+        phase("byte_verify", {"glb": glb_d, "obj": obj_d})
+        # HONEST gate: only byte-verified when the GLB carries the glTF magic
+        # AND the OBJ is a real mesh (>1KB) — the 2026-10-19 false positive
+        # had this flag True over two 402s.
+        result["exports_byte_verified"] = bool(
+            glb_d.get("gltf") is True and isinstance(glb_d.get("size"), int) and glb_d["size"] > 1000
+            and isinstance(obj_d.get("size"), int) and obj_d["size"] > 1000)
 
     shot(ws, "e2e20-07-final")
     # ---------- 10. dump the instrumented network log (verbatim engine errors) ----------

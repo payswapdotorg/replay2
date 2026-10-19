@@ -90,6 +90,11 @@ def snapshot():
 
 
 def check_success():
+    """Content-validated success check (2026-10-19 audit): a marker file's
+    EXISTENCE is not enough — the 02:45Z false positive banked a marker whose
+    neural flag came from a misattributed task. The CDP marker must carry
+    neural=true AND exports_byte_verified=true (honest gates, fixed e2e);
+    the raw-grind marker must carry outcome=success AND exports_ok=true."""
     for name in SUCCESS_MARKERS:
         p = f"{OUT}/{name}"
         if not os.path.isfile(p):
@@ -98,7 +103,12 @@ def check_success():
             d = json.load(open(p))
         except Exception:
             continue
-        if name == "e2e20-cdp-neural-success.json" or d.get("outcome") == "success":
+        if name == "e2e20-cdp-neural-success.json":
+            if d.get("neural") is True and d.get("exports_byte_verified") is True \
+                    and not d.get("AUDIT_VERDICT"):
+                return name, d
+        elif d.get("outcome") == "success" and d.get("exports_ok") is True \
+                and not d.get("AUDIT_VERDICT"):
             return name, d
     return None, None
 
