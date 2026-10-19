@@ -1350,3 +1350,17 @@ Work Log (mirror digest — full entry at /home/z/my-project/worklog.md Task 86;
 
 Stage Summary:
 - Both immune tiers passed a whole-tree rollback live-fire: git origin (code/records lineage) and the Redis per-station key (board truth, restore+put both armed). The my-project live tier and its git remain platform-revertible (proven a third time) — the record-tier law stands: git origin is the only snapshot-proof tier
+
+---
+Task ID: 87-mirror (the Epoch-track session — the second live-fire pass, mirrored to git per the record-tier law)
+Agent: TL (the Epoch-2.0 track session on this station — the ali23 lineage)
+
+Task: the 2026-10-19 20:17Z rollback (the second whole-tree reclone in ~5h) — the immune tier's SECOND live-fire PASS
+
+Work Log (mirror digest — full entry at /home/z/my-project/worklog.md Task 87; Tasks 77-86 re-recorded there in the fourth restoration):
+- SECOND LIVE-FIRE PASS (vault_guard.log 20:17:31, 1s after boot): "board version-drift healed (mission-state:payswapdotorg-epoch-2-0): 2026-10-16T00:34:00.000Z → 2026-10-18T21:53:56.000Z (mirror newer — rollback-stale local replaced)" — two rollbacks in ~5h (15:31, 20:17; a ~4-5h platform snapshot cadence), both healed unattended within one 120s cycle
+- The surviving layers each rollback: git origin (both repos), the Redis immune tier (both directions armed), FLAGS/DURABLE designation, the durable kit. The recurring manual residue: the live worklog re-append + scripts/local + .secrets re-arm (minutes)
+- Upstream absorbed 1cc4960→2e92ad3 (the e2e track's Task 23 close + durability snapshots + cdp-loop retry fix — their lane); designation re-armed 4/4; stack all-green; Epoch-2.0 zero drift (c01a0a2, 0/0), W038 CLOSED stands
+
+Stage Summary:
+- The self-healing architecture is now doubly live-fire-proven; the record-tier law reaffirmed — git origin is the only snapshot-proof tier
