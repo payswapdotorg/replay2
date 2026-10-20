@@ -206,3 +206,22 @@ Stage Summary:
 - The durable evidence chain is now COMPLETE through Task 28: master bundle Xd38J (Tasks 1-26) + addendum MqCpa (Tasks 27-28), both MD5 round-trip verified, plus production DB artifacts and 4 byte-exact posters — the entire post-harvest state survives a sandbox reset
 - Nothing is durably-missing anymore except the GitHub push (requires operator-supplied PAT)
 - Mission 4/4 CLOSED and fully persisted; zero budget consumed this task
+
+---
+Task ID: 30
+Agent: lead (reboot incident response + push-payload rebuild)
+Task: "go" — sandbox REBOOTED mid-session (up 4 min at 20:30Z), wiping /home/z/replay2 + /home/z/replay2-recover (non-persistent dirs); /home/z/my-project survived intact. Full impact assessment + recovery from durable layers.
+
+Work Log:
+- Impact: /home/z/replay2* gone (staged harvest payload, scripts, historical snapshots) + /tmp scratch + persistent shell cwd; research/out lost exactly ONE file: e2e20-grind.log; everything else survived (worklog, 10 artifacts, posters, fixtures apple.jpg 119,314 B exact, page.tsx, schema; dev server auto-restarted, 200)
+- Durable layers re-verified post-reboot: 6/6 paste.rs pointers 200; report page renders on fresh boot (title/h1/4 imgs/6 paste links/no horiz scroll, zero errors)
+- MASTER BUNDLE DECODED: Xd38J is a gzipped TAR — extracted cleanly (MANIFEST + harvest-worklog + result + verdict + grind-state + grind.log); recovered 3 files byte-MATCH local survivors; e2e20-grind.log RECOVERED (4,356 B exact) and restored to research/out
+- Fresh payload rebuilt: shallow-cloned payswapdotorg/replay2 (remote main b10b17f confirmed to contain all prior snapshots + scripts — nothing historical lost), staged 12 files into ops-results/e2e20-harvest/ (4 posters, result, verdict, grind-state, grind.log, monitoring snapshot, 2 report screenshots, worklog-mission), committed locally as 144282e — PAT-push ready
+- Production spot-check post-reboot: site 200; both neural cards 200 engine_used=neural (d716a085 + 394e5612-69b7-4a7c-91ba-afbaa65e3b16)
+- Self-caught and fixed: shell cwd reset by reboot sent one staging attempt into /home/z/my-project/ops-results (misplaced) — cleaned, redone with absolute paths
+- Note: GitHub API rate-limited for this IP (anonymous 60/hr exhausted) — used git protocol (ls-remote/clone) instead, unaffected
+
+Stage Summary:
+- ZERO durable loss: the only locally-lost file (grind.log) recovered byte-exact from the master bundle; every other layer (paste.rs, production DB, GitHub remotes, my-project) verified intact post-reboot
+- The recovery itself proved the durability design: master bundle tar decoded → byte-match vs survivors; remote repo → full scripts/snapshots back; push payload re-staged as commit 144282e awaiting only a PAT
+- Mission 4/4 CLOSED through a reboot; total cost of the incident: ~15 min of recovery, zero budget
