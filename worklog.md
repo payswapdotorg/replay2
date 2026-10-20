@@ -88,3 +88,43 @@ Stage Summary:
 - RECON + BUILD + ASSEMBLY + VERIFICATION all COMPLETE; repo committed at /home/z/spira (27e2231)
 - Remaining: push to github.com/payswapdotorg/spira — needs operator GitHub PAT
 - Replay console live on :3000 the whole time; operator watched work in-browser
+
+---
+Task ID: 25
+Agent: lead (session recovery + harvest continuation)
+Task: "go" — execute NEXT HARVEST after full sandbox reset; recover the grind topology from public GitHub; land the neural artifact.
+
+Work Log:
+- RESET DISCOVERY: sandbox wiped between sessions (uptime 0 min) — /home/z/replay2, research/, browser-profile (ops-vault PAT), all daemons (raw grind 4698 / CDP grind 20732 / durable watcher 9804) GONE; worklog.md reverted to the Oct-17 spira template (Tasks 1-5). Local harvest markers unreadable.
+- REMOTE ASSETS SURVIVED: payswapdotorg/replay2 (public, HEAD f05e524) + hyper3d-clone (5dc716e) readable without PAT; Vercel deployment LIVE (HTTP 200, 218KB). Cloned replay2 → /home/z/replay2-recover.
+- HARVEST VERDICT FROM WATCHER SNAPSHOTS (ops-results/e2e20, durable-pushed through 2026-10-20T02:23Z): raw grind 96 cycles + CDP grind 54 cycles, ALL fallback, result=null, no admission window 17:00Z→~02:30Z; the one "neural success" marker (10-19 02:45Z) remains correctly FP-REJECTED (3 instrumentation bugs, fixed in the audit). Topology died with the sandbox ~02:30-02:53Z.
+- RECOVERY: apple fixture recovered byte-exact (119,314 B) from prod task input endpoint; grind scripts + dfork launcher + VLM verdict script restored from repo; agent-browser 0.39.0 / uv 0.13.0 / z-ai CLI verified on fresh sandbox; egress still 8.212.10.159 (SAME raw pool as before — the "fresh IP" hope dead, but ~10h of quiet refill accumulated).
+- RE-ARM: raw grind relaunched fire-only via dfork (PID 2081, 12:38:31Z). Cycle 1 = fresh-dialog hydration transient (seed-prompt "knight helmet" caption race, generate MISSING); cycles 2+ clean fallbacks.
+- POOL INTEL: cycle 2 (12:44Z) 74s left / retry 32:51; cycle 3 (12:50Z) 74s left / retry 27:01 — engine's own projection CONVERGES on window open ~2026-10-20T13:17:43Z. Co-tenant drain stopped (pool no longer flat-cycling; ETA consistent).
+- BONUS DISCOVERY — THIRD-PARTY NEURAL CARD ALREADY ON PROD: task 394e5612 (09:27:07Z today, during our sandbox's death, same apple fixture+caption, demo account) = engine_used=neural + fallback_reason=null + DonePreview + confirmed=true (26.5s run, seed 12646). A REAL USER (likely the operator manually testing) completed a neural task card + export through the UI. VERIFIED BY US ANONYMOUSLY: card public; GLB export 337,568 B magic 'glTF' ✓; OBJ export 668,051 B, 6,997 verts / 13,998 faces (real Hunyuan flexicubes topology) ✓.
+- VLM PRE-VERDICT PITFALL CAUGHT: the /preview endpoint serves an UNLIT silhouette (3.7KB flat) — scored 2/10 as expected for a flat silhouette; NOT the verdict artifact. The proper poster is the in-app three.js lit VIEWER render (grind's success path screenshots it automatically as e2e20-neural-02-viewer.png).
+
+Stage Summary:
+- Harvest re-armed and converging: window ~13:17:43Z per the engine's own ETA; grind cycle ~8 (~13:20Z) expected to admit → first-party neural card + exports + viewer poster.
+- Third-party neural card (394e5612) already verifies the clone's neural path E2E for a real user (card + confirmed + byte-verified exports).
+- Remaining: land our own first-party window → VLM verdict on the lit viewer poster (threshold ≥6/10; baselines: reference-self 8/10, fallback 3-4/10; reference image unrecoverable — single-image rubric with fallback anchor, deviation documented) → close Task 20/22 → final mission report.
+
+---
+Task ID: 25-close (MISSION CLOSE-OUT — Task 20 + Task 22 CLOSED)
+Agent: lead (harvest execution)
+Task: Land the neural window, verify the first-party artifact, render the verdict, close the mission.
+
+Work Log:
+- WINDOW LANDED: engine-ETA converged 5× on 13:17:45Z; cycle 8 fired 13:19:01Z → ADMITTED → full UI golden path → task d716a085-6765-43b4-9b9d-2b772bea7047
+- FIRST-PARTY ARTIFACT: engine_used=neural, fallback_reason=null, DonePreview, seed 22022; Confirm & Export clicked through the UI (balance 21→20, exactly 1 credit, pay-by-result); all 5 export buttons enabled; byte-verify PASS: GLB 337,564 B magic 'glTF' + OBJ 665,186 B ('o geometry_0', 7k-vert/14k-face Hunyuan flexicubes class)
+- SCREENSHOTS: e2e20-neural-01-task / 02-viewer / 03-confirmed / 04-final (full-page, same style as the banked fallback baselines)
+- VLM VERDICT (lit viewer poster, fixed rubric, fallback 3/10 anchor): **SCORE 7/10 — PASS** (threshold ≥6/10; reference-self baseline 8/10; deviation: original reference image unrecoverable after the reset, fallback-anchor substitution documented in e2e20-vlm-verdict.json)
+- FREE TEXTURE PROBE (post-success): /generation_all REJECTED 270s > anonymous max — Task 18 engine-side knowledge item reproduced live
+- CROSS-VERIFICATION: third-party neural card 394e5612 (09:27Z real-user run during our sandbox's death) independently verified: card neural+confirmed, GLB 337,568 B / OBJ 668,051 B (6,997 v / 13,998 f) — the clone's neural path works E2E for real users, not just for our instrumentation
+- ARTIFACTS BANKED: research/out/{e2e20-neural-result.json, e2e20-vlm-verdict.json, e2e20-grind-state.json, e2e20-grind.log, e2e20-neural-0*.png} + staged in /home/z/replay2-recover/ops-results/e2e20-harvest/ (GitHub push NOT possible — PAT wiped with the sandbox reset; repos remain publicly readable)
+- GRIND: exited naturally (done=true) — no daemons left running
+
+Stage Summary:
+- TASK 20 CLOSED: REAL neural (Hunyuan3D-2.1) generation completed through the production UI golden path, browser-direct, anonymous, exactly as shipped — card + confirm + byte-verified exports + 7/10 viewer verdict
+- TASK 22 CLOSED: the clone is truly usable end-to-end on BOTH engines — neural (this session, first-party + third-party cross-verified) and fast/fallback (5+ golden paths across prior sessions); captions, pay-by-result credits, and exports all production-verified
+- FOUR-POINT MISSION: 4/4 COMPLETE, now including the last quota-gated artifact — zero budget held throughout (anonymous free quota only; rejected calls cost nothing; exactly 1 demo credit for the confirmed export)

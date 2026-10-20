@@ -1,0 +1,36 @@
+{
+  "at": "2026-10-20T13:24:10Z",
+  "verdict": "PASS",
+  "score": 7,
+  "threshold": 6,
+  "candidate": "e2e20-neural-02-viewer.png (first-party lit viewer, cycle 8, task d716a085-6765-43b4-9b9d-2b772bea7047)",
+  "anchor_baseline": "fallback poster 3/10 (reproduced live this session)",
+  "content": "SCORE: 7/10, the candidate successfully captures the organic, non-spherical silhouette and realistic proportions of the apple cluster, including the presence of stems, though it lacks fine surface irregularities and has some minor geometric noise.",
+  "deviation_note": "original reference (hunyuan3d21_apple_10k_preview.png, self-score 8/10) wiped with the sandbox reset and unrecoverable; verdict run with the fallback anchor on the same fixed rubric instead \u2014 documented deviation, baselines otherwise preserved",
+  "chain": {
+    "task": "d716a085-6765-43b4-9b9d-2b772bea7047",
+    "engine_used": "neural",
+    "fallback_reason": null,
+    "user_state": "DonePreview",
+    "confirmed": true,
+    "seed": 22022,
+    "exports_byte_verified": true,
+    "glb": {
+      "size": 337564,
+      "magic": "glTF"
+    },
+    "obj": {
+      "size": 665186
+    },
+    "credits_charged": 1,
+    "balance": "21->20",
+    "window": "2026-10-20T13:17:45Z (engine-ETA converged x5)",
+    "cycle": 8,
+    "fired_at": "2026-10-20T13:19:01Z",
+    "cross_verification": "third-party neural card 394e5612 (09:27Z real-user run) independently byte-verified: GLB 337568 glTF / OBJ 668051 (6997v/13998f)"
+  },
+  "baselines": {
+    "reference_self": 8,
+    "fallback_poster": 3
+  }
+}
