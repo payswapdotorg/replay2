@@ -1419,3 +1419,20 @@ Stage Summary:
 - THE P6/GOV WAVE IS CLOSED AND PUSHED: 26 completed work orders; frontier = P8-W1/P8-W2/P8-W3 (financial certification, security/client certification, release) — ALL OPERATOR-GATED per the handoff law ("Production deployment remains unauthorized pending operator decision").
 - The dispatch-defect fix (per-iteration popup dismissal) + the round-1-false-negative forensics (chat.models is the truth, button-text is not) are now station law; dispatch_worker.py fix to be committed+pushed to replay2.
 - Remaining TL queue: F-2 lockfile/phantom-dep items (Gate B/C window) → P8 authorization request to operator → final handoff report. The four-verdict question (implementation complete / integration complete / release-ready / not yet ready) now rests on P8's operator gate + F-2 hygiene.
+
+---
+Task ID: 90 (F-2 closure + final TL assessment — the four-verdict determination)
+Agent: Resident TL (Z.ai Code session — FINAL TL HANDOFF continuation)
+
+Task: Close the F-2 hygiene items (Gate B/C window) and render the final program assessment.
+
+Work Log:
+- F-2a LOCKFILE: pnpm-lock.yaml importers regenerated 37→50 (+584/-9, commit c0078b9 pushed) via `pnpm install --lockfile-only` (pnpm 10.33.2) — the 14 P3-P6 packages now carry lockfile importer entries; all 33 workspace packages verified present by per-package grep; single-writer law honored (dedicated hygiene commit, zero source changes); closes the Gate D install-drift class (+575 reverted then for surgical purity).
+- F-2b PHANTOM-DEP AUDIT: knip OOM'd on the 4GB tier (oxc-parser ArrayBuffer) → lightweight station detector instead (bare-import scan vs declared deps across all packages/src). Raw 54 hits filtered for aliases (@/...), subpath imports (#src), template-literal fragments, and the inherited upstream desktop class (builder-util-runtime/sqlite/zod — outside the CI matrix, documented, untouched per the inherited-source law). THE SIX REAL FINDINGS (agents→trust ×6 files, capability→trust ×3, protocol→trust ×1, execution-graph→capability ×15 / economic ×1 / protocol ×16) ALL VERIFIED **100% TYPE-ONLY (0 value imports)** resolved via tsconfig paths — the documented accepted P1/P2 integration pattern ("zero runtime dependencies; the ONE accepted sibling import is TYPE-ONLY"). VERDICT: non-defects; the pattern held across every edge; no action required. This is why the hermetic `npm install --no-workspaces` batteries pass: the type-only edges vanish at compile time.
+- Final pushed-tree governance (c0078b9): invariants exit 0 / failures []; ownership honest exit 1 (49/49 mapped, 8 documented violations R3x5+R6x3 under ADR-0004/0005/0006 Proposed) with byte-deterministic drift gate PASS; CI matrix 19 lanes; current-state 26 completed records.
+
+Stage Summary:
+- F-2: CLOSED (lockfile regenerated + phantom-dep verdict rendered: type-only pattern verified).
+- PROGRAM STATE: 26/26 implementation+governance work orders COMPLETE and merged; remote main c0078b9; batteries oracle-exact at every acceptance; governance green on the pushed tree.
+- THE FOUR-VERDICT DETERMINATION: implementation complete ✅; integration complete ✅ (waves integrated with layer annotations + CI matrix + lockfile + ownership at every merge; documented debt classes carried: 8 ownership violations under ADR stubs, inherited zcode-cli lockfile/typecheck, GAP-03/04/05, desktop upstream phantom class); release-ready ❌ — P8 (financial certification P8-W1, security/client certification P8-W2, reproducible release + rollback P8-W3) is OPERATOR-GATED and undelivered by design ("Production deployment remains unauthorized pending operator decision" — the standing handoff law).
+- THE REMAINING HUMAN STEP: operator authorization for the P8 certification wave. On authorization: dispatch P8-W1/W2/W3 (packets staged per the wave pattern) → Gate E release evidence → the release-ready verdict.
