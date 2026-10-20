@@ -146,3 +146,25 @@ Stage Summary:
 - The harvest now survives another sandbox reset: master pointer https://paste.rs/Xd38J (MD5-verified) + the production DB itself (task d716a085) + both public GitHub repos
 - The operator sees the full mission close-out in the preview panel (/ route) with all evidence embedded
 - Nothing left open in this lane: mission 4/4, Task 20/22/25/26 closed, no daemons running, zero budget held throughout
+
+---
+Task ID: 27
+Agent: lead (post-close health sweep)
+Task: "go" after mission close + Task 26 — full-stack final verification sweep of every durable pointer and the operator-facing deliverable; fix anything degraded; confirm closure honestly.
+
+Work Log:
+- Sandbox continuity confirmed (no reset since Task 26; all key paths intact, dev server up since 12:27, GET / 200)
+- Durable pointers (paste.rs): all 5 alive — master Xd38J + posters OvmRc/sCVnl/0tBzb/4dfU4; master bundle MD5 round-trip EXACT (ec2246981a6ea35b8859f715f9fcb0e4, 7,736 B)
+- Production DB evidence re-verified (free re-reads; exports charge nothing — credit is consumed only at confirm):
+  · First-party neural d716a085-6765-43b4-9b9d-2b772bea7047: card engine_used=neural · confirmed=true · seed=22022 · pay_by_result=true (13:19:34Z); GLB export 200, 337,564 B byte-exact, magic 'glTF'
+  · Third-party neural 394e5612-69b7-4a7c-91ba-afbaa65e3b16: card engine_used=neural · confirmed=true · seed=12646 · fallback_reason=null (09:27:07Z real-user run); GLB export 200, 337,568 B byte-exact, magic 'glTF'
+  · Unauthenticated /api/task/list correctly exposes only the 8 seeded demo tasks (real tasks stay cookie-scoped — privacy by design)
+  · NOTE: one earlier not_found on 394e5612 was my own wrong full-UUID reconstruction; corrected from e2e20-grind-state.json anchor field → resolves fine
+- Report page (/) agent-browser verification: h1 "Hyper3D Rodin clone — the real thing, verified", 5 sections, 4/4 posters ok:true, footer sticky-correct (docH 3425 desktop / 5015 mobile → pushed naturally), no horizontal scroll at 375px and 1280px, zero console/page errors
+- Fix applied: page <title> was still the scaffold default → added metadata export to src/app/page.tsx ("Hyper3D Rodin clone — mission close-out (4/4 verified)" + mission description); verified live post-reload
+- Gates re-run: bun run lint clean; dev.log clean (GET / 200 only); fresh screenshots banked (research/out/report-page-desktop.png full-page + report-page-mobile.png)
+
+Stage Summary:
+- Every layer of the evidence stack verified live at 15:5xZ: paste.rs (MD5-exact) → production DB (both neural cards + byte-exact GLB exports) → operator-facing report page (renders, responsive, titled, zero errors)
+- Mission remains 4/4 CLOSED with nothing degraded; the only outstanding item stays the PAT-gated GitHub push of ops-results/e2e20-harvest/ (staged in /home/z/replay2-recover/; repos publicly readable)
+- Zero budget consumed this sweep (read-only verification + one title metadata fix)

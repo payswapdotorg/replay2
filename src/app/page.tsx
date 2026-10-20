@@ -2,6 +2,12 @@ import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
 
+export const metadata = {
+  title: "Hyper3D Rodin clone — mission close-out (4/4 verified)",
+  description:
+    "Four-point mission complete: clone tested as a real user, reference understood via free paths only, reverse-engineered, and genuinely usable — neural + fallback engines, byte-verified exports.",
+};
+
 const MISSION_POINTS = [
   {
     id: "01",
