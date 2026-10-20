@@ -922,6 +922,18 @@ def _select_insert_send(c, tab, prompt, name, prompt_file):
             # model-list fetch. Never settle for Flash.
             ok = False
             for _opt_try in range(15):
+                # 2026-10-20 fix (post-reset stuck-lane class): the GLM-5.1
+                # upsell portal AND the 'Save task results to a folder' tour
+                # land WITH DELAY on fresh tabs — they re-land INSIDE this
+                # loop and eat every trusted click (menu never opens, final
+                # verify fails 'model still GLM-5.3-Flash'). Dismiss EVERY
+                # iteration (cheap when idle: returns 'none'); one iteration
+                # of recovery latency max. Live-proven: clear-state trusted
+                # click opens the menu and selects GLM-5.3 first try.
+                try:
+                    _eval(c, JS_DISMISS_DIALOG, timeout=10)
+                except Exception:
+                    pass
                 if _trusted_click(c, JS_MODEL_OPTION_POS):
                     ok = True
                     break
