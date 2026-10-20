@@ -69,6 +69,7 @@ const LINKS = [
 const DURABLE = [
   { label: "Master evidence bundle (MD5-verified)", href: "https://paste.rs/Xd38J", note: "paste.rs/Xd38J — manifest · worklog · result · verdict · grind log" },
   { label: "Addendum bundle — post-harvest verification (MD5-verified)", href: "https://paste.rs/MqCpa", note: "paste.rs/MqCpa — Tasks 27-28 · monitoring snapshot · live re-verification" },
+  { label: "Addendum 2 — reboot recovery + source↔deploy check (MD5-verified)", href: "https://paste.rs/JV66v", note: "paste.rs/JV66v — Tasks 29-31 · bundle decode recipe · payload manifest" },
   { label: "Poster 01 · task card", href: "https://paste.rs/OvmRc", note: "234,409 B round-trip exact" },
   { label: "Poster 02 · viewer", href: "https://paste.rs/sCVnl", note: "228,046 B round-trip exact" },
   { label: "Poster 03 · confirmed", href: "https://paste.rs/0tBzb", note: "221,686 B round-trip exact" },

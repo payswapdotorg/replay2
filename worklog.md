@@ -225,3 +225,22 @@ Stage Summary:
 - ZERO durable loss: the only locally-lost file (grind.log) recovered byte-exact from the master bundle; every other layer (paste.rs, production DB, GitHub remotes, my-project) verified intact post-reboot
 - The recovery itself proved the durability design: master bundle tar decoded → byte-match vs survivors; remote repo → full scripts/snapshots back; push payload re-staged as commit 144282e awaiting only a PAT
 - Mission 4/4 CLOSED through a reboot; total cost of the incident: ~15 min of recovery, zero budget
+
+---
+Task ID: 31
+Agent: lead (source-deploy consistency + durability chain completion)
+Task: "go" — new verification angle: prove the deployed clone runs the public source (main); publish addendum-2 so Tasks 29-31 and the bundle-decode recipe are durable; refresh the staged push payload.
+
+Work Log:
+- Shallow-cloned payswapdotorg/hyper3d-clone (main @ 5dc716e, 2026-10-19 17:08Z "fix: neural mesh decimation — SimplifyModifier is async + counts VERTICES, not faces")
+- Source vs deployed site — THREE independent markers EXACT MATCH: (1) title string in src/app/layout.tsx = live <title>; (2) hero h1 pieces "Create 3D Models" + gradient "The Easy Way" in src/components/hyper3d/hero.tsx = rendered h1; (3) seed-0003-drone prompt in src/lib/seed.ts = live /api/task/list output byte-identical
+- Branch engine2-recovery (a068df4, "studio UI layer + neural client fixes — browser-verified golden path") confirmed NOT in main — historical build-session side branch; production runs main
+- GitHub API remains rate-limited for this IP; git protocol unaffected (clone/ls-remote)
+- Published ADDENDUM-2: https://paste.rs/JV66v — 6,213 B, MD5 round-trip EXACT (1606501b89b81f2a4f22b27dbf6c21cb); contains Tasks 29-30 worklog, the gzip+tar decode recipe for master Xd38J, source-deploy verification record, and the full PAT-push payload manifest (incl. that all 12 payload files also live in persistent research/out/)
+- Report page DURABLE list now 7 pointers (master + 2 addenda + 4 posters); browser-verified: addendum-2 link present, 4/4 imgs, no horiz scroll, footer, zero errors; lint clean; fresh full-page screenshot banked
+- Staged payload refreshed (updated desktop screenshot + worklog-mission.md through Task 31) and commit amended — payload remains PAT-push ready
+
+Stage Summary:
+- NEW verification: deployed hyper3d-clone.vercel.app provably runs the public main source (3 exact markers) — closes the last trust gap ("what you test is what is published")
+- Durable chain now covers Tasks 1-31 completely: Xd38J (1-26) + MqCpa (27-28) + JV66v (29-31), all MD5 round-trip verified
+- Mission 4/4 CLOSED; payload PAT-ready; zero budget consumed
