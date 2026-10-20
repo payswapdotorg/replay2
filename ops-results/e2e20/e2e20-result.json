@@ -1,12 +1,12 @@
 {
   "url": "https://hyper3d-clone.vercel.app",
   "chrome_egress": "198.244.234.214",
-  "started_utc": "2026-10-20T01:05:00Z",
+  "started_utc": "2026-10-20T01:45:00Z",
   "phases": {
     "landing": {
       "title": "Hyper3D Rodin \u2013 Best AI 3D Model Generator",
       "startCreating": true,
-      "body": "Skip to main content\nHYPER3D.AI\nProducts\nFeatures\nUse Cases\nStyles\nPricing\nENG\n27\ncredits\nFree \u00b7 7-Day Trial\nStart Creat"
+      "body": "Skip to main content\nHYPER3D.AI\nProducts\nFeatures\nUse Cases\nStyles\nPricing\nENG\n25\ncredits\nFree \u00b7 7-Day Trial\nStart Creat"
     },
     "shots": [
       "e2e20-01-landing.png",
@@ -20,7 +20,7 @@
     "signin": {
       "already": true,
       "user": "demo creator",
-      "balance": 27
+      "balance": 25
     },
     "mode": {
       "image_tab": "clicked",
@@ -53,21 +53,21 @@
           "checked": "false"
         }
       ],
-      "balance": 27
+      "balance": 25
     },
     "generate_click": {
       "result": "clicked:GENERATE 1 Credit",
       "at": 0.0
     },
     "task_attribution": {
-      "captured_create_uuid": "ed180123-ccb2-4c38-9bde-b85a667cd356",
-      "anchor_newest_before": "67a1cad9-57cd-4fae-bbe1-098953d01d44",
+      "captured_create_uuid": "99f1d703-375c-4ab3-9549-fc307e4f4416",
+      "anchor_newest_before": "857dc782-5075-4bab-9fa1-15c80ccbf42c",
       "attribution": "create-response"
     },
     "generation": {
       "hf_space_reqs": [
         0,
-        0,
+        4,
         4,
         4,
         4,
@@ -75,18 +75,18 @@
       ],
       "engine_used": "fast",
       "fallback_reason": null,
-      "seed": 28729,
+      "seed": 1158,
       "user_state": "DonePreview",
-      "task_uuid": "ed180123-ccb2-4c38-9bde-b85a667cd356",
+      "task_uuid": "99f1d703-375c-4ab3-9549-fc307e4f4416",
       "neural_toast_at": null,
-      "fallback_toast_at": 31.1,
-      "confirm_btn_at": 31.1,
-      "total_s": 31.1
+      "fallback_toast_at": 30.2,
+      "confirm_btn_at": 30.2,
+      "total_s": 30.2
     },
     "verdict_card": {
       "user_state": "DonePreview",
       "engine_used": "fast",
-      "fallback_reason": "neural engine reported an error event: 'You have exceeded your ZeroGPU quota (90s requested vs. 27s left). Try again in 2:29:13. Authenticate with a Hugging Face token for more quota - https://huggingface.co/settings/tokens'",
+      "fallback_reason": "neural engine reported an error event: 'You have exceeded your ZeroGPU quota (90s requested vs. 27s left). Try again in 1:49:14. Authenticate with a Hugging Face token for more quota - https://huggingface.co/settings/tokens'",
       "confirmed": false
     },
     "confirm": {
@@ -117,100 +117,100 @@
         "user_state": "DonePreview",
         "confirmed": true,
         "engine_used": "fast",
-        "fallback_reason": "neural engine reported an error event: 'You have exceeded your ZeroGPU quota (90s requested vs. 27s left). Try again in 2:29:13. Authenticate with a Hugging Face token for more quota - https://huggingface.co/settings/tokens'"
+        "fallback_reason": "neural engine reported an error event: 'You have exceeded your ZeroGPU quota (90s requested vs. 27s left). Try again in 1:49:14. Authenticate with a Hugging Face token for more quota - https://huggingface.co/settings/tokens'"
       },
-      "post_balance": 26
+      "post_balance": 24
     },
     "byte_verify": {
       "glb": {
-        "size": 143296,
+        "size": 143300,
         "magic": "glTF",
-        "head": "glTF\u0002\u0000\u0000\u0000\u00c0/\u0002\u0000\u0004\u001d\u0000\u0000",
+        "head": "glTF\u0002\u0000\u0000\u0000\u00c4/\u0002\u0000\b\u001d\u0000\u0000",
         "gltf": true
       },
       "obj": {
-        "size": 720592,
-        "head": "o lathe | v 0.375279058653972 -0.49827827660368784 0 | v 0.37527"
+        "size": 718767,
+        "head": "o lathe | v 0.36963302523739316 -0.502781560573004 0 | v 0.36963"
       }
     },
     "hf_log": [
       {
         "url": "/api/task/rodin_mesh_image_process",
-        "t": 1792458313239,
+        "t": 1792460713457,
         "status": 200,
-        "body": "{\"prompt\":\"A shiny red apple with a short brown stem and two green apples behind it. simple geometry.\",\"components\":[{\"primitive\":\"lathe\",\"params\":{\"points\":[[0,0],[0.48,0.06],[0.75,0.28],[0.88,0.58],[0.83,0.88],[0.65,1.08],[0.32,1.18],[0,1.2]]},\"position\":[0,0,0],\"scale\":1,\"rotation\":[0,0,0],\"color\":\"#C1121F\"},{\"primitive\":\"cylinder\",\"params\":{\"radius\":0.05,\"height\":0.25},\"position\":[0,1.32,0],\"scale\":1,\"rotation\":[0,0,0],\"color\":\"#5D4037\"},{\"primitive\":\"lathe\",\"params\":{\"points\":[[0,0],[0.44,0.05],[0.7,0.25],[0.82,0.55],[0.78,0.85],[0.6,1.05],[0.28,1.14],[0,1.15]]},\"position\":[-1,0,0],\"scale",
+        "body": "{\"prompt\":\"A shiny red apple with a short brown stem and two green apples behind it. simple geometry.\",\"components\":[{\"primitive\":\"lathe\",\"params\":{\"points\":[[0,0],[0.48,0.06],[0.75,0.28],[0.88,0.58],[0.83,0.88],[0.65,1.08],[0.32,1.18],[0,1.2]]},\"position\":[0,0,0],\"scale\":1,\"rotation\":[0,0,0],\"color\":\"#C1121F\"},{\"primitive\":\"cylinder\",\"params\":{\"radius\":0.05,\"height\":0.25},\"position\":[0,1.32,0],\"scale\":1,\"rotation\":[0,0,0],\"color\":\"#5D4037\"},{\"primitive\":\"lathe\",\"params\":{\"points\":[[0,0],[0.44,0.05],[0.7,0.25],[0.82,0.55],[0.78,0.85],[0.6,1.05],[0.28,1.14],[0,1.16]]},\"position\":[-0.8,0,0],\"sca",
         "chunks": []
       },
       {
         "url": "/api/task",
-        "t": 1792458329093,
+        "t": 1792460732185,
         "status": 200,
-        "body": "{\"uuid\":\"ed180123-ccb2-4c38-9bde-b85a667cd356\",\"producer\":\"standard\",\"engine\":\"neural\",\"pay_by_result\":true,\"job\":{\"uuids\":[\"ed180123-ccb2-4c38-9bde-b85a667cd356\"],\"subscription_key\":\"clone-local\"}}",
+        "body": "{\"uuid\":\"99f1d703-375c-4ab3-9549-fc307e4f4416\",\"producer\":\"standard\",\"engine\":\"neural\",\"pay_by_result\":true,\"job\":{\"uuids\":[\"99f1d703-375c-4ab3-9549-fc307e4f4416\"],\"subscription_key\":\"clone-local\"}}",
         "chunks": []
       },
       {
         "url": "https://tencent-hunyuan3d-2-1.hf.space/upload",
-        "t": 1792458336007,
+        "t": 1792460739754,
         "status": 200,
         "body": null,
         "chunks": []
       },
       {
         "url": "https://tencent-hunyuan3d-2-1.hf.space/config",
-        "t": 1792458343437,
+        "t": 1792460742131,
         "status": 200,
         "body": null,
         "chunks": []
       },
       {
         "url": "https://tencent-hunyuan3d-2-1.hf.space/queue/join",
-        "t": 1792458344750,
+        "t": 1792460743118,
         "status": 200,
         "body": null,
         "chunks": []
       },
       {
-        "url": "https://tencent-hunyuan3d-2-1.hf.space/queue/data?session_hash=cd15c58c-b095-46a4-a762-61360bd2a2de",
-        "t": 1792458345302,
+        "url": "https://tencent-hunyuan3d-2-1.hf.space/queue/data?session_hash=90f3b528-9988-4fc9-ad59-5f1f1430629b",
+        "t": 1792460743786,
         "status": 200,
         "body": null,
         "chunks": [
-          "data: {\"msg\":\"estimation\",\"event_id\":\"e9d9d2d1501d47fb9ce0fd498c41e6ff\",\"rank\":0,\"queue_size\":1,\"rank_eta\":27.05314476409201}\n\ndata: {\"msg\":\"process_starts\",\"event_id\":\"e9d9d2d1501d47fb9ce0fd498c41e6ff\",\"eta\":27.05314476409201}\n\ndata: {\"msg\":\"process_completed\",\"event_id\":\"e9d9d2d1501d47fb9ce0fd498c41e6ff\",\"output\":{\"error\":\"'You have exceeded your ZeroGPU quota (90s requested vs. 27s left). Try again in 2:29:13. Authenticate with a Hugging Face token for more quota - https://huggingface.co/settings/tokens'\",\"duration\":10,\"visible\":true},\"success\":false}\n\ndata: {\"msg\":\"close_stream\",\"event_id\":null}\n\n"
+          "data: {\"msg\":\"estimation\",\"event_id\":\"7fb8359bda93429ebb745c694ee55c00\",\"rank\":0,\"queue_size\":1,\"rank_eta\":26.63884004078445}\n\ndata: {\"msg\":\"process_starts\",\"event_id\":\"7fb8359bda93429ebb745c694ee55c00\",\"eta\":26.63884004078445}\n\ndata: {\"msg\":\"process_completed\",\"event_id\":\"7fb8359bda93429ebb745c694ee55c00\",\"output\":{\"error\":\"'You have exceeded your ZeroGPU quota (90s requested vs. 27s left). Try again in 1:49:14. Authenticate with a Hugging Face token for more quota - https://huggingface.co/settings/tokens'\",\"duration\":10,\"visible\":true},\"success\":false}\n\ndata: {\"msg\":\"close_stream\",\"event_id\":null}\n\n"
         ]
       },
       {
-        "url": "/api/task/ed180123-ccb2-4c38-9bde-b85a667cd356/fallback",
-        "t": 1792458345695,
+        "url": "/api/task/99f1d703-375c-4ab3-9549-fc307e4f4416/fallback",
+        "t": 1792460744164,
         "status": 202,
-        "body": "{\"fallback\":\"fast\",\"reason\":\"neural engine reported an error event: 'You have exceeded your ZeroGPU quota (90s requested vs. 27s left). Try again in 2:29:13. Authenticate with a Hugging Face token for more quota - https://huggingface.co/settings/tokens'\",\"task_uuid\":\"ed180123-ccb2-4c38-9bde-b85a667cd356\"}",
+        "body": "{\"fallback\":\"fast\",\"reason\":\"neural engine reported an error event: 'You have exceeded your ZeroGPU quota (90s requested vs. 27s left). Try again in 1:49:14. Authenticate with a Hugging Face token for more quota - https://huggingface.co/settings/tokens'\",\"task_uuid\":\"99f1d703-375c-4ab3-9549-fc307e4f4416\"}",
         "chunks": []
       },
       {
-        "url": "/api/task/ed180123-ccb2-4c38-9bde-b85a667cd356/confirm",
-        "t": 1792458363535,
+        "url": "/api/task/99f1d703-375c-4ab3-9549-fc307e4f4416/confirm",
+        "t": 1792460766926,
         "status": 200,
-        "body": "{\"confirmed\":true,\"charged\":1,\"balance\":26}",
+        "body": "{\"confirmed\":true,\"charged\":1,\"balance\":24}",
         "chunks": []
       },
       {
-        "url": "/api/task/ed180123-ccb2-4c38-9bde-b85a667cd356/export?format=glb",
-        "t": 1792458366731,
+        "url": "/api/task/99f1d703-375c-4ab3-9549-fc307e4f4416/export?format=glb",
+        "t": 1792460770722,
         "status": 200,
-        "body": "glTF\u0002\u0000\u0000\u0000\ufffd/\u0002\u0000\u0004\u001d\u0000\u0000JSON{\"asset\":{\"version\":\"2.0\",\"generator\":\"THREE.GLTFExporter r186\"},\"scenes\":[{\"name\":\"AuxScene\",\"nodes\":[0]}],\"scene\":0,\"nodes\":[{\"matrix\":[0.6733490221662354,0,0,0,0,0.6733490221662354,0,0,0,0,0.6733490221662354,0,0,0,0,1],\"children\":[1]},{\"matrix\":[1,0,0,0,0,1,0,0,0,0,1,0,0.5573321506381035,-0.7400000002980233,0,1],\"name\":\"A shiny red apple with a short brown stem and two green apples behind it. simple\",\"children\":[2,3,4,5,6,7]},{\"name\":\"lathe\",\"mesh\":0},{\"matrix\":[1,0,0,0,0,1,0,0,0,0,1,0,0,1.34,0,1],\"name\":\"cylinder\",\"mesh\":1},{\"matrix\":[0.95,0,0,0,0,0.95,0,0,0,0,0.95,0,-1",
+        "body": "glTF\u0002\u0000\u0000\u0000\ufffd/\u0002\u0000\b\u001d\u0000\u0000JSON{\"asset\":{\"version\":\"2.0\",\"generator\":\"THREE.GLTFExporter r186\"},\"scenes\":[{\"name\":\"AuxScene\",\"nodes\":[0]}],\"scene\":0,\"nodes\":[{\"matrix\":[0.6794345410412389,0,0,0,0,0.6794345410412389,0,0,0,0,0.6794345410412389,0,0,0,0,1],\"children\":[1]},{\"matrix\":[1,0,0,0,0,1,0,0,0,0,1,0,0.5440303707122802,-0.7400000002980233,0,1],\"name\":\"A shiny red apple with a short brown stem and two green apples behind it. simple\",\"children\":[2,3,4,5,6,7]},{\"name\":\"lathe\",\"mesh\":0},{\"matrix\":[1,0,0,0,0,1,0,0,0,0,1,0,0,1.34,0,1],\"name\":\"cylinder\",\"mesh\":1},{\"matrix\":[0.92,0,0,0,0,0.92,0,0,0,0,0.92,0,-1",
         "chunks": []
       },
       {
-        "url": "/api/task/ed180123-ccb2-4c38-9bde-b85a667cd356/export?format=obj",
-        "t": 1792458367734,
+        "url": "/api/task/99f1d703-375c-4ab3-9549-fc307e4f4416/export?format=obj",
+        "t": 1792460771875,
         "status": 200,
-        "body": "o lathe\nv 0.375279058653972 -0.49827827660368784 0\nv 0.375279058653972 -0.4926967473285258 0.06361818648065155\nv 0.375279058653972 -0.48439434930102737 0.15494626298386713\nv 0.375279058653972 -0.4683589597007936 0.24842239534950863\nv 0.375279058653972 -0.4400460554045389 0.32459476026560463\nv 0.375279058653972 -0.40029001736654823 0.3948548581446773\nv 0.375279058653972 -0.35308739169235687 0.45845600241591\nv 0.375279058653972 -0.3023543546921249 0.5119602923042434\nv 0.375279058653972 -0.24639586624328874 0.5563857853524944\nv 0.375279058653972 -0.18585485460780432 0.591646272162178\nv 0.37527905",
+        "body": "o lathe\nv 0.36963302523739316 -0.502781560573004 0\nv 0.36963302523739316 -0.4971495871735659 0.0641931478481991\nv 0.36963302523739316 -0.48877215465690815 0.1563466190799762\nv 0.36963302523739316 -0.47259184219665995 0.25066755963445775\nv 0.36963302523739316 -0.4440230546840805 0.32752834667517383\nv 0.36963302523739316 -0.40390771394880925 0.39842343344964454\nv 0.36963302523739316 -0.3562784856361142 0.46259938506624065\nv 0.36963302523739316 -0.3050869392386933 0.5165872300727825\nv 0.36963302523739316 -0.24862271538895542 0.5614142268992772\nv 0.36963302523739316 -0.18753455293436933 0.59699338",
         "chunks": []
       }
     ]
   },
   "ok": false,
   "neural": false,
-  "verdict_source": "card:ed180123-ccb2-4c38-9bde-b85a667cd356",
+  "verdict_source": "card:99f1d703-375c-4ab3-9549-fc307e4f4416",
   "exports_byte_verified": true,
-  "finished_utc": "2026-10-20T01:06:10Z"
+  "finished_utc": "2026-10-20T01:46:14Z"
 }
