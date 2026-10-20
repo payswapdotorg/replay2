@@ -128,3 +128,21 @@ Stage Summary:
 - TASK 20 CLOSED: REAL neural (Hunyuan3D-2.1) generation completed through the production UI golden path, browser-direct, anonymous, exactly as shipped — card + confirm + byte-verified exports + 7/10 viewer verdict
 - TASK 22 CLOSED: the clone is truly usable end-to-end on BOTH engines — neural (this session, first-party + third-party cross-verified) and fast/fallback (5+ golden paths across prior sessions); captions, pay-by-result credits, and exports all production-verified
 - FOUR-POINT MISSION: 4/4 COMPLETE, now including the last quota-gated artifact — zero budget held throughout (anonymous free quota only; rejected calls cost nothing; exactly 1 demo credit for the confirmed export)
+
+---
+Task ID: 26
+Agent: lead (persistence + operator visibility)
+Task: "go" continuation after mission close — durable persistence of the harvest (PAT-gated GitHub push confirmed blocked) + operator-visible close-out report page.
+
+Work Log:
+- Confirmed the push blocker honestly (no credentials on the reset sandbox: "could not read Username"); both GitHub repos remain publicly readable with all prior snapshots
+- Durable persistence via the mission's established zero-cost channel (paste.rs, Task 3 pattern), after diagnosing its 384KB truncation cap on the first 905KB bundle attempt:
+  · 4 posters published individually — byte-exact round-trips (OvmRc 234,409 / sCVnl 228,046 / 0tBzb 221,686 / 4dfU4 216,637)
+  · MASTER text bundle (manifest + worklog + result + verdict + grind state + log, with all poster URLs): https://paste.rs/Xd38J — MD5 round-trip EXACT (ec2246981a6ea35b8859f715f9fcb0e4)
+- Built the mission close-out report page on / (src/app/page.tsx, server component, shadcn/ui): hero status, four-point mission cards, decisive evidence chain, the 4 posters (served from /public/harvest/), harvest timeline, live + durable pointers, sticky footer (min-h-screen flex flex-col + mt-auto)
+- Gates: bun run lint 0/0 clean · dev.log clean (GET / 200, no runtime/hydration errors) · agent-browser verification: h1 + 7 badges + 5 sections + 4/4 images loaded ok:true · no horizontal scroll at 1280px AND 375px (grid collapses 2→1 col) · desktop + mobile screenshots banked (research/out/report-page-*.png)
+
+Stage Summary:
+- The harvest now survives another sandbox reset: master pointer https://paste.rs/Xd38J (MD5-verified) + the production DB itself (task d716a085) + both public GitHub repos
+- The operator sees the full mission close-out in the preview panel (/ route) with all evidence embedded
+- Nothing left open in this lane: mission 4/4, Task 20/22/25/26 closed, no daemons running, zero budget held throughout
