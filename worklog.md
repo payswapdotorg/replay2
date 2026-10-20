@@ -168,3 +168,25 @@ Stage Summary:
 - Every layer of the evidence stack verified live at 15:5xZ: paste.rs (MD5-exact) → production DB (both neural cards + byte-exact GLB exports) → operator-facing report page (renders, responsive, titled, zero errors)
 - Mission remains 4/4 CLOSED with nothing degraded; the only outstanding item stays the PAT-gated GitHub push of ops-results/e2e20-harvest/ (staged in /home/z/replay2-recover/; repos publicly readable)
 - Zero budget consumed this sweep (read-only verification + one title metadata fix)
+
+---
+Task ID: 28
+Agent: lead (production live-usage monitoring)
+Task: "go" after Task 27 — sign into the production clone through the UI golden path and take a live usage snapshot (task list + credits) to check for any real-user activity since the harvest; zero-cost, read-only.
+
+Work Log:
+- Located demo credentials in the golden-path script (h3d_ui_golden3.py): demo@hyper3d.clone (established mission test account, shipped with the clone)
+- Direct API auth probe: all standard endpoints (/api/auth/signin, /api/login, ...) 404 — sign-in is a UI dialog flow (consistent with prior recon)
+- agent-browser UI golden path on hyper3d-clone.vercel.app: Sign in dialog → email+password → submitted → "demo creator" signed in ✓ (auth layer live-verified again)
+- In-page session fetch /api/task/list?filter=mine → 200, count=50:
+  · 43 fallback-era tasks (Oct 19 23:25Z → Oct 20 02:28Z — the prior grind era)
+  · 09:27:07Z third-party real-user neural (394e5612)
+  · 8 grind cycles 12:44Z → 13:19:34Z, newest = first-party neural d716a085
+  · ZERO tasks created after d716a085 (fixed a truncated string-compare false positive that briefly listed d716a085 itself)
+- Credits displayed: 20 — exactly the post-harvest state (21→20 at our confirm); no other confirms since
+- Snapshot banked: research/out/prod-monitoring-snapshot.json; browser closed; nothing generated, zero budget
+
+Stage Summary:
+- Production clone live-state verified end-to-end from a real signed-in session: auth works, task APIs work, account history coherent (50 tasks), credits steady at 20, no unexplained activity
+- The clone sits in a clean, stable, post-harvest state — newest artifact on the account is our neural success itself
+- Mission 4/4 remains CLOSED; only outstanding item unchanged: PAT-gated GitHub push of ops-results/e2e20-harvest/
