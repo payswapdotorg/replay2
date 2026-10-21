@@ -1,0 +1,550 @@
+     1→==================== /tmp/vlm-ref-form.json ====================
+     2→Based on the provided screenshot of the **Hyper3D Rodin** workspace, here is the precise technical specification for the expanded generation form state:
+     3→
+     4→### 1. Floating Card (Central Workspace)
+     5→*   **Width:** Approximately **320px** (fixed width container).
+     6→*   **Structure (Top-to-Bottom):**
+     7→    *   **Header:** Icon + Text label "**Image to 3D**".
+     8→    *   **Upload Zone:** Large square area with a centered "**+**" icon.
+     9→    *   **Sub-link:** Text button "**Text to Image/3D**" (pinkish text).
+    10→*   **Prompt Textarea:** Not visible in this specific "Image to 3D" mode. The primary input is the image upload zone.
+    11→*   **Right-side Tools (Vertical Rail):**
+    12→    *   **Icon Count:** 4 icons.
+    13→    *   **Active/Highlighted:** The top icon (**Magic Wand/Pen**) is highlighted with a **reddish-pink circular background** and white icon.
+    14→    *   **Other Icons:** Cube (3D), Users/Network, and Cube/Box icons below it (inactive/grey).
+    15→
+    16→### 2. Left Icon Rail (Mode Selector)
+    17→*   **Count:** 3 items.
+    18→*   **Items:**
+    19→    1.  **Image to 3D** (Active: reddish background, white icon).
+    20→    2.  **3D Editing** (Inactive: grey icon).
+    21→    3.  **Worldgen** (Inactive: grey icon).
+    22→
+    23→### 3. Bottom Controls (Chips & Dropdowns)
+    24→Located directly below the main card area:
+    25→*   **Left:** Lock icon (grey circle).
+    26→*   **Center-Left:** "**OFF**" chip (with eye/camera icon).
+    27→*   **Center:** "**< Gen-2.5 >**" dropdown (pill shape, grey border).
+    28→*   **Center-Right:** "**High**" dropdown (with lightning bolt icon and arrow).
+    29→*   **Right of Button:** "**x1 >**" pill (with link/chain icon) and a small settings/slider icon.
+    30→
+    31→### 4. GENERATE Button
+    32→*   **Text:** "**GENERATE**" (All caps, white text, bold).
+    33→*   **Gradient Colors:**
+    34→    *   **Top Color:** Light Mauve/Pink (`#D8B4E2` approx).
+    35→    *   **Bottom Color:** Deep Purple/Plum (`#5D3A6B` approx).
+    36→*   **Border-Radius:** Fully rounded / Pill shape (`9999px` or `50px`).
+    37→*   **Width:** Approximately **200px**, centered relative to the card above.
+    38→
+    39→### 5. Viewport Surroundings
+    40→*   **Above Card:**
+    41→    *   Large Hero Title: "**Rodin**" (Serif font, white).
+    42→    *   Subtitle: "**Gen-2.5 Agent-Ready**" (small red dot after 'Ready').
+    43→    *   Quote: "*The best way to understand is to create. What I cannot create, I do not understand.*"
+    44→    *   Top Nav Pills: "**Avatar**", "**3D**" (Active/Grey), "**Video**".
+    45→*   **Below Controls:**
+    46→    *   Section Header: "**ASSET**" (Active/Bold), "**EXPLORE**" (Muted).
+    47→    *   Filter Bar: "**Featured**" button (outlined pink), Search icon, "**Filter v**" dropdown.
+    48→*   **Far Right Edge:** Vertical floating action buttons (Share icon, Headset/Support icon).
+    49→
+    50→### 6. Background Atmosphere
+    51→*   **Style:** Dark, moody, cinematic gradient.
+    52→*   **Colors:** Deep charcoal/black base (`#0f0f0f`) with a large, soft, out-of-focus radial glow in the center-back (brownish-orange/amber hue) creating depth behind the central card.
+    53→
+    54→### 7. All Visible Text Strings (Verbatim)
+    55→*   **Top Bar:** `HYPER3D`, `7-Day Trial`, `Add On`, `API`, `MCP&CLI`, `Login`
+    56→*   **Hero:** `Rodin`, `Gen-2.5 Agent-Ready•`, `The best way to understand is to create.`, `What I cannot create, I do not understand.`
+    57→*   **Nav:** `Avatar`, `3D`, `Video`
+    58→*   **Card Left:** `Image to 3D`, `3D Editing`, `Worldgen`
+    59→*   **Card Center:** `Image to 3D`, `Text to Image/3D`
+    60→*   **Action Bar:** `GENERATE`, `x1`, `OFF`, `Gen-2.5`, `High`
+    61→*   **Bottom:** `ASSET`, `EXPLORE`, `Featured`, `Filter`
+    62→==================== /tmp/vlm-ref-full.json ====================
+    63→```html
+    64→<!DOCTYPE html>
+    65→<html lang="en">
+    66→<head>
+    67→    <meta charset="UTF-8">
+    68→    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    69→    <title>Hyper3D Workspace Reconstruction</title>
+    70→    
+    71→    <!-- React & ReactDOM -->
+    72→    <script src="https://cdn.jsdelivr.net/npm/react@18.0.0/umd/react.development.js"></script>
+    73→    <script src="https://cdn.jsdelivr.net/npm/react-dom@18.0.0/umd/react-dom.development.js"></script>
+    74→    <!-- Babel -->
+    75→    <script src="https://cdn.jsdelivr.net/npm/@babel/standalone/babel.js"></script>
+    76→    <!-- Tailwind CSS -->
+    77→    <script src="https://cdn.tailwindcss.com"></script>
+    78→    <!-- Font Awesome -->
+    79→    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.3/css/all.min.css">
+    80→    <!-- Google Fonts -->
+    81→    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    82→
+    83→    <style>
+    84→        body {
+    85→            font-family: 'Inter', sans-serif;
+    86→            background-color: #0a0a0a; /* Deep black base */
+    87→            color: #e5e7eb;
+    88→            overflow-x: hidden;
+    89→        }
+    90→        
+    91→        /* Custom Scrollbar */
+    92→        ::-webkit-scrollbar {
+    93→            width: 6px;
+    94→        }
+    95→        ::-webkit-scrollbar-track {
+    96→            background: #111;
+    97→        }
+    98→        ::-webkit-scrollbar-thumb {
+    99→            background: #333;
+   100→            border-radius: 3px;
+   101→        }
+   102→
+   103→        /* Glassmorphism Utilities */
+   104→        .glass-panel {
+   105→            background: rgba(30, 30, 35, 0.85);
+   106→            backdrop-filter: blur(12px);
+   107→            -webkit-backdrop-filter: blur(12px);
+   108→            border: 1px solid rgba(255, 255, 255, 0.08);
+   109→            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4);
+   110→        }
+   111→
+   112→        .glass-input {
+   113→            background: rgba(0, 0, 0, 0.3);
+   114→            border: 1px solid rgba(255, 255, 255, 0.1);
+   115→            transition: all 0.2s ease;
+   116→        }
+   117→        .glass-input:focus {
+   118→            outline: none;
+   119→            border-color: rgba(255, 255, 255, 0.3);
+   120→            background: rgba(0, 0, 0, 0.4);
+   121→        }
+   122→
+   123→        /* Gradient Text for Background Watermark */
+   124→        .text-gradient-watermark {
+   125→            background: linear-gradient(to bottom, #ffffff 0%, #333333 100%);
+   126→            -webkit-background-clip: text;
+   127→            -webkit-text-fill-color: transparent;
+   128→            filter: blur(2px); /* Slight blur to mimic depth of field in screenshot */
+   129→        }
+   130→        
+   131→        /* Toggle Switch */
+   132→        .toggle-checkbox:checked {
+   133→            right: 0;
+   134→            border-color: #68D391;
+   135→        }
+   136→        .toggle-checkbox:checked + .toggle-label {
+   137→            background-color: #68D391;
+   138→        }
+   139→
+   140→        /* Loader Animation */
+   141→        .loader-ring {
+   142→            display: inline-block;
+   143→            position: relative;
+   144→            width: 40px;
+   145→            height: 40px;
+   146→        }
+   147→        .loader-ring div {
+   148→            box-sizing: border-box;
+   149→            display: block;
+   150→            position: absolute;
+   151→            width: 32px;
+   152→            height: 32px;
+   153→            margin: 4px;
+   154→            border: 3px solid #fff;
+   155→            border-radius: 50%;
+   156→            animation: loader-ring 1.2s cubic-bezier(0.5, 0, 0.5, 1) infinite;
+   157→            border-color: #fff transparent transparent transparent;
+   158→        }
+   159→        @keyframes loader-ring {
+   160→            0% { transform: rotate(0deg); }
+   161→            100% { transform: rotate(360deg); }
+   162→        }
+   163→    </style>
+   164→</head>
+   165→<body>
+   166→
+   167→<div id="root"></div>
+   168→
+   169→<script type="text/babel">
+   170→
+   171→    // --- Components ---
+   172→
+   173→    const Navbar = () => (
+   174→        <nav className="flex items-center justify-between px-6 py-4 absolute top-0 w-full z-50 text-sm text-gray-400">
+   175→            <div className="flex items-center gap-4">
+   176→                <div className="flex items-center gap-2 text-white font-bold text-lg tracking-tight">
+   177→                    <i className="fas fa-cube"></i> HYPER3D
+   178→                </div>
+   179→                <span className="bg-gray-800/60 border border-gray-700 rounded-full px-3 py-1 text-xs text-gray-300 cursor-pointer hover:bg-gray-700 transition">7-Day Trial</span>
+   180→            </div>
+   181→            
+   182→            <div className="hidden md:flex items-center gap-6">
+   183→                <a href="#" className="hover:text-white flex items-center gap-1">Add On <i className="fas fa-info-circle text-xs text-blue-400"></i></a>
+   184→                <a href="#" className="hover:text-white">API</a>
+   185→                <a href="#" className="hover:text-white">MCP&CLI</a>
+   186→                <div className="h-4 w-[1px] bg-gray-700 mx-2"></div>
+   187→                <a href="#" className="hover:text-white"><i className="far fa-user mr-1"></i> Login</a>
+   188→                <i className="fas fa-globe hover:text-white cursor-pointer"></i>
+   189→            </div>
+   190→        </nav>
+   191→    );
+   192→
+   193→    const SubNav = () => (
+   194→        <div className="absolute top-16 left-0 w-full flex justify-center z-40 pointer-events-none">
+   195→             <div className="pointer-events-auto flex items-center gap-6 bg-black/20 backdrop-blur-md px-6 py-2 rounded-full border border-white/10 text-sm text-gray-400">
+   196→                <button className="text-gray-200 hover:text-white">Avatar</button>
+   197→                <button className="text-white font-medium">3D</button>
+   198→                <button className="text-gray-200 hover:text-white flex items-center gap-1">Image <i className="fas fa-bars text-xs"></i></button>
+   199→             </div>
+   200→        </div>
+   201→    );
+   202→
+   203→    // --- Main Modal (Presets) ---
+   204→    const PresetsModal = () => {
+   205→        return (
+   206→            <div className="relative z-30 mt-24 mb-8 flex justify-center px-4">
+   207→                {/* Background Watermark */}
+   208→                <div className="absolute top-[-80px] left-1/2 transform -translate-x-1/2 text-[120px] font-bold tracking-tighter opacity-20 select-none pointer-events-none whitespace-nowrap text-gradient-watermark">
+   209→                    Rodin
+   210→                </div>
+   211→
+   212→                <div className="w-full max-w-xl glass-panel rounded-3xl p-6 shadow-2xl relative">
+   213→                    {/* Header */}
+   214→                    <div className="flex justify-between items-start mb-6">
+   215→                        <h2 className="text-2xl font-semibold text-white tracking-tight">Presets</h2>
+   216→                        <div className="flex items-center gap-2 text-xs text-green-400 bg-green-900/20 px-2 py-1 rounded border border-green-800/30">
+   217→                            <i className="fas fa-check"></i> Use Recommended
+   218→                        </div>
+   219→                    </div>
+   220→
+   221→                    {/* Geometry Section */}
+   222→                    <div className="mb-6">
+   223→                        <h3 className="text-center text-sm font-medium text-gray-300 mb-3">Geometry</h3>
+   224→                        
+   225→                        {/* Tags Row */}
+   226→                        <div className="flex flex-wrap justify-center gap-2 mb-4">
+   227→                            {['< Micro >', '< Creative >', '< Symmetric ->', 'Detailed', 'Soft'].map((tag, idx) => (
+   228→                                <button key={idx} className={`px-3 py-1.5 rounded-lg text-xs font-medium border transition ${idx === 3 ? 'bg-white/10 border-white/30 text-white' : 'bg-transparent border-white/10 text-gray-400 hover:border-white/30'}`}>
+   229→                                    {tag}
+   230→                                </button>
+   231→                            ))}
+   232→                        </div>
+   233→
+   234→                        {/* Prompt Area */}
+   235→                        <div className="space-y-3">
+   236→                            <div className="flex justify-between items-center text-xs text-gray-400 px-1">
+   237→                                <span>PROMPT</span>
+   238→                                <div className="flex items-center gap-2 cursor-pointer hover:text-white">
+   239→                                    Caption Override 
+   240→                                    <div className="w-8 h-4 bg-gray-600 rounded-full relative">
+   241→                                        <div className="absolute right-0.5 top-0.5 w-3 h-3 bg-white rounded-full"></div>
+   242→                                    </div>
+   243→                                </div>
+   244→                            </div>
+   245→                            
+   246→                            <textarea 
+   247→                                className="w-full h-24 glass-input rounded-xl p-3 text-sm text-gray-200 resize-none placeholder-gray-600"
+   248→                                placeholder=""
+   249→                                defaultValue=""
+   250→                            ></textarea>
+   251→                        </div>
+   252→                    </div>
+   253→
+   254→                    {/* Save Button */}
+   255→                    <div className="flex justify-center mb-6">
+   256→                         <button className="px-6 py-1.5 rounded-full bg-white/5 border border-white/10 text-xs text-gray-300 hover:bg-white/10 transition">
+   257→                             Save
+   258→                         </button>
+   259→                    </div>
+   260→
+   261→                    {/* Generate Controls */}
+   262→                    <div className="flex items-center justify-center gap-4">
+   263→                        <button className="p-2 text-gray-500 hover:text-white transition">
+   264→                            <i className="fas fa-lock"></i>
+   265→                        </button>
+   266→                        
+   267→                        <button className="px-10 py-3 rounded-full bg-gradient-to-r from-pink-900/80 to-purple-900/80 border border-pink-500/30 text-white font-medium text-sm tracking-wide hover:brightness-110 transition shadow-lg shadow-purple-900/20">
+   268→                            GENERATE
+   269→                        </button>
+   270→
+   271→                        <div className="flex items-center gap-2 text-xs text-gray-500 bg-white/5 px-2 py-1 rounded border border-white/5">
+   272→                            x1 <i className="fas fa-chevron-right text-[10px]"></i>
+   273→                        </div>
+   274→                        <button className="p-2 text-gray-500 hover:text-white transition">
+   275→                            <i className="fas fa-sliders-h"></i>
+   276→                        </button>
+   277→                    </div>
+   278→                    
+   279→                    {/* Bottom Settings Strip */}
+   280→                    <div className="mt-6 flex justify-center items-center gap-6 text-xs text-gray-500">
+   281→                        <div className="flex items-center gap-1 cursor-pointer hover:text-gray-300">
+   282→                            <i className="far fa-eye"></i> OFF
+   283→                        </div>
+   284→                        <div className="flex items-center gap-1 cursor-pointer hover:text-gray-300">
+   285→                            <i className="fas fa-chevron-left text-[10px]"></i> Gen-2.5 <i className="fas fa-chevron-right text-[10px]"></i>
+   286→                        </div>
+   287→                        <div className="flex items-center gap-1 cursor-pointer hover:text-gray-300">
+   288→                            <i className="fas fa-magic"></i> High <i className="fas fa-chevron-down text-[10px]"></i>
+   289→                        </div>
+   290→                    </div>
+   291→                </div>
+   292→            </div>
+   293→        );
+   294→    };
+   295→
+   296→    // --- Asset Gallery Item ---
+   297→    const AssetCard = ({ image, name, likes, isLiked }) => (
+   298→        <div className="group relative aspect-square rounded-2xl overflow-hidden bg-gray-800 cursor-pointer border border-transparent hover:border-white/20 transition-all duration-300">
+   299→            <img src={image} alt={name} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" />
+   300→            
+   301→            {/* Overlay Content */}
+   302→            <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/20 to-transparent opacity-90"></div>
+   303→            
+   304→            <div className="absolute bottom-0 left-0 p-3 w-full">
+   305→                <div className="flex items-center justify-between">
+   306→                    <div className="flex items-center gap-2 min-w-0">
+   307→                        <img src={`https://i.pravatar.cc/20?u=${name}`} className="w-5 h-5 rounded-full border border-white/20" />
+   308→                        <span className="text-xs text-white truncate font-medium">{name}</span>
+   309→                    </div>
+   310→                    <div className="flex items-center gap-1 text-[10px] text-gray-300">
+   311→                        <span>{likes} likes</span>
+   312→                    </div>
+   313→                </div>
+   314→            </div>
+   315→
+   316→            {/* Heart Icon Top Right */}
+   317→            <div className="absolute top-3 right-3 text-white drop-shadow-md">
+   318→                 <i className={`${isLiked ? 'fas' : 'far'} fa-heart`}></i>
+   319→            </div>
+   320→        </div>
+   321→    );
+   322→
+   323→    // --- Right Sidebar Item (Story) ---
+   324→    const StoryCard = ({ user, title, desc, likes, hasImage }) => (
+   325→        <div className="mb-4 pb-4 border-b border-white/5 last:border-0">
+   326→            <div className="flex justify-between items-start mb-2">
+   327→                <div className="flex items-center gap-2">
+   328→                     <div className="w-6 h-6 rounded-full border border-gray-600 bg-gray-800"></div>
+   329→                     <span className="text-xs text-gray-300">{user}</span>
+   330→                </div>
+   331→                <i className="fas fa-times text-gray-600 hover:text-white cursor-pointer text-xs"></i>
+   332→            </div>
+   333→            <div className="text-sm text-gray-200 leading-snug mb-2 hover:text-white cursor-pointer">
+   334→                {title}
+   335→            </div>
+   336→            {desc && <p className="text-xs text-gray-500 line-clamp-2 mb-2">{desc}</p>}
+   337→            
+   338→            {hasImage ? (
+   339→                <div className="w-full h-28 bg-gray-700 rounded-lg mb-2 flex items-center justify-center animate-pulse">
+   340→                   <div className="loader-ring"><div></div><div></div><div></div><div></div></div>
+   341→                </div>
+   342→            ) : null}
+   343→
+   344→            <div className="flex items-center justify-between text-[10px] text-gray-500">
+   345→                <div className="flex items-center gap-1">
+   346→                    <i className="far fa-heart"></i> {likes}
+   347→                </div>
+   348→                <button className="bg-white/5 hover:bg-white/10 px-2 py-1 rounded text-gray-400 transition">Copy link</button>
+   349→            </div>
+   350→        </div>
+   351→    );
+   352→
+   353→    // --- Main App Component ---
+   354→
+   355→    const App = () => {
+   356→        return (
+   357→            <div className="min-h-screen flex flex-col relative pb-20">
+   358→                
+   359→                <Navbar />
+   360→                <SubNav />
+   361→
+   362→                {/* Main Center Content (Modal) */}
+   363→                <PresetsModal />
+   364→
+   365→                {/* Bottom Section: Assets & Explore */}
+   366→                <div className="max-w-7xl mx-auto w-full px-6 z-20 mt-4">
+   367→                    
+   368→                    {/* Tabs */}
+   369→                    <div className="flex items-center gap-6 mb-6 border-b border-white/5 pb-2">
+   370→                        <h2 className="text-xl font-bold text-gray-300 uppercase tracking-wider">Asset</h2>
+   371→                        <h2 className="text-xl font-light text-gray-600 uppercase tracking-wider hover:text-gray-400 cursor-pointer transition">Explore</h2>
+   372→                    </div>
+   373→
+   374→                    {/* Filter Bar */}
+   375→                    <div className="flex justify-between items-center mb-6">
+   376→                        <button className="px-4 py-1.5 rounded-full border border-red-900/50 bg-red-950/20 text-red-400 text-xs font-medium">
+   377→                            Featured
+   378→                        </button>
+   379→                        <div className="flex items-center gap-3">
+   380→                            <button className="w-8 h-8 rounded-full bg-white/5 flex items-center justify-center text-gray-400 hover:bg-white/10 hover:text-white transition">
+   381→                                <i className="fas fa-search text-xs"></i>
+   382→                            </button>
+   383→                            <button className="px-3 py-1.5 rounded-full bg-white/5 text-xs text-gray-300 flex items-center gap-2 hover:bg-white/10 transition">
+   384→                                Filter <i className="fas fa-chevron-down text-[10px]"></i>
+   385→                            </button>
+   386→                        </div>
+   387→                    </div>
+   388→
+   389→                    {/* Grid Layout: Left Cards + Right Sidebar */}
+   390→                    <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
+   391→                        
+   392→                        {/* Left Column: Asset Grid (Spans 3 cols) */}
+   393→                        <div className="lg:col-span-3 grid grid-cols-2 md:grid-cols-4 gap-4">
+   394→                            <AssetCard image="https://images.unsplash.com/photo-1599507297057-0e75b2d11f43?auto=format&fit=crop&w=300&q=80" name="Gopal Kumar" likes="30" isLiked={true} />
+   395→                            <AssetCard image="https://images.unsplash.com/photo-1580489944761-15a19d654956?auto=format&fit=crop&w=300&q=80" name="Carlo Calvano" likes="24" isLiked={true} />
+   396→                            <AssetCard image="https://images.unsplash.com/photo-1615729947596-a598e5de0ab3?auto=format&fit=crop&w=300&q=80" name="Keshia" likes="26" isLiked={true} />
+   397→                            <AssetCard image="https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=300&q=80" name="Danillo Teod..." likes="29" isLiked={true} />
+   398→                        </div>
+   399→
+   400→                        {/* Right Column: Sidebar / Stories */}
+   401→                        <div className="lg:col-span-1 space-y-6">
+   402→                            
+   403→                            {/* OmniCraft Promo Card */}
+   404→                            <div className="glass-panel rounded-2xl p-4">
+   405→                                <div className="flex justify-between items-start mb-2">
+   406→                                    <div>
+   407→                                        <h3 className="text-sm font-bold text-white">OmniCraft | Toolbag for 3D</h3>
+   408→                                        <div className="flex items-center gap-1 mt-1">
+   409→                                            <span className="text-xs text-white font-semibold">Texture Generator</span>
+   410→                                            <span className="text-[10px] text-red-400 ml-1">●</span>
+   411→                                        </div>
+   412→                                    </div>
+   413→                                    <button className="text-gray-400 hover:text-white"><i className="fas fa-plus"></i></button>
+   414→                                </div>
+   415→                                <div className="flex gap-2 mt-3">
+   416→                                    <span className="text-[10px] bg-white/10 px-2 py-0.5 rounded text-gray-300">Free Trial</span>
+   417→                                    <span className="text-[10px] bg-white/10 px-2 py-0.5 rounded text-gray-300">Free to Subscriber</span>
+   418→                                </div>
+   419→                                
+   420→                                <div className="mt-4 bg-blue-900/30 border border-blue-500/30 rounded-lg p-2 flex items-center justify-between cursor-pointer hover:bg-blue-900/40 transition">
+   421→                                    <span className="text-[10px] text-blue-200 font-medium">Share a Post & Earn 1 Credit!</span>
+   422→                                    <span className="bg-indigo-600 text-[9px] px-1.5 py-0.5 rounded text-white font-bold">SHARE</span>
+   423→                                </div>
+   424→                            </div>
+   425→
+   426→                            {/* Story Feed */}
+   427→                            <div>
+   428→                                <div className="flex justify-between items-center mb-4">
+   429→                                    <h3 className="text-sm font-bold text-gray-300 uppercase tracking-wider">Story</h3>
+   430→                                    <button className="text-[10px] bg-indigo-900/50 text-indigo-300 px-2 py-1 rounded-full border border-indigo-500/30">
+   431→                                        Share @ <i className="fab fa-discord"></i>
+   432→                                    </button>
+   433→                                </div>
+   434→                                
+   435→                                <div className="flex gap-2 mb-4 overflow-x-auto no-scrollbar">
+   436→                                    {['Rodin Tips', 'Tutorial', 'Official'].map(tag => (
+   437→                                        <span key={tag} className="whitespace-nowrap text-[10px] bg-white/5 px-2 py-1 rounded text-gray-400 border border-white/5">{tag}</span>
+   438→                                    ))}
+   439→                                </div>
+   440→
+   441→                                <div className="space-y-2 max-h-[400px] overflow-y-auto pr-1 custom-scrollbar">
+   442→                                    <StoryCard 
+   443→                                        user="Hyper3D by Deemos"
+   444→                                        title="🚀 Introducing #HYPER3D Agentic Mode."
+   445→                                        desc="AGI optimizes your input and chooses how to model it. Generate editable N-GONS #3D mod..."
+   446→                                        likes="18"
+   447→                                        hasImage={true}
+   448→                                    />
+   449→                                     <StoryCard 
+   450→                                        user="Hyper3D by Deemos"
+   451→                                        title="One image. A world to train in, shoot in & explore. 🌍"
+   452→                                        desc="🤝Meet HYPER3D #WorldGen: independent foreground meshes + #3DGS background, built for interactio..."
+   453→                                        likes=""
+   454→                                        hasImage={true}
+   455→                                    />
+   456→                                </div>
+   457→                            </div>
+   458→
+   459→                        </div>
+   460→                    </div>
+   461→                    
+   462→                    {/* Pagination Dots */}
+   463→                    <div className="flex justify-center mt-12 gap-2">
+   464→                        <div className="w-1.5 h-1.5 rounded-full bg-white/20"></div>
+   465→                        <div className="w-1.5 h-1.5 rounded-full bg-white/20"></div>
+   466→                        <div className="w-1.5 h-1.5 rounded-full bg-white/20"></div>
+   467→                    </div>
+   468→
+   469→                </div>
+   470→
+   471→                {/* Footer */}
+   472→                <footer className="mt-auto pt-20 pb-8 px-6 border-t border-white/5 bg-[#0a0a0a]">
+   473→                    <div className="max-w-7xl mx-auto grid grid-cols-2 md:grid-cols-5 gap-8 text-xs text-gray-500">
+   474→                        <div className="col-span-2 md:col-span-1">
+   475→                            <div className="flex items-center gap-2 text-white font-bold text-lg mb-4">
+   476→                                <i className="fas fa-cube"></i> HYPER3D
+   477→                            </div>
+   478→                            <p className="mb-4">hello@deemos.com</p>
+   479→                            <div className="flex gap-4 text-lg">
+   480→                                <i className="fa-brands fa-x-twitter hover:text-white cursor-pointer"></i>
+   481→                                <i className="fa-brands fa-youtube hover:text-white cursor-pointer"></i>
+   482→                                <i className="fa-brands fa-linkedin hover:text-white cursor-pointer"></i>
+   483→                                <i className="fa-brands fa-instagram hover:text-white cursor-pointer"></i>
+   484→                                <i className="fa-brands fa-discord hover:text-white cursor-pointer"></i>
+   485→                                <i className="fa-brands fa-calculator hover:text-white cursor-pointer"></i>
+   486→                            </div>
+   487→                        </div>
+   488→                        
+   489→                        <div>
+   490→                            <h4 className="text-gray-300 font-semibold mb-4 uppercase">Product</h4>
+   491→                            <ul className="space-y-2">
+   492→                                <li className="hover:text-white cursor-pointer">Rodin</li>
+   493→                                <li className="hover:text-white cursor-pointer">ChatAvatar</li>
+   494→                            </ul>
+   495→                        </div>
+   496→                        
+   497→                        <div>
+   498→                            <h4 className="text-gray-300 font-semibold mb-4 uppercase">Features</h4>
+   499→                            <ul className="space-y-2">
+   500→                                <li className="hover:text-white cursor-pointer">Text to 3D</li>
+   501→                                <li className="hover:text-white cursor-pointer">Image to 3D</li>
+   502→                                <li className="hover:text-white cursor-pointer">AI Video Generator</li>
+   503→                                <li className="hover:text-white cursor-pointer">AI Image Generator</li>
+   504→                                <li className="hover:text-white cursor-pointer">OmniCraft</li>
+   505→                            </ul>
+   506→                        </div>
+   507→
+   508→                        <div>
+   509→                            <h4 className="text-gray-300 font-semibold mb-4 uppercase">Plug-ins</h4>
+   510→                            <ul className="space-y-2">
+   511→                                <li className="hover:text-white cursor-pointer">Blender</li>
+   512→                                <li className="hover:text-white cursor-pointer">Unreal</li>
+   513→                                <li className="hover:text-white cursor-pointer">Unity</li>
+   514→                                <li className="hover:text-white cursor-pointer">Godot</li>
+   515→                                <li className="hover:text-white cursor-pointer">C4D</li>
+   516→                                <li className="hover:text-white cursor-pointer">Maya</li>
+   517→                                <li className="hover:text-white cursor-pointer">OV/Isaac</li>
+   518→                            </ul>
+   519→                        </div>
+   520→
+   521→                        <div>
+   522→                            <h4 className="text-gray-300 font-semibold mb-4 uppercase">Legal</h4>
+   523→                            <ul className="space-y-2">
+   524→                                <li className="hover:text-white cursor-pointer">Privacy</li>
+   525→                                <li className="hover:text-white cursor-pointer">Terms</li>
+   526→                            </ul>
+   527→                        </div>
+   528→                    </div>
+   529→                    
+   530→                    <div className="max-w-7xl mx-auto mt-12 pt-8 border-t border-white/5 flex flex-col md:flex-row justify-between text-[10px] text-gray-600">
+   531→                        <p>© 2026 Deemos Corporation. All rights reserved</p>
+   532→                        <div className="flex gap-4 mt-2 md:mt-0">
+   533→                            <span className="cursor-pointer hover:text-gray-400">Privacy</span>
+   534→                            <span>|</span>
+   535→                            <span className="cursor-pointer hover:text-gray-400">Terms</span>
+   536→                        </div>
+   537→                    </div>
+   538→                </footer>
+   539→            </div>
+   540→        );
+   541→    };
+   542→
+   543→    const root = ReactDOM.createRoot(document.getElementById('root'));
+   544→    root.render(<App />);
+   545→
+   546→</script>
+   547→
+   548→</body>
+   549→</html>
+   550→```

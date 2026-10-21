@@ -1,0 +1,550 @@
+==================== /tmp/vlm-ref-form.json ====================
+Based on the provided screenshot of the **Hyper3D Rodin** workspace, here is the precise technical specification for the expanded generation form state:
+
+### 1. Floating Card (Central Workspace)
+*   **Width:** Approximately **320px** (fixed width container).
+*   **Structure (Top-to-Bottom):**
+    *   **Header:** Icon + Text label "**Image to 3D**".
+    *   **Upload Zone:** Large square area with a centered "**+**" icon.
+    *   **Sub-link:** Text button "**Text to Image/3D**" (pinkish text).
+*   **Prompt Textarea:** Not visible in this specific "Image to 3D" mode. The primary input is the image upload zone.
+*   **Right-side Tools (Vertical Rail):**
+    *   **Icon Count:** 4 icons.
+    *   **Active/Highlighted:** The top icon (**Magic Wand/Pen**) is highlighted with a **reddish-pink circular background** and white icon.
+    *   **Other Icons:** Cube (3D), Users/Network, and Cube/Box icons below it (inactive/grey).
+
+### 2. Left Icon Rail (Mode Selector)
+*   **Count:** 3 items.
+*   **Items:**
+    1.  **Image to 3D** (Active: reddish background, white icon).
+    2.  **3D Editing** (Inactive: grey icon).
+    3.  **Worldgen** (Inactive: grey icon).
+
+### 3. Bottom Controls (Chips & Dropdowns)
+Located directly below the main card area:
+*   **Left:** Lock icon (grey circle).
+*   **Center-Left:** "**OFF**" chip (with eye/camera icon).
+*   **Center:** "**< Gen-2.5 >**" dropdown (pill shape, grey border).
+*   **Center-Right:** "**High**" dropdown (with lightning bolt icon and arrow).
+*   **Right of Button:** "**x1 >**" pill (with link/chain icon) and a small settings/slider icon.
+
+### 4. GENERATE Button
+*   **Text:** "**GENERATE**" (All caps, white text, bold).
+*   **Gradient Colors:**
+    *   **Top Color:** Light Mauve/Pink (`#D8B4E2` approx).
+    *   **Bottom Color:** Deep Purple/Plum (`#5D3A6B` approx).
+*   **Border-Radius:** Fully rounded / Pill shape (`9999px` or `50px`).
+*   **Width:** Approximately **200px**, centered relative to the card above.
+
+### 5. Viewport Surroundings
+*   **Above Card:**
+    *   Large Hero Title: "**Rodin**" (Serif font, white).
+    *   Subtitle: "**Gen-2.5 Agent-Ready**" (small red dot after 'Ready').
+    *   Quote: "*The best way to understand is to create. What I cannot create, I do not understand.*"
+    *   Top Nav Pills: "**Avatar**", "**3D**" (Active/Grey), "**Video**".
+*   **Below Controls:**
+    *   Section Header: "**ASSET**" (Active/Bold), "**EXPLORE**" (Muted).
+    *   Filter Bar: "**Featured**" button (outlined pink), Search icon, "**Filter v**" dropdown.
+*   **Far Right Edge:** Vertical floating action buttons (Share icon, Headset/Support icon).
+
+### 6. Background Atmosphere
+*   **Style:** Dark, moody, cinematic gradient.
+*   **Colors:** Deep charcoal/black base (`#0f0f0f`) with a large, soft, out-of-focus radial glow in the center-back (brownish-orange/amber hue) creating depth behind the central card.
+
+### 7. All Visible Text Strings (Verbatim)
+*   **Top Bar:** `HYPER3D`, `7-Day Trial`, `Add On`, `API`, `MCP&CLI`, `Login`
+*   **Hero:** `Rodin`, `Gen-2.5 Agent-Ready•`, `The best way to understand is to create.`, `What I cannot create, I do not understand.`
+*   **Nav:** `Avatar`, `3D`, `Video`
+*   **Card Left:** `Image to 3D`, `3D Editing`, `Worldgen`
+*   **Card Center:** `Image to 3D`, `Text to Image/3D`
+*   **Action Bar:** `GENERATE`, `x1`, `OFF`, `Gen-2.5`, `High`
+*   **Bottom:** `ASSET`, `EXPLORE`, `Featured`, `Filter`
+==================== /tmp/vlm-ref-full.json ====================
+```html
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Hyper3D Workspace Reconstruction</title>
+    
+    <!-- React & ReactDOM -->
+    <script src="https://cdn.jsdelivr.net/npm/react@18.0.0/umd/react.development.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/react-dom@18.0.0/umd/react-dom.development.js"></script>
+    <!-- Babel -->
+    <script src="https://cdn.jsdelivr.net/npm/@babel/standalone/babel.js"></script>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Font Awesome -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.3/css/all.min.css">
+    <!-- Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #0a0a0a; /* Deep black base */
+            color: #e5e7eb;
+            overflow-x: hidden;
+        }
+        
+        /* Custom Scrollbar */
+        ::-webkit-scrollbar {
+            width: 6px;
+        }
+        ::-webkit-scrollbar-track {
+            background: #111;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #333;
+            border-radius: 3px;
+        }
+
+        /* Glassmorphism Utilities */
+        .glass-panel {
+            background: rgba(30, 30, 35, 0.85);
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4);
+        }
+
+        .glass-input {
+            background: rgba(0, 0, 0, 0.3);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            transition: all 0.2s ease;
+        }
+        .glass-input:focus {
+            outline: none;
+            border-color: rgba(255, 255, 255, 0.3);
+            background: rgba(0, 0, 0, 0.4);
+        }
+
+        /* Gradient Text for Background Watermark */
+        .text-gradient-watermark {
+            background: linear-gradient(to bottom, #ffffff 0%, #333333 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            filter: blur(2px); /* Slight blur to mimic depth of field in screenshot */
+        }
+        
+        /* Toggle Switch */
+        .toggle-checkbox:checked {
+            right: 0;
+            border-color: #68D391;
+        }
+        .toggle-checkbox:checked + .toggle-label {
+            background-color: #68D391;
+        }
+
+        /* Loader Animation */
+        .loader-ring {
+            display: inline-block;
+            position: relative;
+            width: 40px;
+            height: 40px;
+        }
+        .loader-ring div {
+            box-sizing: border-box;
+            display: block;
+            position: absolute;
+            width: 32px;
+            height: 32px;
+            margin: 4px;
+            border: 3px solid #fff;
+            border-radius: 50%;
+            animation: loader-ring 1.2s cubic-bezier(0.5, 0, 0.5, 1) infinite;
+            border-color: #fff transparent transparent transparent;
+        }
+        @keyframes loader-ring {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+    </style>
+</head>
+<body>
+
+<div id="root"></div>
+
+<script type="text/babel">
+
+    // --- Components ---
+
+    const Navbar = () => (
+        <nav className="flex items-center justify-between px-6 py-4 absolute top-0 w-full z-50 text-sm text-gray-400">
+            <div className="flex items-center gap-4">
+                <div className="flex items-center gap-2 text-white font-bold text-lg tracking-tight">
+                    <i className="fas fa-cube"></i> HYPER3D
+                </div>
+                <span className="bg-gray-800/60 border border-gray-700 rounded-full px-3 py-1 text-xs text-gray-300 cursor-pointer hover:bg-gray-700 transition">7-Day Trial</span>
+            </div>
+            
+            <div className="hidden md:flex items-center gap-6">
+                <a href="#" className="hover:text-white flex items-center gap-1">Add On <i className="fas fa-info-circle text-xs text-blue-400"></i></a>
+                <a href="#" className="hover:text-white">API</a>
+                <a href="#" className="hover:text-white">MCP&CLI</a>
+                <div className="h-4 w-[1px] bg-gray-700 mx-2"></div>
+                <a href="#" className="hover:text-white"><i className="far fa-user mr-1"></i> Login</a>
+                <i className="fas fa-globe hover:text-white cursor-pointer"></i>
+            </div>
+        </nav>
+    );
+
+    const SubNav = () => (
+        <div className="absolute top-16 left-0 w-full flex justify-center z-40 pointer-events-none">
+             <div className="pointer-events-auto flex items-center gap-6 bg-black/20 backdrop-blur-md px-6 py-2 rounded-full border border-white/10 text-sm text-gray-400">
+                <button className="text-gray-200 hover:text-white">Avatar</button>
+                <button className="text-white font-medium">3D</button>
+                <button className="text-gray-200 hover:text-white flex items-center gap-1">Image <i className="fas fa-bars text-xs"></i></button>
+             </div>
+        </div>
+    );
+
+    // --- Main Modal (Presets) ---
+    const PresetsModal = () => {
+        return (
+            <div className="relative z-30 mt-24 mb-8 flex justify-center px-4">
+                {/* Background Watermark */}
+                <div className="absolute top-[-80px] left-1/2 transform -translate-x-1/2 text-[120px] font-bold tracking-tighter opacity-20 select-none pointer-events-none whitespace-nowrap text-gradient-watermark">
+                    Rodin
+                </div>
+
+                <div className="w-full max-w-xl glass-panel rounded-3xl p-6 shadow-2xl relative">
+                    {/* Header */}
+                    <div className="flex justify-between items-start mb-6">
+                        <h2 className="text-2xl font-semibold text-white tracking-tight">Presets</h2>
+                        <div className="flex items-center gap-2 text-xs text-green-400 bg-green-900/20 px-2 py-1 rounded border border-green-800/30">
+                            <i className="fas fa-check"></i> Use Recommended
+                        </div>
+                    </div>
+
+                    {/* Geometry Section */}
+                    <div className="mb-6">
+                        <h3 className="text-center text-sm font-medium text-gray-300 mb-3">Geometry</h3>
+                        
+                        {/* Tags Row */}
+                        <div className="flex flex-wrap justify-center gap-2 mb-4">
+                            {['< Micro >', '< Creative >', '< Symmetric ->', 'Detailed', 'Soft'].map((tag, idx) => (
+                                <button key={idx} className={`px-3 py-1.5 rounded-lg text-xs font-medium border transition ${idx === 3 ? 'bg-white/10 border-white/30 text-white' : 'bg-transparent border-white/10 text-gray-400 hover:border-white/30'}`}>
+                                    {tag}
+                                </button>
+                            ))}
+                        </div>
+
+                        {/* Prompt Area */}
+                        <div className="space-y-3">
+                            <div className="flex justify-between items-center text-xs text-gray-400 px-1">
+                                <span>PROMPT</span>
+                                <div className="flex items-center gap-2 cursor-pointer hover:text-white">
+                                    Caption Override 
+                                    <div className="w-8 h-4 bg-gray-600 rounded-full relative">
+                                        <div className="absolute right-0.5 top-0.5 w-3 h-3 bg-white rounded-full"></div>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <textarea 
+                                className="w-full h-24 glass-input rounded-xl p-3 text-sm text-gray-200 resize-none placeholder-gray-600"
+                                placeholder=""
+                                defaultValue=""
+                            ></textarea>
+                        </div>
+                    </div>
+
+                    {/* Save Button */}
+                    <div className="flex justify-center mb-6">
+                         <button className="px-6 py-1.5 rounded-full bg-white/5 border border-white/10 text-xs text-gray-300 hover:bg-white/10 transition">
+                             Save
+                         </button>
+                    </div>
+
+                    {/* Generate Controls */}
+                    <div className="flex items-center justify-center gap-4">
+                        <button className="p-2 text-gray-500 hover:text-white transition">
+                            <i className="fas fa-lock"></i>
+                        </button>
+                        
+                        <button className="px-10 py-3 rounded-full bg-gradient-to-r from-pink-900/80 to-purple-900/80 border border-pink-500/30 text-white font-medium text-sm tracking-wide hover:brightness-110 transition shadow-lg shadow-purple-900/20">
+                            GENERATE
+                        </button>
+
+                        <div className="flex items-center gap-2 text-xs text-gray-500 bg-white/5 px-2 py-1 rounded border border-white/5">
+                            x1 <i className="fas fa-chevron-right text-[10px]"></i>
+                        </div>
+                        <button className="p-2 text-gray-500 hover:text-white transition">
+                            <i className="fas fa-sliders-h"></i>
+                        </button>
+                    </div>
+                    
+                    {/* Bottom Settings Strip */}
+                    <div className="mt-6 flex justify-center items-center gap-6 text-xs text-gray-500">
+                        <div className="flex items-center gap-1 cursor-pointer hover:text-gray-300">
+                            <i className="far fa-eye"></i> OFF
+                        </div>
+                        <div className="flex items-center gap-1 cursor-pointer hover:text-gray-300">
+                            <i className="fas fa-chevron-left text-[10px]"></i> Gen-2.5 <i className="fas fa-chevron-right text-[10px]"></i>
+                        </div>
+                        <div className="flex items-center gap-1 cursor-pointer hover:text-gray-300">
+                            <i className="fas fa-magic"></i> High <i className="fas fa-chevron-down text-[10px]"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        );
+    };
+
+    // --- Asset Gallery Item ---
+    const AssetCard = ({ image, name, likes, isLiked }) => (
+        <div className="group relative aspect-square rounded-2xl overflow-hidden bg-gray-800 cursor-pointer border border-transparent hover:border-white/20 transition-all duration-300">
+            <img src={image} alt={name} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" />
+            
+            {/* Overlay Content */}
+            <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/20 to-transparent opacity-90"></div>
+            
+            <div className="absolute bottom-0 left-0 p-3 w-full">
+                <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-2 min-w-0">
+                        <img src={`https://i.pravatar.cc/20?u=${name}`} className="w-5 h-5 rounded-full border border-white/20" />
+                        <span className="text-xs text-white truncate font-medium">{name}</span>
+                    </div>
+                    <div className="flex items-center gap-1 text-[10px] text-gray-300">
+                        <span>{likes} likes</span>
+                    </div>
+                </div>
+            </div>
+
+            {/* Heart Icon Top Right */}
+            <div className="absolute top-3 right-3 text-white drop-shadow-md">
+                 <i className={`${isLiked ? 'fas' : 'far'} fa-heart`}></i>
+            </div>
+        </div>
+    );
+
+    // --- Right Sidebar Item (Story) ---
+    const StoryCard = ({ user, title, desc, likes, hasImage }) => (
+        <div className="mb-4 pb-4 border-b border-white/5 last:border-0">
+            <div className="flex justify-between items-start mb-2">
+                <div className="flex items-center gap-2">
+                     <div className="w-6 h-6 rounded-full border border-gray-600 bg-gray-800"></div>
+                     <span className="text-xs text-gray-300">{user}</span>
+                </div>
+                <i className="fas fa-times text-gray-600 hover:text-white cursor-pointer text-xs"></i>
+            </div>
+            <div className="text-sm text-gray-200 leading-snug mb-2 hover:text-white cursor-pointer">
+                {title}
+            </div>
+            {desc && <p className="text-xs text-gray-500 line-clamp-2 mb-2">{desc}</p>}
+            
+            {hasImage ? (
+                <div className="w-full h-28 bg-gray-700 rounded-lg mb-2 flex items-center justify-center animate-pulse">
+                   <div className="loader-ring"><div></div><div></div><div></div><div></div></div>
+                </div>
+            ) : null}
+
+            <div className="flex items-center justify-between text-[10px] text-gray-500">
+                <div className="flex items-center gap-1">
+                    <i className="far fa-heart"></i> {likes}
+                </div>
+                <button className="bg-white/5 hover:bg-white/10 px-2 py-1 rounded text-gray-400 transition">Copy link</button>
+            </div>
+        </div>
+    );
+
+    // --- Main App Component ---
+
+    const App = () => {
+        return (
+            <div className="min-h-screen flex flex-col relative pb-20">
+                
+                <Navbar />
+                <SubNav />
+
+                {/* Main Center Content (Modal) */}
+                <PresetsModal />
+
+                {/* Bottom Section: Assets & Explore */}
+                <div className="max-w-7xl mx-auto w-full px-6 z-20 mt-4">
+                    
+                    {/* Tabs */}
+                    <div className="flex items-center gap-6 mb-6 border-b border-white/5 pb-2">
+                        <h2 className="text-xl font-bold text-gray-300 uppercase tracking-wider">Asset</h2>
+                        <h2 className="text-xl font-light text-gray-600 uppercase tracking-wider hover:text-gray-400 cursor-pointer transition">Explore</h2>
+                    </div>
+
+                    {/* Filter Bar */}
+                    <div className="flex justify-between items-center mb-6">
+                        <button className="px-4 py-1.5 rounded-full border border-red-900/50 bg-red-950/20 text-red-400 text-xs font-medium">
+                            Featured
+                        </button>
+                        <div className="flex items-center gap-3">
+                            <button className="w-8 h-8 rounded-full bg-white/5 flex items-center justify-center text-gray-400 hover:bg-white/10 hover:text-white transition">
+                                <i className="fas fa-search text-xs"></i>
+                            </button>
+                            <button className="px-3 py-1.5 rounded-full bg-white/5 text-xs text-gray-300 flex items-center gap-2 hover:bg-white/10 transition">
+                                Filter <i className="fas fa-chevron-down text-[10px]"></i>
+                            </button>
+                        </div>
+                    </div>
+
+                    {/* Grid Layout: Left Cards + Right Sidebar */}
+                    <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
+                        
+                        {/* Left Column: Asset Grid (Spans 3 cols) */}
+                        <div className="lg:col-span-3 grid grid-cols-2 md:grid-cols-4 gap-4">
+                            <AssetCard image="https://images.unsplash.com/photo-1599507297057-0e75b2d11f43?auto=format&fit=crop&w=300&q=80" name="Gopal Kumar" likes="30" isLiked={true} />
+                            <AssetCard image="https://images.unsplash.com/photo-1580489944761-15a19d654956?auto=format&fit=crop&w=300&q=80" name="Carlo Calvano" likes="24" isLiked={true} />
+                            <AssetCard image="https://images.unsplash.com/photo-1615729947596-a598e5de0ab3?auto=format&fit=crop&w=300&q=80" name="Keshia" likes="26" isLiked={true} />
+                            <AssetCard image="https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=300&q=80" name="Danillo Teod..." likes="29" isLiked={true} />
+                        </div>
+
+                        {/* Right Column: Sidebar / Stories */}
+                        <div className="lg:col-span-1 space-y-6">
+                            
+                            {/* OmniCraft Promo Card */}
+                            <div className="glass-panel rounded-2xl p-4">
+                                <div className="flex justify-between items-start mb-2">
+                                    <div>
+                                        <h3 className="text-sm font-bold text-white">OmniCraft | Toolbag for 3D</h3>
+                                        <div className="flex items-center gap-1 mt-1">
+                                            <span className="text-xs text-white font-semibold">Texture Generator</span>
+                                            <span className="text-[10px] text-red-400 ml-1">●</span>
+                                        </div>
+                                    </div>
+                                    <button className="text-gray-400 hover:text-white"><i className="fas fa-plus"></i></button>
+                                </div>
+                                <div className="flex gap-2 mt-3">
+                                    <span className="text-[10px] bg-white/10 px-2 py-0.5 rounded text-gray-300">Free Trial</span>
+                                    <span className="text-[10px] bg-white/10 px-2 py-0.5 rounded text-gray-300">Free to Subscriber</span>
+                                </div>
+                                
+                                <div className="mt-4 bg-blue-900/30 border border-blue-500/30 rounded-lg p-2 flex items-center justify-between cursor-pointer hover:bg-blue-900/40 transition">
+                                    <span className="text-[10px] text-blue-200 font-medium">Share a Post & Earn 1 Credit!</span>
+                                    <span className="bg-indigo-600 text-[9px] px-1.5 py-0.5 rounded text-white font-bold">SHARE</span>
+                                </div>
+                            </div>
+
+                            {/* Story Feed */}
+                            <div>
+                                <div className="flex justify-between items-center mb-4">
+                                    <h3 className="text-sm font-bold text-gray-300 uppercase tracking-wider">Story</h3>
+                                    <button className="text-[10px] bg-indigo-900/50 text-indigo-300 px-2 py-1 rounded-full border border-indigo-500/30">
+                                        Share @ <i className="fab fa-discord"></i>
+                                    </button>
+                                </div>
+                                
+                                <div className="flex gap-2 mb-4 overflow-x-auto no-scrollbar">
+                                    {['Rodin Tips', 'Tutorial', 'Official'].map(tag => (
+                                        <span key={tag} className="whitespace-nowrap text-[10px] bg-white/5 px-2 py-1 rounded text-gray-400 border border-white/5">{tag}</span>
+                                    ))}
+                                </div>
+
+                                <div className="space-y-2 max-h-[400px] overflow-y-auto pr-1 custom-scrollbar">
+                                    <StoryCard 
+                                        user="Hyper3D by Deemos"
+                                        title="🚀 Introducing #HYPER3D Agentic Mode."
+                                        desc="AGI optimizes your input and chooses how to model it. Generate editable N-GONS #3D mod..."
+                                        likes="18"
+                                        hasImage={true}
+                                    />
+                                     <StoryCard 
+                                        user="Hyper3D by Deemos"
+                                        title="One image. A world to train in, shoot in & explore. 🌍"
+                                        desc="🤝Meet HYPER3D #WorldGen: independent foreground meshes + #3DGS background, built for interactio..."
+                                        likes=""
+                                        hasImage={true}
+                                    />
+                                </div>
+                            </div>
+
+                        </div>
+                    </div>
+                    
+                    {/* Pagination Dots */}
+                    <div className="flex justify-center mt-12 gap-2">
+                        <div className="w-1.5 h-1.5 rounded-full bg-white/20"></div>
+                        <div className="w-1.5 h-1.5 rounded-full bg-white/20"></div>
+                        <div className="w-1.5 h-1.5 rounded-full bg-white/20"></div>
+                    </div>
+
+                </div>
+
+                {/* Footer */}
+                <footer className="mt-auto pt-20 pb-8 px-6 border-t border-white/5 bg-[#0a0a0a]">
+                    <div className="max-w-7xl mx-auto grid grid-cols-2 md:grid-cols-5 gap-8 text-xs text-gray-500">
+                        <div className="col-span-2 md:col-span-1">
+                            <div className="flex items-center gap-2 text-white font-bold text-lg mb-4">
+                                <i className="fas fa-cube"></i> HYPER3D
+                            </div>
+                            <p className="mb-4">hello@deemos.com</p>
+                            <div className="flex gap-4 text-lg">
+                                <i className="fa-brands fa-x-twitter hover:text-white cursor-pointer"></i>
+                                <i className="fa-brands fa-youtube hover:text-white cursor-pointer"></i>
+                                <i className="fa-brands fa-linkedin hover:text-white cursor-pointer"></i>
+                                <i className="fa-brands fa-instagram hover:text-white cursor-pointer"></i>
+                                <i className="fa-brands fa-discord hover:text-white cursor-pointer"></i>
+                                <i className="fa-brands fa-calculator hover:text-white cursor-pointer"></i>
+                            </div>
+                        </div>
+                        
+                        <div>
+                            <h4 className="text-gray-300 font-semibold mb-4 uppercase">Product</h4>
+                            <ul className="space-y-2">
+                                <li className="hover:text-white cursor-pointer">Rodin</li>
+                                <li className="hover:text-white cursor-pointer">ChatAvatar</li>
+                            </ul>
+                        </div>
+                        
+                        <div>
+                            <h4 className="text-gray-300 font-semibold mb-4 uppercase">Features</h4>
+                            <ul className="space-y-2">
+                                <li className="hover:text-white cursor-pointer">Text to 3D</li>
+                                <li className="hover:text-white cursor-pointer">Image to 3D</li>
+                                <li className="hover:text-white cursor-pointer">AI Video Generator</li>
+                                <li className="hover:text-white cursor-pointer">AI Image Generator</li>
+                                <li className="hover:text-white cursor-pointer">OmniCraft</li>
+                            </ul>
+                        </div>
+
+                        <div>
+                            <h4 className="text-gray-300 font-semibold mb-4 uppercase">Plug-ins</h4>
+                            <ul className="space-y-2">
+                                <li className="hover:text-white cursor-pointer">Blender</li>
+                                <li className="hover:text-white cursor-pointer">Unreal</li>
+                                <li className="hover:text-white cursor-pointer">Unity</li>
+                                <li className="hover:text-white cursor-pointer">Godot</li>
+                                <li className="hover:text-white cursor-pointer">C4D</li>
+                                <li className="hover:text-white cursor-pointer">Maya</li>
+                                <li className="hover:text-white cursor-pointer">OV/Isaac</li>
+                            </ul>
+                        </div>
+
+                        <div>
+                            <h4 className="text-gray-300 font-semibold mb-4 uppercase">Legal</h4>
+                            <ul className="space-y-2">
+                                <li className="hover:text-white cursor-pointer">Privacy</li>
+                                <li className="hover:text-white cursor-pointer">Terms</li>
+                            </ul>
+                        </div>
+                    </div>
+                    
+                    <div className="max-w-7xl mx-auto mt-12 pt-8 border-t border-white/5 flex flex-col md:flex-row justify-between text-[10px] text-gray-600">
+                        <p>© 2026 Deemos Corporation. All rights reserved</p>
+                        <div className="flex gap-4 mt-2 md:mt-0">
+                            <span className="cursor-pointer hover:text-gray-400">Privacy</span>
+                            <span>|</span>
+                            <span className="cursor-pointer hover:text-gray-400">Terms</span>
+                        </div>
+                    </div>
+                </footer>
+            </div>
+        );
+    };
+
+    const root = ReactDOM.createRoot(document.getElementById('root'));
+    root.render(<App />);
+
+</script>
+
+</body>
+</html>
+```
