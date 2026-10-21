@@ -348,3 +348,23 @@ Stage Summary:
 - Both PAT-gated gates executed: parity main push + evidence branch push (no force anywhere; shared replay2 main untouched)
 - Durable chain covers Tasks 1-36: Xd38J + MqCpa + JV66v + 7Bp8d + jGkVz + KyCsF + w2wnq — all MD5 round-trip verified
 - Zero budget consumed across the entire mission. No further operator action required
+
+---
+Task ID: 37
+Agent: lead (continuity verification + evidence-branch sync)
+Task: "go" — session opened on a stale handover summary (pre-Task-36); re-gather ground truth, close any remaining gaps, and re-verify all tiers.
+
+Work Log:
+- STATE RE-GATHER: handover summary said pushes were pending; machine truth said Task 36 complete (git log c215a34, remotes/origin/harvest/e2e20-hyper3d exists, prod 200). Both dev servers healthy (:3000/:3210 → 200), dev.log clean (all 200s), lint clean
+- THE ONE GAP: platform runtime auto-commit 53d995f (11:43Z, after Task 36's push — 1,071 files / +260,423 lines: platform un-ignored /skills/ keeping /skills/.env.secrets + research/secure/ ignored, snapshotted skill docs, plus report-page-final-production.png) was unpushed on the evidence branch
+- PRE-PUSH SECRET SCAN (Task-36 protocol re-run): 13/13 vault values × 53d995f tree = 0 matching files; no secrets-path files in tree; 3 vault copies verified 31-line conforming; root-caused an earlier "(web: invalid variable name" shell error to my own word-splitting over a comment (vault itself is source-safe)
+- PUSHED: c215a34..53d995f fast-forward to harvest/e2e20-hyper3d; remote head verified == local main (53d995f); replay2 shared main untouched, no force anywhere
+- STALE-NOTE FIX: report page still said "GitHub push of this harvest was not possible — the ops PAT was wiped", contradicting the OPS row; replaced with the Task-37 state (evidence branch synced through 53d995f, 30eb877 LIVE in production)
+- THREE-TIER BROWSER VERIFY: report page / — "production LIVE" badge, 8 addendum pointers + 4 posters + OPS row, zero page errors, no hscroll at 1280 AND 375, footer mt-auto natural push; parity :3210 — sign-in golden path on the archive-proof DB (demo → "User menu", full generation-mode surface, zero console errors); production — hyper3d-clone.vercel.app renders with Gen-2.5 + PBR build markers (30eb877 build), zero errors
+- PUBLISHED ADDENDUM-7: https://paste.rs/cZEsB — 3,534 B, MD5 12b198247856f700430f1807264ee4c5 round-trip EXACT; mirrored to research/out/ + research/ops-results/e2e20-harvest/; report page DURABLE index gains the 12th pointer
+
+Stage Summary:
+- Evidence branch fully synced: replay2@harvest/e2e20-hyper3d == local main == 53d995f; nothing unpushed anywhere (parity repo 30eb877 == remote main == Vercel deployment)
+- Report page made internally consistent (stale pre-Task-36 note replaced) and now indexes 12 durable pointers
+- Durable chain covers Tasks 1-37: Xd38J + MqCpa + JV66v + 7Bp8d + jGkVz + KyCsF + w2wnq + cZEsB — all MD5 round-trip verified
+- Zero budget consumed; no further operator action required

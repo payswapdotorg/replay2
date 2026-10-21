@@ -1,0 +1,63 @@
+ADDENDUM 7 — Task 37: continuity verification + evidence-branch sync
+=====================================================================
+Published: 2026-10-21 (session 6, "go") · Chain: Xd38J → MqCpa → JV66v → 7Bp8d → jGkVz → KyCsF → w2wnq → THIS
+
+CONTEXT
+-------
+Session opened with a STALE handover summary (generated before Task 36 executed).
+First act: re-gather ground truth from the machine itself — git log, remote refs,
+worklog tail, dev.log, live HTTP. Finding: Task 36 had fully completed (both
+PAT-gated pushes done, production LIVE at 30eb877, addendum-6 w2wnq published).
+
+THE ONE REAL GAP
+---------------
+The platform's runtime auto-commit 53d995f (11:43Z, AFTER Task 36's push) was
+unpushed on the evidence branch. It carries 1,071 files / +260,423 lines: the
+platform un-ignored /skills/ (keeping /skills/.env.secrets and research/secure/
+ignored — secret-protective) and snapshotted all skill docs, plus the final
+production screenshot research/out/report-page-final-production.png (701,110 B).
+
+PRE-PUSH SECRET SCAN (Task-36 protocol, re-run)
+-----------------------------------------------
+- 13/13 secret values from .git/secrets-vault.env grepped against the 53d995f
+  tree: 0 matching files (GitHub PAT, GH, Composio x2, Vercel x2, Neon x4,
+  OpenRouter, E2B, Apify)
+- No secrets-path files in the tree (no .env.secrets, no research/secure/)
+- Vault hygiene: 3 copies, 31 lines each, all conforming (comments/export lines)
+- Root-caused an earlier shell error ("(web: invalid variable name") to my own
+  word-splitting over a comment — vault itself source-safe
+
+PUSH + VERIFY
+-------------
+- git push origin main:harvest/e2e20-hyper3d → c215a34..53d995f fast-forward
+- Remote head verified == local main (53d995f316edf1746554b94b0f57422ccc14ee5c)
+- replay2 main still untouched (shared 835-commit lineage, no force anywhere)
+
+STALE-NOTE FIX (honest-state repair)
+------------------------------------
+The report page still carried the pre-Task-36 note "GitHub push of this harvest
+was not possible — the ops PAT was wiped", directly contradicting the OPS row on
+the same page (evidence branch + validated keys). Replaced with the Task-37
+state: harvest lives on replay2@harvest/e2e20-hyper3d synced through 53d995f,
+parity 30eb877 LIVE on hyper3d-clone.vercel.app.
+
+THREE-TIER BROWSER VERIFICATION (agent-browser, zero budget)
+------------------------------------------------------------
+1. Report page / (:3000) — renders, hero badge "production LIVE", 7 paste.rs
+   addendum pointers + 4 posters + OPS row present; ZERO page errors; console
+   clean (HMR only); no horizontal scroll at 1280 AND 375; footer mt-auto with
+   natural push on the long page (4,787 px); full-page screenshot banked
+   (research/out/report-page-task37-continuity.png)
+2. Parity :3210 — sign-in golden path on the archive-proof DB: demo credentials
+   → "User menu" authenticated state, full generation-mode surface (Image to 3D
+   / Text to 3D / 3D Editing / WorldGen, Upload, Bounding Box, Voxel); ZERO
+   console errors
+3. Production hyper3d-clone.vercel.app — renders (title/hero/nav), ZERO page
+   errors, served HTML carries Gen-2.5 + PBR build markers (the 30eb877 build)
+
+Also: bun run lint CLEAN · dev.log clean (all 200s) · both dev servers healthy
+(main 200, parity 200) · parity nested repo at 30eb877 == remote main == the
+deployed Vercel build.
+
+ZERO BUDGET — reaffirmed. No paid API touched; paste.rs + GitHub + Vercel
+hobby deploy all free. No further operator action required.

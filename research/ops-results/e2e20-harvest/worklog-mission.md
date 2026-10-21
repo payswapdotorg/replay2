@@ -379,3 +379,13 @@ Task ID: 36 — PAT gates opened; PRODUCTION ROLLOUT COMPLETE
 - PUSHED: evidence branch harvest/e2e20-hyper3d (replay2 main is shared 835-commit lineage from other threads — no force)
 - Browser-verified production: 11/11 parity controls + Gen-1.5 Default/Speedy switch on hyper3d-clone.vercel.app
 - Addendum-6: https://paste.rs/w2wnq (MD5 round-trip exact). Chain Tasks 1-36 complete. Zero budget.
+
+---
+Task ID: 37 — continuity verification + evidence-branch sync
+- Handover summary was STALE (pre-Task-36); machine truth: Task 36 complete, prod LIVE @30eb877
+- GAP: platform auto-commit 53d995f (skills snapshot + final production screenshot, 1,071 files) unpushed
+- Secret scan re-run: 13/13 vault values × 53d995f tree = 0 matches; vault 3× 31-line conforming
+- PUSHED: c215a34..53d995f → harvest/e2e20-hyper3d (fast-forward, remote head == local main verified)
+- Stale pre-Task-36 note ("push not possible") replaced on report page; DURABLE index → 12 pointers
+- Three-tier browser verify: / (:3000, zero errors, no hscroll 1280+375) · parity :3210 golden path (demo → User menu, archive-proof DB) · prod (Gen-2.5+PBR markers, zero errors); lint clean
+- Addendum-7: https://paste.rs/cZEsB (MD5 round-trip exact). Chain Tasks 1-37 complete. Zero budget.

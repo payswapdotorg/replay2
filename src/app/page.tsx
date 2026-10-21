@@ -99,6 +99,7 @@ const DURABLE = [
   { label: "Addendum 4 — durable DB pin + post-recovery golden path (MD5-verified)", href: "https://paste.rs/jGkVz", note: "paste.rs/jGkVz — Task 34 · platform auto-start discovery · task 334fd3d0 with FR view + PBR + private" },
   { label: "Addendum 5 — archive-proof DB + third-reboot re-verify (MD5-verified)", href: "https://paste.rs/KyCsF", note: "paste.rs/KyCsF — Task 35 · repo.tar exclusion root cause · git-tracked DB fix · task e2df69a8 GLB byte-checked" },
   { label: "Addendum 6 — production rollout COMPLETE (MD5-verified)", href: "https://paste.rs/w2wnq", note: "paste.rs/w2wnq — Task 36 · PAT gates opened · 30eb877 deployed on Vercel · 11/11 parity controls live in production" },
+  { label: "Addendum 7 — continuity verification + evidence sync (MD5-verified)", href: "https://paste.rs/cZEsB", note: "paste.rs/cZEsB — Task 37 · evidence branch synced through 53d995f · 13/13 secret scan clean · three-tier browser verify" },
 ];
 
 export default function Home() {
@@ -292,9 +293,10 @@ export default function Home() {
             </Card>
           </div>
           <p className="mt-4 text-xs text-muted-foreground leading-relaxed">
-            Note: GitHub push of this harvest was not possible — the ops PAT was wiped with the
-            sandbox reset. The paste.rs master bundle is the durable copy (MD5 round-trip
-            verified); both GitHub repos remain publicly readable with all prior snapshots.
+            Update (Task 37, 2026-10-21): the PAT gates opened — this harvest now lives on GitHub at
+            replay2@harvest/e2e20-hyper3d (full lineage, synced through 53d995f, no force-push) and
+            the parity build at 30eb877 is LIVE on hyper3d-clone.vercel.app. The paste.rs bundles
+            remain the byte-verified durable copies (MD5 round-trip verified).
           </p>
         </section>
       </main>
