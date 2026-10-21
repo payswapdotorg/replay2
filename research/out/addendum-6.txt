@@ -1,0 +1,74 @@
+ADDENDUM 6 — Task 36: PAT-gated gates OPEN — production rollout COMPLETE
+========================================================================
+Published: 2026-10-21 (session 5) · Chain: Xd38J → MqCpa → JV66v → 7Bp8d → jGkVz → KyCsF → THIS
+
+THE OPERATOR UNBLOCKED EVERYTHING
+---------------------------------
+All prior sessions ended with "outstanding: PAT-gated pushes". This session the
+operator delivered the payswap GitHub PAT (full scopes: repo, workflow, admin:org,
++ more), two Vercel tokens, four Neon keys, OpenRouter, E2B, Apify, and Composio keys.
+
+CREDENTIAL VALIDATION (all against live APIs)
+---------------------------------------------
+- GitHub PAT: VALID — authenticates as payswapdotorg (id 150378018), full OAuth scopes
+- Vercel: VALID — user ekonplacide-5312, default team team_4KOoA5CgtYaOF85yFXPeMXLt (hobby)
+- Composio: VALID — backend.composio.dev v3 API (note: api.composio.dev has NO DNS;
+  v1 endpoints are sunset), GitHub toolkit connected + ACTIVE (not needed in the end)
+- OpenRouter: VALID · Apify: VALID (prestigious_peanut) · Neon: stored, not needed
+- GOTCHA BANKED (cost ~20 min): the Bash tool's "persistent shell session" does NOT
+  persist exported variables between tool calls — every credential test that sourced
+  the vault in an earlier call tested EMPTY strings (GitHub "Bad credentials" for an
+  empty token is indistinguishable from a dead PAT at a glance; Vercel/OpenRouter/
+  Apify all said "missing"). Rule: source the vault in the SAME command as the curl.
+
+SECRETS HYGIENE (the leak-vs-durability tension, resolved)
+----------------------------------------------------------
+- Runtime auto-commits use `git add -A` → any unignored secrets file WOULD be pushed.
+  But gitignored files are NOT carried by repo.tar (Task-35 finding) → loss risk.
+- Resolution — three layers, all leak-proof:
+  1. .env.secrets (project root, gitignored via .env* pattern) — session working copy
+  2. research/secure/env-secrets.txt (gitignored dir) — second copy
+  3. .git/secrets-vault.env — INSIDE .git: never tracked by git, never pushed, but
+     repo.tar demonstrably carries .git/ (1,089 entries) → archive-proof
+- Pre-push security scan: git grep of every secret value against both pushed trees
+  → CLEAN (the only "vault" match was Chromium's own browser-profile file)
+- Remote URLs embed the PAT in .git/config (carried by archive, never pushed content)
+
+THE PUSHES (both clean, no force)
+---------------------------------
+1. PARITY ROLLOUT — research/hyper3d-clone-parity → github.com/payswapdotorg/hyper3d-clone
+   main: 5dc716e → 30eb877 (fast-forward; the 119 "modified" files were zero-content
+   mode-bit noise from the sandbox fs, not pushed)
+2. EVIDENCE PAYLOAD — my-project → github.com/payswapdotorg/replay2
+   Local main was 15 ahead / 835 BEHIND (replay2 main is a shared lineage from other
+   mission threads: station worklogs, deployment infra). Force-push was never an
+   option. Pushed to a dedicated branch instead (repo convention is scope/name):
+     main → harvest/e2e20-hyper3d  (new branch, full local lineage + evidence commits)
+
+PRODUCTION DEPLOYMENT — VERIFIED END-TO-END
+-------------------------------------------
+Vercel auto-deploy fired on the push (project hyper3d-clone, prj_GIxwV6WiJ28PSxOQKFDkncmKbAYB):
+  state=READY, commit=30eb877f
+Browser verification on https://hyper3d-clone.vercel.app (production, not sandbox):
+  - sign-in demo@hyper3d.clone / demo1234 → 200 (production seeds its own demo user)
+  - landing: Gen-2.5 line present; JS bundles grep-verified: Gen-1.5 ×3, PBR ×6,
+    Shaded ×3, Speedy ×3 in chunk 335d32eda4eb3cd0.js
+  - full studio (Start Creating → Generation controls sidebar): ALL 11/11 parity
+    controls live — Version radiogroup (Gen-1.5/Gen-2.5), MATERIAL PBR/Shaded/All/None,
+    Private, Batch (Business gate), Presets, Agentic, 11-slot direction picker
+    (FL/F/FR/L/UP/R/BL/B/BR/DN/?), Seed lock, Redo quotas, FBX among 6 export formats
+  - Gen-1.5 functional switch: Default/Speedy modes appear, effort ladder hides,
+    agentic honestly gated ("Gen-2.5 line only") — identical behavior to the local
+    parity instance (differential: same evals, same results)
+  - screenshots banked: prod-studio-gen15.png, prod-studio-gen25-full.png
+
+MISSION STATE — FINAL
+---------------------
+The operator's four asks, closed:
+  1. Real-user clone testing .................. done (Tasks 1-26, 10+ verified cycles)
+  2. Reference understanding (free paths) ..... done (Tasks 27-31)
+  3. Reverse-engineer the reference ........... done (recon/ + engine probes)
+  4. Clone genuinely usable ................... done — AND NOW: workspace parity
+     SHIPPED TO PRODUCTION (this addendum's subject)
+Durable chain Tasks 1-36: Xd38J + MqCpa + JV66v + 7Bp8d + jGkVz + KyCsF + THIS.
+Zero budget consumed across the entire mission. No further operator action required.

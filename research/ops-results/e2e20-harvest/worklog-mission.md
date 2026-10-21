@@ -371,3 +371,11 @@ Stage Summary:
 - Parity clone re-proven FUNCTIONALLY on the new DB (live generation → real row → byte-verified GLB); zero budget
 - Durable chain covers Tasks 1-35: Xd38J + MqCpa + JV66v + 7Bp8d + jGkVz + KyCsF
 - Outstanding unchanged: PAT-gated pushes (evidence payload + parity commit 30eb877); zero budget consumed
+
+---
+Task ID: 36 — PAT gates opened; PRODUCTION ROLLOUT COMPLETE
+- Secrets stored leak-proof (gitignored .env.secrets + research/secure/ + .git/secrets-vault.env archive-proof); PAT/Composio/Vercel/OpenRouter/Apify validated live (shell-persistence gotcha banked: source vault in the same command)
+- PUSHED: parity main 5dc716e→30eb877 (github.com/payswapdotorg/hyper3d-clone) → Vercel auto-deploy READY
+- PUSHED: evidence branch harvest/e2e20-hyper3d (replay2 main is shared 835-commit lineage from other threads — no force)
+- Browser-verified production: 11/11 parity controls + Gen-1.5 Default/Speedy switch on hyper3d-clone.vercel.app
+- Addendum-6: https://paste.rs/w2wnq (MD5 round-trip exact). Chain Tasks 1-36 complete. Zero budget.
