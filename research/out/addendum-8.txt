@@ -1,0 +1,49 @@
+ADDENDUM 8 — Task 38: fourth-reboot HANDS-FREE recovery + the sequenced-compile law
+===================================================================================
+Published: 2026-10-21 (session 7, "go") · Chain: Xd38J → MqCpa → JV66v → 7Bp8d → jGkVz → KyCsF → w2wnq → cZEsB → THIS
+
+THE FOURTH REBOOT (2026-10-21 13:18:21Z)
+----------------------------------------
+First reboot where the FULL Task-35 recipe had to hold with zero manual recovery —
+and it did:
+- Platform auto-start brought up BOTH dev servers (main 200; parity listening and
+  compiling on first touch — an initial curl 000 was a first-compile timeout, not
+  a dead server; port 3210 was listening the whole time)
+- The package.json DB pin was live in the launch chain (ps shows the exact
+  DATABASE_URL=file:/home/z/my-project/db/hyper3d-clone.db wrapper)
+- The git-tracked DB SURVIVED the archive-restore byte-present (233,472 B); the
+  M-vs-HEAD diff is the expected live session rows from Task 37, not damage
+- Browser golden path on the REBOOTED DB: demo sign-in → authenticated "User
+  menu", full generation surface (Image/Text/3D-Edit/WorldGen), zero page errors
+
+NEW OPERATIONAL LAW — STAGGER THE COLD COMPILES
+-----------------------------------------------
+Applying the standard heap-cap relaunch (dfork + NODE_OPTIONS 1024/1536) killed
+MAIN TWICE via the KERNEL OOM KILLER:
+- dmesg: "Out of memory: Killed process 2540 (next-server, anon-rss 2,550,364kB)"
+  and again pid 2908 (anon-rss 2,403,780kB) — both were MAIN's compiling
+  next-server, murdered mid-compile ~13:39:32Z and ~13:41:00Z
+- Root cause: the report page's Turbopack COLD compile spikes ~2.4-2.55 GB anon
+  RSS; with parity resident/compiling (~0.9-1.1 GB) on the 4 GB / ZERO-swap box
+  the ceiling breaks and the kernel takes the biggest victim — the compiling main
+- KEY INSIGHT: --max-old-space-size does NOT guard compile-time memory — the
+  spike is native/worker/module-graph allocations outside old-space
+- THE LAW: never cold-compile both servers simultaneously on this box. Sequence
+  them: stop parity → compile main SOLO (2.5 GB fits easily in 4 GB) → bring
+  parity up against the settled main (its ~1 GB compile fits alongside)
+- EXECUTED AND VERIFIED: sequenced relaunch → main 200 (10.5 s solo compile,
+  survived the 35 s watch) → parity 200 (4.5 s compile) → settled state stable,
+  NO further OOM events; both chains dfork-orphaned (PPID=1, reaper-proof) with
+  the 1024/1536 caps; dev.log clean both sides
+- Why the boot auto-start survived this morning: the platform's own start order
+  staggered the compiles naturally (main compiled at boot; parity compiled only
+  when first touched 17 min later) — the law was always there, unobserved
+
+EVIDENCE SYNC
+-------------
+- Platform auto-commit ba97dc9 (13:00:18Z) = tool-results persistence file only
+  (a 382-line copy of worklog-mission.md — secret-scan clean) → pushed to the
+  evidence branch together with the Task-38 evidence commit (live DB state +
+  addendum-8 + report-page Durability/DURABLE updates + worklog)
+- Final-tree secret scan re-run before push (13/13 vault values → 0 matches)
+- Zero budget consumed. No further operator action required.

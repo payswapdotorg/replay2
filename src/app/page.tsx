@@ -24,7 +24,7 @@ const PARITY_STATUS = [
   { k: "Try it now", v: "Preview panel → /?XTransformPort=3210 — the parity instance runs the full workspace" },
   { k: "Sign in", v: "demo@hyper3d.clone / demo1234 (local demo credits — generation is free here)" },
   { k: "Verified", v: "Golden path + private/material settings on card c68233f8 · redo lineage ba7b7cdd · quota 20→19 · FBX byte-checked — re-verified post-recovery: task 334fd3d0 (PBR + FR view + private, GLB + FBX byte-checked, credits 50→49) — re-verified after 3rd reboot on the archive-proof DB: task e2df69a8 (live generation, GLB 87,252 B byte-checked)" },
-  { k: "Durability", v: "DB now git-tracked at /home/z/my-project/db/hyper3d-clone.db — survives the platform's archive-restore reboots (root cause of the Task-34 path wipe: gitignored files are excluded from repo.tar)" },
+  { k: "Durability", v: "DB git-tracked at /home/z/my-project/db/hyper3d-clone.db — survived the 4th reboot HANDS-FREE (2026-10-21 13:18Z: auto-start + pin + tracked DB, zero manual recovery; sign-in golden path re-verified on the restored DB). Ops law: stagger ALL heavy memory events — cold compiles AND browser launches. The report page's Turbopack compile spikes ~2.5 GB (kernel-OOM took a compiling main twice), and a Chromium burst took the warm main at 1.9 GB with only 655 MB headroom (4 GB box, no swap; heap caps do not guard compile/native memory — keep ≥1 GB free before any heavy allocation)" },
   { k: "Production", v: "LIVE — parity commit 30eb877 pushed to main (5dc716e→30eb877) and DEPLOYED on Vercel (build READY): all 11 parity controls verified on hyper3d-clone.vercel.app incl. the Gen-1.5 Default/Speedy switch" },
   { k: "Ops", v: "Evidence branch: replay2@harvest/e2e20-hyper3d (15+ evidence commits). Secrets vault: gitignored + .git-carried (archive-proof, never pushed). PAT/Composio/Vercel/OpenRouter/Apify all validated" },
 ];
@@ -100,6 +100,7 @@ const DURABLE = [
   { label: "Addendum 5 — archive-proof DB + third-reboot re-verify (MD5-verified)", href: "https://paste.rs/KyCsF", note: "paste.rs/KyCsF — Task 35 · repo.tar exclusion root cause · git-tracked DB fix · task e2df69a8 GLB byte-checked" },
   { label: "Addendum 6 — production rollout COMPLETE (MD5-verified)", href: "https://paste.rs/w2wnq", note: "paste.rs/w2wnq — Task 36 · PAT gates opened · 30eb877 deployed on Vercel · 11/11 parity controls live in production" },
   { label: "Addendum 7 — continuity verification + evidence sync (MD5-verified)", href: "https://paste.rs/cZEsB", note: "paste.rs/cZEsB — Task 37 · evidence branch synced through 53d995f · 13/13 secret scan clean · three-tier browser verify" },
+  { label: "Addendum 8 — fourth-reboot hands-free recovery + sequenced-compile law (MD5-verified)", href: "https://paste.rs/T3u3Z", note: "paste.rs/T3u3Z — Task 38 · archive-proof recipe proven with zero manual recovery · kernel-OOM root cause + the stagger-the-cold-compiles law" },
 ];
 
 export default function Home() {

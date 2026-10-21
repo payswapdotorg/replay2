@@ -389,3 +389,12 @@ Task ID: 37 — continuity verification + evidence-branch sync
 - Stale pre-Task-36 note ("push not possible") replaced on report page; DURABLE index → 12 pointers
 - Three-tier browser verify: / (:3000, zero errors, no hscroll 1280+375) · parity :3210 golden path (demo → User menu, archive-proof DB) · prod (Gen-2.5+PBR markers, zero errors); lint clean
 - Addendum-7: https://paste.rs/cZEsB (MD5 round-trip exact). Chain Tasks 1-37 complete. Zero budget.
+
+---
+Task ID: 38 — fourth-reboot HANDS-FREE recovery + sequenced-compile law
+- 4th reboot 13:18:21Z: full Task-35 recipe held with ZERO manual recovery (auto-start both servers, DB pin in launch chain, git-tracked DB survived, sign-in golden path re-verified on restored DB)
+- Heap-cap relaunch hit the kernel OOM killer TWICE: report-page Turbopack cold compile spikes ~2.4-2.55GB anon RSS; simultaneous parity compile breaks the 4GB/no-swap ceiling; heap caps do NOT guard compile-time native memory
+- LAW BANKED: stagger cold compiles (main solo → settled → parity). Executed: main 200 solo → parity 200 → stable, PPID=1 both, caps 1024/1536
+- Evidence synced: ba97dc9 (platform tool-results auto-commit, scan-clean) + Task-38 commit (live DB + addendum-8 + page updates) → harvest/e2e20-hyper3d
+- Addendum-8: https://paste.rs/T3u3Z (MD5 round-trip exact). Chain Tasks 1-38 complete. Zero budget.
+- AMENDMENT (same session): a THIRD OOM took the warm main (1.9GB) at 13:47:51Z — the agent-browser Chromium burst with only 655MB headroom; the law extends to ALL heavy memory events (keep >=1GB free). Main relaunched solo, settled 1.23GB / 1222MB available; page Durability text carries the full law

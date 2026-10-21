@@ -368,3 +368,24 @@ Stage Summary:
 - Report page made internally consistent (stale pre-Task-36 note replaced) and now indexes 12 durable pointers
 - Durable chain covers Tasks 1-37: Xd38J + MqCpa + JV66v + 7Bp8d + jGkVz + KyCsF + w2wnq + cZEsB — all MD5 round-trip verified
 - Zero budget consumed; no further operator action required
+
+---
+Task ID: 38
+Agent: lead (fourth-reboot hands-free recovery + sequenced-compile law)
+Task: "go" — post-reboot continuity: recover, re-verify, resync evidence.
+
+Work Log:
+- FOURTH REBOOT detected (boot 13:18:21Z, up 17 min at first check). HANDS-FREE RECOVERY CONFIRMED: platform auto-started both servers (main 200; parity listening — the initial curl 000 was a first-compile timeout, not a down server); DB pin live in the launch chain (ps shows DATABASE_URL=file:...hyper3d-clone.db); the git-tracked DB survived the archive-restore (233,472 B present; M-vs-HEAD = expected live Task-37 session rows)
+- Applied the standard heap-cap relaunch (dfork 1024/1536) — and MAIN DIED TWICE: kernel OOM killer took the compiling main next-server at anon-rss 2,550,364kB (pid 2540) then 2,403,780kB (pid 2908) — both servers were cold-compiling SIMULTANEOUSLY on the 4GB/no-swap box
+- ROOT CAUSE + LAW BANKED: the report page's Turbopack cold compile spikes ~2.4-2.55GB anon RSS; --max-old-space-size does NOT guard compile-time native/worker memory; with parity resident (~0.9-1.1GB) the kernel takes the biggest victim. LAW: stagger cold compiles — main solo first, parity second against settled main. (Why the boot auto-start survived: the platform's start order staggered compiles naturally)
+- SEQUENCED RECOVERY EXECUTED: stopped parity → main solo compile 200 (10.5s, survived 35s watch) → parity relaunched 200 (4.5s) → settled stable (main warm 2.0GB, parity 948MB, no further OOM events; both chains PPID=1 reaper-proof with caps)
+- THIRD OOM (13:47:51Z, pid 3192, main warm at 1.9GB anon-rss): the agent-browser Chromium burst (~400-600MB in seconds) with only 655MB headroom — the law EXTENDS to ALL heavy memory events: browser launches count too; keep ≥1GB free before any heavy allocation. Main relaunched solo (attempt 4: warm-cache compile 6.2s), settled to 1.23GB/1222MB available; the wrong-page screenshot from the crashed round was discarded and redone
+- GOLDEN PATH ON THE REBOOTED DB (browser): demo sign-in → authenticated "User menu", full generation surface (Image/Text/3D-Edit/WorldGen), zero page errors — the archive-restored DB serves auth end-to-end
+- EVIDENCE SYNC: ba97dc9 (platform auto-commit: tool-results persistence file, 382-line worklog-mission.md copy) verified + pushed with the Task-38 evidence commit (live DB state, addendum-8, page updates, worklog)
+- PUBLISHED ADDENDUM-8: https://paste.rs/T3u3Z — 3,226 B, MD5 d2eb9db06d8fa3e0cf4e51c92137b3af round-trip EXACT; report page Durability row extended (4th-reboot hands-free + the law) + DURABLE index gains the 13th pointer
+
+Stage Summary:
+- The Task-35 archive-proof recipe is now PROVEN hands-free through a real reboot: auto-start + pin + tracked DB + working auth, zero manual recovery
+- New operational law banked and executed: never cold-compile both servers simultaneously on this box — stagger them (kernel-OOM root cause measured twice)
+- Evidence branch resynced through Task 38; durable chain covers Tasks 1-38: Xd38J + MqCpa + JV66v + 7Bp8d + jGkVz + KyCsF + w2wnq + cZEsB + T3u3Z — all MD5 round-trip verified
+- Zero budget consumed; no further operator action required
