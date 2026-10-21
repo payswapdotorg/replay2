@@ -408,3 +408,17 @@ Stage Summary:
 - Two new laws banked: (1) SNAPSHOT-LAG — the evidence branch is the source of truth, push every session before ending; (2) warm-compile peak ~2.4 GB is cache-independent — main always compiles alone
 - Durable chain covers Tasks 1-39: Xd38J + MqCpa + JV66v + 7Bp8d + jGkVz + KyCsF + w2wnq + cZEsB + T3u3Z + r0v1O — all MD5 round-trip verified
 - Zero budget consumed; parity relaunch + golden-path check scheduled post-push; no further operator action required
+---
+Task ID: 39-close
+Agent: lead (Task-39 close-out)
+Task: Complete the scheduled parity relaunch + golden-path verification and close.
+
+Work Log:
+- Parity relaunched sequenced (against settled main, 1536 cap): 200 + 15 s watch, no new OOM (dmesg last entry remains the pre-recovery 17:11:56Z one)
+- Golden path SERVER-verified on the archive-proof DB: POST /api/auth/sign-in 200 (user 65dc60b5, session cookie) → authed POST /api/user/get_info 200 (balance 50, redo geometry 20 / material 6, preferences, subscriptions). Browser-level golden path was proven on this byte-identical DB in Tasks 35/37/38
+- Production re-checked: 200 @ 218,131 B (the known-good 30eb877 build); parity repo 30eb877 == remote main == Vercel deployment
+- Final state: local main 79aae35 == harvest/e2e20-hyper3d remote head (nothing unpushed anywhere); both dev servers 200 with clean logs; steady memory ~601 MB available (normal full-stack state on the 4 GB box)
+
+Stage Summary:
+- Task 39 fully closed; all three tiers verified this session (report page browser-level with 14/14 pointers, parity server-level golden path, production HTTP 200)
+- Durable chain unchanged: Xd38J → … → T3u3Z → r0v1O (14 pointers, all MD5 round-trip verified)
