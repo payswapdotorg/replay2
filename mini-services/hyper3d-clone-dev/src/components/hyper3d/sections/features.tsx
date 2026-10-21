@@ -47,7 +47,7 @@ export function Features() {
         <div className="mt-10 grid gap-4 sm:grid-cols-2 lg:mt-12 lg:grid-cols-4 lg:gap-6">
           {CARDS.map((c, i) => (
             <Reveal key={c.title} delay={i * 0.07}>
-              <Card className="group h-full overflow-hidden border-white/8 bg-white/[0.04] transition-all duration-300 hover:-translate-y-1 hover:border-h3d-purple/40 hover:shadow-[0_18px_50px_rgba(74,0,224,0.25)]">
+              <Card className="group h-full overflow-hidden border-white/8 bg-white/[0.04] transition-all duration-300 hover:-translate-y-1 hover:border-h3d-purple/40 hover:shadow-[0_18px_50px_rgba(139,92,246,0.25)]">
                 <div className="relative aspect-[4/3] overflow-hidden">
                   <SmartImage
                     src={c.src}
@@ -56,7 +56,7 @@ export function Features() {
                     sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 25vw"
                     className="object-cover transition-transform duration-500 group-hover:scale-105"
                   />
-                  <div className="absolute inset-0 bg-gradient-to-t from-[#17171b] via-transparent to-transparent" />
+                  <div className="absolute inset-0 bg-gradient-to-t from-[#1e1b24] via-transparent to-transparent" />
                   <span className="absolute left-3 top-3 flex size-8 items-center justify-center rounded-lg border border-white/15 bg-black/45 backdrop-blur-sm">
                     <c.icon className="size-4 text-h3d-violet" aria-hidden="true" />
                   </span>

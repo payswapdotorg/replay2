@@ -1,0 +1,76 @@
+ADDENDUM 10 — Task 42: reference-matched UI re-theme + empty-state restructure, LIVE in production
+=================================================================================================
+Published: 2026-10-21 (session 9, "work on getting the UI to be similar to that of the reference")
+Chain: Xd38J → MqCpa → JV66v → 7Bp8d → jGkVz → KyCsF → w2wnq → cZEsB → T3u3Z → r0v1O → THIS
+
+THE TASK
+--------
+Operator asked for UI similarity to the reference (hyper3d.ai/workspace/rodin).
+Method: browser recon of the live reference (4 states captured: landing, mode
+panel, generation form, EXPLORE) + VLM extraction of a developer-grade visual
+spec + VLM diff against the clone's studio + surgical implementation.
+
+WHAT THE REFERENCE ACTUALLY LOOKS LIKE (measured, not guessed)
+--------------------------------------------------------------
+- Atmosphere: warm plum radial glow (center ~#2a222e tinted) over near-black
+  #0a0a0c edges + subtle film-grain noise — a "lit stage", NOT a flat void
+- Empty state: massive "Rodin" headline + "Gen-2.5 Agent-Ready" subtitle +
+  quote, a centered ~420-560px floating generation card (solid #1E1B24,
+  radius 24px, border rgba(255,255,255,.08), shadow 0 20px 50px rgba(0,0,0,.5))
+- GENERATE: full capsule, purple→pink gradient (#8b5cf6→#a855f7→#ec4899),
+  white uppercase tracked ~0.1em, soft purple glow
+- Bottom bar: large bold ASSET / EXPLORE text tabs (active white / inactive
+  #555), Featured pill, search pill
+- Accents: soft lavender #a78bfa / #c4b5fd + pink #ec4899 / #d946ef / #f472b6
+  — NOT the electric indigo #6366f1-family
+
+WHAT CHANGED IN THE CLONE (parity commit chain def1063 → 2ab33df → 17c5fd0 → 0a23890)
+-------------------------------------------------------------------------------------
+1. THEME (globals.css + tokens): whole palette shifted cool→warm —
+   #121317→#0f0f12 base, #17171b→#1e1b24 panels, #242424→#2a2532 inputs,
+   accents #916af0→#a78bfa (35 CSS hits in the deployed bundle), gradient
+   utilities re-based purple→pink; shadcn :root/.dark tokens follow
+2. NEW .h3d-studio-bg: layered warm radial glows + SVG feTurbulence noise
+   tile (the reference's lit-stage atmosphere) on the studio root
+3. EMPTY-STATE RESTRUCTURE (studio.tsx, container-level only — zero control/
+   handler changes): when no model/task/flight → massive "Rodin" hero above
+   a centered floating 560px card (rounded-3xl, glass, deep shadow); viewer +
+   right panel hidden; they auto-appear on the first task. Working state keeps
+   the proven three-pane dashboard
+4. GENERATE: gradient capsule (93deg, 3 stops), uppercase tracking .12em,
+   pink glow shadow
+5. Rail tabs renamed ASSET / EXPLORE; header/footer translucent warm + blur
+6. Viewer (three.js): warm plum clear color 0x191420, rim lights
+   lavender/pink (0xc4b5fd / 0xe879f9), softened warm grid (0x3a3342/0x262230
+   @ 0.45)
+7. Full sweep: every old hex/rgba triple purged from source (116+ mode-bit
+   noise files restored to 644; core.fileMode now off in the parity repo to
+   kill the recurring chmod noise at the root)
+
+VERIFICATION (browser on the parity, then byte-level on production)
+-------------------------------------------------------------------
+- Empty state: hero "Rodin" (72px) ABOVE the centered card, GENERATE visible,
+  ASSET/EXPLORE rail, computed bg = the noise+glow stack; no page errors
+- Golden-path regression through the RESTYLED UI: sign-in → prompt "a small
+  cozy mushroom house with a glowing window" → GENERATE → DonePreview in
+  20.4s (Gen-2.5, 2,038 tokens, 416 tris) with viewer live (canvas 810px),
+  exports enabled, redo quotas intact, zero console/page errors
+- Working state: three-pane engages on task open (rail task → viewer 810px +
+  right panel); mobile 375px: no hscroll, card fits
+- Landing re-theme: VLM-verified coherent, no indigo leftovers
+- Production: Vercel auto-deploy chain READY through 0a23890; deployed CSS
+  byte-checked — 35× #a78bfa, h3d-studio-bg + feTurbulence present, ZERO
+  old-palette markers (916af0/8584ff/4a00e0/133,132,255/74,0,224/145,106,240)
+
+OPERATIONS (the memory laws held)
+---------------------------------
+- Recon+verify browser passes ran under the ≥1GB-headroom law by flipping the
+  servers: parity down while browsing the reference, main down while browsing
+  the parity; both restored via the sequenced dance (main solo → parity) with
+  caps 1024/1536; zero OOM events this session
+- Zero budget consumed (generation used the demo wallet: 1 credit, 50→49)
+
+Stage Summary: the clone now MIRRORS the reference's visual language — warm
+lit-stage atmosphere, Rodin-hero empty state with a centered floating card,
+gradient capsule GENERATE, ASSET/EXPLORE rail — while keeping every one of the
+11 proven parity controls and the golden path intact, LIVE in production.

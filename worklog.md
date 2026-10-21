@@ -453,3 +453,23 @@ Stage Summary:
 - Evidence branch synced: replay2@harvest/e2e20-hyper3d == local main == 557ec8f; nothing unpushed anywhere
 - Pattern now established: each platform auto-commit is pure housekeeping (mode-bits + pid), scanned then synced — the push-first discipline keeps the evidence branch authoritative
 - Durable chain unchanged (14 pointers, all MD5-verified); zero budget consumed; no further operator action required
+---
+Task ID: 42
+Agent: lead (reference-matched UI re-theme — LIVE in production)
+Task: "work on getting the UI to be similar to that of the reference" — recon hyper3d.ai/workspace/rodin, diff against the clone, implement, verify, ship.
+
+Work Log:
+- RECON (browser on the live reference, parity stopped for the ≥1GB browser law): 4 states captured (landing, mode panel, generation form, EXPLORE) + 3 VLM passes extracting a developer-grade spec — warm plum radial-glow atmosphere (#0a0a0c edges, #2a222e center tint, film-grain noise), massive Rodin hero + centered ~420-560px floating card (solid #1E1B24, radius 24, white-alpha border, deep shadow), GENERATE capsule purple→pink gradient (#8b5cf6→#ec4899) uppercase tracked with glow, ASSET/EXPLORE text tabs, lavender/pink accents (NOT the clone's electric #916af0/#4a00e0 family)
+- DIFF (VLM, reference vs parity studio): flat cool #121317 + grid void vs warm lit-stage; dashboard three-pane vs reference's centered hero card; GENERATE flat vs gradient capsule; indigo-violet vs lavender/pink accents
+- IMPLEMENTATION (parity dev, then synced to the production repo): (1) full palette re-theme in globals.css + shadcn tokens (cool→warm, 16 token values); (2) NEW .h3d-studio-bg — layered warm radial glows + SVG feTurbulence noise tile; (3) empty-state restructure in studio.tsx at CONTAINER level only (zero control/handler changes): massive Rodin hero above a centered floating 560px glass card, viewer+right panel hidden until the first task; (4) GENERATE → gradient capsule + pink glow + uppercase tracking; (5) rail tabs renamed ASSET/EXPLORE; (6) viewer: warm clear color, lavender/pink rim lights, softened warm grid; (7) exhaustive sweeps — every old hex/rgba triple purged (74,0,224 / 133,132,255 / 145,106,240 / 916af0 / 8584ff / be34ff / #141419 / #17171b …)
+- VERIFICATION (browser on the parity): empty state — hero 72px above centered card, computed bg = noise+glow stack, GENERATE visible, ASSET/EXPLORE rail, zero page errors; GOLDEN-PATH REGRESSION through the restyled UI — sign-in → prompt "a small cozy mushroom house with a glowing window" → GENERATE → DonePreview 20.4s (Gen-2.5, 2,038 tokens, 416 tris), viewer canvas 810px live, exports enabled, redo quotas intact; working state three-pane engages on task open; mobile 375px no hscroll, card fits; landing re-theme VLM-verified coherent (no indigo leftovers)
+- PRODUCTION SHIP (parity repo → payswapdotorg/hyper3d-clone main, Vercel auto-deploy): def1063 (re-theme + restructure) → 2ab33df (hex sweep; accidentally swept 116 mode-bit noise files) → 17c5fd0 (modes restored to 644 via update-index --chmod=-x; core.fileMode now OFF in the parity repo — kills the recurring chmod noise at the root) → 0a23890 (final rgba-shadow sweep). All four READY; deployed CSS byte-checked: 35× #a78bfa, h3d-studio-bg + feTurbulence present, ZERO old-palette markers
+- PUBLISHED ADDENDUM-10: https://paste.rs/DNB5u — 4,840 B, MD5 60d6a49d8a7e8263874a717f3fd54a6c round-trip EXACT; mirrored to research/out/ + research/ops-results/e2e20-harvest/; report page gains the 15th pointer + Production row updated (LIVE at 0a23890 with the reference-matched UI) + Verified row extended with the mushroom-house regression
+- MEMORY DISCIPLINE: browser passes ran under the ≥1GB law by flipping servers (parity down for reference recon; main down for parity verify); both restored via the sequenced dance (main solo 1024 → parity 1536), zero OOM events; zero budget (demo wallet 1 credit, 50→49)
+
+Stage Summary:
+- The clone now mirrors the reference's visual language end-to-end — warm lit-stage atmosphere, Rodin-hero empty state with centered floating generation card, gradient-capsule GENERATE, ASSET/EXPLORE rail — while keeping all 11 proven parity controls and the golden path intact (regression-tested live)
+- Production LIVE at 0a23890 with the new UI (Vercel READY, deployed CSS byte-verified)
+- Parity repo hygiene hardened: core.fileMode=false kills the 116-file mode-bit noise class permanently
+- Durable chain covers Tasks 1-42: Xd38J → MqCpa → JV66v → 7Bp8d → jGkVz → KyCsF → w2wnq → cZEsB → T3u3Z → r0v1O → DNB5u — all MD5 round-trip verified
+- Zero budget consumed; no further operator action required

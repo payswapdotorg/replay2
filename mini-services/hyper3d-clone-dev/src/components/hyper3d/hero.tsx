@@ -182,7 +182,7 @@ export function DemoPanel({
               className={cn(
                 "flex min-h-11 flex-col items-center justify-center gap-0.5 rounded-xl border px-2 py-2 text-center transition-all",
                 controlNet === c.id
-                  ? "border-h3d-purple/60 bg-h3d-purple/15 text-white shadow-[0_0_16px_rgba(145,106,240,0.25)]"
+                  ? "border-h3d-purple/60 bg-h3d-purple/15 text-white shadow-[0_0_16px_rgba(167,139,250,0.25)]"
                   : "border-white/10 bg-white/3 text-white/65 hover:border-white/25 hover:text-white",
               )}
               onClick={() => setControlNet(controlNet === c.id ? null : c.id)}
@@ -240,7 +240,7 @@ export function DemoPanel({
       {/* actions */}
       <div className="mt-4 flex flex-col gap-2 sm:flex-row">
         <Button
-          className="relative h-12 flex-1 overflow-hidden h3d-gradient-primary text-sm font-bold tracking-wide text-white shadow-[0_0_24px_rgba(133,132,255,0.4)] hover:opacity-90"
+          className="relative h-12 flex-1 overflow-hidden h3d-gradient-primary text-sm font-bold tracking-wide text-white shadow-[0_0_24px_rgba(196,181,253,0.4)] hover:opacity-90"
           onClick={() => fire(false)}
         >
           GENERATE
@@ -295,7 +295,7 @@ export function Hero({ onGenerate }: { onGenerate: (req: DemoGenerateRequest) =>
             <div className="mt-7 flex flex-col gap-3 sm:flex-row">
               <Button
                 size="lg"
-                className="relative h-12 overflow-hidden rounded-full h3d-gradient-primary px-7 text-sm font-bold text-white shadow-[0_0_30px_rgba(133,132,255,0.45)] hover:opacity-90"
+                className="relative h-12 overflow-hidden rounded-full h3d-gradient-primary px-7 text-sm font-bold text-white shadow-[0_0_30px_rgba(196,181,253,0.45)] hover:opacity-90"
                 onClick={() => onGenerate({ prompt: "", mode: "text-to-3d", effort: "medium", controlNet: null, free: false })}
               >
                 Start Creating
@@ -348,7 +348,7 @@ export function Hero({ onGenerate }: { onGenerate: (req: DemoGenerateRequest) =>
         <Reveal delay={0.15} className="relative">
           <motion.div
             aria-hidden="true"
-            className="pointer-events-none absolute -inset-6 rounded-[28px] bg-[radial-gradient(60%_60%_at_50%_20%,rgba(133,132,255,0.18),transparent)] blur-2xl"
+            className="pointer-events-none absolute -inset-6 rounded-[28px] bg-[radial-gradient(60%_60%_at_50%_20%,rgba(196,181,253,0.18),transparent)] blur-2xl"
           />
           <DemoPanel onGenerate={onGenerate} className="relative" />
         </Reveal>
