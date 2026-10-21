@@ -422,3 +422,20 @@ Work Log:
 Stage Summary:
 - Task 39 fully closed; all three tiers verified this session (report page browser-level with 14/14 pointers, parity server-level golden path, production HTTP 200)
 - Durable chain unchanged: Xd38J → … → T3u3Z → r0v1O (14 pointers, all MD5 round-trip verified)
+---
+Task ID: 40
+Agent: lead (sixth-reboot hands-free continuity + auto-commit sync)
+Task: "go" — post-reboot continuity: verify, sync, close.
+
+Work Log:
+- SIXTH REBOOT detected (boot ~18:43Z, up 4 min at first check, 18:47Z): platform auto-start brought both servers up again (main 200 / parity 200 — hands-free recipe held; dmesg clean, no OOM this boot; the auto-start's natural compile staggering re-confirmed)
+- SNAPSHOT-LAG DID NOT RECUR: the restore carried Task 39's a18b1ca intact (unlike the fifth reboot's restore, which had skipped the fourth boot's dd0f7c5). Confirms the lag is an ABNORMAL-shutdown artifact, not a general restore flaw — clean shutdowns produce complete pre-stop captures
+- ONE GAP: platform auto-commit 7cc7c7b (17:23:04Z, captured pre-reboot) was unpushed — 17 files, 0 content changes: mode-bit normalization (644→755) on evidence txt/pngs + dev.pid. Verified mode-only (PNG diff shows only old/new mode lines); worklog/db/page.tsx/secrets untouched. Secret scan 13/13 vault values → 0 matches in tree → PUSHED a18b1ca..7cc7c7b → remote == local
+- SIXTH-REBOOT VERIFICATION SWEEP: healthz green (db reachable, ai backend zai); golden path server-verified on the restored DB — sign-in 200 (demo creator) → get_info 200 (balance 50, redo quotas intact); dev.log all 200s both servers; production 200 @ 218,131 B (the 30eb877 build); DB byte-identical to HEAD (no live divergence, no re-stage needed)
+- Ops decision banked: the auto-start instances run the default env (2020 heap) but are WARM and stable (759 MB available steady full-stack state); the 1024/1536 capped relaunch is reserved for memory-pressure situations (browser passes / heavy work) per the Task-38/39 laws — relaunching main now would trigger the ~2.4 GB cache-independent compile spike for zero benefit. No browser pass needed this session: no page/code content changed (the only push was mode-bit housekeeping; the 14-pointer page state was browser-verified in Task 39 and is byte-unchanged since)
+
+Stage Summary:
+- Reboot-survival matrix now 6-for-6 on liveness (auto-start), with the durability law refined: clean shutdown → complete snapshot; abnormal shutdown → snapshot lag (evidence branch remains the source of truth)
+- Evidence branch synced: replay2@harvest/e2e20-hyper3d == local main == 7cc7c7b; parity repo 30eb877 == remote main == Vercel (production 200 re-confirmed)
+- Durable chain unchanged: Xd38J → … → T3u3Z → r0v1O (14 pointers, all MD5 round-trip verified); no new addendum needed — nothing of substance changed this session
+- Zero budget consumed; no further operator action required
