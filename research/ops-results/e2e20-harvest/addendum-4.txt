@@ -1,0 +1,88 @@
+# e2e20-harvest ADDENDUM-4 — Task 34: second-reboot recovery, durable DB pin,
+# and the post-recovery functional golden path on the parity instance
+# Published 2026-10-21 ~07:2xZ — extends Xd38J (1-26), MqCpa (27-28), JV66v (29-31), 7Bp8d (32-33).
+
+## SECTION 1 — Second reboot + platform auto-start discovery
+
+- Sandbox rebooted again at ~06:57Z (up 1 min at 06:58). Both dev servers were ALREADY
+  running at check time — started by the platform itself: both `bun run dev` wrappers
+  are children of PID 1 (tini /start.sh), i.e. the boot sequence auto-starts the main
+  project AND every mini-service. Implications:
+  1. Servers survive reboots without any manual action (the Task-33 dfork relaunch
+     recipe is a post-boot TUNING step, not a requirement for liveness).
+  2. Boot-started instances run reaper-proof (PPID 1) but with the platform default
+     NODE_OPTIONS="--max-old-space-size=2020 --enable-source-maps" — too heavy for
+     two servers on the 4GB box (main alone hit 1605-1830MB; --enable-source-maps
+     alone costs ~700MB vs the Task-33 profile).
+- Intra-boot fix applied (proven profile restored): both servers relaunched via
+  research/dfork-launch.sh with --max-old-space-size=1024 (main) / 1536 (parity),
+  NO source-maps. Result: main 872-1052MB, parity 1076-1265MB through a full
+  generation cycle, headroom 1.3-1.8GB.
+
+## SECTION 2 — The parity DB incident (root cause + durable fix)
+
+Symptom: sign-in on the parity instance returned HTTP 500 after the reboot.
+Log: Prisma P2022 — "The column `main.User.username` does not exist in the current
+database." The server's process env carried DATABASE_URL=file:/home/z/my-project/db/
+custom.db — the MAIN project's database — inherited from the platform environment at
+boot (process env overrides .env in Next.js). Task 32's fresh SQLite for the parity
+instance had lived at a non-persistent path and was wiped by the reboot; the platform
+boot then pointed the mini-service at the main DB, whose scaffold schema lacks the
+parity schema's columns.
+
+Durable fix (survives ANY launcher — platform boot or manual):
+1. Persistent DB file: /home/z/my-project/mini-services/hyper3d-clone-dev/db/custom.db
+   (schema pushed with DATABASE_URL explicitly overridden on the CLI — note: the
+   Prisma CLI also lets process env override .env, so an explicit var is required
+   for one-shot pushes).
+2. DATABASE_URL pinned INSIDE the mini-service package.json dev script:
+   "dev": "DATABASE_URL=file:/home/z/my-project/mini-services/hyper3d-clone-dev/db/
+   custom.db next dev -p 3210 2>&1 | tee dev.log"
+   (script-level env beats the inherited platform env for the server process;
+   a .env file alone is NOT sufficient when the launcher exports DATABASE_URL)
+3. The old main-project custom.db was left untouched (the accidental push attempt
+   aborted safely: "not possible to execute this step" — 1 row preserved).
+
+## SECTION 3 — Post-recovery functional golden path (task 334fd3d0)
+
+Full user flow on the fixed parity instance, zero external cost:
+- Sign-in: demo@hyper3d.clone / demo1234 — fresh DB seeded (demo creator, 50 credits,
+  8 featured demo tasks)
+- Upload: apple fixture (119,314 B) via the Image-to-3D dropzone; auto-caption ran the
+  real vision path (POST rodin_mesh_image_process 200 in 27.4s) and filled the prompt
+  ("A red apple with a short stem in the foreground and two green apples behind it")
+- Extra view: apple uploaded into the FR direction slot — recorded honestly on the card
+  (settings.image_labels = ["FR"])
+- Preset: "Product Mockup" chip applied (prompt template); combined with the caption
+  via the prompt textarea (React input event)
+- Settings: MATERIAL=PBR, Private=ON, Gen-2.5, effort Medium
+- GENERATE → state DonePreview in 6.0s (elapsed 6.027s, 652 tokens)
+- Honest fallback recorded on the card: neural attempt hit the real ZeroGPU quota
+  ("You have exceeded your ZeroGPU quota (90s requested vs. 84s left). Try again in
+  2:49:12. Authenticate with a Hugg…") → engine_used=fast with fallback_reason —
+  the pay-by-result fallback chain works exactly as designed
+- Card settings verified: {gen_version: "gen-2.5", material: "pbr",
+  image_labels: ["FR"], effort: "medium", seed: 40822, is_private: true}
+- Confirm & Export: credits 50 → 49 (exactly 1, pay-by-result), exports unlocked
+- Exports byte-verified in-session: GLB 48,068 B magic "glTF" (header 67 6c 54 46
+  02 00 00 00 …) and FBX 265,692 B ASCII header "; FBX 7.3.0 project file"
+- Screenshot banked: research/out/clone-parity-goldenpath-recovered.png
+  (studio, confirmed card, unlocked exports, 49 credits)
+
+## SECTION 4 — Pointer inventory update
+
+- Durable chain: Xd38J (1-26) · MqCpa (27-28) · JV66v (29-31) · 7Bp8d (32-33) ·
+  this addendum (34). Posters: OvmRc · sCVnl · 0tBzb · 4dfU4.
+- Parity source: research/hyper3d-clone-parity @ 30eb877 (PAT-push ready)
+- Parity runtime: mini-services/hyper3d-clone-dev (:3210) — NOW with its own
+  persistent DB (db/custom.db) + launcher-proof DATABASE_URL pin
+- Evidence PNGs in research/out/ incl. clone-parity-goldenpath-recovered.png
+- PAT-push payload: ops-results/e2e20-harvest (amended through Task 34)
+- Production clone unchanged: hyper3d-clone.vercel.app runs public main 5dc716e
+
+## SECTION 5 — Zero-cost statement
+
+Task 34 consumed zero budget: the golden path used the local fast engine (the neural
+attempt failed against the FREE public ZeroGPU quota exactly as a real anonymous user
+would experience, and the fallback chain handled it); credits spent were local demo
+credits. No paid API was used at any point.

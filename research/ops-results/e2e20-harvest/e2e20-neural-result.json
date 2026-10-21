@@ -1,0 +1,61 @@
+{
+  "cycle": 8,
+  "at": "2026-10-20T13:19:01Z",
+  "user": "demo creator",
+  "pre_balance": 21,
+  "upload": "uploaded:119314",
+  "caption": {
+    "captioned": true,
+    "value": "A glossy red apple with a short brown stem and two green apples behind it. simple geometry",
+    "uploaded": true
+  },
+  "anchor": "ba1712d8-b16a-498c-a85b-0cc18976a54c",
+  "generate": "clicked:GENERATE 1 Credit",
+  "tracked_uuid": "d716a085-6765-43b4-9b9d-2b772bea7047",
+  "final_poll": {
+    "hf": 5,
+    "mine": {
+      "uuid": "d716a085-6765-43b4-9b9d-2b772bea7047",
+      "user_state": "DonePreview",
+      "engine_used": "neural",
+      "seed": 22022,
+      "confirmed": false
+    },
+    "confirm": true,
+    "neuralToast": true,
+    "fallbackToast": false
+  },
+  "task_uuid": "d716a085-6765-43b4-9b9d-2b772bea7047",
+  "user_state": "DonePreview",
+  "engine_used": "neural",
+  "seed": 22022,
+  "hf_reqs": 5,
+  "card": {
+    "user_state": "DonePreview",
+    "engine_used": "neural",
+    "fallback_reason": null,
+    "confirmed": false
+  },
+  "exports": "[{\"label\":\"GLB\",\"disabled\":false},{\"label\":\"GLTF\",\"disabled\":false},{\"label\":\"OBJ\",\"disabled\":false},{\"label\":\"STL\",\"disabled\":false},{\"label\":\"USDZ\",\"disabled\":false}]",
+  "post_balance": 20,
+  "byte_verify": {
+    "glb": {
+      "size": 337564,
+      "magic": "glTF",
+      "gltf": true
+    },
+    "obj": {
+      "size": 665186,
+      "head": "o geometry_0\nv -0.8727912317833475 -0.06465981659371055 -0.5"
+    }
+  },
+  "exports_ok": true,
+  "shots": [
+    "e2e20-neural-01-task.png",
+    "e2e20-neural-02-viewer.png",
+    "e2e20-neural-03-confirmed.png",
+    "e2e20-neural-04-final.png"
+  ],
+  "outcome": "success",
+  "hf_log": "[{\"t\":1792502375552,\"kind\":\"upload\",\"status\":200,\"body\":\"[\\\"/tmp/gradio/699652fc90c0b2358bd70329bd22bd5b822216abd4e040dc126971919b155aa5/reference.jpg\\\"]\"},{\"t\":1792502375787,\"kind\":\"other-hf\",\"url\":\"https://tencent-hunyuan3d-2-1.hf.space/config\",\"status\":200},{\"t\":1792502376245,\"kind\":\"other-hf\",\"url\":\"https://tencent-hunyuan3d-2-1.hf.space/queue/join\",\"status\":200},{\"t\":1792502376479,\"kind\":\"other-hf\",\"url\":\"https://tencent-hunyuan3d-2-1.hf.space/queue/data?session_hash=2733c3d7-dbcb-4ed2-bb52-295bdfa43758\",\"status\":200},{\"t\":1792502397491,\"kind\":\"other-hf\",\"url\":\"https://tencent-hunyuan3d-2-1.hf.space/file=/tmp/gradio/cc85e3fd7ea07ea561d2a4abeb568294241cc241dbf8c3fc6ed224c659253d24/white_mesh.glb\",\"status\":200}]"
+}

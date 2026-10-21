@@ -23,7 +23,7 @@ const PARITY_OPTIONS = [
 const PARITY_STATUS = [
   { k: "Try it now", v: "Preview panel → /?XTransformPort=3210 — the parity instance runs the full workspace" },
   { k: "Sign in", v: "demo@hyper3d.clone / demo1234 (local demo credits — generation is free here)" },
-  { k: "Verified", v: "Golden path + private/material settings stored on card c68233f8 · geometry redo lineage ba7b7cdd · quota 20→19 · FBX byte-checked" },
+  { k: "Verified", v: "Golden path + private/material settings on card c68233f8 · redo lineage ba7b7cdd · quota 20→19 · FBX byte-checked — re-verified post-recovery: task 334fd3d0 (PBR + FR view + private, GLB + FBX byte-checked, credits 50→49)" },
   { k: "Production", v: "PAT-gated: commit 30eb877 staged on top of public main 5dc716e — push → Vercel auto-deploy; hyper3d-clone.vercel.app still runs main" },
 ];
 
@@ -94,6 +94,7 @@ const DURABLE = [
   { label: "Poster 03 · confirmed", href: "https://paste.rs/0tBzb", note: "221,686 B round-trip exact" },
   { label: "Poster 04 · final", href: "https://paste.rs/4dfU4", note: "216,637 B round-trip exact" },
   { label: "Addendum 3 — workspace parity + incident recovery (MD5-verified)", href: "https://paste.rs/7Bp8d", note: "paste.rs/7Bp8d — Task 32 parity record · Task 33 OOM/reaper recovery · relaunch recipe" },
+  { label: "Addendum 4 — durable DB pin + post-recovery golden path (MD5-verified)", href: "https://paste.rs/jGkVz", note: "paste.rs/jGkVz — Task 34 · platform auto-start discovery · task 334fd3d0 with FR view + PBR + private" },
 ];
 
 export default function Home() {

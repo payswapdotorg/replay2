@@ -3,7 +3,7 @@
   "version": "0.2.1",
   "private": true,
   "scripts": {
-    "dev": "next dev -p 3210 2>&1 | tee dev.log",
+    "dev": "DATABASE_URL=file:/home/z/my-project/mini-services/hyper3d-clone-dev/db/custom.db next dev -p 3210 2>&1 | tee dev.log",
     "postinstall": "node scripts/prisma-generate.js",
     "test": "vitest run",
     "build": "next build && cp -r .next/static .next/standalone/.next/ && cp -r public .next/standalone/",

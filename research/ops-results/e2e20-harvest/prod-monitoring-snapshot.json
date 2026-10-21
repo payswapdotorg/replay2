@@ -1,0 +1,15 @@
+{
+  "monitoring_pass": "2026-10-20 ~16:0xZ (Africa/Accra)",
+  "method": "UI golden-path sign-in (demo@hyper3d.clone) + in-page /api/task/list?filter=mine with session",
+  "credits_displayed": 20,
+  "task_count": 50,
+  "newest_task": "2026-10-20T13:19:34.263Z",
+  "new_tasks_since_harvest_d716a085": [],
+  "findings": [
+    "sign-in golden path still works (dialog form -> demo creator)",
+    "credits hold at 20 (post-harvest 21->20; no other confirms since)",
+    "no new task created after 13:19:34Z (newest = first-party neural d716a085)",
+    "history coherent: 43 fallback-era tasks + 09:27Z third-party neural + 8 grind cycles"
+  ],
+  "note": "earlier draft listed d716a085 itself due to truncated string compare (13:19:34.263Z > 13:19:34) \u2014 corrected; newest task on the account IS the harvest task"
+}

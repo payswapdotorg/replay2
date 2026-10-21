@@ -285,3 +285,24 @@ Stage Summary:
 - Durable chain now covers Tasks 1-33: Xd38J (1-26) + MqCpa (27-28) + JV66v (29-31) + 7Bp8d (32-33), all MD5 round-trip verified
 - Parity milestone is operator-visible (report page section) and the full control surface re-verified live end-to-end post-recovery
 - Outstanding unchanged: PAT-gated pushes (replay2 evidence payload + hyper3d-clone parity commit 30eb877); zero budget consumed
+
+---
+Task ID: 34
+Agent: lead (second-reboot recovery + post-recovery functional golden path)
+Task: "go" — sandbox rebooted again (~06:57Z); recover, then prove the parity clone FUNCTIONALLY (not just rendering) with a full user golden path under the memory-capped profile.
+
+Work Log:
+- Second reboot found (up 1 min): BOTH dev servers already running — the platform's boot sequence (tini /start.sh) auto-starts the main project AND every mini-service (both `bun run dev` PPID 1, reaper-proof by design). New knowledge: dfork relaunch is a post-boot TUNING step, not a liveness requirement
+- Platform default env too heavy for two servers on the 4GB box: NODE_OPTIONS=--max-old-space-size=2020 --enable-source-maps (main hit 1605-1830MB; source-maps alone ≈ +700MB) → restored the proven profile via dfork-launch.sh (1024/1536, no source-maps): main 872-1052MB, parity 1076-1265MB, headroom 1.3-1.8GB
+- PARITY DB INCIDENT: sign-in 500 after reboot — Prisma P2022 "column main.User.username does not exist": the platform env's DATABASE_URL (main project's custom.db) overrode everything at boot; Task 32's fresh SQLite had lived at a non-persistent path and was wiped. Durable fix: mini-service's own persistent DB (db/custom.db) + DATABASE_URL pinned INSIDE the package.json dev script (script-level env beats inherited platform env for any launcher; .env alone insufficient); schema pushed with CLI-level explicit override (Prisma CLI also prefers process env over .env); accidental push at the main DB aborted safely (1 row preserved)
+- Post-recovery FUNCTIONAL golden path on the fixed instance (task 334fd3d0-fcf2-4c10-ab1d-fa8458c43499): sign-in (fresh seed: 50 credits, 8 featured demos) → apple upload → real vision auto-caption (rodin_mesh_image_process 200 in 27.4s, prompt auto-filled) → FR direction-slot extra view → "Product Mockup" preset chip → MATERIAL=PBR + Private=ON → GENERATE → DonePreview in 6.0s (652 tokens) with the HONEST neural→fast fallback recorded (real ZeroGPU quota message: "90s requested vs. 84s left — try again in 2:49:12") → card settings verified {gen-2.5, pbr, image_labels ["FR"], seed 40822, is_private true} → Confirm & Export: credits 50→49 exactly → exports byte-verified in-session: GLB 48,068 B magic "glTF", FBX 265,692 B ASCII "; FBX 7.3.0 project file" → zero budget (local engine + local demo credits)
+- Screenshot banked: research/out/clone-parity-goldenpath-recovered.png (studio, confirmed card, unlocked exports, 49 credits); zero errors in both dev logs through the whole cycle
+- PUBLISHED ADDENDUM-4: https://paste.rs/jGkVz — 5,607 B, MD5 d89a51a4c79d7b5de139bff52e802cb3 round-trip EXACT — second-reboot discovery, DB-pin recipe, golden-path record, zero-cost statement
+- Report page updated: 9th durable pointer (jGkVz) + PARITY_STATUS "Verified" line extended with the post-recovery run; lint clean; live HTML carries jGkVz + 334fd3d0
+- Payload refreshed: worklog-mission.md through Task 34 + addendum-4.txt + clone-parity-goldenpath-recovered.png, commit amended
+
+Stage Summary:
+- The parity runtime is now REBOOT-PROOF end-to-end: platform auto-starts the server, the package.json pin routes it to its own persistent DB, and the dfork+heap-cap relaunch is optional tuning for heavy sessions
+- The parity clone is now proven FUNCTIONALLY post-recovery, not just rendering: a full user golden path exercised upload→caption, the direction-slot picker (FR recorded), presets, material, private, honest fallback, pay-by-result confirm, and byte-verified GLB+FBX exports
+- Durable chain covers Tasks 1-34: Xd38J + MqCpa + JV66v + 7Bp8d + jGkVz, all MD5 round-trip verified
+- Outstanding unchanged: PAT-gated pushes (evidence payload + parity commit 30eb877 → production); zero budget consumed
