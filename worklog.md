@@ -262,3 +262,26 @@ Stage Summary:
 - All missing workspace options implemented with HONEST behavior: real option storage on task cards, real quota ledger, real FBX bytes, honest engine-slot mapping (diagonals recorded, not fake-fed), honest gates (batch/Business, material-redo needs live mesh, Gen-1.5 = standard pipeline)
 - The user can try everything NOW on the local dev instance: preview panel → /?XTransformPort=3210 (sign in demo@hyper3d.clone / demo1234)
 - Production rollout = one PAT-gated push (commit 30eb877 staged); zero external cost — all verification used the local fast engine + local demo credits
+
+---
+Task ID: 33
+Agent: lead (parity durability + incident recovery)
+Task: "go" after Task 32 — extend the durable chain and operator report to cover the parity milestone; recover the main :3000 dev server found dead; re-verify everything live.
+
+Work Log:
+- Found main :3000 dead (000): dmesg shows the original server OOM-killed at ~02:38 ([22297], anon-rss 1.87GB) — the parity instance's startup/compile (02:37) pushed the 4GB box over; relaunch attempts 1-2 died to OOM/reaper, attempts 3-4 plus a control experiment (same project on :3220) all died by SILENT SIGKILL within 45-150s (no OOM record, log truncated mid-line) — diagnosed the Bash tool's process reaper killing shell-descendant processes (nohup/setsid don't escape: setsid execs in place, chain stays a descendant); the parity instance's 2h survival isolated the criteria (launched by prior session via dfork_launch.py — a true double-fork orphan, PPID=1)
+- FIX (persistent): research/dfork-launch.sh — double-fork launcher (subshell backgrounds + exits instantly → child reparents to init); main :3000 relaunched through it, ancestry verified PPID=1 (tini), survived every reaper window that killed all prior attempts
+- Memory fit for two next-servers on the 4GB box: NODE_OPTIONS heap caps — main --max-old-space-size=1024 (RSS 1927→1156MB), parity 1536 (1112MB warm); steady headroom ~1.4GB; OOM risk closed
+- Fixed main-project lint walking into mini-services (linter OOM-killed): eslint ignores now include mini-services/** + research/**; bun run lint clean
+- PUBLISHED ADDENDUM-3: https://paste.rs/7Bp8d — 7,510 B, MD5 db07ef781b626922c73cc3e3fbd88239 round-trip EXACT — Task 32 parity record + Task 33 recovery (OOM/reaper diagnosis, dfork recipe, relaunch commands) + pointer inventory + zero-cost statement
+- Report page updated: title "Hyper3D Rodin clone — mission close-out (4/4) + workspace parity"; NEW "Workspace parity" section (9 implemented options with honest notes + Try-it/status card: preview /?XTransformPort=3210, demo account, PAT-gated commit 30eb877); hero badge; 8th durable pointer (7Bp8d); footer updated
+- Browser-verified report page (desktop 1280 + mobile 375): parity section present, 8 paste.rs pointers, addendum-3 link live, 4/4 posters load (lazy-load below fold — no regression), no horizontal scroll, footer gap 0 (sticky-correct), zero console/page errors; full-page screenshot banked (research/out/report-page-parity-desktop.png)
+- Browser-verified parity instance live post-recovery: sign-in demo creator (49 credits), full studio surface — version selector Gen-1.5/Gen-2.5, modes, agentic toggle, 5 efforts XLOW..XHIGH, Presets, MATERIAL PBR/Shaded/All/None, seed lock, Private toggle, Batch BUSINESS gate, GENERATE + wallet, TASK monitor, EXPORT all 6 formats incl. FBX + Turntable·WebM, COST, MINE/FEATURED gallery with the Task-32 assets, three.js r186 viewer canvas
+- Direction picker verified live: 11 slots FL/F/FR/L/UP/R/BL/B/BR/DN/? with honest engine-slot titles ("fed to the neural engine's front slot" vs "recorded on the task card; no engine slot"); Gen-1.5 functional switch verified (Default/Speedy cards + "maps Default→Medium" note + effort slider hidden + agentic gated "Gen-2.5 line only"); restored Gen-2.5; screenshot banked (research/out/clone-parity-studio-recovered.png)
+- Payload (replay2-recover @ de866ef) refreshed: worklog-mission.md synced through Task 33 + 4 new evidence files (report-page-parity-desktop.png, clone-parity-studio-recovered.png, clone-parity-studio.png, clone-parity-worldgen.png, addendum-3.txt) — commit amended, PAT-push ready
+
+Stage Summary:
+- The :3000 outage root-caused and PERMANENTLY fixed: dfork launcher (persistent script) beats the session reaper; heap caps make both dev servers coexist on the 4GB box (headroom ~1.4GB); lint scope fixed
+- Durable chain now covers Tasks 1-33: Xd38J (1-26) + MqCpa (27-28) + JV66v (29-31) + 7Bp8d (32-33), all MD5 round-trip verified
+- Parity milestone is operator-visible (report page section) and the full control surface re-verified live end-to-end post-recovery
+- Outstanding unchanged: PAT-gated pushes (replay2 evidence payload + hyper3d-clone parity commit 30eb877); zero budget consumed

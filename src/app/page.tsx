@@ -3,10 +3,29 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
 
 export const metadata = {
-  title: "Hyper3D Rodin clone — mission close-out (4/4 verified)",
+  title: "Hyper3D Rodin clone — mission close-out (4/4) + workspace parity",
   description:
-    "Four-point mission complete: clone tested as a real user, reference understood via free paths only, reverse-engineered, and genuinely usable — neural + fallback engines, byte-verified exports.",
+    "Four-point mission complete: clone tested as a real user, reference understood via free paths only, reverse-engineered, and genuinely usable — neural + fallback engines, byte-verified exports. Post-close: every missing rodin workspace option implemented and verified (Task 32).",
 };
+
+const PARITY_OPTIONS = [
+  { label: "Version selector", value: "Gen-1.5 V1.2 / Gen-2.5 Agent-Ready — honest: Gen-1.5 runs the standard pipeline, agentic gated" },
+  { label: "11 direction labels", value: "FL/F/FR/L/UP/R/BL/B/BR/DN/Unknown — honest ENGINE_SLOT_OF mapping; diagonals recorded, not fake-fed" },
+  { label: "Default / Speedy + effort", value: "Mode cards + 5 effort levels, surfaced per version like the reference" },
+  { label: "Material selector", value: "PBR / Shaded / All / None — stored on the task card, repaints on confirm" },
+  { label: "Private tasks", value: "Private switch — excluded from the public featured list" },
+  { label: "Batch size", value: "Honest Business-gated control (toast explains the gate) — no fake batching" },
+  { label: "Presets + creation modes", value: "Prompt preset chips; WorldGen: Build Myself / Generate Objects / Complete Scene" },
+  { label: "Redo (geometry / material)", value: "Real quota ledger — geometry redo = fresh-seed clone with redo_of lineage; material redo repaints the live mesh" },
+  { label: "FBX export", value: "New ASCII FBX 7.3 exporter — 6 formats total (STL/FBX/OBJ/GLB/GLTF/USDZ), 803,657 B export numerically validated" },
+];
+
+const PARITY_STATUS = [
+  { k: "Try it now", v: "Preview panel → /?XTransformPort=3210 — the parity instance runs the full workspace" },
+  { k: "Sign in", v: "demo@hyper3d.clone / demo1234 (local demo credits — generation is free here)" },
+  { k: "Verified", v: "Golden path + private/material settings stored on card c68233f8 · geometry redo lineage ba7b7cdd · quota 20→19 · FBX byte-checked" },
+  { k: "Production", v: "PAT-gated: commit 30eb877 staged on top of public main 5dc716e — push → Vercel auto-deploy; hyper3d-clone.vercel.app still runs main" },
+];
 
 const MISSION_POINTS = [
   {
@@ -74,6 +93,7 @@ const DURABLE = [
   { label: "Poster 02 · viewer", href: "https://paste.rs/sCVnl", note: "228,046 B round-trip exact" },
   { label: "Poster 03 · confirmed", href: "https://paste.rs/0tBzb", note: "221,686 B round-trip exact" },
   { label: "Poster 04 · final", href: "https://paste.rs/4dfU4", note: "216,637 B round-trip exact" },
+  { label: "Addendum 3 — workspace parity + incident recovery (MD5-verified)", href: "https://paste.rs/7Bp8d", note: "paste.rs/7Bp8d — Task 32 parity record · Task 33 OOM/reaper recovery · relaunch recipe" },
 ];
 
 export default function Home() {
@@ -87,6 +107,7 @@ export default function Home() {
               <Badge variant="destructive" className="font-mono text-xs">e2e20 · neural harvest</Badge>
               <Badge variant="outline" className="font-mono text-xs">zero budget</Badge>
               <Badge className="bg-emerald-600 hover:bg-emerald-600 font-mono text-xs">mission 4/4 complete</Badge>
+              <Badge variant="outline" className="font-mono text-xs border-emerald-600 text-emerald-700 dark:text-emerald-400">workspace parity ✓</Badge>
             </div>
             <h1 className="text-3xl sm:text-4xl font-bold tracking-tight">
               Hyper3D Rodin clone — <span className="text-emerald-600">the real thing, verified</span>
@@ -125,6 +146,47 @@ export default function Home() {
                 </CardContent>
               </Card>
             ))}
+          </div>
+        </section>
+
+        {/* Workspace parity */}
+        <section aria-labelledby="parity" className="mx-auto max-w-5xl px-4 sm:px-6 py-10">
+          <div className="flex flex-wrap items-center gap-2 mb-2">
+            <h2 id="parity" className="text-xl font-semibold tracking-tight">Workspace parity — the missing rodin options, implemented</h2>
+            <Badge className="bg-emerald-600 hover:bg-emerald-600 font-mono text-xs shrink-0">Task 32 ✓</Badge>
+          </div>
+          <p className="text-sm text-muted-foreground mb-5 max-w-3xl leading-relaxed">
+            Post-close-out, the reference workspace surface was re-snapshotted live and diffed
+            against the clone — every option that was missing now exists with honest behavior
+            (11 files, 2 new; end-to-end verified on the parity instance).
+          </p>
+          <div className="grid gap-4 lg:grid-cols-5">
+            <Card className="lg:col-span-3">
+              <CardHeader className="pb-2"><CardTitle className="text-sm">Implemented options (honest, not decorative)</CardTitle></CardHeader>
+              <CardContent>
+                <dl className="space-y-3 max-h-96 overflow-y-auto pr-1">
+                  {PARITY_OPTIONS.map((o) => (
+                    <div key={o.label}>
+                      <dt className="font-mono text-xs uppercase tracking-wide text-muted-foreground">{o.label}</dt>
+                      <dd className="mt-0.5 text-sm leading-relaxed">{o.value}</dd>
+                    </div>
+                  ))}
+                </dl>
+              </CardContent>
+            </Card>
+            <Card className="lg:col-span-2 h-fit">
+              <CardHeader className="pb-2"><CardTitle className="text-sm">Try it / status</CardTitle></CardHeader>
+              <CardContent>
+                <dl className="space-y-3">
+                  {PARITY_STATUS.map((s) => (
+                    <div key={s.k}>
+                      <dt className="font-mono text-xs uppercase tracking-wide text-muted-foreground">{s.k}</dt>
+                      <dd className="mt-0.5 text-sm leading-relaxed break-words">{s.v}</dd>
+                    </div>
+                  ))}
+                </dl>
+              </CardContent>
+            </Card>
           </div>
         </section>
 
@@ -234,8 +296,8 @@ export default function Home() {
       <footer className="mt-auto border-t">
         <div className="mx-auto max-w-5xl px-4 sm:px-6 py-5 flex flex-wrap items-center gap-x-4 gap-y-1">
           <span className="font-mono text-xs text-muted-foreground">e2e20 · neural harvest closed</span>
-          <span className="font-mono text-xs text-muted-foreground">Task 20 ✓ Task 22 ✓ mission 4/4 ✓</span>
-          <span className="ml-auto font-mono text-xs text-muted-foreground">2026-10-20 · zero budget held</span>
+          <span className="font-mono text-xs text-muted-foreground">Task 20 ✓ Task 22 ✓ mission 4/4 ✓ Task 32 parity ✓</span>
+          <span className="ml-auto font-mono text-xs text-muted-foreground">2026-10-20/21 · zero budget held</span>
         </div>
       </footer>
     </div>

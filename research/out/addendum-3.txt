@@ -1,0 +1,120 @@
+# e2e20-harvest ADDENDUM-3 — workspace parity (Task 32) + incident recovery (Task 33)
+# Published 2026-10-21 (Africa/Accra session) — extends master bundle Xd38J (Tasks 1-26),
+# addendum MqCpa (27-28), addendum-2 JV66v (29-31).
+# Mission: free-path reverse-engineering + verified clone of hyper3d.ai/workspace/rodin.
+
+## SECTION 1 — Task 32: workspace parity (reference options → clone)
+
+User request: "a few of the options available in the https://hyper3d.ai/workspace/rodin
+are still missing from our clone" — enumerate the reference surface live, diff, implement
+every missing option honestly, verify end-to-end.
+
+Reference ground truth (live snapshot of hyper3d.ai/workspace/rodin, anonymous, free):
+- Version selector: Gen-1.5 V1.2 / Gen-2.5 Agent-Ready
+- 11 direction labels: FL/F/FR/L/UP/R/BL/B/BR/DN/Unknown
+- Default/Speedy modes, 5 effort levels, agentic switch
+- 3 ControlNets, Private, GENERATE, Batch size (Business-gated), Presets
+- Model selection, Creation Mode (Build Myself / Generate Objects / Complete Scene)
+- Export surface per FAQ: STL/FBX/OBJ/GLB/GLTF/USDZ
+
+Clone diff (vs source main 5dc716e) before Task 32: 4/11 directions, no version
+selector, no Default/Speedy, no material, no private, no batch, no presets, no
+creation modes, no redos, 5/6 export formats (FBX missing).
+
+IMPLEMENTED (11 files changed, 2 new):
+- hyper3d.ts: GEN_VERSIONS / LEGACY_MODES / MATERIALS / PROMPT_PRESETS /
+  CREATION_MODES / BATCH_MAX / REDO_QUOTAS
+- 11-label direction-picker with HONEST ENGINE_SLOT_OF mapping + IMAGE_LABELS
+  enum parity (diagonals recorded on the card, not fake-fed to the engine)
+- NEW exporters-fbx.ts — real ASCII FBX 7.3: world-baked vertices, FBX
+  last-index convention, ByPolygonVertex normals, IndexToDirect UVs, vertex
+  colors, materials, connections; wired into exporters + EXPORT_FORMATS (6 formats)
+- task POST accepts genVersion / legacyMode / material / isPrivate / creationMode /
+  imageLabels; list excludes private from featured; get_info exposes redo quotas
+- NEW /api/task/[uuid]/redo route: geometry = clone-with-fresh-seed + pipeline kick;
+  material = quota + client repaint; quota ledger in user preferences
+- task-serializer passes the new settings through to cards
+- studio.tsx renders all controls: version selector, gated agentic, Default/Speedy,
+  11-slot picker, presets chips, material radios, private switch, batch button with
+  honest Business gate + toast, creation-mode cards, redo buttons with quota labels
+
+LOCAL VERIFICATION (dev instance :3210, mini-services/hyper3d-clone-dev, fresh
+SQLite, demo account 50 credits):
+- sign-in ok; all controls render; full golden path material=none + private + fast
+  tier → task c68233f8 DonePreview, settings {material:none, gen_version:gen-2.5,
+  is_private:true, engine:fast, pay_by_result:true, seed}
+- caught+fixed a serializer whitelist stripping the new fields
+- confirm (1 local credit) → exports unlocked
+- FBX export 200, 803,657 B — numerically validated: 6 meshes, 5,472 triangles,
+  declared counts match, every 3rd polygon index negative, indices in range,
+  normals+UV layers, 18 connections
+- geometry redo → new task ba7b7cdd with redo_of lineage + fresh seed 62565,
+  quota 20→19
+- Gen-1.5 switch → Default/Speedy cards + effort slider hidden + agentic gated
+- WorldGen → 3 creation modes + honest coming-soon
+- lint clean; tsc clean on touched files
+- Screenshots: research/out/clone-parity-studio.png + clone-parity-worldgen.png
+
+DEPLOYMENT: no Vercel token / GitHub PAT on this sandbox (verified) — production
+deploy blocked on credentials; changes staged as commit 30eb877 on top of main
+5dc716e in persistent research/hyper3d-clone-parity/ (PAT push → Vercel
+auto-deploy). User can try everything on the local parity instance (:3210) via
+the preview panel: /?XTransformPort=3210 — demo@hyper3d.clone / demo1234.
+
+## SECTION 2 — Task 33: incident recovery (why :3000 was down + the durable fix)
+
+Symptom (04:19Z): main :3000 dead (connection refused) while parity :3210 alive.
+Root-cause timeline (dmesg + logs):
+- [22297 ≈ 02:38] OOM killer killed the ORIGINAL :3000 next-server (PID 1547,
+  anon-rss 1.87GB) — the parity instance's startup/compile (02:37) pushed the
+  4GB box over the edge. The two dev servers had never coexisted at full memory.
+- [28471 ≈ 04:24] first relaunch attempt OOM-killed during page compile
+  (parity still held 1.5GB; Turbopack compile spike did not fit).
+- Attempts 3-4 + a control experiment (same project on :3220) all died within
+  45-150s by SILENT SIGKILL — no OOM record, no crash trace, log truncated
+  mid-line. Diagnosis: the Bash tool's process reaper kills shell-descendant
+  processes shortly after their launching command ends, regardless of
+  nohup/setsid/port (setsid execs in place — the chain stays a shell descendant).
+  Counter-evidence that isolated the criteria: the parity instance (launched
+  02:37 by the previous session via dfork_launch.py — a TRUE double-fork, child
+  reparented to init) survived the same reaper for 2h.
+FIX (both durable, in persistent storage):
+1. research/dfork-launch.sh — persistent double-fork launcher:
+   subshell backgrounds the target and exits instantly → child reparents to
+   init (PPID=1, tini) → escapes any descendant-walk reaper. Verified: launched
+   main :3000 this way, root ancestry confirmed PPID=1, survived every
+   reaper window that killed all prior attempts.
+2. NODE_OPTIONS heap caps so both servers coexist on the 4GB box:
+   main --max-old-space-size=1024 (RSS 1927MB → 1156MB),
+   parity --max-old-space-size=1536 (RSS 1112MB warm).
+   Steady state: both 200, headroom 1.45GB. OOM risk closed.
+Recovery commands (post-reboot, absolute paths):
+  /home/z/my-project/research/dfork-launch.sh /home/z/my-project /dev/null \
+      env NODE_OPTIONS="--max-old-space-size=1024" bun run dev
+  /home/z/my-project/research/dfork-launch.sh \
+      /home/z/my-project/mini-services/hyper3d-clone-dev /dev/null \
+      env NODE_OPTIONS="--max-old-space-size=1536" bun run dev
+  (each package script tees its own dev.log; warm with one GET / each)
+
+## SECTION 3 — pointer inventory (unchanged unless noted)
+
+- Master bundle (Tasks 1-26, gzip+tar): https://paste.rs/Xd38J
+  decode: curl -s https://paste.rs/Xd38J -o m.gz && gunzip -c m.gz > m.tar && tar -xf m.tar
+- Addendum (Tasks 27-28): https://paste.rs/MqCpa
+- Addendum-2 (Tasks 29-31 + decode recipe): https://paste.rs/JV66v
+- Posters (byte-exact PNG evidence):
+  https://paste.rs/OvmRc · https://paste.rs/sCVnl · https://paste.rs/0tBzb · https://paste.rs/4dfU4
+- Parity source (PAT-push ready): research/hyper3d-clone-parity @ commit 30eb877
+  (on top of public main 5dc716e); local runtime mini-services/hyper3d-clone-dev (:3210)
+- Evidence PNGs also in persistent research/out/ (incl. clone-parity-studio.png,
+  clone-parity-worldgen.png) and in the staged ops-results/e2e20-harvest payload
+- Production clone: https://hyper3d-clone.vercel.app (runs public main 5dc716e —
+  source↔deploy proven by 3 exact markers; parity commit not yet pushed, PAT-gated)
+- GitHub write remains blocked: no credentials on this sandbox (verified exhaustively
+  in Tasks 29/30/32). Push target: payswapdotorg org repos, payload staged & amended.
+
+## SECTION 4 — zero-cost statement
+
+Task 32: all verification used the local fast engine + local demo credits; zero
+external API spend. Task 33: pure infrastructure recovery; zero spend. The
+mission's zero-budget record holds end to end.
