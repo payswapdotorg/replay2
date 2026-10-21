@@ -1,0 +1,194 @@
+# DECISIONS — hyper3d-clone "make it real" build
+
+Documented deviations from the work order / real-product behavior, with
+reasons. Everything not listed here follows the work order or the
+`recon/API-BLUEPRINT.md` contract verbatim.
+
+## Pipeline
+
+1. **Poster rendering — software rasterizer, not WebGL.** The runtime has no
+   headless WebGL, so `lib/render-preview.ts` rasterizes the *actual* built
+   geometry (z-buffer, barycentric normals, 3-light setup, 2× supersampling)
+   into a deterministic 512×512 **PNG** via a hand-rolled encoder
+   (`node:zlib`), instead of a webp poster from a WebGL canvas. The poster
+   is a true render of the exported mesh.
+2. **Turntable video skipped.** `video_url` is always `null` — the work
+   order allows skipping webm ("use a static video_url=null and document
+   it"). No fake video assets are served.
+3. **GLTFExporter server shim.** three.js's GLTFExporter reads its own
+   output Blobs through `FileReader`, which doesn't exist outside browsers.
+   `lib/exporters.ts` installs a minimal, byte-faithful `FileReader`
+   polyfill (readAsArrayBuffer/Text/DataURL via Blob async methods). The
+   shim is server-side only; export bytes come from the stock three.js
+   GLTF/OBJ/STL/USDZ exporters.
+4. **FBX removed from exports.** The work order's export list is
+   glb|gltf|obj|stl|usdz; three.js ships no FBXExporter, so the old UI's FBX
+   button was dropped rather than faked. Exported formats: GLB, GLTF, OBJ,
+   STL, USDZ — all byte-verified by tests.
+5. **ProviderB is env-gated.** With no `MESHY_API_KEY` / `TRIPO_API_KEY` /
+   `HYPER3D_API_KEY` in this deployment, ProviderB logs once and defers to
+   ProviderA (ZAI LLM/VLM pipeline), which carries the entire golden path.
+   No remote calls are simulated.
+6. **Token usage.** Text-to-3D records the chat response's token usage.
+   Image-to-3D estimates tokens from caption size (the vision response does
+   not expose a usage block); recorded values are honest estimates, labeled
+   as such here.
+7. **`elapsed_seconds`** is the real wall-clock time of the paced pipeline
+   (effort pacing included), matching how the real product reports engine
+   time.
+
+## Credits & pricing
+
+8. **Ledger prices: 50 start / 10 agentic / 1 standard / first task free.**
+   The work-order test contract mandates standard = 1; the real product's
+   button reads "0.5 Credits". The clone charges 1 and labels the button
+   accordingly ("GENERATE 1 Credit"). First task is a free preview (0) for
+   any task type.
+9. **Featured seeds don't count as generation history.** The 8 seeded
+   gallery tasks are authored by the demo user but excluded from the
+   free-preview task count (they are gallery content, not user history).
+
+## API shape
+
+10. **`GET /api/task/card/:uuid`** — the work order mandates GET; the real
+    product POSTs to `/api/task/card/{uuid}`. Shapes mirror blueprint §4
+    (task_uuid, type, prompt, step, image_url, video_url, usage, settings,
+    model_preview_info, versions, user_state, author, generate_time, …).
+    Additive field: `progress {message, percent}` while a task is running
+    (drives the agentic status pills); `error` on failures.
+11. **Auth is an HMAC-signed httpOnly cookie** (`h3d_session`), scrypt
+    password hashes — a lightweight stand-in for the real product's Google
+    OAuth + opaque Bearer tokens. Sign-in dialog wired to
+    `/api/auth/sign-in|out`; `/api/user/get_info` mirrors blueprint §5.
+12. **Files on disk, not signed CDN URLs.** Input images and posters are
+    stored at `db/generated/{uuid}/` and served through
+    `/api/task/{uuid}/preview` and `/api/task/{uuid}/input`. Exports are
+    generated on demand from the stored spec (deterministic — same spec,
+    same bytes). The blueprint's TOS-signed URLs are approximated by these
+    stable API routes.
+13. **The fake `/api/generate` route was deleted.** The old route generated
+    a 2D image via the SDK and passed it off as a render; fake
+    image-generation routes are forbidden. The only image generation now is
+    the poster of the real geometry (see #1).
+
+## Studio UI
+
+14. **3D Editing / WorldGen render honest "coming soon in this clone"
+    states.** No fake generation for those tabs. Remix Gen / Turbo Gen
+    pseudo-modes from the visual clone were removed; the tab set is
+    Image to 3D | Text to 3D | 3D Editing | WorldGen.
+15. **ControlNet selector removed from the studio sidebar** (kept in the
+    marketing hero, where it always was demo copy). The old studio
+    ControlNet buttons had no backing behavior — dead UI is exactly what
+    this build removes.
+16. **Effort modal** appears on the first agentic GENERATE per studio
+    session (blueprint §2.3 "on first GENERATE click"); afterwards the
+    slider value is used directly. Standard generations use the sidebar
+    slider only.
+17. **Session persistence**: the studio relies on the server session
+    (cookie), replacing the old localStorage mock (`token`/`user_uuid`).
+    Guest generation is gone — unauthenticated GENERATE opens the sign-in
+    dialog, like the real site.
+
+## Ops
+
+18. **Dev server reaper workaround**: `base/.zscripts/dev.sh` launches
+    `next dev -p 3000` via nohup + disown, pins `DATABASE_URL` explicitly
+    (a parent-directory `.env` from the workspace template would otherwise
+    win Prisma's env walk), runs `prisma generate + db push`, and waits for
+    HTTP 200.
+19. **Test database isolation**: vitest runs with
+    `DATABASE_URL=file:../db/test.db`, sequential file execution
+    (`fileParallelism: false`), schema pushed in globalSetup. The AI clients
+    are `vi.mock`ed in route tests; the generation engine is injectable
+    (`setEngine`) so the full queue pipeline runs against a fake engine
+    without network.
+20. **E2E upload fixture**: a programmatically drawn PNG apple
+    (`scripts/make-fixture-image.ts`) — the work order explicitly allows "a
+    canvas png fixture" as the alternative to an SDK-generated image. The
+    captioning and generation calls in the e2e were REAL ZAI VLM/LLM calls.
+
+## Deployment adaptations (serverless / Vercel)
+
+The worker's build targeted a long-lived node process (dev/standalone). The
+Vercel deployment required the following honest adaptations, all verified by
+the same test suites plus a live golden-path run:
+
+21. **PostgreSQL + blob-in-DB.** sqlite/filesystem storage (Task rows plus
+    `db/generated/{uuid}/` poster+input files) does not survive on serverless
+    (ephemeral disk, no shared local state). Schema switched to Postgres
+    (Neon); posters and reference inputs persist as Prisma `Bytes` columns
+    (`Task.posterBytes` / `Task.inputBytes`) served through the same stable
+    API routes. `postinstall: prisma generate` covers the Vercel build.
+22. **AI backend selection (ai-clients.ts).** z-ai-web-dev-sdk requires a
+    platform `.z-ai-config` (absent on Vercel). Backend chain: ZAI →
+    OpenRouter (`OPENROUTER_API_KEY`; text =
+    `meta-llama/llama-3.3-70b-instruct`, vision =
+    `deepseek/deepseek-v4-flash-vision-exp`, both verified live: valid
+    SceneSpec JSON / caption JSON) → deterministic fallback specs. When no
+    backend resolves, `generateSpecFromPrompt` / `analyzeImage` degrade to
+    their deterministic fallbacks — generation never hard-fails, and it is
+    never faked (the fallback still builds real geometry).
+23. **Queue is serverless-safe.** The fire-and-forget runner cannot rely on
+    a warm process. Three mechanisms: (a) POST /api/task kicks the pipeline
+    inside `after()` with `maxDuration = 60`; (b) the card poll runs
+    `resumeStaleTask` — a task with a stale progress heartbeat (>10s) gets
+    driven to completion by the poll itself; (c) **spec-first persistence**
+    — the generated SceneSpec is written to the task row the moment it
+    validates, so a resumed task finalizes (poster + DonePreview) from
+    storage without re-billing the AI pipeline. Image inputs self-heal from
+    `Task.inputBytes`. Cross-instance resume races are bounded: both racers
+    converge on the same deterministic spec/poster (last-write-wins).
+24. **Pace cap on serverless.** The artificial effort pacing (up to 80s for
+    Extreme-High) is capped at 40s when `process.env.VERCEL` is set so one
+    invocation can finish the pipeline; local dev keeps the faithful pace.
+    The resume path skips pacing entirely.
+25. **Test database**: dedicated Postgres (`TEST_DATABASE_URL`, wiped on
+    every run by the vitest global setup) — the sqlite test DB from the
+    worker's build was replaced together with the storage switch (#19).
+
+26. **AI backend chain extended with Bailian (2026-10-18 parity pass).** The
+    operator's live audit found production image-to-3D silently degraded to
+    the deterministic fallback (a grey cube) — root cause: the OpenRouter
+    key's credit budget hit zero (`total_credits: 0`), so every vision and
+    text call 402'd and the catch-alls fired. Fix: a third backend,
+    Bailian/Alibaba Model Studio (operator-provisioned key), reusing the
+    OpenAI-compatible transport with intl-endpoint defaults
+    (qwen-plus text / qwen3-vl-plus vision). Chain order is now
+    ZAI → Bailian → OpenRouter → deterministic fallback, so a funded
+    OpenRouter key still takes over automatically if Bailian is absent.
+    qwen3-vl-plus was validated live: 5.5s apple caption with a lathe
+    silhouette profile and image-sampled palette (#DC143C body, #6B8E23 stem).
+27. **Lathe-first caption prompt.** The reference product's fresh run (same
+    test image) captioned "A shiny red apple with a short stem" and produced
+    a real organic mesh; the old prompt let weak models answer "A simple 3D
+    object". The new CAPTION_SYSTEM_PROMPT demands object identification
+    first, lathe silhouette profiles for organic bodies, cylinders/cones for
+    attachments with explicit colors sampled from the image — matching what
+    the reference's engine does for simple objects, within the clone's
+    procedural pipeline. The deterministic fallback is now a neutral rounded
+    pebble (lathe) instead of a grey box so a backend outage reads as a
+    placeholder rather than a bug.
+28. **Poster auto-framing.** The audit caught the preview poster rendering
+    an "empty dark corner": the fixed camera eye (~3.6 units) was inside the
+    normalized object's angular size for large objects — the render showed
+    the cube's interior faces. The poster camera now derives its distance
+    from the model's bounding sphere (fit + 18% margin), so every object
+    frames correctly regardless of proportions.
+29. **Turntable WebM export (parity feature).** The reference's outputs
+    include a turntable.webm orbit video. The clone now records one full
+    orbit client-side from the live WebGL viewer (canvas.captureStream +
+    MediaRecorder, ~6s at autoRotateSpeed 10, 4 Mbps) and offers it as a
+    "Turntable · WebM" download next to the format exports — a real video
+    artifact of the user's actual model, not a stub. Server-side video
+    encoding was rejected (no headless WebGL / heavy codecs on serverless).
+30. **Rodin public API documented + seam reserved.** Reverse-engineered the
+    reference's engine surface from the live product and docs.hyper3d.ai:
+    api.hyper3d.com/api/v2 (Bearer, multipart /rodin with tier Gen-2.5-*,
+    mesh_mode, quality, texture_mode, geometry_instruct_mode creative|
+    faithful → jobs.subscription_key → /status → /download → GLB/USDZ +
+    render.webp + turntable.webm; /check_balance for API credits). Verified
+    live that API-key creation is subscribe-gated (free accounts get a
+    subscribe-tip), so the clone keeps ProviderA as the engine and the
+    RODIN_API_KEY seam in providers/index.ts documents the exact contract
+    for a future real-engine pass when the operator enables the add-on.
