@@ -306,3 +306,23 @@ Stage Summary:
 - The parity clone is now proven FUNCTIONALLY post-recovery, not just rendering: a full user golden path exercised upload→caption, the direction-slot picker (FR recorded), presets, material, private, honest fallback, pay-by-result confirm, and byte-verified GLB+FBX exports
 - Durable chain covers Tasks 1-34: Xd38J + MqCpa + JV66v + 7Bp8d + jGkVz, all MD5 round-trip verified
 - Outstanding unchanged: PAT-gated pushes (evidence payload + parity commit 30eb877 → production); zero budget consumed
+---
+Task ID: 35
+Agent: lead (third-reboot DB wipe root cause + archive-proof fix + re-verify)
+Task: "go" — third sandbox reboot found both servers auto-started but the parity DB wiped; root-cause the wipe, make the DB archive-proof, and re-verify the parity clone functionally end-to-end.
+
+Work Log:
+- Third reboot (up 3 min): platform auto-started BOTH dev servers (Task-34 finding re-confirmed) but with the default heavy env (max-old-space 2020 + source-maps) — main hit 1.64GB RSS within minutes; applied the proven dfork-launch.sh relaunch with 1024/1536 heap caps (both bun run dev chains PPID=1, reaper-proof; settled 1.19GB/1.06GB, headroom ~940MB)
+- PARITY DB WIPED: sign-in 500, Prisma "Error code 14: Unable to open the database file" — mini-services/hyper3d-clone-dev/db/ (the Task-34 durable path) was gone after the reboot while the package.json pin survived
+- ROOT CAUSE (smoking gun): the platform persists via /home/sync/repo.tar (captured at pre-stop; boot deletes /home/z/my-project except the upload mount and restores from tar — /start.sh lines 60-98). Live archive inspection: tar carries db/custom.db (main, GIT-TRACKED) but ZERO entries under mini-services/hyper3d-clone-dev/db/ — the mini-service's own .gitignore (db/*.db) excluded it from the archive. DURABILITY RULE: only git-tracked (or archive-carried) files survive reboots
+- ARCHIVE-PROOF FIX (supersedes Task-34 path): parity DB relocated to /home/z/my-project/db/hyper3d-clone.db (own filename — main boot's `bun run db:push` targets custom.db and would clobber a shared file), DATABASE_URL pin updated inside the mini-service package.json dev script, schema pushed with explicit CLI override, and the DB file GIT-ADDED (tracked = guaranteed archive carriage; re-stage after live changes)
+- FUNCTIONAL RE-VERIFICATION (browser, zero budget): sign-in 200 with fresh auto-seed (user 65dc60b5, 50 credits, 8 featured posters) → full parity surface confirmed (version selector Gen-1.5/2.5, efforts, presets, MATERIAL, private, batch gate, 11 direction slots, 6 export formats incl. FBX) → live generation task e2df69a8-6f46-404a-9b8a-494cbabbbe4f (opened from Sci-Fi Helmet featured context; DonePreview, 20.5s, 1,614 tokens, 3,044 triangles — real row verified by direct SQLite read of the NEW DB) → export byte-verified: GLB 200, 87,252 B, magic "glTF" binary v2 → wallet ledger honest (standard/local export free, balance stayed 50)
+- Browser-harness gotcha banked: the three.js viewer canvas overlays the studio tab bar at some scroll positions — real clicks get intercepted; keyboard nav (focus + ArrowRight) switches tabs reliably; export clicks need fresh coordinates (mouse move+down+up)
+- PUBLISHED ADDENDUM-5: https://paste.rs/KyCsF — 3,977 B, MD5 d13704aaa5105d308a5a8536f9e61553 round-trip EXACT — third-reboot root cause, archive rules, git-tracked DB recipe, heap-cap numbers, functional re-verify record, zero-cost statement
+- Report page updated: 10th durable pointer (KyCsF) + PARITY_STATUS gains a "Durability" row (archive-proof DB) + "Verified" line extended with task e2df69a8; lint clean; browser re-verified (10/10 pointers in served DOM, 4/4 posters, no horizontal scroll, zero page errors); full-page screenshot banked (research/out/report-page-addendum5.png)
+
+Stage Summary:
+- Parity data layer is now ARCHIVE-PROOF: git-tracked DB beside the main DB in /home/z/my-project/db/, carried by every repo.tar cycle — the reboot-survival matrix is complete (auto-start liveness + git-tracked data + optional dfork/heap-cap tuning)
+- Parity clone re-proven FUNCTIONALLY on the new DB: live generation → real task row → byte-verified GLB export, honest ledger, zero budget
+- Durable chain covers Tasks 1-35: Xd38J + MqCpa + JV66v + 7Bp8d + jGkVz + KyCsF, all MD5 round-trip verified
+- Outstanding unchanged: PAT-gated pushes (evidence payload + parity commit 30eb877 → production); zero budget consumed
