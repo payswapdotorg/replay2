@@ -389,3 +389,22 @@ Stage Summary:
 - New operational law banked and executed: never cold-compile both servers simultaneously on this box — stagger them (kernel-OOM root cause measured twice)
 - Evidence branch resynced through Task 38; durable chain covers Tasks 1-38: Xd38J + MqCpa + JV66v + 7Bp8d + jGkVz + KyCsF + w2wnq + cZEsB + T3u3Z — all MD5 round-trip verified
 - Zero budget consumed; no further operator action required
+---
+Task ID: 39
+Agent: lead (fifth-reboot remote-ahead recovery + snapshot-lag law)
+Task: "go" — post-reboot continuity: resync, re-verify, resync evidence.
+
+Work Log:
+- FIFTH REBOOT detected (boot ~15:32Z, up 1:35 at first check): platform auto-started both servers again (main 200 after one EADDRINUSE collision between double launch attempts; parity 200). But git state exposed a NEW failure mode: local main at ba97dc9 (13:00:18Z, third boot's pre-stop snapshot) while the evidence branch was already at dd0f7c5 (Task 38, committed 13:55:38Z on the fourth boot and PUSHED). Working tree missing ALL Task-38 file changes — the restore came from the older snapshot; the fourth boot's local commit was LOST LOCALLY but ALIVE ON GITHUB
+- SNAPSHOT-LAG LAW BANKED: repo.tar restore is not guaranteed to carry the newest local commits (the fourth boot's shutdown never produced a fresh capture — its three kernel OOMs the likely cause). The evidence branch + paste.rs chain are the ONLY durable truth. Push-first discipline vindicated
+- REMOTE-AHEAD RECOVERY (first time needed; all prior reboots were local-ahead): fetch → merge-base == local HEAD (0 ahead / 1 behind, ff possible) → worktree DB verified byte-identical to dd0f7c5's committed state via cmp → git stash push -- db (mode-bit only) → merge --ff-only → stash dropped. Post-ff: worklog regained Task 38, addendum-8 + screenshots restored, page hot-reloaded in 258 ms, DB untouched, only known never-pushed noise remained
+- FOURTH OOM OF THE MISSION (law refined): relaunched main with the 1024 cap while parity was resident (874 MB, ~2.59 GB available) — the WARM-cache recompile still spiked ~2.4 GB (dmesg 17:11:56Z: Killed pid 2983, anon-rss 2,367,292 kB). Turbopack recompile PEAK is cache-INDEPENDENT (warm cache shortens 25 s→11.6 s but not the peak). LAW REFINED: after ANY main restart, main compiles ALONE — stop parity first
+- SEQUENCED RECOVERY re-executed: parity stopped (available 3543 MB) → main solo 200, 11.6 s compile, survived the 35 s watch, settled 1885 MB / 1535 MB available → browser passes run with parity DOWN so the ≥1 GB Chromium-headroom law holds; parity relaunch deferred to after all browser work
+- BASELINE VERIFY (browser): report page Task-38 state — title "mission close-out (4/4) + workspace parity", 13/13 pointers incl. T3u3Z, "production LIVE" badge, HANDS-FREE + stagger text, zero page errors, console clean (DevTools/HMR info only), no hscroll at 375 AND 1280, sticky-footer pattern intact (min-h-screen flex flex-col; footer bottom == doc height 5264). Baseline screenshot banked (report-page-task39-baseline.png)
+- PUBLISHED ADDENDUM-9: https://paste.rs/r0v1O — 4,292 B, MD5 d3b4923cd9f32131f5271d155c1766bf round-trip EXACT; mirrored to research/out/ + research/ops-results/e2e20-harvest/; report page gains the 14th pointer + Durability row extended with the snapshot-lag finding
+
+Stage Summary:
+- Local repo resynced to the evidence branch (dd0f7c5) via the first remote-ahead ff recovery; the mission's durability model now has three proven reboot modes: clean restore, local-ahead push, remote-ahead ff
+- Two new laws banked: (1) SNAPSHOT-LAG — the evidence branch is the source of truth, push every session before ending; (2) warm-compile peak ~2.4 GB is cache-independent — main always compiles alone
+- Durable chain covers Tasks 1-39: Xd38J + MqCpa + JV66v + 7Bp8d + jGkVz + KyCsF + w2wnq + cZEsB + T3u3Z + r0v1O — all MD5 round-trip verified
+- Zero budget consumed; parity relaunch + golden-path check scheduled post-push; no further operator action required

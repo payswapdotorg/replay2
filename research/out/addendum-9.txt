@@ -1,0 +1,70 @@
+ADDENDUM 9 — Task 39: fifth reboot + THE SNAPSHOT-LAG LAW (remote is truth)
+===========================================================================
+Published: 2026-10-21 (session 8, "go") · Chain: Xd38J → MqCpa → JV66v → 7Bp8d → jGkVz → KyCsF → w2wnq → cZEsB → T3u3Z → THIS
+
+THE FIFTH REBOOT (~2026-10-21 15:32Z) AND WHAT THE RESTORE REVEALED
+-------------------------------------------------------------------
+Boot 5 landed while no session was watching (up 1:35 at first check).
+Platform auto-start again brought both servers up (main 200 serving, one
+EADDRINUSE collision in dev.log from a double launch attempt, winner alive;
+parity 200). But the git state exposed a NEW failure mode:
+- Local main sat at ba97dc9 (13:00:18Z — the THIRD boot's pre-stop snapshot)
+  while the evidence branch on GitHub was already at dd0f7c5 (Task 38,
+  committed 13:55:38Z on the FOURTH boot and pushed)
+- The working tree was missing ALL of Task 38's file changes (worklog section,
+  addendum-8, report-page updates) — the restore came from a snapshot taken
+  BEFORE the fourth boot's terminal state
+- READ: the fourth boot's local commit was LOST LOCALLY but ALIVE ON GITHUB.
+  The repo.tar pre-stop capture did not run (or did not survive) for the
+  fourth boot's shutdown — that session's three kernel OOMs are the likely
+  reason the box died without a clean capture
+
+THE SNAPSHOT-LAG LAW (new, hard-won)
+------------------------------------
+repo.tar restore is NOT guaranteed to carry the newest local commits. The
+evidence branch on GitHub (and the paste.rs chain) is the ONLY durable source
+of truth for continuity. PUSH-FIRST DISCIPLINE VINDICATED: every session
+must push its evidence commit before ending, because the next boot may
+restore a state hours older than the last local commit.
+
+REMOTE-AHEAD RECOVERY RECIPE (first time needed — all prior reboots were
+local-ahead or clean):
+1. git fetch origin harvest/e2e20-hyper3d — remote dd0f7c5, merge-base ==
+   local HEAD (local 0 ahead / 1 behind, no divergence, ff possible)
+2. git stash push -- db/hyper3d-clone.db (mode-bit-only local mod; content
+   byte-identical to dd0f7c5's committed DB — verified by cmp before acting)
+3. git merge --ff-only origin/harvest/e2e20-hyper3d → drop the stash
+4. Post-ff: worklog regains Task 38, addendum-8 + screenshots restored, page
+   hot-reloads in 258 ms, DB unchanged, only known never-pushed noise remains
+
+WARM-COMPILE LAW REFINED (the fourth OOM of the mission)
+--------------------------------------------------------
+Relaunching main with a WARM .next cache still spiked the Turbopack recompile
+to ~2.4 GB: dmesg 17:11:56Z "Out of memory: Killed process 2983 (next-server,
+anon-rss 2,367,292kB)" — with parity resident (874 MB) and ~2.59 GB available
+the ceiling still broke. CONCLUSION: the recompile PEAK (~2.4 GB) is
+cache-INDEPENDENT; warm cache only shortens duration (25 s → 11.6 s). LAW
+REFINED: after ANY main restart, main compiles ALONE — parity must be STOPPED
+first (sequenced recovery re-executed: parity down → main solo 200, 11.6 s
+compile, survived the 35 s watch, settled 1885 MB RSS / 1535 MB available →
+browser passes run with parity still DOWN so the ≥1 GB Chromium-headroom law
+holds → parity relaunch deferred to after all browser work).
+
+VERIFICATION (browser, zero budget)
+-----------------------------------
+Report page (Task-38 state) on the fast-forwarded tree: title "mission
+close-out (4/4) + workspace parity", 13/13 paste.rs pointers incl. T3u3Z,
+"production LIVE" badge, HANDS-FREE + stagger-law text in the Durability row,
+zero page errors, zero console errors (React DevTools/HMR info only), no
+horizontal scroll at 375 px AND 1280 px, sticky-footer pattern intact
+(min-h-screen flex flex-col root; footer bottom == document height 5264 —
+naturally pushed, no overlay). Baseline screenshot banked
+(research/out/report-page-task39-baseline.png).
+
+EVIDENCE SYNC
+-------------
+- This addendum is the 14th durable pointer on the report page; worklog gains
+  the Task-39 section; live DB re-staged if diverged (it did not — byte-
+  identical to dd0f7c5's committed state)
+- Pre-push secret scan re-run (13/13 vault values → 0 matches in tree)
+- Zero budget consumed. No further operator action required.
