@@ -1,0 +1,85 @@
+ADDENDUM 5 — Tasks 35: third-reboot DB wipe root cause + archive-proof fix + functional re-verify
+=========================================================================================
+Published: 2026-10-21 (session 4 continuation) · Chain: Xd38J → MqCpa → JV66v → 7Bp8d → jGkVz → THIS
+
+CONTEXT
+-------
+Third sandbox reboot in a row (up 3 min at session start). Both dev servers auto-started
+by the platform (tini /start.sh), as discovered in Task 34. But the parity instance's
+sign-in returned 500 — Prisma SQLite "Error code 14: Unable to open the database file".
+The Task-34 durable DB (mini-services/hyper3d-clone-dev/db/custom.db, DATABASE_URL pinned
+inside the mini-service package.json dev script) was GONE.
+
+ROOT CAUSE (definitive, smoking-gun evidence)
+--------------------------------------------
+The platform persists the project across reboots via an archive: at pre-stop the project
+is captured to /home/sync/repo.tar; at boot /home/z/my-project is DELETED (except the
+upload mount) and restored from that tar (start.sh lines ~60-98).
+
+Proof from the live archive (captured 09:46, restored 10:08):
+  tar tf /home/sync/repo.tar | grep db/
+    → contains  db/custom.db                    (main project DB — GIT-TRACKED)
+    → contains  ZERO entries under mini-services/hyper3d-clone-dev/db/
+The mini-service's own .gitignore (line 9: "db/*.db") made its DB untracked+ignored →
+excluded from the archive → wiped at every boot. The main project's .gitignore is narrow
+(skills/ + node_modules/ only — start.sh "auto-heal" rewrites broader versions), so its
+db/ directory IS carried.
+
+DURABILITY RULE (empirical): a file survives reboots iff it is git-tracked (or in a
+directory the archive demonstrably carries). Gitignored runtime state does not survive.
+
+FIX (archive-proof, supersedes Task-34's path)
+----------------------------------------------
+1. Parity DB relocated to the main project's db/ folder under its own filename:
+     /home/z/my-project/db/hyper3d-clone.db
+   (distinct from custom.db — the main project's boot step `bun run db:push` targets
+   custom.db via .env and would clobber a shared file's schema)
+2. DATABASE_URL pin inside mini-services/hyper3d-clone-dev/package.json dev script
+   updated to the new path (script-level env still beats platform env — Task-34 finding
+   unchanged)
+3. The DB file is GIT-ADDED (tracked) → guaranteed archive carriage. After any live
+   change (seed, generations) re-stage: git add db/hyper3d-clone.db
+4. Schema pushed with explicit CLI override:
+     DATABASE_URL=file:/home/z/my-project/db/hyper3d-clone.db bun run db:push
+
+HEAP-CAP TUNING REAPPLIED (Task-33/34 playbook)
+-----------------------------------------------
+Platform auto-start uses NODE_OPTIONS=--max-old-space-size=2020 --enable-source-maps —
+main hit 1.64GB RSS and climbing within minutes on the 4GB box. Both servers relaunched
+via research/dfork-launch.sh (double-fork, PPID=1, reaper-proof):
+  main  : NODE_OPTIONS=--max-old-space-size=1024  (settled ~1.19GB RSS)
+  parity: NODE_OPTIONS=--max-old-space-size=1536  (settled ~1.06GB RSS)
+  headroom ~940MB available. (The "--enable-source-maps" seen on next-server children is
+  Next.js 16's own addition; the heap cap is what protects the box.)
+
+FUNCTIONAL RE-VERIFICATION (browser, zero budget)
+-------------------------------------------------
+- Sign-in demo@hyper3d.clone / demo1234 → 200, fresh auto-seed in the NEW DB
+  (user 65dc60b5, 50 credits, 8 featured demo posters)
+- Full parity control surface present: Gen-1.5/Gen-2.5 selector, efforts, presets,
+  MATERIAL PBR/Shaded/All/None, private toggle, batch BUSINESS gate, direction slots
+  (FL/F/FR/L/UP/R/BL/B/BR/DN/?), all 6 export formats incl. FBX
+- Live generation (task e2df69a8-6f46-404a-9b8a-494cbabbbe4f, opened from the Sci-Fi
+  Helmet featured context): DonePreview, elapsed 20.5s, 1,614 tokens, 3,044 triangles —
+  real Task row written to the NEW DB (verified by direct SQLite read)
+- Export byte-verified: GET /api/task/e2df69a8.../export?format=glb → 200, 87,252 B,
+  magic "glTF" binary v2. Wallet ledger honest: standard/local-engine export free,
+  balance stayed 50
+- Report page (main :3000) re-verified after restart: 9→10 durable pointers, parity
+  section, 4/4 posters lazy-load, sticky footer correct, zero console errors
+
+OPS KNOWLEDGE BANKED
+--------------------
+- Reboot survival matrix: platform auto-start (liveness) + git-tracked state (data) +
+  dfork+heap-cap relaunch (memory tuning, optional post-boot step)
+- The parity DB now lives NEXT TO the main DB in /home/z/my-project/db/ — one location
+  to back up, carried by every archive
+- Browser-side gotcha documented: the three.js viewer canvas can overlay the studio
+  tab bar at some scroll positions; keyboard navigation (focus + ArrowRight) is the
+  reliable tab switch in verification harnesses
+
+ZERO-COST STATEMENT
+-------------------
+No paid API was touched in this session. All verification used the local fast engine,
+local demo credits, and local storage. Budget consumed: 0. The only outstanding
+operator action remains the PAT-gated pushes (evidence payload + parity commit 30eb877).

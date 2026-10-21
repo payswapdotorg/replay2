@@ -23,7 +23,8 @@ const PARITY_OPTIONS = [
 const PARITY_STATUS = [
   { k: "Try it now", v: "Preview panel → /?XTransformPort=3210 — the parity instance runs the full workspace" },
   { k: "Sign in", v: "demo@hyper3d.clone / demo1234 (local demo credits — generation is free here)" },
-  { k: "Verified", v: "Golden path + private/material settings on card c68233f8 · redo lineage ba7b7cdd · quota 20→19 · FBX byte-checked — re-verified post-recovery: task 334fd3d0 (PBR + FR view + private, GLB + FBX byte-checked, credits 50→49)" },
+  { k: "Verified", v: "Golden path + private/material settings on card c68233f8 · redo lineage ba7b7cdd · quota 20→19 · FBX byte-checked — re-verified post-recovery: task 334fd3d0 (PBR + FR view + private, GLB + FBX byte-checked, credits 50→49) — re-verified after 3rd reboot on the archive-proof DB: task e2df69a8 (live generation, GLB 87,252 B byte-checked)" },
+  { k: "Durability", v: "DB now git-tracked at /home/z/my-project/db/hyper3d-clone.db — survives the platform's archive-restore reboots (root cause of the Task-34 path wipe: gitignored files are excluded from repo.tar)" },
   { k: "Production", v: "PAT-gated: commit 30eb877 staged on top of public main 5dc716e — push → Vercel auto-deploy; hyper3d-clone.vercel.app still runs main" },
 ];
 
@@ -95,6 +96,7 @@ const DURABLE = [
   { label: "Poster 04 · final", href: "https://paste.rs/4dfU4", note: "216,637 B round-trip exact" },
   { label: "Addendum 3 — workspace parity + incident recovery (MD5-verified)", href: "https://paste.rs/7Bp8d", note: "paste.rs/7Bp8d — Task 32 parity record · Task 33 OOM/reaper recovery · relaunch recipe" },
   { label: "Addendum 4 — durable DB pin + post-recovery golden path (MD5-verified)", href: "https://paste.rs/jGkVz", note: "paste.rs/jGkVz — Task 34 · platform auto-start discovery · task 334fd3d0 with FR view + PBR + private" },
+  { label: "Addendum 5 — archive-proof DB + third-reboot re-verify (MD5-verified)", href: "https://paste.rs/KyCsF", note: "paste.rs/KyCsF — Task 35 · repo.tar exclusion root cause · git-tracked DB fix · task e2df69a8 GLB byte-checked" },
 ];
 
 export default function Home() {

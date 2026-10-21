@@ -351,3 +351,23 @@ Stage Summary:
 - The parity clone is now proven FUNCTIONALLY post-recovery, not just rendering: a full user golden path exercised upload→caption, the direction-slot picker (FR recorded), presets, material, private, honest fallback, pay-by-result confirm, and byte-verified GLB+FBX exports
 - Durable chain covers Tasks 1-34: Xd38J + MqCpa + JV66v + 7Bp8d + jGkVz, all MD5 round-trip verified
 - Outstanding unchanged: PAT-gated pushes (evidence payload + parity commit 30eb877 → production); zero budget consumed
+
+---
+Task ID: 35
+Agent: lead (third-reboot DB wipe root cause + archive-proof fix + re-verify)
+Task: "go" — third sandbox reboot; both servers auto-started but the parity DB was wiped. Root-cause the wipe, make the DB archive-proof, re-verify functionally.
+
+Work Log:
+- Third reboot: platform auto-started both dev servers (heavy default env — main 1.64GB RSS); reapplied dfork-launch.sh relaunch with 1024/1536 heap caps (both chains PPID=1; settled 1.19GB/1.06GB, ~940MB headroom)
+- Parity DB wiped (sign-in 500, Prisma error 14): mini-services/hyper3d-clone-dev/db/ gone after reboot while the package.json pin survived
+- ROOT CAUSE (smoking gun): platform persists via /home/sync/repo.tar (pre-stop capture; boot wipes + restores /home/z/my-project). Live archive inspection: carries db/custom.db (main, GIT-TRACKED) but ZERO mini-service db/ entries — the mini-service .gitignore (db/*.db) excluded it. Durability rule: only git-tracked/archive-carried files survive reboots
+- ARCHIVE-PROOF FIX: parity DB relocated to /home/z/my-project/db/hyper3d-clone.db (own filename; main boot db:push targets custom.db), DATABASE_URL pin updated in the mini-service package.json dev script, schema pushed with explicit CLI override, DB file git-added (tracked = archive-carried)
+- FUNCTIONAL RE-VERIFY (browser, zero budget): sign-in 200 (fresh auto-seed: 50 credits, 8 featured posters) → full parity surface (Gen-1.5/2.5, efforts, presets, MATERIAL, private, batch gate, 11 direction slots, 6 export formats) → live generation task e2df69a8 (DonePreview, 20.5s, 1,614 tokens, 3,044 tris — row verified in NEW DB by direct SQLite read) → export byte-verified GLB 200, 87,252 B, magic "glTF" v2 → honest ledger (standard/local export free, balance 50)
+- ADDENDUM-5 PUBLISHED: https://paste.rs/KyCsF — MD5 d13704aaa5105d308a5a8536f9e61553 round-trip EXACT
+- Report page: 10th pointer (KyCsF) + "Durability" status row + e2df69a8 in Verified line; lint clean; browser-verified (10/10 pointers in DOM, 4/4 posters, no hscroll, zero errors); screenshot report-page-addendum5.png
+
+Stage Summary:
+- Parity data layer ARCHIVE-PROOF: git-tracked DB beside the main DB; reboot-survival matrix complete (auto-start liveness + git-tracked data + optional dfork/heap-cap tuning)
+- Parity clone re-proven FUNCTIONALLY on the new DB (live generation → real row → byte-verified GLB); zero budget
+- Durable chain covers Tasks 1-35: Xd38J + MqCpa + JV66v + 7Bp8d + jGkVz + KyCsF
+- Outstanding unchanged: PAT-gated pushes (evidence payload + parity commit 30eb877); zero budget consumed
