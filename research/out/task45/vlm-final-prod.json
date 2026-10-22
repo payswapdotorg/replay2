@@ -1,0 +1,28 @@
+{
+  "choices": [
+    {
+      "finish_reason": "stop",
+      "index": 0,
+      "message": {
+        "content": "(1) MATCH\n(2) DIFF: \"Add On\" icon is larger and positioned differently in the clone\n(3) MATCH\n(4) MATCH\n(5) DIFF: Flanking icons differ (lock vs lock, x1 > vs x1 >, link vs settings)\n(6) DIFF: Icons for OFF and High settings differ (eye vs monitor, lightning vs diamond)\n(7) MATCH\n(8) DIFF: Cookie card has a purple border in the clone but not the original\n(9) MATCH\nSCORE: 8",
+        "role": "assistant"
+      }
+    }
+  ],
+  "created": 1792642097,
+  "id": "20261022120814dda31539a5114908",
+  "model": "glm-5v-turbo",
+  "object": "chat.completion",
+  "request_id": "20261022120814dda31539a5114908",
+  "usage": {
+    "completion_tokens": 115,
+    "completion_tokens_details": {
+      "reasoning_tokens": 0
+    },
+    "prompt_tokens": 3480,
+    "prompt_tokens_details": {
+      "cached_tokens": 2
+    },
+    "total_tokens": 3595
+  }
+}

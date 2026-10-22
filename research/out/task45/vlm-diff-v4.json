@@ -1,0 +1,28 @@
+{
+  "choices": [
+    {
+      "finish_reason": "stop",
+      "index": 0,
+      "message": {
+        "content": "(1) topbar: MATCH\n(2) subnav pill: DIFF: 'Video' pill lacks the red dot indicator\n(3) hero wordmark+tab+quotes: MATCH\n(4) mode rail + input card + tools rail: MATCH\n(5) GENERATE capsule row incl. flanking icons: DIFF: right-side icons differ (arrow vs settings gear, and x1 badge style)\n(6) controls row: DIFF: 'High' icon is a diamond instead of a lightning bolt; overall row spacing/alignment differs slightly\n(7) ASSET/EXPLORE header: MATCH\n(8) cookie card: DIFF: missing top border glow/shadow styling on the card container\n(9) overall darkness/contrast: MATCH\nSCORE: 7",
+        "role": "assistant"
+      }
+    }
+  ],
+  "created": 1792641709,
+  "id": "20261022120145efb92e82b2834d6d",
+  "model": "glm-5v-turbo",
+  "object": "chat.completion",
+  "request_id": "20261022120145efb92e82b2834d6d",
+  "usage": {
+    "completion_tokens": 162,
+    "completion_tokens_details": {
+      "reasoning_tokens": 0
+    },
+    "prompt_tokens": 3479,
+    "prompt_tokens_details": {
+      "cached_tokens": 0
+    },
+    "total_tokens": 3641
+  }
+}

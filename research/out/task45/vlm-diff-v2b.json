@@ -1,0 +1,28 @@
+{
+  "choices": [
+    {
+      "finish_reason": "stop",
+      "index": 0,
+      "message": {
+        "content": "(1) topbar logo+pill+nav: MATCH\n(2) subnav pill: DIFF: 'Video' pill has a different dropdown icon style (chevron vs. lines)\n(3) hero wordmark+tab+quotes: MATCH\n(4) mode rail + input card + tools rail: MATCH\n(5) GENERATE capsule row: DIFF: missing the lock icon and x1/chain icons on either side of the GENERATE button\n(6) controls row chips: DIFF: 'Agentic Mode' chip is present with extra text, 'Gen-2.5' chip text is longer, and a user/settings icon is added to the right of the 'High' chip\n(7) ASSET/EXPLORE header: MATCH\n(8) cookie card bottom-right: MATCH\n(9) overall darkness/contrast/atmosphere: MATCH\n\nSCORE: 8",
+        "role": "assistant"
+      }
+    }
+  ],
+  "created": 1792641277,
+  "id": "20261022115431385a632fe9514e3f",
+  "model": "glm-5v-turbo",
+  "object": "chat.completion",
+  "request_id": "20261022115431385a632fe9514e3f",
+  "usage": {
+    "completion_tokens": 186,
+    "completion_tokens_details": {
+      "reasoning_tokens": 0
+    },
+    "prompt_tokens": 3508,
+    "prompt_tokens_details": {
+      "cached_tokens": 0
+    },
+    "total_tokens": 3694
+  }
+}

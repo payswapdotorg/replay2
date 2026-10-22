@@ -1,0 +1,28 @@
+{
+  "choices": [
+    {
+      "finish_reason": "stop",
+      "index": 0,
+      "message": {
+        "content": "**Visual Diff: Original (Image 1) vs. Clone (Image 2)**\n\n**(1) Top Bar (Logo, Pills, Links, Right-side items)**\n*   **Primary Action Pill:** Image 1 has a dark, semi-transparent \"Subscribe\" pill. Image 2 has a bright gradient \"7-Day Trial\" pill (pink-to-blue).\n*   **\"Add On\" Link:** In Image 1, \"Add On\" is followed by a small orange circle icon with a white play/arrow inside. In Image 2, the text is just \"Add On\" with no accompanying icon.\n*   **Logo Icon:** The Hyper3D logo icon in Image 1 is solid white. In Image 2, it appears slightly lighter or has a subtle outline/glow effect.\n\n**(2) Subnav (Avatar / 3D / Video)**\n*   **Video Dropdown:** The \"Video\" tab in Image 1 has a small red dot next to it and a hamburger menu icon (three lines). In Image 2, it only has a standard downward-pointing chevron (v) and no red dot.\n*   **Active State:** Both show \"3D\" as the active tab with a darker background. This section matches well structurally, but the icons differ.\n\n**(3) Hero Area (Wordmark, Tabs, Quotes)**\n*   **Version Tags:** Underneath the main \"Rodin\" wordmark, Image 1 only displays \"Gen-2.5 Agent-Ready •\". Image 2 displays *two* tags side-by-side: \"Gen-1.5 V1.2\" (greyed out/inactive) and \"Gen-2.5 Agent-Ready •\" (active).\n*   **Background Blur/Glow:** The central background glow behind the \"Rodin\" text in Image 1 is softer and more diffused. In Image 2, the glow is noticeably sharper, more concentrated, and has a slightly more purple/magenta tint.\n\n**(4) Input Card Cluster (Mode rail, card, upload, prompt, pill, tools rail)**\n*   **Left Rail Icons:**\n    *   **WorldGen:** Image 1 uses a globe icon labeled \"Worldcoen\". Image 2 uses a globe icon labeled \"WorldGen\".\n    *   **Image to 3D:** The icon in Image 1 looks like a framed picture. In Image 2, it's a simpler square-with-mountain icon.\n*   **Right Tools Rail (Vertical icons):** \n    *   **Top Icon (Eraser):** In Image 1, this is an eraser/wand icon with a small orange notification badge containing the number \"4\". In Image 2, it's a similar icon but the badge contains a red dot (or \"1\", it's smaller/different).\n    *   **Bottom Icon:** The bottom-most icon on the right rail in Image 1 looks like stacked layers or a box. In Image 2, it looks like three horizontal lines (layers/menu).\n*   **Card Styling:** The main \"Image to 3D\" card in Image 1 has a very dark, near-black background. In Image 2, the card background is visibly lighter (a lighter shade of grey/purple).\n\n**(5) GENERATE Capsule Area**\n*   **Layout & Surroundings:**\n    *   **Lock Icon:** In Image 1, there is a lock icon (padlock) to the left of the GENERATE button. This icon is completely missing in Image 2.\n    *   **Right-side Controls:** To the right of the GENERATE button, Image 1 has a \"x1\" chip with arrows and a link/share icon. Image 2 moves the \"High\" dropdown here (with an up-arrow), places the \"x1\" chip below it, and adds a \"5 min\" timer chip and a \"Sign in to start\" button.\n    *   **Button Text Color:** The \"GENERATE\" text in Image 1 is white. In Image 2, the text is a darker shade (dark grey/purple), providing less contrast against the button's light gradient background.\n\n**(6) Controls Row Chips**\n*   **Content & Order:** This row is drastically different.\n    *   **Image 1 (Left to Right):** Eye icon (\"OFF\"), Model selector (\"< Gen-2. >\"), Quality/Style icon (\"High\" with diamond).\n    *   **Image 2 (Left to Right):** Lightning bolt (\"OFF\"), Text label (\"Agentic Mode\"), Model selector (\"< Gen-2.5 Agent-Ready >\"), Quality (\"High\" with diamond), Timer (\"5 min\"), CTA (\"Sign in to start\").\n*   **Model Chip Text:** Image 1 says \"Gen-2.5\". Image 2 says \"Gen-2.5 Agent-Ready\".\n\n**(7) Colors/Atmosphere/Lighting**\n*   **Overall Contrast:** Image 1 has deeper blacks and higher contrast. Image 2 is generally brighter, with lifted blacks (the background isn't as dark).\n*   **Cookie Banner Buttons:** \n    *   \"Accept all\": Image 1 is a deep, vibrant purple/blue. Image 2 is a lighter, more pastel lavender/purple.\n    *   \"Preferences\": Image 1 is white with a thin border. Image 2 is also white but appears to have a slightly different border weight or shadow.\n*   **Bottom Section (Asset/Explore):** \n    *   Image 1 shows empty space below the tabs.\n    *   Image 2 populates this area with actual content cards (thumbnails of 3D models) and a search bar (\"Filter\") on the right. It also adds a floating \"N\" profile icon in the bottom left corner.\n\n**Overall Similarity Score: 6/10**\n*(The clone captures the general layout and \"vibe\" of the hero section perfectly, but fails significantly on specific UI states, text content, auxiliary buttons, and the populated bottom section.)*",
+        "role": "assistant"
+      }
+    }
+  ],
+  "created": 1792639788,
+  "id": "2026102211292366c3708490bc437c",
+  "model": "glm-5v-turbo",
+  "object": "chat.completion",
+  "request_id": "2026102211292366c3708490bc437c",
+  "usage": {
+    "completion_tokens": 1259,
+    "completion_tokens_details": {
+      "reasoning_tokens": 0
+    },
+    "prompt_tokens": 3524,
+    "prompt_tokens_details": {
+      "cached_tokens": 0
+    },
+    "total_tokens": 4783
+  }
+}

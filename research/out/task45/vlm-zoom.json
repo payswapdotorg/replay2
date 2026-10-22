@@ -1,0 +1,28 @@
+{
+  "choices": [
+    {
+      "finish_reason": "stop",
+      "index": 0,
+      "message": {
+        "content": "(1) Yes, it has a purple (or violet) border/glow on its top edge.\n(2) Left of GENERATE: an open padlock icon. Right of GENERATE (in order): a \"x1\" chip with a right chevron/arrow; a settings/sliders icon. In the controls row below: the OFF chip contains a robot/AI head icon with sparkles; next to the word \"High\" is a diamond or rhombus shape icon.\n(3) Yes, there is a hamburger menu icon (three horizontal lines) at the right end of the pill after the word Video.",
+        "role": "assistant"
+      }
+    }
+  ],
+  "created": 1792641632,
+  "id": "202610221200300d9b10d2e0ed47d2",
+  "model": "glm-5v-turbo",
+  "object": "chat.completion",
+  "request_id": "202610221200300d9b10d2e0ed47d2",
+  "usage": {
+    "completion_tokens": 129,
+    "completion_tokens_details": {
+      "reasoning_tokens": 0
+    },
+    "prompt_tokens": 1159,
+    "prompt_tokens_details": {
+      "cached_tokens": 2
+    },
+    "total_tokens": 1288
+  }
+}

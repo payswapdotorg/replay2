@@ -1,0 +1,28 @@
+{
+  "choices": [
+    {
+      "finish_reason": "stop",
+      "index": 0,
+      "message": {
+        "content": "(1) MATCH\n(2) DIFF: Missing the menu icon on the right side of the pill\n(3) DIFF: \"Rodin\" text color is light gray instead of white\n(4) MATCH\n(5) DIFF: Icons to the right of GENERATE button differ (settings icon instead of link icon)\n(6) DIFF: \"High\" chip uses a diamond icon instead of a lightning bolt icon; \"OFF\" chip uses a different icon style\n(7) MATCH\n(8) DIFF: Cookie card has a purple top border in the clone, missing in original\n(9) MATCH\nSCORE: 7",
+        "role": "assistant"
+      }
+    }
+  ],
+  "created": 1792641581,
+  "id": "202610221159389d75ab0dcfec44d6",
+  "model": "glm-5v-turbo",
+  "object": "chat.completion",
+  "request_id": "202610221159389d75ab0dcfec44d6",
+  "usage": {
+    "completion_tokens": 132,
+    "completion_tokens_details": {
+      "reasoning_tokens": 0
+    },
+    "prompt_tokens": 3503,
+    "prompt_tokens_details": {
+      "cached_tokens": 2
+    },
+    "total_tokens": 3635
+  }
+}
