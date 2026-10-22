@@ -595,3 +595,22 @@ Stage Summary:
 - Production LIVE at 17b8499 (Vercel READY, Neon schema synced additively); ship repo == origin/main; dev tree byte-identical
 - 18-route curl battery + parity walkthrough + prod walkthrough all green; golden path re-regressed end-to-end (parity); zero budget consumed on the demo wallets beyond the local test task + 1 confirm
 - Laws banked: running Prisma clients go stale across schema pushes — restart the server after db:push; synthetic form submits race React state batching — use real key events; the Vercel env decrypt path works for first-party prod DDL (additive-first order)
+
+---
+
+Task ID: 48 (post-restart closure addendum)
+Agent: main (Z.ai Code session — post-restart live re-verification)
+Task: Machine restarted; re-verify the Task 48 backend surface is live and intact before reporting completion.
+
+Work Log:
+- Session conventions: uptime 1min (fresh boot), both instances 200; evidence repo 1 unpushed found (previous session's push convention is `main:harvest/e2e20-hyper3d`, not the bare branch name — the restart-left HEAD is local `main`)
+- Tree hygiene: 218 "modified" files were restart artifacts — 217 mode-only (100644→100755) + 1 runtime dev.pid; neutralized via `core.fileMode=false`, dev.pid committed as 8c689bc, pushed (0 unpushed both repos)
+- PRODUCTION battery (hyper3d-clone.vercel.app @ ship 17b8499): landing 200; healthz DB reachable + AI keys present; gallery envelope page 1 (seed-g01-mech first) + page 2 offset=8 (poster seeds, total 16, has_more:false); search q=mech → 2; sort=liked → 16 total, Scout Mech first; guest like → 401; sign-in demo → get_info balance 18 + redo 20/6; like round-trip 49→50→49 (state left clean)
+- PARITY battery (:3210): healthz OK; sign-in → balance 43 + redo 19/6; gallery 16; guest like 401; sign-up fresh account → 40 credits, duplicate → 409, weak password → 400; 2nd-user like independence verified (unique constraint holds); state restored (49)
+- Secret scan: 13/13 vault values × tree = 0 violations. LAW BANKED: `sh -c 'grep "$1" ...' "$v"` passes $v as $0 — $1 stays empty, `grep -F ""` matches every file, mass false-positive; use `git ls-files -z | xargs -0 grep -l -F -- "$v"` directly
+- dev.log both instances clean; parity Prisma trace shows the like transaction exactly as designed (BEGIN IMMEDIATE → DELETE Like → UPDATE likeCount → COMMIT)
+- BROWSER smoke (memory managed: main :3000 restart freed 1649MB→2329MB available; parity target): Rodin title, 8 figures + Load More → click → 16 figures + button hidden at exhaustion; guest like → sign-in panel (1 email input); panel sign-in demo → "demo creator" signed in; like Scout Mech 49→50 aria-pressed=true → unlike → DB 49 restored; zero page errors; evidence t48-p13-postrestart-browser.png
+
+Stage Summary:
+- Task 48 backend surface fully live post-restart on BOTH parity (SQLite) and production (Neon) — no code changes needed; ship 17b8499 remains LIVE; evidence 8c689bc pushed; tree clean, 0 unpushed both repos
+- Standing push convention confirmed: evidence repo pushes `git push origin main:harvest/e2e20-hyper3d`
