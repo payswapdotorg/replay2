@@ -1,0 +1,28 @@
+{
+  "choices": [
+    {
+      "finish_reason": "stop",
+      "index": 0,
+      "message": {
+        "content": "**Score: 8/10**\n\n1. **Top Navigation Tab State**: The \"3D\" tab in the top center pill is active (white) in the reference, but the clone shows \"Video\" with a dropdown arrow instead of \"Image\".\n2. **Sub-header Version Selector**: The reference shows only \"Gen-2.5 Agent-Ready\" below the title; the clone incorrectly displays a version toggle including \"Gen-1.5 V1.2\".\n3. **Bottom Control Bar Layout & Content**: The reference has an \"OFF\" toggle and specific icons (lock, x1). The clone replaces this with \"Agentic Mode\", adds \"5 min\" duration, and moves the \"High\" dropdown to the right of the Generate button.\n4. **Generate Button Styling**: The reference button is wider with a distinct purple-to-pink gradient glow; the clone's button is narrower and the gradient/blur effect is less pronounced.\n5. **Central Card Header**: The reference includes a small image icon next to the \"Image to 3D\" text inside the main upload card; this icon is missing in the clone.",
+        "role": "assistant"
+      }
+    }
+  ],
+  "created": 1792632148,
+  "id": "20261022092223eb1a8550de1146ed",
+  "model": "glm-5v-turbo",
+  "object": "chat.completion",
+  "request_id": "20261022092223eb1a8550de1146ed",
+  "usage": {
+    "completion_tokens": 235,
+    "completion_tokens_details": {
+      "reasoning_tokens": 0
+    },
+    "prompt_tokens": 3425,
+    "prompt_tokens_details": {
+      "cached_tokens": 2
+    },
+    "total_tokens": 3660
+  }
+}

@@ -1,0 +1,28 @@
+{
+  "choices": [
+    {
+      "finish_reason": "stop",
+      "index": 0,
+      "message": {
+        "content": "**Parity Scoring:**\n*   **Topbar:** 9/10 (Trial button color is lighter/pinkish in clone vs. dark blue).\n*   **Subnav + Hero:** 8/10 (Subnav shows \"Video\" instead of \"Image\"; Hero subtitle includes \"Gen-1.5 V1.2\").\n*   **Input Card Cluster:** 10/10 (Identical layout and icons).\n*   **GENERATE Capsule:** 10/10 (Visual match).\n*   **Controls Row:** 7/10 (Clone adds \"Agentic Mode\", \"5 min\", \"Sign in to start\", and changes model text).\n*   **Overall First Impression:** 8/10.\n\n**Remaining Differences:**\nThe sub-navigation tab has changed from **\"Image\"** to **\"Video\"**. The hero subtitle now displays **\"Gen-1.5 V1.2\"** alongside the original text. The bottom controls row is significantly different, featuring an **\"Agentic Mode\"** toggle, a **\"5 min\"** timer pill, a **\"Sign in to start\"** button, and updated labeling for the model version (**\"Gen-2.5 Agent-Ready\"**) and quality setting (**\"High\"** with a dropdown arrow). The **\"Featured\"** button under the Asset header has shifted slightly right.",
+        "role": "assistant"
+      }
+    }
+  ],
+  "created": 1792632444,
+  "id": "20261022092719ae0b68a6517f4ec6",
+  "model": "glm-5v-turbo",
+  "object": "chat.completion",
+  "request_id": "20261022092719ae0b68a6517f4ec6",
+  "usage": {
+    "completion_tokens": 287,
+    "completion_tokens_details": {
+      "reasoning_tokens": 0
+    },
+    "prompt_tokens": 3450,
+    "prompt_tokens_details": {
+      "cached_tokens": 2
+    },
+    "total_tokens": 3737
+  }
+}
