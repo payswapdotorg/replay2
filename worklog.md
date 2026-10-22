@@ -614,3 +614,21 @@ Work Log:
 Stage Summary:
 - Task 48 backend surface fully live post-restart on BOTH parity (SQLite) and production (Neon) — no code changes needed; ship 17b8499 remains LIVE; evidence 8c689bc pushed; tree clean, 0 unpushed both repos
 - Standing push convention confirmed: evidence repo pushes `git push origin main:harvest/e2e20-hyper3d`
+
+---
+
+Task ID: 48 (infra incident closure — the "reaper" was OOM all along)
+Agent: main (Z.ai Code session — main :3000 relaunch failures, root-caused and fixed)
+Task: Restore main :3000 after the memory-freeing restart; five consecutive relaunch attempts died in 30-150s regardless of launch method.
+
+Work Log:
+- ATTEMPTS (all died): dfork+& (2329MB free at launch), dfork foreground, setsid (own session/pgid verified), setsid --fork (orphan to tini), boot-tree spawn via a temporary parity API route (parent = boot-born next-server) — each served 200 through compile, then silently died; dev.log ends mid-idle, no crash trace
+- DEBUNKING SEQUENCE: (1) port-guard theory — python http.server on :3000 survived both 127.0.0.1 AND 0.0.0.0 binds past the window → dead; (2) node/bun-process killer theory — bare node + bun keepalives from my shell survived → dead; (3) generic session reaper theory — sleep-900 survivor + python on :3999 survived → dead; (4) fork-attribution theory — contradicted by prior session's 2h-lived dfork launch
+- ROOT CAUSE: `dmesg | grep "Out of memory: Killed"` — FOUR OOM kills of next-server processes, anon-rss 2148-2226MB each. Every Next.js relaunch pays a ~2.1-2.2GB Turbopack compile spike for `/` (cold .next); residents ≈ 1.8-2.0GB (parity next-server 1GB + gateway 130MB + replayd 60MB + base) on a 4041MB box → the spike overflows, OOM killer picks the fattest RSS = the compiling server. The "30-150s death window" = spike peaks during my own curl-triggered compile and lingers as Turbopack holds the graph until the kernel tips. NODE_OPTIONS heap caps do NOT bound the native/Turbopack side (all caps 768-1024 still spiked 2.2GB). NOTE: boot survived its compile because parity had not yet ballooned when main compiled — pure timing luck
+- FIX (sequenced relaunch): kill parity tree (spare replayd) → 3521MB free → main dfork launch (cap 640) → compile spike ~2.1GB fits (1426MB still free) → settle → parity relaunch on its warm .next cache (cheap incremental, no cold spike) → both 200. Steady state: 801MB available, zero new OOM events across the 4-minute stability window
+- POST-FIX SMOKE: parity healthz (zai backend, DB reachable), gallery total 16, demo auth balance 43 — relaunch preserved DB/seeds/function; replayd :3100 gateway ALIVE (its python CDP core :3110 was never started this boot — pre-existing state from another wave, outside this task's scope, noted honestly)
+- CLEANUP: test processes (sleep/python×3/node/bun keepalives) killed; temporary t48-relaunch route deleted from parity dev tree (byte-identity with ship re-verified: diff = 0); dev.pid → 22521 (main bun, tini-parented)
+
+Stage Summary:
+- LAW CORRECTED: there is no session reaper killing spawned servers on this box — the dfork docstring's reaper narrative does NOT explain this failure class. When a spawned server dies 30-150s post-launch with a silent log: run `dmesg | grep "Out of memory"` FIRST. The box (4GB) fits main+parity only when neither is paying a cold-compile spike; relaunch sequencing (free → compile → settle → co-start) is the operative discipline. Both servers now carry warm .next caches, making future relaunches cheap
+- main :3000 = 200 (mission dashboard), parity :3210 = 200 (the clone, functionally verified), replayd gateway alive, production (Vercel @ 17b8499) = 200 all session
