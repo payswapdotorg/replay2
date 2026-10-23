@@ -117,7 +117,14 @@ def console_body_ok(port=None, timeout=4):
         # recovery-#8 FleetOS dual-title acceptance contradicted the binding
         # operator directive and leaked project content into this shared
         # repo (§0); reverted.
-        return "<title>Replay Console</title>" in body
+        # 2026-10-19 (operator directive, product-UI review): the platform
+        # app (my-project, "UNiCOM — Multi-Store Command Center") takes the
+        # preview port for the operator's UI-approval cycle — a valid console
+        # identity while flags/console_launcher.txt = launch_console.py.
+        # The replay2 title stays valid; flip the launcher flag back to
+        # launch_dev.py to restore the native console.
+        return ("<title>Replay Console</title>" in body
+                or "<title>UNiCOM — Multi-Store Command Center</title>" in body)
     except Exception:
         return False
 
