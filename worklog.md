@@ -648,3 +648,17 @@ Work Log:
 Stage Summary:
 - Reference is drift-free except the two micro-gaps found and closed; the clone's topbar now matches the reference at the behavioral level (animated DCC carousel + trial-first pill), shipped as f462471 LIVE on Vercel and browser-verified
 - Laws banked: git core.fileMode must be re-applied after each reboot; CSSOM selectorText contains escaped colons (`group-hover\:opacity-100`) — plain-string searches miss them; 300ms CSS transitions need settle-time before post-cleanup sampling (mid-flight reads show stale values)
+
+---
+
+Task ID: 49 (addendum — boot-race OOM + relaunch + a new kill law)
+Agent: main (Z.ai Code session)
+
+Work Log:
+- This boot's main :3000 OOM'd at 313s (boot-race: main's compile overlapped parity's balloon — last boot won the same race by timing luck). First relaunch OOM'd too (the OOM-killed server left .next invalid → full 2.2GB re-spike vs parity's 981MB steady — margin too thin)
+- Fixed with the banked sequenced recipe: parity down (3530MB free) → main dfork-launch cap 640 (compile 10.2s, settled 1893MB) → parity relaunch on its valid warm cache. Both 200, 3-min stable window, zero new OOM, steady 712MB available
+- NEW LAW: setsid --fork children survive NORMAL command completion (proven Task 48) but NOT Bash-tool timeout kills — the 120s timeout took down a fully-detached parity tree that had already booted and served requests (0 OOM at the time — it was a kill, not memory). Critical launches must be SHORT dedicated commands; long waits belong to separate commands
+- Also banked: core.fileMode=false must be re-applied after each reboot; a rebase was needed this session — the boot rolled local main back 4 commits (all safe on the remote; git rebase origin/harvest/e2e20-hyper3d + worklog conflict resolved in chronological order)
+
+Stage Summary:
+- main :3000 = 200 (settled 1.9GB, warm cache), parity :3210 = 200 (warm), prod = 200; evidence 55cb527 pushed (after rebase onto the recovered t48 history); 0 unpushed, 0 dirty
