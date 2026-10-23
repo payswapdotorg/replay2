@@ -728,3 +728,19 @@ Work Log:
 Stage Summary:
 - Post-boot re-verification fully green across all three layers; Task 50 cookie-consent feature regression PASS on parity; both repos fully synced; evidence chain closed with this entry (dev.pid + t51 worklog) pushed to harvest/e2e20-hyper3d
 - No open items; awaiting next instruction
+
+---
+Task ID: 51 (addendum — second OOM incident: recovery sequencing is MANDATORY, not optional)
+Agent: main (Z.ai Code session)
+
+Work Log:
+- Incident: during the t51 close-out stability window, main :3000 next-server (PID 1570, warm resident 1.6GB) was OOM-killed (kernel 2260s) — the trigger was this session's own agent-browser regression overlapping chrome + main + parity at 1465MB available; the kernel picked next-server this time (chrome was mid-exit), main :3000 → 000, parity unaffected
+- First recovery attempt FAILED with a new lesson: with parity still UP (~2.6GB free), a dfork relaunch of main served first-hit 200 fast but its COLD-COMPILE SPIKE ballooned to 2.3GB anon-rss and got OOM-killed again (kernel 2488s, PID 3442) — ~2.6GB free is NOT enough headroom; the t50 sequenced recipe is MANDATORY, not situational
+- Second recovery (banked recipe, exact order): parity tree down → 3520MB free (t50 baseline: 3519MB) → main dfork relaunch (absolute binary path) → 200 in ~9s → settle 30s (main warm ~1.4GB, 1437MB avail) → parity dfork relaunch (env DATABASE_URL=file:/home/z/my-project/db/hyper3d-clone.db prefix + absolute next binary, log .zscripts/mini-service-hyper3d-clone-dev.log) → parity 200 on first probe
+- Post-recovery 2-min stability window: main + parity both 200 throughout, steady ~690MB available (t50 baseline), ZERO new OOM since recovery
+- Cheap verification instead of browser: both titles byte-correct (main dashboard title; parity reference-identical Rodin title) — both pages were already browser-verified earlier this boot (t51 main pass + Task 50 cookie-modal regression PASS); server restarts don't change code, and launching chrome at 690MB free would risk a third OOM (banked law)
+- dev.pid refreshed to new main PID 2895 (old 1104 parent tree died with the first kill)
+
+Stage Summary:
+- Both servers recovered and stable; NEW BANKED LAWS: (1) main's cold-compile spike reaches ~2.3GB transient — parity-down-first sequencing is mandatory whenever free memory < ~3GB; (2) browser regression sessions themselves can be the OOM trigger on tight-memory boots (1465MB avail + chrome overlap) — prefer cheap curl/title probes for post-recovery checks, save browser passes for feature verification
+- Evidence chain closed with this addendum (dev.pid 2895 + t51 addendum) pushed to harvest/e2e20-hyper3d
