@@ -698,3 +698,16 @@ Stage Summary:
 - Gap closed: the clone's cookie flow now matches the reference at the behavioral AND pixel level (banner → granular 4-toggle modal → JSON-persisted consent); shipped as 2d1341a
 - Evidence pack: research/ux-parity-t50/ (v2/v4/v5/final captures)
 - Banked laws: Tailwind HMR arbitrary-class scan staleness (probe + touch fix); reference-site renderer wedge on memory-tight boots (defer recon, use cached captures + PIL profiling instead)
+
+---
+Task ID: 50 (addendum — browser-session OOM + sequenced recovery + launcher PATH law)
+Agent: main (Z.ai Code session)
+
+Work Log:
+- Incident: 6 OOM kills this session — 5 chrome (the reference-site renderer wedge; agent-browser chrome runs oom_score_adj 300, so the kernel correctly sacrificed the browser first) + 1 next-server = main :3000 (warm resident 1.6GB since boot, killed when the wedged renderer + parity + main overlapped). Parity and production unaffected
+- Recovery (banked sequenced recipe, worked first try): parity down → 3519MB free → main dfork relaunch (warm cache, first hit 200 in 11s) → settle 20s → parity relaunch → both 200, 2-min stability window clean, zero new OOM, steady ~700MB available
+- NEW LAW (dfork + bare binary names): `dfork-launch.sh <dir> <log> next dev -p 3210` FAILS silently-ish — the nohup subshell has no node_modules/.bin on PATH (`nohup: failed to run command 'next'`) — always pass the ABSOLUTE binary path (`<dir>/node_modules/.bin/next`); first relaunch died this way, second with absolute path came up in 3.5s
+- Production post-deploy verified in-browser: banner → Preferences → modal opens (4 cards #eef0f3, 3 toggles, 720px), Advertising toggle off + Save → {"analytics":true,"personalization":true,"advertising":false} persisted, banner dismissed, zero page errors; PRODUCTION capture banked in research/ux-parity-t50/
+
+Stage Summary:
+- Task 50 fully closed: gap found → built → calibrated (VLM 9/10, pixel-exact) → regression green → shipped 2d1341a LIVE + browser-verified; evidence 55d0802 pushed; both local servers recovered and stable after the OOM incident; three layers 200
