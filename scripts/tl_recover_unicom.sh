@@ -25,9 +25,16 @@ log() { echo "[$(date -u +%H:%M:%SZ)] $*" | tee -a "$LOG"; }
 
 stack_healthy() {
   # console identity + login API + replayd health
-  curl -sf --max-time 5 http://127.0.0.1:3000/api/status >/dev/null 2>&1 || return 1
+  # 2026-10-23 (product-UI review, operator directive): the platform app
+  # ("UNiCOM — Multi-Store Command Center") is a valid console identity —
+  # it has no /api/status route, the title alone carries the identity.
   local title
   title=$(curl -sf --max-time 5 http://127.0.0.1:3000/ 2>/dev/null | grep -o "<title>[^<]*</title>" || true)
+  if [[ "$title" == *"UNiCOM"* ]]; then
+    curl -sf --max-time 5 http://127.0.0.1:3100/healthz >/dev/null 2>&1 || return 1
+    return 0
+  fi
+  curl -sf --max-time 5 http://127.0.0.1:3000/api/status >/dev/null 2>&1 || return 1
   [[ "$title" == *"Replay Console"* ]] || return 1
   curl -sf --max-time 5 http://127.0.0.1:3100/healthz >/dev/null 2>&1 || return 1
   return 0
@@ -73,8 +80,11 @@ fi
 
 # 3. FLAGS FIRST — before ANY :3000 eviction (binding operator directive
 #    2026-10-01 16:45Z: else the ring resurrects the platform scaffold app)
+#    2026-10-23 (product-UI review, operator directive): preserve a DELIBERATE
+#    launcher choice — only seed the default when the flag is absent.
 mkdir -p "$REPLAY2/scripts/flags" "$REPLAY2/scripts/logs" "$REPLAY2/scripts/worker-prompts"
-printf 'launch_dev.py' > "$REPLAY2/scripts/flags/console_launcher.txt"
+[ -f "$REPLAY2/scripts/flags/console_launcher.txt" ] \
+  || printf 'launch_dev.py' > "$REPLAY2/scripts/flags/console_launcher.txt"
 printf '3000'         > "$REPLAY2/scripts/flags/console_port.txt"
 
 # 4. restore deployment-local state (mission-state, packets, registry seeds)
@@ -351,7 +361,10 @@ if stack_healthy; then
   log "replay stack already healthy — skipping deploy"
 else
   log "deploying replay stack (flags-first canonical path)…"
-  (cd "$REPLAY2" && CONSOLE_LAUNCHER=scripts/launch_dev.py bash deploy.sh >> "$LOG" 2>&1)
+  # 2026-10-23: honor the launcher flag (product-UI review may hold
+  # launch_console.py — the platform app is the console then)
+  _CL=$(cat "$REPLAY2/scripts/flags/console_launcher.txt" 2>/dev/null || echo launch_dev.py)
+  (cd "$REPLAY2" && CONSOLE_LAUNCHER="scripts/$_CL" bash deploy.sh >> "$LOG" 2>&1)
   if stack_healthy; then log "deploy OK — stack healthy"; else log "WARN: stack health check failed post-deploy — check $LOG"; fi
 fi
 
