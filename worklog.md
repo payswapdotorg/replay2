@@ -677,3 +677,24 @@ Work Log:
 
 Stage Summary:
 - Cleanest boot yet: zero OOM, zero manual relaunches needed; all three layers 200 + browser-verified with Task 49 features live everywhere; repos fully synced; dev.pid refresh committed and pushed; no open items — awaiting next task
+
+---
+Task ID: 50
+Agent: main (Z.ai Code session — under-verified affordance sweep → cookie preferences granular panel)
+
+Task: "Go" — with no pending tasks, sweep the affordances implemented in earlier tasks but never interaction-verified; close any gaps found.
+
+Work Log:
+- Routine first: same boot as the t49 close (up 3h40m), all three layers 200, 0 OOM, evidence 05eca56 + ship f462471 both 0 unpushed / 0 dirty
+- Reference drift: title byte-identical (strongest single signal); deeper recon skipped — the reference's renderer wedged the browser twice (CDP screenshot internal error, eval hangs; software rendering + ~680MB free) — t49's full drift check (4h old, clean) stands
+- AFFORDANCE AUDIT (production, agent-browser): Feedback button present ✓; cookie banner present ✓ — but clicking banner "Preferences" just saved essential-only and dismissed. Cross-checked the t47 recon capture (20-cookie-prefs.png, VLM x2 + PIL pixel profiling): the reference opens a granular "Manage cookie preferences" MODAL — 4 categories (Essential locked "Always on" + Analytics/Personalization/Advertising purple toggles, all ON), verbatim intro "Choose which optional cookies Hyper3D can use…", per-category description texts, light-gray rounded cards, circular X close, right-aligned pills "Essential only" (outline) + "Save preferences" (filled, wider). GAP CONFIRMED: panel never built
+- BUILT: cookie-preferences-overlay.tsx (new component, pricing-overlay conventions — fixed z-[2200], backdrop mousedown dismiss only on direct hits, Escape) + studio.tsx rewiring (banner Preferences → open modal; Accept all → save all-true JSON; granular localStorage as JSON, backward-compatible presence check)
+- CALIBRATION LOOP (3 VLM passes + PIL pixel math): v1 6/10 (missing intro, line-rows not cards, left title, block buttons) → v2 cards/centered/circular-X/pills 8/10 (width off) → PIL measured reference modal = 719×519 @1440×900, cards 72px/10px gaps, card-vs-white contrast ≈7% → true card gray ≈ #eef0f3 → v5 = 719×522 (3px off), cards 72×4 ✓, badges/toggles/button purple byte-matched (#4A00E0 vs reference pixel (80,9,225)) → VLM 9/10 (remaining nits verified false/subtle: badge bg IS #ede9fe, geometry pixel-exact)
+- NEW LAW (Tailwind v4 + Turbopack HMR): arbitrary-value classes ADDED by an edit to an existing file may never be scanned into the stylesheet (probe: getComputedStyle on an injected element → rgba(0,0,0,0)) — the page looks broken in ways lint can't catch; FIX = trivial file touch (append comment) + reload re-triggers the scan. Cost me a full debug cycle on bg-[#eef0f3] rendering transparent while the original bg-[#f3f4f6] from first Write worked
+- REGRESSION (all green on final build): toggle-off + Save → granular JSON persisted + dismissed; Essential only → all-false; Accept all → all-true; Escape → dismiss WITHOUT save (banner stays, nothing stored); backdrop mousedown → same; zero page errors; mobile 375 → modal 343px (92vw), fits, no h-scroll
+- SHIPPED: dev tree → ship repo (2 files; 3 pre-existing env diffs untouched), commit 2d1341a, pushed, Vercel deploying
+
+Stage Summary:
+- Gap closed: the clone's cookie flow now matches the reference at the behavioral AND pixel level (banner → granular 4-toggle modal → JSON-persisted consent); shipped as 2d1341a
+- Evidence pack: research/ux-parity-t50/ (v2/v4/v5/final captures)
+- Banked laws: Tailwind HMR arbitrary-class scan staleness (probe + touch fix); reference-site renderer wedge on memory-tight boots (defer recon, use cached captures + PIL profiling instead)
