@@ -744,3 +744,21 @@ Work Log:
 Stage Summary:
 - Both servers recovered and stable; NEW BANKED LAWS: (1) main's cold-compile spike reaches ~2.3GB transient — parity-down-first sequencing is mandatory whenever free memory < ~3GB; (2) browser regression sessions themselves can be the OOM trigger on tight-memory boots (1465MB avail + chrome overlap) — prefer cheap curl/title probes for post-recovery checks, save browser passes for feature verification
 - Evidence chain closed with this addendum (dev.pid 2895 + t51 addendum) pushed to harvest/e2e20-hyper3d
+
+---
+Task ID: 52 (no-pending-go sweep — full 21-route API health audit, zero-browser)
+Agent: main (Z.ai Code session)
+
+Work Log:
+- Routine first: same boot continued (up 1:14, no reboot since t51), three layers 200 (main 0.06s / parity 0.06s / prod 200), zero new OOM (last dmesg kill = t51's PID 3442), both repos fully synced (evidence b592397 0/0/0 vs harvest; ship 2d1341a 0/0/0 vs origin/main == Vercel), worklog latest = t51 addendum — no pending tasks
+- Sweep choice: memory-tight boot (~661MB avail at start) → per banked laws, ZERO browser operations this session; instead a full curl-only API health audit of the parity app's 21 routes (single-page app: 1 page + 21 API routes, no other pages to crawl)
+- Read-only GETs: healthz 200, task/list 200 (seed slug ids like "seed-g01-mech", not UUIDs); real-id task card/preview/mesh/progress/history all 200; input 404 verified CORRECT by code read (returns 404 when task.inputImageUrl absent — seed tasks have no reference image); fake-id GETs all 404
+- Export deep test (GET ?format=): glb 200 (14824B serve), gltf 200 (17783B), obj 200 (28752B), stl 200 (7484B), usdz 200 (32313B) — full server-side GLB→5-format conversion chain works; bogus format 400; fake id 404; export is GET-only with a 402 confirmation gate for pay_by_result tasks (code-verified, no auth by design — payment gate not identity gate)
+- Unauth POST sweep: user/get_info 401, task 401, confirm/cancel/like/redo/fallback on real id all 401 (auth gates verified by code read first to avoid accidental mutation), sign-in/sign-up/prompt_polish/rodin_mesh_image_process with empty JSON all 400 (validation), sign-out 200
+- Demo session end-to-end (cookie jar, non-destructive): sign-in demo@hyper3d.clone → 200 user payload; get_info with session → 200 full payload (balance 43, frozen 0, chances_left_to_set_private 10, preferences); sign-out → 200; get_info after logout → 401 (session properly invalidated)
+- Both logs clean through the whole sweep (parity log shows every sweep request with correct status); memory drifted 661→493MB avail during sweep (export conversions + prisma cache) — steady idle state, no OOM, servers warm
+
+Stage Summary:
+- Full 21-route API audit ALL GREEN: correct status codes across every endpoint (200/400/401/402-gate/404 as designed), zero 500s, 5-format export chain byte-verified, demo session lifecycle (sign-in → authed get_info → sign-out → invalidated) end-to-end PASS
+- No gaps found this sweep — the clone's API layer is fully healthy at the status-code level with zero browser risk taken
+- Evidence chain closed with this entry pushed to harvest/e2e20-hyper3d
