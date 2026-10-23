@@ -711,3 +711,20 @@ Work Log:
 
 Stage Summary:
 - Task 50 fully closed: gap found → built → calibrated (VLM 9/10, pixel-exact) → regression green → shipped 2d1341a LIVE + browser-verified; evidence 55d0802 pushed; both local servers recovered and stable after the OOM incident; three layers 200
+
+---
+Task ID: 51 (post-boot verification — third clean boot, routine sweep)
+Agent: main (Z.ai Code session)
+
+Work Log:
+- Boot context: machine up 36 min at check time (third observed reboot), ~1465MB available, zero OOM in dmesg — both servers naturally survived the boot race again (main :3000 answered 200 in 0.07s warm; parity :3210 200 in 6.7s cold settle) — the OOM-safe ordering law has now held across three consecutive boots without any manual sequencing
+- dev.log: only the benign EADDRINUSE boot-race artifact + clean 200s after — no real errors
+- Three layers: main :3000 → 200 (dashboard renders, correct title, zero page errors); parity :3210 → 200 (title byte-identical to reference, zero page errors); production → 200 + healthz green + title byte-identical
+- Task 50 feature regression on parity (agent-browser): banner → Preferences → "Manage cookie preferences" modal opens (4 categories, 3 toggles, Essential-only/Save pills); Advertising off + Save → h3d-clone-cookie-ok = {"analytics":true,"personalization":true,"advertising":false} persisted, banner dismissed, zero page errors — PASS
+- Production Task 50 state unchanged since the t50 addendum's post-deploy in-browser verification (Vercel has no reboot); cheap probes (healthz 200 + title) green
+- Git sync: ship repo 2d1341a == origin/main == Vercel, 0 unpushed / 0 diverged / 0 dirty; evidence repo 7dc3af3, 0 unpushed / 0 behind vs origin/harvest/e2e20-hyper3d; only boot-refreshed .zscripts/dev.pid dirty (committed with this entry)
+- Session-summary staleness law confirmed again: incoming summary said latest = Task 49, worklog + git showed Task 50 fully closed — worklog-first reads remain mandatory
+
+Stage Summary:
+- Post-boot re-verification fully green across all three layers; Task 50 cookie-consent feature regression PASS on parity; both repos fully synced; evidence chain closed with this entry (dev.pid + t51 worklog) pushed to harvest/e2e20-hyper3d
+- No open items; awaiting next instruction
