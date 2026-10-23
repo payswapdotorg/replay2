@@ -632,3 +632,19 @@ Work Log:
 Stage Summary:
 - LAW CORRECTED: there is no session reaper killing spawned servers on this box — the dfork docstring's reaper narrative does NOT explain this failure class. When a spawned server dies 30-150s post-launch with a silent log: run `dmesg | grep "Out of memory"` FIRST. The box (4GB) fits main+parity only when neither is paying a cold-compile spike; relaunch sequencing (free → compile → settle → co-start) is the operative discipline. Both servers now carry warm .next caches, making future relaunches cheap
 - main :3000 = 200 (mission dashboard), parity :3210 = 200 (the clone, functionally verified), replayd gateway alive, production (Vercel @ 17b8499) = 200 all session
+Task ID: 49
+Agent: main (Z.ai Code session — reference drift check + micro-parity: Add On carousel + subscribe pill flip)
+Task: "go" — post-Task-48 continuation. Verify the reference site hasn't drifted since the 2026-10-22 recon; fix any gaps found.
+
+Work Log:
+- Session conventions: machine rebooted again (up 2min) — all three layers 200 from boot (the OOM-free boot sequencing held; 0 OOM events this boot); core.fileMode=false did NOT survive the reboot (re-applied — banked: git config lives in .git/config which persists, but the boot's file restore rewrites modes faster than… whatever the cause, expect to re-apply each boot); both repos 0 unpushed
+- DRIFT CHECK (live reference): landing title unchanged; workspace booted title byte-identical to the clone; VLM full-page comparison vs the t47 recon — hero/workspace/gallery/sections/theme all unchanged; two flagged items investigated
+- GAP 1 — Add On icon: the reference is NOT a static mark — it cross-fades SEVEN DCC-tool logos (blender/unreal/unity/godot/c4d/maya/omniverse) every 2000ms (14s cycle), each img 24x20 in a 24x22 overflow-hidden container, transition opacity+transform 500ms ease-in-out, active scale(1) opacity 1 / inactive scale(0.35) opacity 0 (DOM-measured live). Our clone had a static ring+dot approximation → replaced with the 7 real assets (downloaded from the reference CDN) + a faithful AddOnIconCarousel component (setInterval 2s, measured transitions)
+- GAP 2 — subscribe pill inverted: the reference's guest pill is data-state=trial — gradient "7-Day Trial" visible BY DEFAULT, hover swaps to "Subscribe" (trial label fades + scale(0.78) out, sub label fades in; reversible). Our Task 45 implementation had the pair inverted (Subscribe default, Trial on hover) → flipped; same gradient/geometry
+- VERIFICATION: parity — carousel 2s cadence / 7 icons / 14s cycle (programmatic opacity sampling over 16s), pill default Trial, hover rules present in stylesheet (colon-escaped selectorText — the search must escape `\:`), bypass + real-mouse hover-swap matches the reference exactly (opacity 0/1, scale 0.78), Escape-cleanup, lint clean, dev tree synced byte-identical
+- SHIP: two commits — 152aaa9 (carousel + 7 assets) and f462471 (pill flip) → Vercel; production verified in-browser: 7 icons all loaded + advancing, pill default "7-Day Trial", pill click → pricing overlay opens, zero page errors
+- BONUS CHECK: production icon assets served (blender 2755B / unreal 2431B / omniverse 108678B — byte-matching local); landing DOM order confirms the flip (trial-first)
+
+Stage Summary:
+- Reference is drift-free except the two micro-gaps found and closed; the clone's topbar now matches the reference at the behavioral level (animated DCC carousel + trial-first pill), shipped as f462471 LIVE on Vercel and browser-verified
+- Laws banked: git core.fileMode must be re-applied after each reboot; CSSOM selectorText contains escaped colons (`group-hover\:opacity-100`) — plain-string searches miss them; 300ms CSS transitions need settle-time before post-cleanup sampling (mid-flight reads show stale values)
