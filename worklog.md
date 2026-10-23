@@ -662,3 +662,18 @@ Work Log:
 
 Stage Summary:
 - main :3000 = 200 (settled 1.9GB, warm cache), parity :3210 = 200 (warm), prod = 200; evidence 55cb527 pushed (after rebase onto the recovered t48 history); 0 unpushed, 0 dirty
+
+---
+Task ID: 49 (post-boot verification — clean boot, false-alarm triage)
+Agent: main (Z.ai Code session)
+
+Work Log:
+- Boot routine on "go": machine up 2 min, zero OOM this boot; both servers auto-launched at 05:42 and survived the boot-race naturally (main compiled warm at 1.5GB settled, parity followed on its valid cache — the OOM-free sequencing held without intervention)
+- FALSE ALARM triaged: `git -C mini-services/hyper3d-clone-dev` reported "41 unpushed vs origin/main" — root cause: the dev tree has NO own .git, so git climbed to the evidence repo, and origin/main on the remote is a stale branch parked at the initial commit (all evidence pushes go to harvest/e2e20-hyper3d). Real state: evidence main @ 3a2cefa == origin/harvest/e2e20-hyper3d, 0 unpushed. Banked: measure evidence sync ONLY against origin/harvest/e2e20-hyper3d, never origin/main
+- dev.log boot artifact: EADDRINUSE on :3000 at first launcher attempt (duplicate auto-start race — winner serves steadily, benign; matches known boot behavior)
+- core.fileMode=false verified still set this boot (survived where the t49 addendum expected re-application)
+- Layer verification: main :3000 200 + renders (mission dashboard, zero page errors); parity :3210 200 + renders (reference title, zero errors) + API smoke (healthz green — zai backend, db reachable; gallery p1 serving seeded items) + Task 49 features intact (7 DCC carousel icons loaded, pill trial-first); production 200 + healthz green (bailian backend, db reachable) + gallery API serving + Task 49 features LIVE in-browser (7 icons, 7-Day Trial default, zero page errors)
+- Ship repo: f462471 == origin/main, 0 unpushed, 0 diverged, 0 dirty == Vercel production
+
+Stage Summary:
+- Cleanest boot yet: zero OOM, zero manual relaunches needed; all three layers 200 + browser-verified with Task 49 features live everywhere; repos fully synced; dev.pid refresh committed and pushed; no open items — awaiting next task
