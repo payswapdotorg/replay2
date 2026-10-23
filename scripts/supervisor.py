@@ -493,6 +493,13 @@ def _console_pids():
                 cwd = os.path.realpath(f"/proc/{p}/cwd")
             except Exception:
                 continue
+            # 2026-10-23: mini-services are SIBLING services (the replayd
+            # gateway runs `bun run dev` from my-project/mini-services and
+            # matched the pgrep) — misclassifying them as the console family
+            # wedged the spawn in "still starting" patience forever, then
+            # DEV_PATIENCE would kill the innocent gateway. Never console.
+            if "/mini-services" in cwd:
+                continue
             if "/my-project" in cwd and "/replay2" not in cwd:
                 pids.append(p)
     except Exception:
