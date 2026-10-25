@@ -797,3 +797,22 @@ Work Log:
 
 Stage Summary:
 - Third successful execution of the sequenced recovery recipe; the t51 law (<3GB free → parity-down-first is mandatory) held — no failed gamble this cycle; both local servers stable, production unaffected throughout
+---
+Task ID: 54 (t53 deferred items closed browser-level; reference drift check; zero code changes)
+Agent: main (Z.ai Code session)
+
+Task: User: "go" — execute the two deferrals left open by t53 (browser pass of the deep-link signup panel; fresh rendered-DOM reference drift check)
+
+Work Log:
+- Status: fresh boot 13min, dual servers natural-survived (4th time), prod 200, 0 unpushed both repos, no OOM; memory 1563MB avail → browser work done under the banked discipline: main :3000 taken down FIRST (not needed for either verification; freed ~1.7GB → 2.7GB headroom), browser pass, then sequenced recovery (parity down → main 200 in ~6s → parity 200 attempt 2 → zero new kills)
+- DEEP-LINK E2E (parity :3210, DOM-eval asserted): positive `/?auth=signup&referral_code=T54VERIFY` → dialog open, signup mode, #h3d-referral value=T54VERIFY readOnly, captions exact, social chrome present; N1 `/?auth=signup` → panel open, NO referral field, non-invite intent, cookie banner not re-prompted; N2 `/` → 0 dialogs
+- INTERACTION PATH: auth panel → click-away close (reference-style transparent overlay) → cookie card (t50) appears → Accept all → banner gone + granular consent persisted (h3d-clone-cookie-ok: analytics/personalization/advertising all true). Documented observation: cookie card (z40) sits under auth panel (z21011) + overlay (z21010) on deep-link arrival — invite-intent-first sequencing, consent obtainable after close (verified); recorded as by-design, not a defect
+- DRIFT CHECK: reference loaded live (CSR, innerText 4557 chars + viewport/full-page shots) → VLM compare vs t49 baseline raised 4 differences → ALL FOUR dissolved by DOM probes as artifacts: GENERATE/ASSET "missing" = viewport-crop artifacts (full-page + innerText confirm present); "Video→Image tab" = opacity-layer hover-swap animation frames; "M→green-circle Add On badge" = 7-logo cross-fade carousel frames (Maya frame at t49, Unreal frame at t54). VERDICT: reference materially unchanged since t49
+- CLONE-FIDELITY COROLLARY: both suspected micro-gaps already implemented in the clone (t49-era DOM-measured) — product pill Avatar/3D/Video with Video→Image hover-swap + red new-dot (a11y name "Video Image" is the stacked-spans artifact), and AddOnIconCarousel with reference parameters (2000ms, scale 1↔0.35, 500ms ease). t49's "Add On icon mismatch" VLM row was itself an animation-frame artifact → ZERO code changes this task
+- Production sanity (no deploy, ship untouched at 0cb5502): home 200, /signup→307→/?auth=signup, /r/T54PROBE→307→/?auth=signup&referral_code=T54PROBE
+- Evidence: research/ux-parity-t54/ (VERIFICATION.md + 6 screenshots + 3 VLM JSONs); dev.pid refreshed to main PID 3515
+
+Stage Summary:
+- Both t53 deferrals closed GREEN with browser-level interaction proof; reference drift = NONE; clone already faithful on every suspected point → verification-only closure, no ship needed
+- NEW BANKED LAW (VLM discipline): never accept cross-screenshot VLM "changed/missing" verdicts on animated or long-page targets without a DOM probe — 4/4 claims were framing/animation-frame artifacts; screenshots prove pixels at an instant, DOM probes prove semantics
+- Environment: dual servers stable post-recovery (main :3000 / parity :3210, ~725MB avail steady), production live and untouched throughout

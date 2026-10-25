@@ -1,0 +1,28 @@
+{
+  "choices": [
+    {
+      "finish_reason": "stop",
+      "index": 0,
+      "message": {
+        "content": "Based on the provided image, here are the answers to your specific questions:\n\n1.  **Is there a large GENERATE button with '0.5 Credits' nearby?**\n    **Yes.** There is a large, prominent \"GENERATE\" button in the center of the interface. To its right, there is a small tag that displays **\"x1\"** (indicating the credit cost/generation count).\n\n2.  **Is there a row of controls like Presets / Gen-2.5 / High / Agentic Mode OFF?**\n    **Yes.** Directly below the Generate button, there is a row of control pills/chips. From left to right, they show: an **\"OFF\"** icon (representing the mode), **\"< Gen-2.5 >\"**, and **\"High\"**.\n\n3.  **Is there an ASSET section with EXPLORE tab, Featured button, and a gallery of 3D model thumbnails with like-counts?**\n    **Yes.** There is a large section header labeled **\"ASSET\"** with **\"EXPLORE\"** next to it. Below that is a **\"Featured\"** button (outlined in red/pink) and a gallery containing three visible 3D model cards (a muscular character, a frog, and a dragon). Each card displays the creator's name and a **like count** (e.g., \"42 likes\", \"36 likes\", \"44 likes\").\n\n4.  **What does the small badge icon next to the 'Add On' nav item look like?**\n    The icon next to **\"Add On\"** in the top navigation bar is a small **green circle with a white plus sign (+)** inside it.\n\n5.  **What are the labels of the product tabs near the top (above/beside the Rodin hero title)?**\n    Located directly above the large \"Rodin\" title, the navigation tabs are labeled: **Avatar**, **3D** (which appears selected/active), and **Image**. There is also a menu icon (three lines) at the end of this row.",
+        "role": "assistant"
+      }
+    }
+  ],
+  "created": 1792924049,
+  "id": "20261025182719e0eeb51cc20c421d",
+  "model": "glm-5v-turbo",
+  "object": "chat.completion",
+  "request_id": "20261025182719e0eeb51cc20c421d",
+  "usage": {
+    "completion_tokens": 444,
+    "completion_tokens_details": {
+      "reasoning_tokens": 0
+    },
+    "prompt_tokens": 5087,
+    "prompt_tokens_details": {
+      "cached_tokens": 0
+    },
+    "total_tokens": 5531
+  }
+}

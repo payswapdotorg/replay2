@@ -1,0 +1,28 @@
+{
+  "choices": [
+    {
+      "finish_reason": "stop",
+      "index": 0,
+      "message": {
+        "content": "Based on the image provided, here are the answers to your questions:\n\n**(1) Product-line navigation tabs (center row):**\n*   **Avatar**\n*   **3D**\n*   **Image**\n\n**(2) Description of the 'Add On' badge icon:**\nThe badge is a **circle** (or ring) shape. It is **bright green** (lime/neon green) with a **darker green** (or black) inner circle/dot in the center, resembling a target or a stylized \"record\" button.\n\n**(3) Top-bar navigation labels (left to right):**\n*   **Add On** (with the green circular badge)\n*   **API**\n*   **MCP&CLI**\n*   **Login** (preceded by a user profile icon)\n*   *(Globe/World icon)*",
+        "role": "assistant"
+      }
+    }
+  ],
+  "created": 1792924106,
+  "id": "20261025182822631ca34d89324141",
+  "model": "glm-5v-turbo",
+  "object": "chat.completion",
+  "request_id": "20261025182822631ca34d89324141",
+  "usage": {
+    "completion_tokens": 175,
+    "completion_tokens_details": {
+      "reasoning_tokens": 0
+    },
+    "prompt_tokens": 1976,
+    "prompt_tokens_details": {
+      "cached_tokens": 0
+    },
+    "total_tokens": 2151
+  }
+}
