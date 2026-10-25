@@ -4,9 +4,10 @@ import { useState } from "react";
 import Console from "@/components/replay-console";
 import { MissionControl } from "@/components/mission-control";
 import LabConsole from "@/components/lab/lab-console";
-import { MonitorPlay, Radar, FlaskConical } from "lucide-react";
+import CadReview from "@/components/cad-review";
+import { MonitorPlay, Radar, FlaskConical, DraftingCompass } from "lucide-react";
 
-type View = "replay" | "mission" | "lab";
+type View = "replay" | "mission" | "lab" | "cad";
 
 export default function Home() {
   const [view, setView] = useState<View>("replay");
@@ -35,6 +36,19 @@ export default function Home() {
             >
               <MonitorPlay className="h-3.5 w-3.5" aria-hidden="true" />
               Replay Console
+            </button>
+            <button
+              role="tab"
+              aria-selected={view === "cad"}
+              onClick={() => setView("cad")}
+              className={`flex items-center gap-1.5 rounded-md px-3 py-1.5 text-xs font-medium transition-colors sm:text-sm ${
+                view === "cad"
+                  ? "bg-neutral-100 text-neutral-900"
+                  : "text-neutral-400 hover:text-neutral-100"
+              }`}
+            >
+              <DraftingCompass className="h-3.5 w-3.5" aria-hidden="true" />
+              CAD Studio
             </button>
             <button
               role="tab"
@@ -71,7 +85,9 @@ export default function Home() {
         </div>
       </div>
 
-      {view === "replay" ? <Console /> : view === "mission" ? <MissionControl /> : <LabConsole />}
+      {view === "replay" ? <Console /> : view === "mission" ? <MissionControl /> : view === "lab" ? <LabConsole /> : <CadReview />}
+            {/* Station #29 (2026-10-25): CAD Studio review — the live PaySwap CAD
+                Studio desktop app (operator inspection surface). */}
     </div>
   );
 }
