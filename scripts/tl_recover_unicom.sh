@@ -83,9 +83,16 @@ fi
 #    2026-10-23 (product-UI review, operator directive): preserve a DELIBERATE
 #    launcher choice — only seed the default when the flag is absent.
 mkdir -p "$REPLAY2/scripts/flags" "$REPLAY2/scripts/logs" "$REPLAY2/scripts/worker-prompts"
+# 2026-10-24 FE era: the platform app (my-project, "UNiCOM — Commerce
+# Console") is THE operator console on :3000 (the 2026-09-30 architecture;
+# the 2026-10-24 frontend directive makes it real again after the recycle
+# restored the pristine scaffold). Default-seed launch_console.py; the
+# replay2-native console (launch_dev.py) is a side service on :3200.
+# Preserve deliberate flag choices (the step-2 git clean may wipe them).
 [ -f "$REPLAY2/scripts/flags/console_launcher.txt" ] \
-  || printf 'launch_dev.py' > "$REPLAY2/scripts/flags/console_launcher.txt"
-printf '3000'         > "$REPLAY2/scripts/flags/console_port.txt"
+  || printf 'launch_console.py' > "$REPLAY2/scripts/flags/console_launcher.txt"
+[ -f "$REPLAY2/scripts/flags/console_port.txt" ] \
+  || printf '3000' > "$REPLAY2/scripts/flags/console_port.txt"
 
 # 4. restore deployment-local state (mission-state, packets, registry seeds)
 [[ -f "$DURABLE_DIR/mission-state.json" ]] && cp "$DURABLE_DIR/mission-state.json" "$REPLAY2/data/mission-state.json" && log "mission-state restored"
@@ -363,8 +370,11 @@ else
   log "deploying replay stack (flags-first canonical path)…"
   # 2026-10-23: honor the launcher flag (product-UI review may hold
   # launch_console.py — the platform app is the console then)
-  _CL=$(cat "$REPLAY2/scripts/flags/console_launcher.txt" 2>/dev/null || echo launch_dev.py)
-  (cd "$REPLAY2" && CONSOLE_LAUNCHER="scripts/$_CL" bash deploy.sh >> "$LOG" 2>&1)
+  # 2026-10-24 FE era: pass REPLAY_PORT from the console_port flag so the
+  # deploy's console section targets the right port explicitly.
+  _CL=$(cat "$REPLAY2/scripts/flags/console_launcher.txt" 2>/dev/null || echo launch_console.py)
+  _CP=$(cat "$REPLAY2/scripts/flags/console_port.txt" 2>/dev/null || echo 3000)
+  (cd "$REPLAY2" && CONSOLE_LAUNCHER="scripts/$_CL" REPLAY_PORT="$_CP" bash deploy.sh >> "$LOG" 2>&1)
   if stack_healthy; then log "deploy OK — stack healthy"; else log "WARN: stack health check failed post-deploy — check $LOG"; fi
 fi
 
