@@ -785,3 +785,15 @@ Stage Summary:
 - NEW BANKED LAWS: (1) Vercel env-decrypt is dead for this token — always ship additive-column changes WITH an app-side idempotent light migration; never deploy a Prisma client referencing a column the prod DB may lack; (2) Neon API = console.neon.tech/api/v2/ + Bearer NEON_API_KEY_4 (api.neon.tech has no A record; role/databases routes not proxied); (3) deploy sequence: light-migration guard lands first-or-together
 - Incident report: ~4 min production auth breakage, zero data loss, detected by immediate post-deploy probe battery, healed by revert in one cycle, root cause eliminated structurally
 - Evidence chain closed with this entry + research/audit-t53/ pushed to harvest/e2e20-hyper3d
+
+---
+Task ID: 53 (addendum — third OOM of the boot: main re-killed during session activity, sequenced recovery re-executed)
+Agent: main (Z.ai Code session)
+
+Work Log:
+- Incident: main :3000 next-server (PID 1565, warm 1.6GB) OOM-killed at kernel 1955s — the session's own activity peak (parity restart churn + prisma generates + lint runs + audit curls) overlapped main's warm residency; the ONLY kill of this boot (2 dmesg "oom-kill" matches = 1 event: invoker line + kill line); parity and production unaffected
+- Recovery: banked sequenced recipe, no gambling this time (2489MB free < 3GB threshold) — parity down → 3529MB free → main dfork relaunch (200 in ~9s) → 30s settle (1229MB avail, main warm ~1.5GB) → parity dfork relaunch (200 on attempt 2) → 2-min window both 200 steady ~590MB avail, zero new kills
+- dev.pid refreshed to new main PID 4179; ship 0cb5502 remains LIVE on production (untouched by the local incident); evidence addendum committed with this entry
+
+Stage Summary:
+- Third successful execution of the sequenced recovery recipe; the t51 law (<3GB free → parity-down-first is mandatory) held — no failed gamble this cycle; both local servers stable, production unaffected throughout
