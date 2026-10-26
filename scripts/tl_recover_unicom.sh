@@ -93,6 +93,10 @@ mkdir -p "$REPLAY2/scripts/flags" "$REPLAY2/scripts/logs" "$REPLAY2/scripts/work
   || printf 'launch_console.py' > "$REPLAY2/scripts/flags/console_launcher.txt"
 [ -f "$REPLAY2/scripts/flags/console_port.txt" ] \
   || printf '3000' > "$REPLAY2/scripts/flags/console_port.txt"
+# 2026-10-26: the replay console side-service port (watcher.py heals it;
+# delete this flag to retire the side service).
+[ -f "$REPLAY2/scripts/flags/console_side_port.txt" ] \
+  || printf '3200' > "$REPLAY2/scripts/flags/console_side_port.txt"
 
 # 4. restore deployment-local state (mission-state, packets, registry seeds)
 [[ -f "$DURABLE_DIR/mission-state.json" ]] && cp "$DURABLE_DIR/mission-state.json" "$REPLAY2/data/mission-state.json" && log "mission-state restored"
@@ -362,6 +366,53 @@ if [[ -f "$HOME/.secrets/env.sh" ]] && grep -q '^REPO=payswapdotorg/aurum-chat$'
   log "relay REPO re-pointed aurum-chat -> UniCom (station designation)"
 fi
 log "station designation enforced (UniCom)"
+
+# 4.5 platform console tree — FE era durability (2026-10-26). After a pod
+# recycle the durable volume may restore my-project as the PRISTINE SCAFFOLD
+# (observed live 2026-10-26: the boot found a scaffold, honored the station's
+# launch_dev.py flag, and put the replay console on :3000 while the
+# operator's product existed only off-box). The product tree's durable home
+# is payswapdotorg/unicom-live (the off-box copy, 587d928+). When the
+# my-project tree is NOT the console (marker file absent), restore it BEFORE
+# the deploy so launch_console.py starts the real console. Station-durable
+# files (.git .zscripts download db mini-services browser-profile .env
+# dev.log) are never touched; the local worklog is backed up before the
+# product worklog lands.
+if [ ! -f /home/z/my-project/src/lib/product/store.ts ]; then
+  log "my-project is not the console tree — restoring from unicom-live"
+  _UL=/home/z/unicom-live
+  if [ ! -d "$_UL/.git" ]; then
+    git clone --quiet "https://x-access-token:${_PATVAL}@github.com/payswapdotorg/unicom-live.git" "$_UL" \
+      && log "unicom-live cloned @ $(git -C "$_UL" rev-parse --short HEAD)" \
+      || log "FATAL: unicom-live clone failed — console tree not restored"
+  else
+    git -C "$_UL" remote set-url origin "https://x-access-token:${_PATVAL}@github.com/payswapdotorg/unicom-live.git" >/dev/null 2>&1 || true
+    git -C "$_UL" fetch --quiet origin \
+      && git -C "$_UL" reset --quiet --hard origin/main \
+      && log "unicom-live refreshed @ $(git -C "$_UL" rev-parse --short HEAD)" \
+      || log "WARN: unicom-live refresh failed — trying existing tree"
+  fi
+  if [ -d "$_UL/.git" ] && [ -f "$_UL/src/lib/product/store.ts" ]; then
+    if [ -f /home/z/my-project/worklog.md ]; then
+      cp /home/z/my-project/worklog.md \
+        "/home/z/my-project/worklog.pre-restore.$(date -u +%Y%m%dT%H%M%SZ).md"
+    fi
+    rsync -a --delete "$_UL/src/"     /home/z/my-project/src/
+    rsync -a --delete "$_UL/public/"  /home/z/my-project/public/
+    rsync -a "$_UL/agent-ctx/"    /home/z/my-project/agent-ctx/    2>/dev/null || true
+    rsync -a "$_UL/tool-results/" /home/z/my-project/tool-results/ 2>/dev/null || true
+    cp "$_UL/package.json" "$_UL/bun.lock" "$_UL/components.json" /home/z/my-project/ 2>/dev/null || true
+    cp "$_UL/prisma/schema.prisma" /home/z/my-project/prisma/schema.prisma
+    cp "$_UL/worklog.md" /home/z/my-project/worklog.md
+    rm -rf /home/z/my-project/.next /home/z/my-project/db/custom.db
+    (cd /home/z/my-project \
+      && bun install >> "$LOG" 2>&1 \
+      && bunx prisma generate >> "$LOG" 2>&1 \
+      && bunx prisma db push --accept-data-loss >> "$LOG" 2>&1 \
+      && log "console tree restored: deps installed + db pushed") \
+      || log "WARN: console tree restore install/db step failed — check $LOG"
+  fi
+fi
 
 # 5. deploy (only if unhealthy — idempotent)
 if stack_healthy; then

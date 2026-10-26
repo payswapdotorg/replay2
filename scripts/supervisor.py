@@ -123,8 +123,13 @@ def console_body_ok(port=None, timeout=4):
         # identity while flags/console_launcher.txt = launch_console.py.
         # The replay2 title stays valid; flip the launcher flag back to
         # launch_dev.py to restore the native console.
+        # 2026-10-26 (FE era, frontend redesign 587d928): the platform app's
+        # title is now "UNiCOM — Commerce Command Center" (the payswap-3.0
+        # design language translated to the commerce domain). Both UNiCOM
+        # titles remain valid console identities.
         return ("<title>Replay Console</title>" in body
-                or "<title>UNiCOM — Multi-Store Command Center</title>" in body)
+                or "<title>UNiCOM — Multi-Store Command Center</title>" in body
+                or "<title>UNiCOM — Commerce Command Center</title>" in body)
     except Exception:
         return False
 

@@ -350,6 +350,28 @@ def check_procs():
             subprocess.Popen(["/home/z/.venv/bin/python3", os.path.join(base, "launch_gateway.py")],
                              stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
             time.sleep(2)
+        # 2026-10-26 (FE era doctrine 8cbd526): while the platform app
+        # (UNiCOM Commerce Console) holds :3000, the replay2-native console
+        # runs as a SIDE SERVICE on the port named by
+        # flags/console_side_port.txt (absent = side service retired, block
+        # is a no-op). Same self-healing pattern as the replayd blocks; the
+        # launch passes REPLAY_PORT explicitly so the launcher's
+        # console_port.txt fallback (:3000) is never consulted.
+        try:
+            _side = open(os.path.join(base, "flags", "console_side_port.txt")).read().strip()
+        except Exception:
+            _side = ""
+        if _side.isdigit():
+            try:
+                urllib.request.urlopen(f"http://127.0.0.1:{_side}", timeout=4).read(64)
+            except Exception:
+                log(f"replay console side service :{_side} dead — restarting")
+                _env = dict(os.environ)
+                _env["REPLAY_PORT"] = _side
+                subprocess.Popen(["/home/z/.venv/bin/python3", os.path.join(base, "launch_dev.py")],
+                                 env=_env,
+                                 stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+                time.sleep(5)
         # supervisor dead OR hung => resurrect it (it holds the flock, so a
         # fresh launch simply adopts the role). Hung = alive-but-stuck:
         # supervisor_heartbeat is written every 10s; stale beyond 180s with a

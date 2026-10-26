@@ -67,8 +67,14 @@ console_ok() {
   # only. The recovery-#8 dual-title acceptance (FleetOS platform console)
   # contradicted the binding operator directive and carried project-specific
   # content into this shared repo (§0); reverted.
+  # 2026-10-26 (FE era): while flags/console_launcher.txt = launch_console.py
+  # the platform app (my-project) is the console (the 2026-10-19
+  # operator-directed pattern supervisor.py already follows) — accept the
+  # UNiCOM titles so a launch_console.py deploy doesn't stall the identity
+  # wait 120s and WARN on a healthy console. Flip the launcher flag to
+  # launch_dev.py to restore the native-console-only check.
   curl -sf --max-time 5 "http://127.0.0.1:${1:-3000}/" 2>/dev/null \
-    | grep -q "<title>Replay Console</title>"
+    | grep -qE "<title>(Replay Console|UNiCOM — (Multi-Store Command Center|Commerce Command Center))</title>"
 }
 
 # Evict non-console listeners on :PORT (keep anything running from replay2).
