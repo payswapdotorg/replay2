@@ -2192,3 +2192,22 @@ Stage Summary:
 - Recycle cadence note: #17 (23:46Z) and #18 (06:17Z) are ~6.5h apart — same rhythm as the #12→#13 era; nothing on my side triggers them (both hit while station was fully idle-green)
 - Owner queue unchanged and still the only blocker set (PAT rotation · Actions limit+runner size · ADR-003 · ADR-005); watch continues
 
+---
+Task ID: resident-watch-R39
+Agent: TL (orchestrator, this session)
+Task: "go" — R39 sweep: POD RECYCLE #19 (boot ~09:33Z, pod 1 min at census — second live mid-heal catch). Heal #9 done 09:35:38Z (~2.5 min; prod console 2231, ali18, gateway core_up). Kit live-fire #6: 9m16s, zero-leak — third consecutive under 9.5 min. Mirror law 3rd win. Recycle cadence ACCELERATING: #17→#18 6.5h, #18→#19 3.3h.
+
+Work Log:
+- #19 SHAPE: the established #17/#18 class exactly — volatile worklog → Oct-14 shape (29 entries, ends R26); CAD chain 8/8 + Epoch-2.0 + /tmp/cs wiped; heal's own 09:35:35 Epoch-2.0 clone vanished again (4th confirmation of post-heal re-wipe); ring flags empty at census (daemons still spawning — the live-catch signature: empty heartbeats + scaffold console + gateway down ≠ defect, wait for recover.log done)
+- MIRROR LAW 3RD WIN: replay2 boot-materialized at R38's push 659b0b2 — committed R-series (35 entries) intact; volatile restored in one awk
+- KIT LIVE-FIRE #6 (0876284a3, single lineage 2507←2482): dfork 09:38:03Z → clone/sync → rustup 1.99.1 → artifact sha256-pin OK → lavapipe harness → plugin -j1 build (09:39:50→09:47:10 ≈ 7m20s, dominant cost) → settings → app dfork 5123 → bridge → journeys — DONE 09:47:19Z = 9m16s. Lineage: 35m → 14m → 11m10s → 9m04s → 9m24s → 9m16s (steady state)
+- ZERO-LEAK AUDIT (5th consecutive clean real-run): PAT-pattern 0 · token 0 · authenticated-URL 0 · leftover auth dirs 0
+- OPS BYTE BASELINE (9th consecutive identical): sysvar clayer="0" / extmax=[85,60,0] / ltscale=1 · modal:null · camera [42.5,30,0] Orthographic · geo_rev 21 / cam_rev 2 · plugins [org.payswap.workspace] · doc 2 fx06 dirty · journeys DRAFT/DIM/MARK all ok · frame band 25380↔27041B 729×582 (both in-band; settled 25568B form cycles with the active band)
+- VLM VERIFICATION (z-ai vision, live frame): 7/7 — no modal · L-bracket + bolt-hole circle · green tables · crosshair + pickbox · UCS icon · ViewCube TOP · status bar — 9th consecutive identical visual state
+- Final battery 09:50:52Z ALL GREEN: console 200 ×2 · gateway core_up:true · CDP 200 · gw /frame 200 72KB · bridge ok app 5123 · ring 8/8 fresh · zero drift (Epoch-2.0 f940a44 · cad-studio 0876284a3 · replay2 659b0b2, all == remote) · disk 2.4G · mem 2.6G
+
+Stage Summary:
+- Six live-fires: the recovery is a solved problem — dual clone + awk restore + dfork runbook + verify, ~12 min wall clock from sweep start to full green, every audit clean
+- Recycle cadence watch: intervals now 6.5h → 3.3h; if the next arrives under 2h, elevate to a station-health note for the operator (possible platform-side churn signal) — but station recovers fully every time and nothing on my side is a trigger
+- Owner queue unchanged and still the only blocker set (PAT rotation · Actions limit+runner size · ADR-003 · ADR-005); watch continues
+
