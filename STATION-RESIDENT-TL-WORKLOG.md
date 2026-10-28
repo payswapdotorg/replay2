@@ -2151,3 +2151,24 @@ Stage Summary:
 - Durability doctrine upgraded twice this sweep: (1) the R-series mirror is now committed+pushed (was never — lost R33-R35 appends + R27-R32 permanently); (2) post-recycle census extended to watched repos + secret stores (Epoch-2.0 and credentials.env both proved wipeable)
 - Station posture: fully green, byte-stable, leak-free; the standing owner queue is the only blocker set (PAT rotation · Actions limit+runner · ADR-003 · ADR-005); watch continues
 
+---
+Task ID: resident-watch-R37
+Agent: TL (orchestrator, this session)
+Task: "go" — R37 sweep: POD RECYCLE #17 (boot ~23:46Z, pod 1 min at census — sweep caught it LIVE mid-heal). Deepest rollback yet on the volatile worklog (restored to Oct-14 shape, ends at R26; R33-R36 entries wiped) — but the COMMIT-EARLY LAW WON ITS FIRST RECYCLE: the durable mirror's committed R-series section (33 entries incl. R36, @ 07a62ff) SURVIVED the boot materialization untouched. Kit live-fire #4: 9m04s, zero-leak, 7th consecutive byte-identical baseline.
+
+Work Log:
+- #17 SHAPE: standard stack healed #7 (recover.log: prod bundle 23:49:06 → console prod pid 2170 23:49:10 → login_keeper venv-fix live → done 23:49:19, ~2.5 min from boot; ali18 logged in at first probe). Sweep caught the heal MID-FLIGHT (console was still the platform scaffold dev server at 23:48) — doctrine: a scaffold-404 console on a 1-min pod is not a defect, it is the heal's step-0; wait for recover.log's "TL recover done"
+- WIPE CENSUS: CAD chain 8/8 (ocs-artifact, ocs-libs, rustup, cargo, .configs, cad-build, cad-bridge, /tmp/cs) + Epoch-2.0 (again — and the heal's OWN 23:49:16 clone had vanished by 23:49:31, second confirmation of the post-heal re-wipe) + volatile worklog → Oct-14 shape (R33-R36 entries lost from THIS file; restored verbatim from the committed mirror — 33 entries again). Durable survivors: download/recovery/ (credentials.env full set), replay2 @ committed state, ~/.secrets/env.sh (boot-materialized)
+- MIRROR LAW PROVEN: replay2 boot-materialized at exactly my last push 07a62ff — the R-series section (rebuilt+committed only at R36, one recycle ago) came through intact. The commit-early law is now battle-tested; every future append commits+pushes same-session
+- KIT LIVE-FIRE #4 (repo HEAD 0876284a3, askpath clone, single lineage verified ps-tree 2486←2461): dfork 23:50:38Z → stage 0/0b/1 clone+sync → 2 rustup 1.99.1 (39s — network fast tonight) → 3 artifact sha256-pin OK (curl -K) → 4 lavapipe apt 57MB/s → 5 plugin -j1 7m10s → 6 settings → 7 app dfork 5137 → 8 bridge → 9 journeys — DONE 23:59:42Z = 9m04s (2nd fastest; kit lineage: 35m manual → 14m → 11m10s → 9m)
+- ZERO-LEAK AUDIT (real run #3 on the security lineage): PAT-pattern 0 · token 0 · authenticated-URL 0 · leftover auth dirs 0 — teardown self-shredded
+- OPS BYTE BASELINE (7th consecutive identical): sysvar clayer="0" / extmax=[85,60,0] / ltscale=1 · modal:null · camera [42.5,30,0] Orthographic · geo_rev 21 / cam_rev 2 · plugins [org.payswap.workspace] · doc 2 fx06 dirty · journeys DRAFT/DIM/MARK all ok · settled frame 25568B 729×582 byte-exact
+- VLM VERIFICATION (z-ai vision, live frame :3000/api/cad/frame): 7/7 — no modal · L-bracket + bolt-hole circle · green tables · crosshair + pickbox · UCS icon · ViewCube TOP · status bar — 7th consecutive identical visual state
+- #17 RESTORE VARIANT: cad-build came back LEAN (live chain only — no cargo/artifact/rustup/ocs-libs dead weight, unlike #16's 1.7G); zero cleanup needed. Restore semantics VARY confirmed across three consecutive recycles (#15 partial / #16 heavy / #17 lean)
+- Final battery 00:02:11Z ALL GREEN: console 200 ×2 · gateway core_up:true · CDP 200 · gw /frame 200 67KB · bridge ok app 5137 · ring 8/8 fresh (skills_sync on its 10-min cycle) · zero drift (Epoch-2.0 f940a44 · cad-studio 0876284a3 · replay2 07a62ff, all == remote) · disk 2.1G · mem 2.6G
+
+Stage Summary:
+- Kit is now the boring, proven answer: 4 live-fires, all leak-free, fastest 9m04s; the recovery runbook path (clone → dfork → verify) has zero manual steps left
+- Durability posture hardened: the mirror's committed R-series survived its first recycle; volatile worklog restored from it in one awk; post-heal Epoch-2.0 re-wipe doctrine now twice-confirmed (re-clone after every recycle)
+- Owner queue unchanged and still the only blocker set (PAT rotation · Actions limit+runner size · ADR-003 · ADR-005); watch continues
+
