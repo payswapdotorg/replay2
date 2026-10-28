@@ -2229,3 +2229,20 @@ Stage Summary:
 - Both baselines now at 10 consecutive identical rounds (ops byte-level + VLM 7/7); the demo state is reproducible across recycles to the byte
 - Owner queue unchanged and still the only blocker set (PAT rotation · Actions limit+runner size · ADR-003 · ADR-005); watch continues
 
+---
+Task ID: resident-watch-R41
+Agent: TL (orchestrator, this session)
+Task: "go" — R41 sweep: QUIET ROUND #2 (same pod as #19/#40, up 123 min — no recycle; 2h+ since #19). Full battery green; app 5123 same PID at 1h49m (RSS 389MB flat); both baselines at 11 consecutive identical.
+
+Work Log:
+- Stack census: console 200 + ali18 · gateway core_up:true · CDP 200 · Xvfb :99 · ring 8/8 fresh · zero drift (Epoch-2.0 f940a44 · cad-studio 0876284a3 · replay2 58527f7, all == remote)
+- CAD chain: app 5123 SAME PID (1:48:55 uptime, RSS 389432KB — flat vs R40's 390MB) · doc 2 fx06 dirty · frame 27041B 729×582 · bridge session unchanged
+- OPS BYTE BASELINE (11th consecutive identical): sysvar clayer="0" / extmax=[85,60,0] / ltscale=1 · modal:null · camera [42.5,30,0] Orthographic · geo_rev 21 / cam_rev 2 · plugins [org.payswap.workspace]
+- VLM VERIFICATION (z-ai vision, live frame): 7/7 — no modal · L-bracket + bolt-hole circle · green tables · crosshair + pickbox · UCS icon · ViewCube TOP · status bar — 11th consecutive identical visual state
+- CADENCE WATCH CLOSED (for this window): 2h+ post-#19 with zero recycles — the 6.5h→3.3h acceleration did NOT continue; no operator elevation needed; the <2h trigger expired unused. Standard watch cadence resumes
+- Resources: disk 2.3G (−0.1G = frame/log churn, normal) · mem 2.5G avail — flat across 2 quiet hours
+
+Stage Summary:
+- Two consecutive quiet rounds: the station has now demonstrated hour-scale durable-green (same PID, byte-identical state, flat memory) AND recycle-scale recovery (6 kit live-fires, all <11.5 min) — both halves of the resident contract proven
+- Owner queue unchanged and still the only blocker set (PAT rotation · Actions limit+runner size · ADR-003 · ADR-005); watch continues
+
