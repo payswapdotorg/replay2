@@ -2246,3 +2246,22 @@ Stage Summary:
 - Two consecutive quiet rounds: the station has now demonstrated hour-scale durable-green (same PID, byte-identical state, flat memory) AND recycle-scale recovery (6 kit live-fires, all <11.5 min) — both halves of the resident contract proven
 - Owner queue unchanged and still the only blocker set (PAT rotation · Actions limit+runner size · ADR-003 · ADR-005); watch continues
 
+---
+Task ID: resident-watch-R42
+Agent: TL (orchestrator, this session)
+Task: "go" — R42 sweep: POD RECYCLE #20 (boot ~13:12Z, pod 1 min at census — third live mid-heal catch). Heal #10 done 13:14:48Z (~2.5 min; prod console 2131, ali18, gateway core_up). Kit live-fire #7: 9m32s, zero-leak. Mirror law 4th win. Interval #19→#20 = 3.65h — normal rhythm, no acceleration.
+
+Work Log:
+- #20 SHAPE: the established #17/#18/#19 class — volatile worklog → Oct-14 shape (29 entries, ends R26); CAD chain 8/8 + Epoch-2.0 + /tmp/cs wiped; heal's own 13:14:45 Epoch-2.0 clone vanished again (5th confirmation of post-heal re-wipe); live-catch signature again (empty ring + scaffold console at census)
+- MIRROR LAW 4TH WIN: replay2 boot-materialized at R41's push 1141594 — committed R-series (38 entries) intact; volatile restored in one awk
+- KIT LIVE-FIRE #7 (0876284a3, single lineage 2398←2373): dfork 13:17:03Z → clone/sync → rustup 1.99.1 → artifact sha256-pin OK → lavapipe harness → plugin -j1 build (13:18:53→13:26:2x ≈ 7.5 min, dominant cost) → settings → app dfork 5045 → bridge → journeys — DONE 13:26:35Z = 9m32s. Lineage: 35m → 14m → 11m10s → 9m04s → 9m24s → 9m16s → 9m32s (7-run steady state ≈ 9.3 ± 0.2 min)
+- ZERO-LEAK AUDIT (6th consecutive clean real-run): PAT-pattern 0 · token 0 · authenticated-URL 0 · leftover auth dirs 0
+- OPS BYTE BASELINE (12th consecutive identical): sysvar clayer="0" / extmax=[85,60,0] / ltscale=1 · modal:null · camera [42.5,30,0] Orthographic · geo_rev 21 / cam_rev 2 · plugins [org.payswap.workspace] · doc 2 fx06 dirty · journeys DRAFT/DIM/MARK all ok · frame band 28849↔27041B settling, 729×582
+- VLM VERIFICATION (z-ai vision, live frame): 7/7 — no modal · L-bracket + bolt-hole circle · green 3x2 tables · crosshair + pickbox · UCS icon · ViewCube TOP · status bar with MCP — 12th consecutive identical visual state
+- Final battery 13:30:46Z ALL GREEN: console 200 ×2 · gateway core_up:true · CDP 200 · gw /frame 200 72KB · bridge ok app 5045 · ring 8/8 fresh · zero drift (Epoch-2.0 f940a44 · cad-studio 0876284a3 · replay2 1141594, all == remote) · disk 2.4G · mem 2.6G
+
+Stage Summary:
+- Seven live-fires, seven clean audits: the kit is proven infrastructure — ~12 min wall clock from sweep start to full green, every time
+- The station now oscillates between quiet-green hours (R40/R41: same PID, flat RSS, byte-identical) and recycle-green recoveries (#17-#20: same 3-class wipe, same 12-min answer) — the resident contract holds on both sides with zero manual steps
+- Owner queue unchanged and still the only blocker set (PAT rotation · Actions limit+runner size · ADR-003 · ADR-005); watch continues
+
