@@ -2211,3 +2211,21 @@ Stage Summary:
 - Recycle cadence watch: intervals now 6.5h → 3.3h; if the next arrives under 2h, elevate to a station-health note for the operator (possible platform-side churn signal) — but station recovers fully every time and nothing on my side is a trigger
 - Owner queue unchanged and still the only blocker set (PAT rotation · Actions limit+runner size · ADR-003 · ADR-005); watch continues
 
+---
+Task ID: resident-watch-R40
+Agent: TL (orchestrator, this session)
+Task: "go" — R40 sweep: QUIET ROUND (same pod as #19, up 61 min at census — no recycle; 43 min since R39 close with zero churn). Full battery green; everything R39 recovered is alive, byte-consistent, visually identical.
+
+Work Log:
+- Stack census: console 200 + ali18 logged-in · gateway core_up:true · CDP 200 · Xvfb :99 · ring 8/8 fresh (watcher 8s / supervisor 7s / custodian 16s / renderer 47s / stall 107s / login 1s / vault 63s / skills_sync on its 10-min cycle) · zero drift (Epoch-2.0 f940a44 · cad-studio 0876284a3 · replay2 d25341d, all == remote)
+- CAD chain: app 5123 SAME PID as R39 close (47:31 uptime, RSS ~390MB stable band) · doc 2 fx06 dirty · frame band 27041B 729×582 · bridge session unchanged
+- OPS BYTE BASELINE (10th consecutive identical): sysvar clayer="0" / extmax=[85,60,0] / ltscale=1 · modal:null · camera [42.5,30,0] Orthographic · geo_rev 21 / cam_rev 2 · plugins [org.payswap.workspace]
+- VLM VERIFICATION (z-ai vision, live frame): 7/7 — no modal · L-bracket + bolt-hole circle · green tables · crosshair + pickbox · UCS icon · ViewCube TOP · status bar — 10th consecutive identical visual state
+- Resources: disk 2.4G steady · mem 2.5G avail — no leak, no growth across the quiet hour
+- CADENCE WATCH UPDATE: intervals were #17→#18 6.5h → #18→#19 3.3h; 61 min into the post-#19 window no new recycle — the acceleration has NOT continued (no elevation to operator needed yet; the <2h trigger is not met and the longer the quiet stretches, the likelier #18→#19 was platform noise)
+
+Stage Summary:
+- Quiet round #1 since the kit reached steady state: full-stack stability across an hour with zero intervention, zero drift, and the same PID — the recovered chain is not just green but durable-green
+- Both baselines now at 10 consecutive identical rounds (ops byte-level + VLM 7/7); the demo state is reproducible across recycles to the byte
+- Owner queue unchanged and still the only blocker set (PAT rotation · Actions limit+runner size · ADR-003 · ADR-005); watch continues
+
