@@ -2172,3 +2172,23 @@ Stage Summary:
 - Durability posture hardened: the mirror's committed R-series survived its first recycle; volatile worklog restored from it in one awk; post-heal Epoch-2.0 re-wipe doctrine now twice-confirmed (re-clone after every recycle)
 - Owner queue unchanged and still the only blocker set (PAT rotation · Actions limit+runner size · ADR-003 · ADR-005); watch continues
 
+---
+Task ID: resident-watch-R38
+Agent: TL (orchestrator, this session)
+Task: "go" — R38 sweep: POD RECYCLE #18 (boot ~06:17Z, pod 44 min at census 07:01Z; ~6h quiet since R37 close). Standard stack self-healed #8 (2.5 min, recover.log done 06:19:29, prod console 2010, ali18 logged in). Kit live-fire #5: 9m24s, zero-leak — the recovery is now fully routine. Mirror law 2nd consecutive win.
+
+Work Log:
+- #18 SHAPE: identical rollback class to #17 — volatile worklog → Oct-14 shape (1367 lines, ends R26, 29 entries = R1-R16+R16b/c/d+R17-R26); CAD chain 8/8 wiped + Epoch-2.0 (heal's own 06:19:27 clone gone again — post-heal re-wipe now THRICE-confirmed) + /tmp/cs; cad-build restored LEAN again (live chain only, zero dead weight — the lean variant is now the norm, 2 consecutive). Survivors: download/recovery/credentials.env, replay2 @ afe7cd6 committed state, ~/.secrets
+- MIRROR LAW 2ND WIN: replay2 boot-materialized at exactly my R37 push (afe7cd6) — all 34 committed R-series entries intact; volatile restored in one awk (R33-R37 re-appended, 34 entries)
+- KIT LIVE-FIRE #5 (0876284a3, single lineage 3621←3596 verified): dfork 07:02:43Z → clone/sync → rustup 1.99.1 → artifact sha256-pin OK → lavapipe harness → plugin -j1 build (stage 5 ran 07:04:24→07:11:5x ≈ 7.5 min, the dominant cost as always) → settings → app dfork 6265 → bridge → journeys — DONE 07:12:07Z = 9m24s. Kit lineage: 35m → 14m → 11m10s → 9m04s → 9m24s (plateau ~9-9.5 min, rustup+build bound)
+- ZERO-LEAK AUDIT (4th consecutive clean real-run): PAT-pattern 0 · token 0 · authenticated-URL 0 · leftover auth dirs 0
+- OPS BYTE BASELINE (8th consecutive identical): sysvar clayer="0" / extmax=[85,60,0] / ltscale=1 · modal:null · camera [42.5,30,0] Orthographic · geo_rev 21 / cam_rev 2 · plugins [org.payswap.workspace] · doc 2 fx06 dirty · journeys DRAFT/DIM/MARK all ok · settled frame 25568B 729×582 byte-exact
+- VLM VERIFICATION (z-ai vision, live frame): 7/7 — no modal · L-bracket + bolt-hole circle · green tables · crosshair + pickbox · UCS icon · ViewCube TOP · status bar — 8th consecutive identical visual state
+- OWNER QUEUE RE-PROBED: unchanged — latest Actions runs still 2026-10-25 (all failure signature), zero since; spending-limit + runner-size decision still blocks P2 fresh build; PAT rotation still hygiene
+- Final battery 07:15:40Z ALL GREEN: console 200 ×2 · gateway core_up:true · CDP 200 · gw /frame 200 72KB · bridge ok app 6265 · ring 8/8 fresh (skills_sync on cycle) · zero drift (Epoch-2.0 f940a44 · cad-studio 0876284a3 · replay2 afe7cd6, all == remote) · disk 2.4G · mem 2.6G
+
+Stage Summary:
+- Five live-fires in: recovery is routine and boring — clone ×2, awk-restore worklog, dfork runbook, verify; every step doctrine-encoded, every audit clean
+- Recycle cadence note: #17 (23:46Z) and #18 (06:17Z) are ~6.5h apart — same rhythm as the #12→#13 era; nothing on my side triggers them (both hit while station was fully idle-green)
+- Owner queue unchanged and still the only blocker set (PAT rotation · Actions limit+runner size · ADR-003 · ADR-005); watch continues
+
