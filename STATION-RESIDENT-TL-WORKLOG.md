@@ -2265,3 +2265,20 @@ Stage Summary:
 - The station now oscillates between quiet-green hours (R40/R41: same PID, flat RSS, byte-identical) and recycle-green recoveries (#17-#20: same 3-class wipe, same 12-min answer) — the resident contract holds on both sides with zero manual steps
 - Owner queue unchanged and still the only blocker set (PAT rotation · Actions limit+runner size · ADR-003 · ADR-005); watch continues
 
+---
+Task ID: resident-watch-R43
+Agent: TL (orchestrator, this session)
+Task: "go" — R43 sweep: QUIET ROUND #3 (same pod as #20, up 199 min — the longest quiet stretch of the current era; 3h+ no recycle). Full battery green; app 5045 same PID at 3h04m (RSS 380MB flat band); both baselines at 13 consecutive identical.
+
+Work Log:
+- Stack census: console 200 + ali18 · gateway core_up:true · CDP 200 · Xvfb :99 · ring 8/8 fresh · zero drift (Epoch-2.0 f940a44 · cad-studio 0876284a3 · replay2 c612191, all == remote)
+- CAD chain: app 5045 SAME PID (3:04:45 uptime, RSS 380176KB — flat vs 389MB at R42 close; normal page-cache band) · doc 2 fx06 dirty · frame 25568B 729×582 settled byte-exact · bridge session unchanged
+- OPS BYTE BASELINE (13th consecutive identical): sysvar clayer="0" / extmax=[85,60,0] / ltscale=1 · modal:null · camera [42.5,30,0] Orthographic · geo_rev 21 / cam_rev 2 · plugins [org.payswap.workspace]
+- VLM VERIFICATION (z-ai vision, live frame): 7/7 — no modal · L-bracket + bolt-hole circle · green tables · crosshair + pickbox · UCS icon · ViewCube TOP · status bar — 13th consecutive identical visual state
+- Resources: disk 2.4G steady · mem 2.5G avail — flat across the 3h quiet stretch
+
+Stage Summary:
+- The station's rhythm has settled into a stable alternation: multi-hour quiet-green stretches (R40/R41/R43) punctuated by ~3-4h-cycle recycles (#19 3.3h · #20 3.65h) — every recycle answered by the 9.3-min kit, every quiet round confirming zero drift/leak/modals
+- 13 consecutive identical baselines on both instruments (ops byte-level + VLM): the demo state is byte-reproducible across every recovery
+- Owner queue unchanged and still the only blocker set (PAT rotation · Actions limit+runner size · ADR-003 · ADR-005); watch continues
+
