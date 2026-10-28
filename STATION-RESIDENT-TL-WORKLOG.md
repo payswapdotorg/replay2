@@ -2282,3 +2282,22 @@ Stage Summary:
 - 13 consecutive identical baselines on both instruments (ops byte-level + VLM): the demo state is byte-reproducible across every recovery
 - Owner queue unchanged and still the only blocker set (PAT rotation · Actions limit+runner size · ADR-003 · ADR-005); watch continues
 
+---
+Task ID: resident-watch-R44
+Agent: TL (orchestrator, this session)
+Task: "go" — R44 sweep: POD RECYCLE #21 (boot ~17:58Z, pod 22 min at census — heal #11 already complete when I arrived: console prod + ali18 + ring fresh at 18:20). Kit live-fire #8: 9m30s, zero-leak. Mirror law 5th win. Interval #20→#21 ≈ 4.8h — the 3.5-5h rhythm holds.
+
+Work Log:
+- #21 SHAPE: the established class — volatile worklog → Oct-14 shape (29 entries); CAD chain 8/8 + Epoch-2.0 + /tmp/cs wiped; heal's Epoch-2.0 clone vanished again (6th confirmation); recover.log done 18:00:43Z (~2.5 min from boot)
+- MIRROR LAW 5TH WIN: replay2 boot-materialized at R43's push 9848844 — committed R-series (40 entries) intact; volatile restored in one awk
+- KIT LIVE-FIRE #8 (0876284a3, single lineage 2845←2820): dfork 18:21:07Z → clone/sync → rustup 1.99.1 → artifact sha256-pin OK → lavapipe harness → plugin -j1 build (~7.5 min dominant cost) → settings → app dfork 5484 → bridge → journeys — DONE 18:30:37Z = 9m30s. Lineage: 35m → 14m → 11m10s → 9m04s → 9m24s → 9m16s → 9m32s → 9m30s (8-run steady state ≈ 9.3 min, σ < 15s)
+- ZERO-LEAK AUDIT (7th consecutive clean real-run): PAT-pattern 0 · token 0 · authenticated-URL 0 · leftover auth dirs 0
+- OPS BYTE BASELINE (14th consecutive identical): sysvar clayer="0" / extmax=[85,60,0] / ltscale=1 · modal:null · camera [42.5,30,0] Orthographic · geo_rev 21 / cam_rev 2 · plugins [org.payswap.workspace] · doc 2 fx06 dirty · journeys DRAFT/DIM/MARK all ok · frame band 28849↔27041↔25568B, 729×582
+- VLM VERIFICATION (z-ai vision, live frame): 7/7 — no modal · L-bracket + bolt-hole circle · green tables · crosshair + pickbox · UCS icon · ViewCube TOP · status bar with MCP — 14th consecutive identical visual state
+- Final battery 18:31:28Z ALL GREEN: console 200 ×2 · gateway core_up:true · CDP 200 · gw /frame 200 72KB · bridge ok app 5484 · ring 8/8 fresh · zero drift (Epoch-2.0 f940a44 · cad-studio 0876284a3 · replay2 9848844, all == remote) · disk 2.4G · mem 2.6G
+
+Stage Summary:
+- Eight live-fires: mean 9.3 min, every audit clean — the kit is infrastructure, the recovery is a non-event
+- The platform rhythm is now mapped: recycles arrive every 3.3-4.8h, each is the same wipe class, each is answered identically; quiet stretches confirm byte-stability between them
+- Owner queue unchanged and still the only blocker set (PAT rotation · Actions limit+runner size · ADR-003 · ADR-005); watch continues
+
