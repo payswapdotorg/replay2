@@ -2353,3 +2353,28 @@ Stage Summary:
 - Ten live-fires, two full outage crossings, one kit result lost unverified (R46's #9') — the watch's ledger is now fully reconciled and durable
 - Doctrine locked: (1) push the mirror at the FIRST working window, verification can follow; (2) absolute paths for mirror ops; (3) the session transcript is a durable carrier of record — but only the mirror makes it survive the session
 - Owner queue unchanged (PAT rotation · Actions limit+runner size · ADR-003 · ADR-005) + new observation: platform tool-layer 403 outages (2 occurrences, both ending at new user messages) — outside my control, watch continues
+
+---
+
+Task ID: resident-watch-R48
+Agent: TL (orchestrator, this session)
+Task: "go" — R48 sweep: QUIET ROUND #4 (no recycle — boot 21:16:37Z #24 still current, pod 1h17m at census). Opened on a SUMMARY-HANDOFF ANOMALY: this session's inherited summary arrived one full generation STALE — it described the R46 mid-outage state (1628 lines / 15bab44 / kit #9' in flight, R45+R46 "pending push") while the disk had already completed R47 in full (78fe659 + b2b2cb7, worklog 1664, kit #10 verified 21:31Z). Round numbering and all state re-derived from disk alone; the full battery then re-verified independently — 16th consecutive identical on both instruments.
+
+Work Log:
+- HANDOFF GAP: R47's ledger found complete on disk — entry lines 1646-1664, kit #10 log /tmp/redeploy_r47.log all stages + VERIFY + "auth material shredded on exit", mirror b2b2cb7 == remote, tree clean. Zero reconstruction needed. Knowledge-carrier hierarchy now proven at every level: mirror (survives recycles + outages + handoff gaps) > volatile worklog (dies on recycle, re-appended from mirror) > session transcript (dies with the session) > session summary (can arrive STALE — this round's case). Only the mirror has carried every record
+- STACK: console :3000 200×2 (root + /api/status logged-in(ali18)) + /api/cad/frame 200 · gateway /healthz + /health core_up:true · CDP :9222 200 Chrome/143 · replayd :3110 · Xvfb :99 1440x900 · ring 8/8 fresh (~4860s; custodian 4737s by design)
+- CAD chain: app 5236 SAME PID (69m, RSS 376MB flat) ppid=1 · bridge 5273 ppid=1 · session 4b5bde9f unchanged · AppRun --new --backend vulkan (ocs-artifact squashfs)
+- OPS BASELINE (16th consecutive identical): sysvar clayer="0" / extmax=[85,60,0] / ltscale=1 · modal:null · camera [42.5,30,0] Orthographic pitch-top distance 155.5 · cam_rev 2 / geo_rev 21 (hello geometry_revision 21) · plugins [org.payswap.workspace] · doc 2 fx06-merged-table.dxf dirty (title Drawing1, fixtures path) · journeys DRAFT 6 entities PAYS-DEMO + DIM 7 entities [ANNO-TABLE:1, PAYS-DEMO:6] + AGENT_MARK 0x1000A "PaySwap Part" all complete · "Unknown command: mp" pair = the demo's own modal probe footprint (expected). NOTE: battery probes append history entries (ui/documents → document_required/unknown_operation) by design — the baseline is the STATE values, not the history tail
+- VLM 7/7 (glm-5v-turbo, live bridge frame /tmp/frame_r48.png → vlm_r48.json): no modal · L-bracket + bolt-hole · green tables · crosshair + pickbox · UCS icon red-X/green-Y · ViewCube TOP · status bar MCP yellow — 16th consecutive identical visual state
+- FRAME: settled 25568B 729×582 byte-exact recurring (bridge cache + samples 1&3); NEW BAND HIGH 34820B seen once between them (previous band 25380↔28849) — widening noted, visual state identical per VLM; watch item
+- ZERO DRIFT: cad-studio 0876284a3 == remote · Epoch-2.0 f940a44 == remote (ls-remote askpass) — upstream quiet on both
+- ZERO-LEAK (9th consecutive clean): kit log patterns 0 (ghp_/github_pat_/authed-URL/token-vars) · both clone origins clean URLs · no .netrc / .config/gh · this round's two askpass scripts shred -u'd on exit
+- PAT CHAINS — ALL THREE ALIVE (false alarm closed): env.sh PAYSWAP_PAT + GITHUB_TOKEN → 200×2 repos; credentials.env GITHUB_PAT (kit's chain) → 200×2; operator-secrets.env GITHUB_PAT → 200×2. The ls-remote "Invalid username or token" at 22:46Z was MY bug: env.sh has NO export prefixes — sourcing without `set -a` starves child processes; the askpass printed EMPTY. LAW: source env.sh as `set -a; . /home/z/.secrets/env.sh; set +a` — prevents future misdiagnosis of PAT death
+- Resources: disk 2.4G free / mem ~2.5G avail — flat
+
+Stage Summary:
+- Quiet round #4 pattern holds: everything kit #10 built at 21:29:39Z is byte- and visually-identical ~80 minutes later; 16 consecutive identical baselines on both instruments (ops byte-level + VLM)
+- Kit lineage untouched this round (no live-fire needed); steady state 9m24s-9m40s across partial and full rebuilds; next recycle answers with kit #11 from the unchanged three-chain credential position
+- Platform instability era ledger: 2 tool outages (7.7h + 9.2h, both ended at new user messages) + 1 stale summary handoff in ~20h — all outside my control; the watch's lever remains "push at the first working window"; the mirror doctrine has now survived every failure class the platform has produced
+- Owner queue unchanged (PAT rotation · Actions limit+runner size · ADR-003 · ADR-005) + observations: tool-layer 403 pattern; stale summary handoff; frame band widening (34820B); recycle cadence 9.4/6.5/11.5h
+- Next round preset: uptime probe first — if recycle #25: salvage-tree first (/tmp/my-project), PAT via env.sh WITH set -a, dual clone, kit #11, mirror-first at first window; else quiet-round battery (17th consecutive)
