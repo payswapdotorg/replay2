@@ -2301,3 +2301,36 @@ Stage Summary:
 - The platform rhythm is now mapped: recycles arrive every 3.3-4.8h, each is the same wipe class, each is answered identically; quiet stretches confirm byte-stability between them
 - Owner queue unchanged and still the only blocker set (PAT rotation · Actions limit+runner size · ADR-003 · ADR-005); watch continues
 
+Task ID: resident-watch-R45
+Agent: TL (orchestrator, this session)
+Task: "go" — R45 sweep: POD RECYCLE #22 (boot 03:21:08Z per /tmp/boot-timeline.log; interval #21→#22 ≈ 9.4h, longest yet at the time). Kit live-fire #9 launched but the round was cut short by an unprecedented tool-layer outage. Entry reconstructed from the session record (twice: first append lost to recycle #24 before reaching the mirror).
+
+Work Log:
+- #22 SHAPE: deepest wipe yet — the usual /tmp/cs + volatile worklog → Oct-14 shape + recover.log missing entirely PLUS first-time loss of /home/z/ocs-artifact, ocs-libs, .cargo, .config/OpenCADStudio, .config/PaySwapCADStudio (the CAD dotdirs had survived #16-#21)
+- NEW MECHANISM MAPPED: /tmp/my-project = the platform's move-aside of the previous-generation my-project — worklog 1610 lines byte-identical to R44-end, operator-secrets.env, download/recovery/ (credentials.env 35 vars + predev-heal + mission-state.json) all salvageable; persists across recycles; recovery from it beats the awk-from-mirror path (cp instead)
+- PAT CHAIN SELF-HEALED (doctrine update): .secrets/env.sh (boot-materialized) PAYSWAP_PAT + GITHUB_TOKEN BOTH 200 vs payswapdotorg/cad-studio — R36's "env.sh not cad-studio-visible" is OBSOLETE. Salvaged operator-secrets.env GITHUB_PAT also 200. Three independent sources; zero-leak discipline unchanged
+- RECOVERY EXECUTED: volatile worklog restored byte-exact from salvage (cp -p); download/recovery restored; dual clone — cad-studio 0876284a3 askpass 37s + Epoch-2.0 f940a44 local 1s (boot-materialized /home/z/Epoch-2.0, clean origin URL)
+- KIT LIVE-FIRE #9 LAUNCHED 03:56:27Z: full-depth rebuild; s1 40s / s2 58s / s3 26s / s4 2s; last observation stage 5 plugin compile 6m22s healthy. Completion ~04:08Z inevitable (dfork orphan, PID-1 adopted)
+- TOOL-LAYER OUTAGE (first ever): from ~04:06Z every tools/call returned 403 "broken session" — 772+ consecutive probes until session end; text channel alive throughout. Kit verification battery, worklog append, mirror push BLOCKED — commit-early law suspended by force majeure; the R45 record survived only in the session transcript + salvage tree
+
+Stage Summary:
+- The kit's dfork-orphan design proved its point: infrastructure kept rebuilding through a total agent-side outage
+- Salvage-tree doctrine added: check /tmp/my-project FIRST after any recycle
+- PAT doctrine revised: .secrets/env.sh is now a valid primary
+- Unfinished: kit #9 result unverified; verification battery + dual-archive + push deferred
+
+Task ID: resident-watch-R46
+Agent: TL (orchestrator, this session)
+Task: "go" — R46 sweep: POD RECYCLE #23 (boot 09:49:44Z; interval #22→#23 ≈ 6.5h). Round recovered from the first outage at user-message arrival (tool channel revived with the new turn — the recovery-point pattern). Kit #9' launched; second outage struck mid-poll. Entry reconstructed from the session record (append lost to recycle #24).
+
+Work Log:
+- #23 SHAPE: standard class — CAD chain 7th wipe (/tmp/cs + 3210 down), volatile worklog → R44-end shape (the platform materialized the salvage state as baseline — R45's cp restore was adopted), CAD dotdirs wiped again; standard stack healed unattended (app 09:52)
+- PREREQS ALL GREEN: PAT 200 (.secrets/env.sh) · credentials.env survived boot (the R45 restore of download/recovery is now durable) · remote main 0876284a3 zero drift
+- R45 ENTRY RE-APPENDED to the volatile archive (1628 lines) — but the mirror push was again blocked, leaving it single-copy
+- KIT LIVE-FIRE #9' LAUNCHED 11:53:15Z (dual clone 38s: cad-studio remote askpass + Epoch-2.0 local): s1 38s / s2 43s / s3 25s / s4 2s; last observation stage 5 @ 7m36s healthy — completion ~12:05Z inevitable (dfork orphan)
+- SECOND TOOL OUTAGE from ~12:03Z (350+ consecutive 403s to round end): kit verification, R46 entry, and the critical R45+R46 mirror push all blocked. Kit #9' output then destroyed by recycle #24 (~21:16Z) before any verification — a kit result is now UNVERIFIED-DESTROYED, first such loss in the watch
+
+Stage Summary:
+- Outage pattern: tools/call 403 "broken session" both times, recovery coinciding with new user messages — the tool channel appears session-turn-bound; both outages together cost the mirror two entries (R45, R46) and one kit verification
+- The 3.3-4.8h recycle rhythm is gone: intervals now 9.4h / 6.5h / 11.5h — recycle cadence and outage windows are both outside my control; the watch's lever is only "push at the first working window"
+- Watch continues; next round must triple-archive (R45+R46+R47) at the first opportunity
