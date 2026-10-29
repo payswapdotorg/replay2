@@ -2334,3 +2334,22 @@ Stage Summary:
 - Outage pattern: tools/call 403 "broken session" both times, recovery coinciding with new user messages — the tool channel appears session-turn-bound; both outages together cost the mirror two entries (R45, R46) and one kit verification
 - The 3.3-4.8h recycle rhythm is gone: intervals now 9.4h / 6.5h / 11.5h — recycle cadence and outage windows are both outside my control; the watch's lever is only "push at the first working window"
 - Watch continues; next round must triple-archive (R45+R46+R47) at the first opportunity
+Task ID: resident-watch-R47
+Agent: TL (orchestrator, this session)
+Task: "go" — R47 sweep: POD RECYCLE #24 (boot 21:16:43Z; interval #23→#24 ≈ 11.5h). Kit live-fire #10: 9m40s full-depth, zero-leak. MIRROR DEBT CLEARED — R45+R46 pushed (78fe659) at the FIRST working window, before any verification (the two-outage lesson applied).
+
+Work Log:
+- #24 SHAPE: deeper again — local /home/z/Epoch-2.0 first-time loss (Epoch clone went remote-askpass), volatile worklog → Oct-14 shape destroying the R45 re-append (single-copy, 9.5h lifespan), CAD chain 8th wipe; standard stack healed unattended
+- RECOVERY: worklog restored from salvage (R44-end, cp); R45+R46 BOTH re-appended from the session record — the transcript proved to be the only durable carrier of rounds spent entirely inside outage windows
+- MIRROR FIRST (doctrine upgrade): R45+R46 appended to the mirror, committed and PUSHED (78fe659 == remote) DURING the kit build — record durability no longer waits on the verification battery; the two-outage debt (R45, R46) is now clear; mirror law 6th win (the committed record survived while the volatile copy was destroyed twice)
+- CWD TRAP logged: one append landed in my-project/ because the shell CWD had drifted from replay2 — caught by line-count sanity check, corrected with zero loss to the real mirror; absolute paths mandated for all mirror operations from now on
+- KIT LIVE-FIRE #10 (0876284a3 + Epoch-2.0 both remote-askpass clones, 45s): dfork 21:19:59Z → self-install → credentials → sync → rustup 43s → artifact sha256-pin 25s → lavapipe 3s → plugin -j1 build 7m43s (dominant) → settings → app dfork 5236 → bridge → journeys — DONE 21:29:39Z = 9m40s. Lineage now: full-depth runs 11m10s → 9m40s; the ~9.5min steady state holds for BOTH partial and full rebuilds
+- ZERO-LEAK AUDIT (8th consecutive clean): PAT-pattern 0 · token 0 · authenticated-URL 0 · leftover auth dirs 0
+- OPS BASELINE (15th consecutive identical): clayer "0" / extmax [85,60,0] / ltscale 1.0 · modal null · camera [42.5,30,0] Orthographic · cam_rev 2 / geo_rev 21 · plugins [org.payswap.workspace] · journeys DRAFT/DIM/MARK all ok · frame 25568B 729×582 byte-exact settled
+- VLM 7/7 (glm-5v-turbo, live bridge frame): no modal · L-bracket + bolt-hole · green tables · crosshair + pickbox · UCS icon · ViewCube TOP · status bar MCP — 15th consecutive identical visual state
+- Final battery ALL GREEN: console 200 ×2 · gateway core_up:true · CDP 200 · bridge ok pid 5236 · ring 21 fresh · zero drift (Epoch-2.0 f940a44 · cad-studio 0876284a3 · replay2 78fe659 == remote) · disk 7.0G/2.4G avail · mem 1.4G/4.0G flat
+
+Stage Summary:
+- Ten live-fires, two full outage crossings, one kit result lost unverified (R46's #9') — the watch's ledger is now fully reconciled and durable
+- Doctrine locked: (1) push the mirror at the FIRST working window, verification can follow; (2) absolute paths for mirror ops; (3) the session transcript is a durable carrier of record — but only the mirror makes it survive the session
+- Owner queue unchanged (PAT rotation · Actions limit+runner size · ADR-003 · ADR-005) + new observation: platform tool-layer 403 outages (2 occurrences, both ending at new user messages) — outside my control, watch continues
