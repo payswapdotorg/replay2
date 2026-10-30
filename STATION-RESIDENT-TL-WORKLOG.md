@@ -2378,3 +2378,26 @@ Stage Summary:
 - Platform instability era ledger: 2 tool outages (7.7h + 9.2h, both ended at new user messages) + 1 stale summary handoff in ~20h — all outside my control; the watch's lever remains "push at the first working window"; the mirror doctrine has now survived every failure class the platform has produced
 - Owner queue unchanged (PAT rotation · Actions limit+runner size · ADR-003 · ADR-005) + observations: tool-layer 403 pattern; stale summary handoff; frame band widening (34820B); recycle cadence 9.4/6.5/11.5h
 - Next round preset: uptime probe first — if recycle #25: salvage-tree first (/tmp/my-project), PAT via env.sh WITH set -a, dual clone, kit #11, mirror-first at first window; else quiet-round battery (17th consecutive)
+
+---
+
+Task ID: resident-watch-R49
+Agent: TL (orchestrator, this session)
+Task: "go" — R49 sweep: RECYCLE #25 (pod boot 05:40:45Z; prior boot 21:16:37Z #24 → interval ~8.4h, cadence now 9.4/6.5/11.5/8.4h). SECOND consecutive stale summary handoff, TWO generations deep: inherited summary described "R47 just triggered, not yet executed" (1628 lines / 15bab44 / kit #9' unverified) while disk had already completed R47 (b2b2cb7) AND R48 (d0aec62, quiet round #4). All state re-derived from disk alone; R48's preset recovery executed at first window.
+
+Work Log:
+- STALE HANDOFF ×2: summary-as-carrier now rated WORSE than transcript (R48 rated transcript < mirror; this round's summary arrived 2 generations behind while the mirror chain 15bab44→78fe659→b2b2cb7→d0aec62 was complete and pushed). LAW REASSERTED: round numbering and state derive from the mirror git chain ONLY
+- MIRROR: d0aec62 == remote main (fetch clean, tree clean) — R48's push confirmed landed before recycle #25
+- SALVAGE TREE /tmp/my-project: survived recycle AGAIN (2nd observed crossing) — carried worklog 1689 lines (R48-end state, 322 lines AHEAD of the platform-restored volatile copy)
+- VOLATILE WORKLOG: platform-restored to a STALE GENERATION again (Oct-14/R26 shape, 1367 lines, tail stuck at R26 recycle-#12 record) → restored from salvage tree by cp, now 1689 lines
+- EPOCH-2.0 BOOT-MATERIALIZATION (new observation): at uptime ~50s the path read MISSING; ~3 min later 153M repo complete @ f940a44 with clean tree — boot "Restoring zcode state" step (or sibling) appears to restore /home/z durable assets asynchronously. Remote HEAD == f940a44 via ls-remote askpass (zero drift). My re-clone attempt correctly refused (already exists). No manual rebuild needed
+- CAD-STUDIO: fresh askpass clone @ 0876284a3 (set -a law; umask 077; askpass chmod 700; shred -u on exit) — clean-URL origin
+- STACK SELF-HEAL ALL GREEN at ~2 min uptime: console :3000 200 · gateway :3100 200 · replayd :3110 API-404-normal · CDP :9222 200 Chrome w/ turbovpn ext (chat.z.ai) · Xvfb :99 1440x900x24 · supervisor + stall_recovery + frame_guard + watcher alive; bridge :3210 down (expected — kit rebuilds it)
+- KIT #11 LAUNCHED 05:44:26Z (dfork orphan, log /tmp/redeploy_r49.log, single lineage PID confirmed): stage 0/0b/1 done in 39s, stage 2 rust 1.99.1 in progress at first window; full-depth ETA ~05:56Z (kit #10 benchmark 9m40s, 11th live-fire)
+- MIRROR-FIRST: this entry committed and pushed DURING the kit build — record durability does not wait on the verification battery (doctrine, 2nd routine application after R47's debt-clear)
+
+Stage Summary:
+- Verification battery (ops baseline 17th + VLM 17th consecutive + zero-drift + zero-leak 10th clean) deferred to kit completion; results to be appended at this window or carried by next round — the mirror entry above already survives everything
+- Platform preservation now proven at TWO layers: /tmp/my-project move-aside (2 crossings) + /home/z boot-materization (Epoch-2.0 case, first observation) — recovery time dropping: this round's manual work was one cp + one clone + one kit launch
+- Owner queue unchanged (PAT rotation · Actions limit+runner size · ADR-003 · ADR-005) + observations: tool-layer 403 pattern; stale summary handoff ×2 (now doctrine-locked as worst carrier); boot-materization mechanism (Epoch case); frame band widening (34820B, watch); recycle cadence 9.4/6.5/11.5/8.4h
+- Next round preset: uptime probe first — if same pod: verify kit #11 (/tmp/redeploy_r49.log stage completeness + bridge :3210 + journeys + ops baseline battery 17th + VLM 17th + zero-leak 10th clean audit); if recycle #26: salvage-tree first, PAT via env.sh WITH set -a, clone cad-studio, check Epoch auto-materialization BEFORE manual re-clone, kit #12, mirror-first at first window
