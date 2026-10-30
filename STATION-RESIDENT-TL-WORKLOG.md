@@ -2523,3 +2523,30 @@ Stage Summary:
 - Owner actions unchanged FOUR: Actions spending limit · ADR-003 · ADR-005 · PAT rotation (incident priority)
 - Next round preset: uptime probe — if same pod: quiet battery (21st) + F3 lane (save/reopen journey first — capabilities confirmed); if recycle #28: standard sequence + disk law + Epoch 2-min materization wait + pre-seed toolchain/ocs-libs from resurrected cad-build BEFORE kit launch
 
+
+---
+
+Task ID: resident-watch-R52 (verification append, same window)
+Agent: TL (orchestrator, this session)
+Task: R52 verification — kit #13 attempt 1 FAILED on the snapshot-resurrected ocs-libs (new failure mode, new law); kit #13' SUCCESS after fresh stage 4; full battery + five-command live proof executed
+
+Work Log:
+- KIT #13 ATTEMPT 1 (14:02:37→14:12:43 = 10m06s full cold path: clone 37s · artifact fetch+sha256 25s · plugin build ~9m) — completed but VERIFY caught the anomaly: modal GpuWarning + frame 48766B (above the known band) + history entry "[gpu] no adapter: wgpu found nothing to draw with; the interface is on iced's software renderer and the scene is not drawn at all". ROOT CAUSE: the pre-seeded ocs-libs came from the SNAPSHOT-RESURRECTED ancient cad-build (pre-R32 era) — its lavapipe is too old for the app's wgpu (no Vulkan adapter at all). The rust-toolchain pre-seed was VALID (plugin built clean, 1.99.1 pinned); the ocs-libs pre-seed was NOT
+- NEW KIT LAW (supersedes the round's launch-entry optimism): snapshot-resurrected cad-build is a valid RUST cache but NEVER a valid ocs-libs cache — the app artifact requires current-apt lavapipe (mesa 25.0.7-2+deb13u1, adapter "llvmpipe (LLVM 19.1.7, 256 bits)" matching the suppression string). Next-recycle preset amended: pre-seed ~/.cargo from resurrected rustup; let stage 4 rebuild ocs-libs fresh (4s at apt speed)
+- KIT #13' SUCCESS (14:16:51→14:17:06 = 15s skip-path: stages 1/3/5 skipped — sync-reuse · artifact exists · plugin .so exists): stage 4 fresh apt download mesa 25.0.7 + xkb shims; app relaunched pid 6095 session a33299f11c4d329251a0f4e4a0a9baaf; VERIFY ok:true — frame 729×582 25566B (known value, == R51's exact post-battery size), modal None; stage 9 draft/dim/mark ALL ok:True (R51's command_busy race did NOT recur — single observation, not yet a pattern)
+- FIVE-COMMAND LIVE BATTERY (F1 fix holding end-to-end on the recycle-#27 generation): DRAFT → "Drafting journey complete: 7 entities on PAYS-DEMO" (closed profile — F4 holding) · DIM → "15 entities — 12 lines, 2 circles, 1 other; by layer [ANNO-TABLE:1, PAYS-DEMO:14]" (the battery re-ran DRAFT on the already-drafted doc, doubling the profile — census self-consistent) · PLOT → "15 entities ready. Plot runs through the GUI plot pipeline (SVG/PDF)" · STATUS → "15 entities across 2 layers [ANNO-TABLE:1, PAYS-DEMO:14]; 1 carry the PAYSWMARK identity" · MARK → "entity 0x10013 marked — displays as PaySwap Part". Every command dispatched to its OWN handler
+- OPS BASELINE: 20th CONSECUTIVE IDENTICAL — sysvar clayer "0" / extmax [85,60,0] / ltscale 1 · camera Ortho d=155.51271 pitch 1.5708 yaw 0 · plugins [org.payswap.workspace] · doc 2 rev 0 · viewport 729×582; geo_rev 33 / cam_rev 4 = expected progression counters (doubled journey + battery ZOOMs), same class as event_cursor
+- VLM 7/7 (/tmp/frame_r52.png 25497B post-battery, band-consistent → /tmp/vlm_r52.json): no modal · L-bracket + bolt-hole · green tables · crosshair + pickbox · UCS red-X/green-Y · ViewCube TOP · MCP yellow — 20th CONSECUTIVE IDENTICAL visual state
+- ZERO DRIFT: cad-studio remote main == cad-build == cs-work == 328b1eda5 · Epoch-2.0 f940a44 == remote · mirror 2fa33ba == remote (Epoch remote URL de-tokenized this round — the old token-in-URL form had been platform-redacted to [REDACTED:github_token]; now clean https + askpass)
+- ZERO-LEAK (12th CONSECUTIVE CLEAN): kit logs ×4 (r52, r52b, ocs_dfork, cad_bridge) scanned — ghp_/github_pat_/x-access-token: 0 · origins clean URLs · no .netrc/.config/gh · no askpass/authdir residues
+- Plugin artifact recorded per disk law: libpayswap_workspace.so sha256 79a20b5501889b2d… 905040B (905KB class; hash differs from R51's af349b77 as expected — different build dir, cargo non-reproducibility; size class identical)
+- Minor observation (pre-existing, non-blocking): demo driver's trailing "._mp" command fails as "INVALID: Unknown command: mp" in history — present in prior kits' drivers too, not a regression; the five PAYS commands are the battery surface
+- Disk end-state: 3.8G free (working set: clone + artifact + cad-build target + resurrected heavies)
+
+Stage Summary:
+- Recycle #27 recovery COMPLETE: boot 13:52:13Z → kit #13' verified 14:17:06Z = 24m53s wall-clock INCLUDING the failed attempt + diagnosis + fix (pure cold-path kit: 10m06s — a new full-depth benchmark with pre-seeded rust)
+- Battery fully green on the recycle-#27 generation: VERIFY ok · five-command distinct dispatch · ops baseline 20th · VLM 20th · zero drift (three repos) · zero-leak 12th
+- The resurrection-as-cache doctrine now has a precise boundary: rust toolchain YES, ocs-libs NO — encoded as kit law in this entry
+- Owner actions unchanged FOUR: Actions spending limit · ADR-003 · ADR-005 · PAT rotation (incident priority)
+- Next round preset: uptime probe — if same pod: quiet battery (21st) + F3 lane opens (save/reopen journey first — capabilities confirmed in R51 scoping); if recycle #28: standard sequence + Epoch 2-min materization wait + pre-seed ~/.cargo from resurrected rustup (valid) + let stage 4 rebuild ocs-libs fresh (never pre-seed ocs-libs) + disk law
+
