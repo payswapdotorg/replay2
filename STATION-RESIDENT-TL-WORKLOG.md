@@ -2424,3 +2424,25 @@ Stage Summary:
 - Knowledge-carrier hierarchy proven once more: mirror carried R49's launch record through the kit build (pushed during), this append completes the round in the same window — the mirror-first doctrine now routine (2nd routine application)
 - Owner queue unchanged (PAT rotation · Actions limit+runner size · ADR-003 · ADR-005); observations ledger: tool-layer 403 pattern (2 occurrences) · stale summary handoff ×2 (doctrine-locked worst carrier) · Epoch-2.0 boot-materization (first /home/z-level survival) · frame band 34820B high (watch) · recycle cadence 9.4/6.5/11.5/8.4h
 - Next round preset: uptime probe first — if same pod: quiet-round battery (18th consecutive; app/bridge PID drift + RSS + frame band); if recycle #26: salvage-tree first, PAT via env.sh WITH set -a, cad-studio askpass clone, Epoch auto-materialization check BEFORE manual re-clone, kit #12, mirror-first at first window
+
+---
+
+Task ID: resident-watch-R50
+Agent: TL (orchestrator, this session)
+Task: "go" — R50 sweep: QUIET ROUND #5 (same pod — boot 05:40:45Z #25 still current, pod 1h49m at census; recycle interval continues). Full quiet-round battery on the kit #11 artifacts untouched since 05:53:54Z.
+
+Work Log:
+- STACK ALL GREEN: console :3000 200 · gateway :3100 200 · replayd :3110 API-404-normal · CDP :9222 200 · bridge :3210 listening (bun PID 5440, ppid=1 dfork orphan form correct)
+- CAD chain PID ZERO DRIFT vs kit #11 verify: app 5399 SAME (1h36m, RSS 395MB) · bridge 5440 (1h36m, RSS 61MB flat) · session bafdc32cfd7d46e7f4b75f8dcbda007f unchanged · AppRun --new --backend vulkan
+- OPS BASELINE (18th consecutive identical): sysvar clayer "0" / extmax [85,60,0] / ltscale 1 · modal null · camera [42.5,30,0] Orthographic pitch-top d=155.5127 · cam_rev 2 / geo_rev 21 · plugins [org.payswap.workspace] · doc 2 fx06-merged-table.dxf dirty Drawing1 · mode gui Model viewport 729×582. Dynamic non-baseline fields as designed: event_cursor 2072 (frame-loop accumulation), hand_seed 1000E
+- VLM 7/7 (/tmp/frame_r50.png 25568B → /tmp/vlm_r50.json): no modal · L-bracket + bolt-hole · green tables · crosshair + pickbox · UCS icon red-X/green-Y · ViewCube TOP · status bar MCP yellow — 18th consecutive identical visual state
+- FRAME BAND: 25568/27041/25568 across x3 samples — both known recurring byte-exact values; R48's 34820B high NOT seen this round (band watch continues, no widening)
+- ZERO DRIFT: cad-studio 0876284a3 == remote main · Epoch-2.0 f940a44 == remote (ls-remote askpass both; trees clean) — upstream quiet on both
+- ZERO-LEAK: no new auth material created this round (quiet battery only; this round's 1 askpass script shred -u'd on exit); mirror tree clean at 870069f
+- Resources: disk 2.5G free / mem ~2.5G avail — flat vs R49
+
+Stage Summary:
+- Quiet round #5 pattern holds: everything kit #11 built at 05:53:54Z is byte- and visually-identical ~97 minutes later; 18 consecutive identical baselines on both instruments (ops byte-level + VLM)
+- Kit lineage untouched; steady state 9m24s-9m40s across 11 live-fires; next recycle answers with kit #12 from the unchanged three-chain credential position
+- Owner queue unchanged (PAT rotation · Actions limit+runner size · ADR-003 · ADR-005); observations ledger unchanged: tool-layer 403 pattern (2) · stale summary handoff ×2 · Epoch-2.0 boot-materization · frame band 34820B high (not recurring) · recycle cadence 9.4/6.5/11.5/8.4h
+- Next round preset: uptime probe first — if same pod: quiet-round battery (19th); if recycle #26: salvage-tree first, PAT via env.sh WITH set -a, cad-studio askpass clone, Epoch auto-materialization check BEFORE manual re-clone, kit #12, mirror-first at first window
