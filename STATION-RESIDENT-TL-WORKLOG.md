@@ -2497,3 +2497,29 @@ Stage Summary:
 - Disk-full failure mode added to the platform-instability ledger (self-inflicted this time, law recorded); kit #12' recovery cycle: detect (VERIFY) → clean → retry = 7m47s wall-clock including the failed attempt
 - Owner actions FOUR: Actions spending limit · ADR-003 · ADR-005 · PAT rotation (incident priority)
 - Next round preset: uptime probe — if same pod: quiet battery (20th) + the F3 lane opens (save/reopen journey first — the capabilities are confirmed); if recycle #27: standard sequence + disk law check first (df before clones; salvage prune early)
+
+---
+
+Task ID: resident-watch-R52
+Agent: TL (orchestrator, this session)
+Task: "go" on RECYCLE #27 (pod boot 13:52:13Z; #26 10:54:54Z → interval 2.95h; cadence 9.4/6.5/11.5/8.4/5.2/2.9h) — third consecutive stale-summary handoff (2 rounds deep: carried summary ended at R50; disk showed R51 complete with the full operator-review response lane)
+
+Work Log:
+- STATE DERIVED FROM MIRROR CHAIN (per doctrine): mirror @ 15970b6 == origin/main carries R51 complete — F1/F2/F4 fixed+tested+pushed (618d26479), different-dir reproducible build 9m36s, P0 credential incident closed to maximum station authority + hygiene test strengthened (328b1eda5), kit #12 disk-full → cleanup → kit #12' SUCCESS 7m32s with the FIXED plugin live (7-entity closed profile + five-command distinct dispatch), VLM 19th, zero-leak 11th, disk law recorded
+- RECYCLE #27 ASSET BEHAVIOR (extends the platform-instability ledger):
+  1. /home/z-level kit assets NOT in the platform snapshot base were WIPED: ocs-artifact, cs-work, ocs-libs, ~/.cargo, ~/.rustup, ~/.config recent subdirs (OpenCADStudio plugin dir, PaySwapCADStudio settings); replay2 + .secrets survived, Epoch-2.0 materialized
+  2. Epoch-2.0 boot-materization 3rd observation — probe at 1 min uptime FAILED (not yet materialized), alive @ f940a44 by ~2 min; LAW: give Epoch ~2 min before declaring it gone
+  3. /tmp/my-project UNDELETE-STYLE RESURRECTION: worklog stayed FRESH (1808 — carrier survived its 5th recycle) but R51-pruned heavies returned in ANCIENT shapes (cad-build = pre-R32 infra layout: rustup 715M + ocs-libs 189M + cargo 15M, cad-studio/ empty; browser-profile 500M; Epoch-2.0 empty stub) — model: platform overlay keeps modified files, undoes deletions from an old snapshot
+  4. /tmp loose files (kit logs redeploy_r5*.log, frames, vlm jsons) wiped — kit logs are recycle-fragile; the worklog is not
+- RECOVERY: volatile worklog stale AGAIN (1367, ancient W-wave era) → restored from salvage by cp (salvage 3rd crossing); Epoch remote URL carried an embedded [REDACTED:github_token] (platform rewrite of the old token-in-URL form) → set-url to clean https + askpass — ZERO DRIFT f940a44 == remote; cad-studio fresh askpass clone → /home/z/cs-work @ 328b1eda5 == remote main
+- SALVAGE TURNS ASSET: the resurrected ancient cad-build PROVIDED the pinned toolchain (rustc/cargo 1.99.1 symlinked into ~/.cargo/bin → kit stage 2 skip) and a COMPLETE ocs-libs (lvp_icd_abs.json + fixlib shims symlinked to /home/z/ocs-libs → kit stage 4 skip) — resurrection-as-cache, recorded for future recycles
+- DISK LAW: df 5.7G free at launch, single clone this round (no proof clone), budget respected
+- KIT #13 LAUNCHED 14:02:37Z (dfork orphan, log /tmp/redeploy_r52.log, from /home/z/cs-work): stage 0/0b clean, stage 1 cloning cad-studio into cad-build (F2-legacy path, relative-path-safe now); cold stages this round: 1 + 3 (artifact fetch — ocs-artifact wiped) + 5 (plugin build — .config plugin dir wiped, expect ~7m); stages 2+4 pre-seeded skip; verification battery to follow at completion
+
+Stage Summary:
+- Recycle #27 = the deepest platform reset observed (wiped /home/z-level kit assets + ~/.cargo + recent .config), yet recovery stayed minute-scale: salvage worklog + snapshot-resurrected toolchain/ocs-libs + one askpass clone = full cold-path kit launch within 10 min of boot
+- Third stale-summary handoff in a row confirms the law: round numbering and state derive ONLY from the mirror git chain — disk truth was 2 rounds ahead of the carried summary
+- Kit #13 in flight; battery (ops baseline 20th + VLM 20th + zero-drift + zero-leak 12th) follows at completion
+- Owner actions unchanged FOUR: Actions spending limit · ADR-003 · ADR-005 · PAT rotation (incident priority)
+- Next round preset: uptime probe — if same pod: quiet battery (21st) + F3 lane (save/reopen journey first — capabilities confirmed); if recycle #28: standard sequence + disk law + Epoch 2-min materization wait + pre-seed toolchain/ocs-libs from resurrected cad-build BEFORE kit launch
+
