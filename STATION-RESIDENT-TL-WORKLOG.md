@@ -2401,3 +2401,26 @@ Stage Summary:
 - Platform preservation now proven at TWO layers: /tmp/my-project move-aside (2 crossings) + /home/z boot-materization (Epoch-2.0 case, first observation) — recovery time dropping: this round's manual work was one cp + one clone + one kit launch
 - Owner queue unchanged (PAT rotation · Actions limit+runner size · ADR-003 · ADR-005) + observations: tool-layer 403 pattern; stale summary handoff ×2 (now doctrine-locked as worst carrier); boot-materization mechanism (Epoch case); frame band widening (34820B, watch); recycle cadence 9.4/6.5/11.5/8.4h
 - Next round preset: uptime probe first — if same pod: verify kit #11 (/tmp/redeploy_r49.log stage completeness + bridge :3210 + journeys + ops baseline battery 17th + VLM 17th + zero-leak 10th clean audit); if recycle #26: salvage-tree first, PAT via env.sh WITH set -a, clone cad-studio, check Epoch auto-materialization BEFORE manual re-clone, kit #12, mirror-first at first window
+
+---
+
+Task ID: resident-watch-R49 (verification append, same window)
+Agent: TL (orchestrator, this session)
+Task: R49 verification battery — kit #11 completed 05:53:54Z (9m28s), full battery executed same window (mirror-first debt-free pattern: launch record pushed during build, verification appended after)
+
+Work Log:
+- KIT #11 VERDICT: 12-stage log complete (/tmp/redeploy_r49.log), single lineage, "auth material shredded on exit"; stage 5 plugin build 7m24s (-j1 release); stages 3/4 idempotent-fast (artifact fetch 26s cached, harness 2s); total 05:44:26Z→05:53:54Z 9m28s — 11th live-fire, steady-state band 9m24s-9m40s holds
+- VERIFY JSON: ok:true · app pid 5399 session bafdc32cfd7d46e7f4b75f8dcbda007f · fx06 doc 2 · frame 729×582 fresh (age 1123ms) · modal None · journeys DRAFT/DIM/MARK all ok (kit stage 9 output)
+- OPS BASELINE (17th consecutive identical): sysvar clayer "0" / extmax [85,60,0] / ltscale 1 · modal null · camera [42.5,30,0] Orthographic pitch-top d=155.5127 · cam_rev 2 / geo_rev 21 · plugins [org.payswap.workspace] · doc 2 fx06-merged-table.dxf dirty title Drawing1 fixtures path · mode gui layout Model viewport 729×582 v2026.42 missing_fonts [] · 25 capabilities
+- VLM 7/7 (/tmp/frame_r49.png 27041B → /tmp/vlm_r49.json): no modal · L-bracket + bolt-hole · green tables · crosshair + pickbox · UCS icon red-X/green-Y · ViewCube TOP · status bar MCP yellow — 17th consecutive identical visual state
+- FRAME BAND: 28849→27041B this window (both inside known settled band 25568↔28849; R48's 34820B high not seen — band watch continues)
+- ZERO DRIFT: cad-studio 0876284a3 == remote main · Epoch-2.0 f940a44 == remote (ls-remote askpass both; trees clean)
+- ZERO-LEAK (10th consecutive clean): kit log patterns 0 (ghp_/github_pat_/x-access-token-with-secret/token-var assignments) · both clone origins clean URLs · no .netrc / no .config/gh · this round's 3 askpass scripts shred -u'd on exit
+- STACK: console :3000 200 + /api/cad/frame 200 27041B via proxy · bridge :3210 ok:true direct · gateway :3100 200 · replayd :3110 up · CDP :9222 200 · Xvfb :99 · guardians alive (supervisor/frame_guard/watcher/stall_recovery/replayd) · AppRun --new --backend vulkan pid 5399
+- Resources: disk 2.6G free / mem ~2.6G avail — flat vs R48
+
+Stage Summary:
+- R49 closes clean: recycle #25 answered by kit #11 in 9m28s; 17 consecutive identical baselines on both instruments; zero drift upstream; zero leak — ledger current through this window, no debt carried
+- Knowledge-carrier hierarchy proven once more: mirror carried R49's launch record through the kit build (pushed during), this append completes the round in the same window — the mirror-first doctrine now routine (2nd routine application)
+- Owner queue unchanged (PAT rotation · Actions limit+runner size · ADR-003 · ADR-005); observations ledger: tool-layer 403 pattern (2 occurrences) · stale summary handoff ×2 (doctrine-locked worst carrier) · Epoch-2.0 boot-materization (first /home/z-level survival) · frame band 34820B high (watch) · recycle cadence 9.4/6.5/11.5/8.4h
+- Next round preset: uptime probe first — if same pod: quiet-round battery (18th consecutive; app/bridge PID drift + RSS + frame band); if recycle #26: salvage-tree first, PAT via env.sh WITH set -a, cad-studio askpass clone, Epoch auto-materialization check BEFORE manual re-clone, kit #12, mirror-first at first window
