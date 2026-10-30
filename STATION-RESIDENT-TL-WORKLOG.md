@@ -2550,3 +2550,29 @@ Stage Summary:
 - Owner actions unchanged FOUR: Actions spending limit · ADR-003 · ADR-005 · PAT rotation (incident priority)
 - Next round preset: uptime probe — if same pod: quiet battery (21st) + F3 lane opens (save/reopen journey first — capabilities confirmed in R51 scoping); if recycle #28: standard sequence + Epoch 2-min materization wait + pre-seed ~/.cargo from resurrected rustup (valid) + let stage 4 rebuild ocs-libs fresh (never pre-seed ocs-libs) + disk law
 
+
+---
+
+Task ID: resident-watch-R53
+Agent: TL (orchestrator, this session)
+Task: "go" — quiet round #6 (same pod, 43 min at probe; boot 13:52:13Z) executing the R52 preset: quiet battery (21st) + the F3 lane opening (save/reopen journey first — capabilities confirmed in R51 scoping)
+
+Work Log:
+- QUIET BATTERY OPEN: PID zero drift (app 6095 / bridge 6132 — identical to the R52 end state), bridge status ok, frame 26970B in-band
+- F3 LANE — PAYS_JOURNEY_PROJECT delivered in three commits, live-proven end-to-end:
+  1. f4231981 (plugin-state design): sixth ribbon control (Project, Glyph J), manifest prefix, two-leg journey — ARM records the census (entities, PAYSWMARK, per-layer) into plugin state + reports the agent-surface protocol; VERIFY compares + verdicts. Unit tests 5/5 (MockHost: real CadDocument + state map + captured messages; happy SURVIVED, lost-identity REGRESSED, empty guard)
+  2. LIVE FALSIFICATION (kit #14, 17s incremental): ARM worked live (8 entities, 1 PAYSWMARK, document_path resolved) but VERIFY never fired — every call re-armed. ROOT CAUSE (read from source): external plugins run OUT-OF-PROCESS (PluginProcess::spawn); the typed Box<dyn Any> plugin state cannot cross the IPC boundary — the PluginRequest enum has no state requests and the proxy degrades to None. The plugin-state design was unfixable for external plugins — redesigned same round
+  3. 21f16d5db (XRecord redesign): the armed census now lives IN THE DRAWING — an XRecord under dictionary path ["PAYSWAP"]/PROJECT-JOURNEY (V8 API: create/read/delete_xrecord), so the state travels with the project file through the save/reopen round trip. VERIFY compares the live census against the record-carried census, verdicts SURVIVED/REGRESSED, consumes the record (one-shot). A round trip that drops the dictionary reads as not-armed with the ambiguity stated in the arm message (no fabricated verdict); malformed records are refused. Tests 6/6 (added the dropped-dictionary honest re-arm case)
+- LIVE PROOF (kit #15 + probe): arm "recorded 8 entities, 1 PAYSWMARK, layers [ANNO-TABLE:1, PAYS-DEMO:7] into the drawing's PAYSWAP project record" → op:save (REAL FILE: /tmp/payswap-project-r53.dxf 49281 bytes) → op:open (document swapped in place) → VERIFY "metadata SURVIVED the save/close/reopen round trip — 8 entities, 1 PAYSWMARK, layers [ANNO-TABLE:1, PAYS-DEMO:7]" → PAYS_AGENT_STATUS cross-check agrees (8 entities, 1 PAYSWMARK). The probe (cad-build/probes/project_journey.py) drives the whole chain through the automation socket — the same surface an MCP agent uses; op:save/op:open require document_id (found live, fixed)
+- GRAPH: COMPLETION-GRAPH P5.1 records the delivery + live evidence + the honest remaining list (67e3814: real dimension entities, verifiable plot output)
+- KITS: #14 17s (incremental build 2.69s — release cache reuse works), #15 17s; both VERIFY ok, modal None, frame 25566B known value, draft/dim/mark all True (R51 command_busy race did not recur — second consecutive clean run)
+- BATTERY: ops baseline 21st CONSECUTIVE IDENTICAL — measured ON THE REOPENED PROJECT DOCUMENT (the strongest form: clayer "0" / extmax [85,60,0] / ltscale 1 · camera Ortho d=155.51271 · plugins [org.payswap.workspace]) · VLM 7/7 21st consecutive identical (/tmp/frame_r53.png 25555B: no modal · L-bracket+bolt-hole · green tables · crosshair+pickbox · UCS red-X/green-Y · ViewCube TOP · MCP yellow) · ZERO DRIFT: cad-studio remote == cad-build == cs-work == 67e3814 · Epoch f940a44 · ZERO-LEAK 13th consecutive clean (kit logs ×4 + app/bridge logs scanned — 0 hits; no residues; askpasses shredded)
+- DISK LAW applied: cs-work plugin target/debug (test artifacts, 1.9G, regenerable) pruned; release cache kept (kit stage-5 rebuild = 2.69s vs 7m full); 3.8G free end-state
+
+Stage Summary:
+- The review's F3 "project journey (save/close/reopen/verify metadata survives)" is DELIVERED and live-proven: the operator's exact asked-for workflow runs end-to-end with a real file on disk and a real survival verdict — and the verdict mechanism is honest by construction (state in the file, one-shot, ambiguity stated)
+- NEW STATION KNOWLEDGE (from live falsification): out-of-process plugins cannot use host plugin state — the IPC boundary has no typed-state channel. Any cross-reopen plugin memory must live in the document (XRecord) or a file. Recorded for every future plugin design
+- Remaining F3 (honest): real dimension entities in the Measure journey; verifiable plot output (SVG/PDF on disk) in the Plot journey — both have confirmed viable paths (EntityType::Dimension in the codec; the plot pipeline reachable via the control surface)
+- Owner actions unchanged FOUR: Actions spending limit · ADR-003 · ADR-005 · PAT rotation (incident priority)
+- Next round preset: uptime probe — if same pod: quiet battery (22nd) + F3 continuation (real dimension entities next — EntityType::Dimension survey, then plot output); if recycle #28: standard sequence + Epoch 2-min materization wait + rust pre-seed from resurrected cad-build (valid) + ocs-libs NEVER pre-seeded + disk law + df first
+
