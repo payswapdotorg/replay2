@@ -2911,3 +2911,22 @@ Stage Summary:
 - Station laws REINFORCED (none new — the playbook held as written for the fourth consecutive time): mirror-survival ×4; Epoch URL reset ×8; sequence-function geo_rev/cam_rev ×2 fresh generations; frame byte-identity across 3 kit generations; plot sizes ×6 generations
 - Owner actions unchanged SEVEN: four standing (Actions spending limit · ADR-003 · ADR-005 · PAT rotation [incident priority]) + three distribution dependencies (public distribution path · signing certs/notarization · the ≥8-GiB runner)
 - Next round preset: uptime probe — same pod: quiet battery (36th) + operator-directed work if directed (candidates: station-actionable distribution prep D3/D7–D12, reader-geometry extension design (needs the ≥8-GiB build), per-entity integrity P2, CTB/multi-layout/lineweights, agent security P2; default quiet-only) + disk watch (line ~2.5G); next recycle (#33): the #29–#32 playbook verbatim + the R61–R66 laws (unchanged — the set is stable)
+
+---
+
+Task ID: resident-watch-R68
+Agent: TL (orchestrator, this session)
+Task: "go" — same-pod quiet round (the R67 preset: quiet battery 36th; no operator direction → quiet-only + disk watch). Same pod (boot 13:05Z, probed 13:29Z at uptime 24min; 5/5 ports).
+
+Work Log:
+- OPS BASELINE 36th (durable probe): ALL CANONICAL — sysvar clayer "0" / extmax [85,60,0] / ltscale 1 · camera Orthographic d 172.43612670898438 pitch 1.5707963705062866 · modal null · plugins [org.payswap.workspace] · doc 2 · geo_rev 26 / cam_rev 4 · census 10 — sixth consecutive round at the canonical values · PAYS_AGENT_STATUS ok:true live
+- FRAME TAXONOMY IN ACTION (routine confirmation, no new class): first capture ACTIVE (26841B, md5 0a146dd7 — byte-identical to R61/R65/R66) 3min after the 13:25:59 autosave; second capture 4s later SETTLED (25369B, md5 8178982c — byte-identical to R62-R64/R67). Both frames class-matched byte-identical — the autosave→ACTIVE→settles→SETTLED lifecycle reproduced exactly as the R65/R66 laws describe
+- VLM 36th (settled bytes): 7/8 — identical to R63/R64/R67 on the same bytes: tables:false (per the closed experiment); dimensions 15th consecutive true; modal false; all other points true
+- ZERO DRIFT three-way: mirror e60f5ee == remote (pre-round; R68 close push follows) · cad-studio 001da66ed == remote (AUTH ls-remote) · Epoch-2.0 f940a44f5 == remote, URL clean
+- ZERO-LEAK 28th: round artifacts (vlm_r68.json, frames ×2) 0 hits; twin redaction holding; no .netrc/gh/askpass residue
+- DISK LAW: 2.9G free / 69% (flat within noise vs R67 close 3.3G→3.0G→2.9G; all blocks at known sizes per the R65 itemization; watch line 2.5G)
+
+Stage Summary:
+- Fully routine quiet round: battery 36th green (ops all-canonical 6th round; frame taxonomy exact; VLM stable-per-bytes, dimensions 15th), zero drift, zero-leak 28th, disk watched. No new laws — the station is in its steady state; the law set is stable and complete for current operations
+- Owner actions unchanged SEVEN: four standing (Actions spending limit · ADR-003 · ADR-005 · PAT rotation [incident priority]) + three distribution dependencies (public distribution path · signing certs/notarization · the ≥8-GiB runner)
+- Next round preset: uptime probe — same pod: quiet battery (37th) + operator-directed work if directed (candidates: station-actionable distribution prep D3/D7–D12, reader-geometry extension design (needs the ≥8-GiB build), per-entity integrity P2, CTB/multi-layout/lineweights, agent security P2; default quiet-only) + disk watch (line ~2.5G); next recycle (#33): the #29–#32 playbook verbatim + the R61–R66 laws (stable set)
