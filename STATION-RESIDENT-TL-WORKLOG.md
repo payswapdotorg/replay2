@@ -2886,3 +2886,28 @@ Stage Summary:
 - The autosave timer is now the understood driver of the ACTIVE/TRANSITIONAL states: periodic (~10min cadence observed: 11:01:16 → 11:11:16), each firing re-renders the viewport (one transitional frame, then the stable class); byte-compare discipline: capture after the autosave window or accept the class frame on the re-capture
 - Owner actions unchanged SEVEN: four standing (Actions spending limit · ADR-003 · ADR-005 · PAT rotation [incident priority]) + three distribution dependencies (public distribution path · signing certs/notarization · the ≥8-GiB runner)
 - Next round preset: uptime probe — same pod: quiet battery (35th) + operator-directed work if directed (candidates: station-actionable distribution prep D3/D7–D12, reader-geometry extension design (needs the ≥8-GiB build), per-entity integrity P2, CTB/multi-layout/lineweights, agent security P2; default quiet-only) + disk watch (line ~2.5G); next recycle (#32): the #29/#30/#31 playbook verbatim + the R61–R66 laws (commit-before-kit; never rm a file an open tab references; ops_baseline.py in the probes twin; AUTH ls-remote for cad-studio; VLM verdict-flip triage; busy-retry drivers; absolute-path cd on every command; class-match before byte-compare + re-capture lone off-class frames)
+
+---
+
+Task ID: resident-watch-R67
+Agent: TL (orchestrator, this session)
+Task: "go" — RECYCLE #32 recovery round (boot ~13:05Z, probed 13:06Z at uptime 1min). Handoff summary ACCURATE (R66 closed at mirror 4f84123 == disk truth).
+
+Work Log:
+- SURVEY: standard wipe set gone (cargo/rustup/cad-build/ocs-libs/ocs-artifact/configs/Epoch pre-materialization); survivors: mirror (4f84123 == remote — FOURTH consecutive recycle survival), /tmp twin (worklog 2234 + cad-build 918M + probes), ~/.secrets, ~/.venv
+- RECOVERY (the #29/#30/#31 playbook verbatim — FOURTH consecutive first-try, monotonic): twin cp (2234) → cad-build cp -a (922M) → cad-studio AUTH clone @001da66ed → rust pre-seed (stage 2 skipped) → Epoch materialized + URL reset (×8) f940a44f5 == remote → chromium pkill (available 1469→3276M; :9222 down at launch, guard-healed during build) → KIT #24 13:08:04→13:16:07 (8m03s cold) — ALL-GREEN including **mark ok: True** — the R64 busy-retry driver fix PROVEN IN PRODUCTION on its first kit (kit #23's false-failure mode eliminated; draft/dim/mark all True + modal None + VERIFY ok:true, app pid 5000)
+- PLOT BATTERY (recovery doctrine): VERDICT PLOT-OUTPUT-VERIFIED — PDF 6698B + SVG 5751B (19 elements, dimension-text) — sixth generation at the exact canonical sizes; census 10; '1 carry the PAYSWMARK identity' (kit-marked, persists through the battery); idempotency guards spoke
+- OPS BASELINE 35th: ALL CANONICAL — clayer "0" / extmax [85,60,0] / ltscale 1 · camera Orthographic d 172.43612670898438 pitch 1.5707963705062866 · modal null · plugins [org.payswap.workspace] · doc 2 · geo_rev 26 / cam_rev 4 (the sequence-function law reproduced EXACTLY on a second fresh generation) · PAYS_AGENT_STATUS ok:true live
+- FRAME: SETTLED class 25369B md5 8178982c — double-capture byte-identical, byte-identical to R62/R63/R64 — now reproduced ACROSS TWO RECYCLES + THREE KIT GENERATIONS (kits #22/#23/#24). The three-class taxonomy (settled/active/transitional) held: this round presented settled directly post-battery
+- VLM 35th: 7/8 — identical to the R63/R64 verdicts on the same settled bytes: tables:false (per the closed experiment — model-side unstable since ~R63); dimensions 14th consecutive true; modal false; all other points true
+- ZERO DRIFT three-way: mirror 4f84123 == remote (pre-round; R67 close push follows) · cad-studio 001da66ed == remote (AUTH ls-remote) · Epoch-2.0 f940a44f5 == remote, URL clean
+- ZERO-LEAK 27th: round artifacts (redeploy_r67.log, vlm_r67.json, frames ×2) 0 hits; twin worker-prompt redaction holding; no .netrc/gh/askpass residue
+- DISK LAW: 3.3G free / 65% end-state (above the ~2.5G watch line; the recycle released the overlay back to the standard post-recovery shape)
+- One cwd-law near-miss again (ops_baseline invoked without the probes cd — file-not-found, harmless, immediate re-run from the correct path): the law holds — absolute-path cd on EVERY command; the near-miss rate (~1/round) is the reminder
+
+Stage Summary:
+- Recycle #32 recovery COMPLETE: boot ~13:05 → kit #24 verified 13:16 = ~11m from boot, ~8m from probe — FOURTH consecutive all-laws-first-try; the playbook is now four-for-four (#29/#30/#31/#32) with zero surprises across all four
+- The R64 driver fix is production-proven: kit #24's stage-9 mark leg landed first-try where kit #23 (same plugin, old driver) false-failed — the busy-retry law closed the race
+- Station laws REINFORCED (none new — the playbook held as written for the fourth consecutive time): mirror-survival ×4; Epoch URL reset ×8; sequence-function geo_rev/cam_rev ×2 fresh generations; frame byte-identity across 3 kit generations; plot sizes ×6 generations
+- Owner actions unchanged SEVEN: four standing (Actions spending limit · ADR-003 · ADR-005 · PAT rotation [incident priority]) + three distribution dependencies (public distribution path · signing certs/notarization · the ≥8-GiB runner)
+- Next round preset: uptime probe — same pod: quiet battery (36th) + operator-directed work if directed (candidates: station-actionable distribution prep D3/D7–D12, reader-geometry extension design (needs the ≥8-GiB build), per-entity integrity P2, CTB/multi-layout/lineweights, agent security P2; default quiet-only) + disk watch (line ~2.5G); next recycle (#33): the #29–#32 playbook verbatim + the R61–R66 laws (unchanged — the set is stable)
